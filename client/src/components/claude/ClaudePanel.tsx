@@ -11,7 +11,11 @@ if (typeof document !== 'undefined' && !document.getElementById('claude-bounce')
   const s = document.createElement('style'); s.id = 'claude-bounce'; s.textContent = BOUNCE_CSS; document.head.appendChild(s);
 }
 
-export default function ClaudePanel() {
+interface ClaudePanelProps {
+  modal?: boolean;
+}
+
+export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
   const topic = currentTopicId ? getTopicById(currentTopicId) : null;
 
@@ -45,13 +49,15 @@ export default function ClaudePanel() {
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   };
 
-  // Show typing bubble only when loading and last message is empty assistant (streaming not started yet)
   const lastMsg = messages[messages.length - 1];
   const showTyping = isLoading && (!lastMsg || lastMsg.role === 'user' || (lastMsg.role === 'assistant' && !lastMsg.content));
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex flex-col border-l border-border bg-white" style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
+    <div
+      className={`flex flex-col bg-white ${modal ? 'h-full' : 'border-l border-border'}`}
+      style={{ width: '100%', height: '100%', overflow: 'hidden' }}
+    >
       {/* Header */}
       <div className="shrink-0 border-b border-border">
         <div className="flex items-center justify-between px-4 py-3">
@@ -91,7 +97,6 @@ export default function ClaudePanel() {
         ) : (
           <div className="flex flex-col">
             {messages.map((msg) =>
-              // Skip empty assistant messages (streaming placeholder before first chunk)
               msg.role === 'assistant' && !msg.content ? null : (
                 <MessageBubble key={msg.id} message={msg} />
               ),
@@ -103,7 +108,10 @@ export default function ClaudePanel() {
       </div>
 
       {/* Input */}
-      <div className="shrink-0 border-t border-border p-3 bg-white">
+      <div
+        className="shrink-0 border-t border-border p-3 bg-white"
+        style={{ paddingBottom: modal ? 'calc(12px + env(safe-area-inset-bottom, 0px))' : 12 }}
+      >
         <div className="flex items-end gap-2 rounded-xl px-3 py-2" style={{ border: '1.5px solid #e2e8f0', background: '#f8fafc' }}>
           <textarea
             ref={taRef}
@@ -124,7 +132,7 @@ export default function ClaudePanel() {
             </svg>
           </button>
         </div>
-        <p className="text-[10px] text-muted mt-1.5 text-center">Shift+Enter 줄바꿈 · Enter 전송</p>
+        <p className="text-[10px] text-muted mt-1.5 text-center hidden md:block">Shift+Enter 줄바꿈 · Enter 전송</p>
       </div>
     </div>
   );
