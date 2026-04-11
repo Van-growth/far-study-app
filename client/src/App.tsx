@@ -229,24 +229,55 @@ function AppLayout({ email }: { email: string }) {
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [initError, setInitError] = useState<string | null>(null);
   const initStore = useStudyStore((s) => s.initStore);
 
-  const bootstrap = async () => {
-    try {
-      const { data } = await getSession();
-      const user = data.session?.user ?? null;
-      setUserEmail(user?.email ?? null);
-      if (user) await initStore(user.id).catch(() => {});
-    } catch (e) {
-      console.error('[bootstrap] Failed:', e);
-      setUserEmail(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    // Check env vars at startup
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    console.log('[App] ENV check:', {
+      VITE_SUPABASE_URL: url ? `✅ ${(url as string).slice(0, 30)}...` : '❌ missing',
+      VITE_SUPABASE_ANON_KEY: key ? '✅ set' : '❌ missing',
+      VITE_API_URL: import.meta.env.VITE_API_URL ?? '❌ missing',
+    });
+
+    if (!url || !key) {
+      console.error('[App] Supabase env vars missing — showing login page');
+      setInitError('Supabase 환경변수가 설정되지 않았습니다.');
+      setLoading(false);
+      return;
+    }
+
+    // Timeout: force stop loading after 5s
+    const timeout = setTimeout(() => {
+      console.warn('[App] Bootstrap timeout after 5s — forcing load');
+      setLoading(false);
+    }, 5000);
+
+    const bootstrap = async () => {
+      try {
+        console.log('[App] getSession() start');
+        const { data, error } = await getSession();
+        console.log('[App] getSession() done', { user: data.session?.user?.email, error });
+        const user = data.session?.user ?? null;
+        setUserEmail(user?.email ?? null);
+        if (user) {
+          console.log('[App] initStore() start');
+          await initStore(user.id).catch((e) => console.warn('[App] initStore failed:', e));
+          console.log('[App] initStore() done');
+        }
+      } catch (e) {
+        console.error('[App] bootstrap error:', e);
+        setUserEmail(null);
+      } finally {
+        clearTimeout(timeout);
+        setLoading(false);
+      }
+    };
+
     bootstrap();
+
     let subscription: { unsubscribe: () => void } | null = null;
     try {
       const { data } = onAuthChange(async (_event, session) => {
@@ -256,9 +287,13 @@ export default function App() {
       });
       subscription = data.subscription;
     } catch (e) {
-      console.error('[onAuthChange] Failed:', e);
+      console.error('[App] onAuthChange error:', e);
     }
-    return () => subscription?.unsubscribe();
+
+    return () => {
+      clearTimeout(timeout);
+      subscription?.unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -268,13 +303,16 @@ export default function App() {
         <div className="text-center">
           <div className="w-8 h-8 border-3 border-[#4f6ef7] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm text-muted">로딩 중...</p>
+          {initError && (
+            <p className="text-xs text-[#ef4444] mt-2">{initError}</p>
+          )}
         </div>
       </div>
     );
   }
 
   if (!userEmail) {
-    return <AuthPage onAuth={bootstrap} />;
+    return <AuthPage onAuth={() => window.location.reload()} />;
   }
 
   return (
