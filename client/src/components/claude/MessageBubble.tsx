@@ -1,118 +1,8 @@
+import Markdown from 'react-markdown';
 import { Message } from '../../store/claudeStore';
 
 interface MessageBubbleProps {
   message: Message;
-}
-
-// ── inline parser: **bold**, *italic*, `code` ──────────────────
-function parseInline(text: string): React.ReactNode[] {
-  const regex = /(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g;
-  const parts: React.ReactNode[] = [];
-  let lastIdx = 0;
-  let match: RegExpExecArray | null;
-  let key = 0;
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIdx) {
-      parts.push(text.slice(lastIdx, match.index));
-    }
-    const m = match[0];
-    if (m.startsWith('**')) {
-      parts.push(<strong key={key++} className="font-semibold">{m.slice(2, -2)}</strong>);
-    } else if (m.startsWith('`')) {
-      parts.push(
-        <code key={key++} className="px-1 py-0.5 rounded text-[11px] font-mono bg-gray-100 text-[#065f46]">
-          {m.slice(1, -1)}
-        </code>
-      );
-    } else if (m.startsWith('*')) {
-      parts.push(<em key={key++}>{m.slice(1, -1)}</em>);
-    }
-    lastIdx = match.index + m.length;
-  }
-
-  if (lastIdx < text.length) parts.push(text.slice(lastIdx));
-  return parts;
-}
-
-// ── block parser ───────────────────────────────────────────────
-function parseMarkdown(text: string): React.ReactNode[] {
-  const lines = text.split('\n');
-  const result: React.ReactNode[] = [];
-
-  type ListBuf = { type: 'ol' | 'ul'; items: string[] };
-  let listBuf: ListBuf | null = null;
-  let key = 0;
-
-  const flushList = () => {
-    if (!listBuf) return;
-    const { type, items } = listBuf;
-    const cls = 'flex flex-col gap-0.5 my-1';
-    result.push(
-      type === 'ol' ? (
-        <ol key={key++} className={`list-decimal ml-5 ${cls}`}>
-          {items.map((item, i) => (
-            <li key={i} className="text-sm leading-relaxed">{parseInline(item)}</li>
-          ))}
-        </ol>
-      ) : (
-        <ul key={key++} className={`list-disc ml-5 ${cls}`}>
-          {items.map((item, i) => (
-            <li key={i} className="text-sm leading-relaxed">{parseInline(item)}</li>
-          ))}
-        </ul>
-      )
-    );
-    listBuf = null;
-  };
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    // blank line
-    if (!line.trim()) {
-      flushList();
-      result.push(<div key={key++} className="h-1.5" />);
-      continue;
-    }
-
-    // numbered list  (1. / 2. etc.)
-    const numMatch = line.match(/^(\d+)\.\s+(.*)/);
-    if (numMatch) {
-      if (listBuf?.type !== 'ol') { flushList(); listBuf = { type: 'ol', items: [] }; }
-      listBuf.items.push(numMatch[2]);
-      continue;
-    }
-
-    // bullet list  (- / • / *)
-    const bulletMatch = line.match(/^[-•*]\s+(.*)/);
-    if (bulletMatch) {
-      if (listBuf?.type !== 'ul') { flushList(); listBuf = { type: 'ul', items: [] }; }
-      listBuf.items.push(bulletMatch[1]);
-      continue;
-    }
-
-    flushList();
-
-    // heading  (## / #)
-    const headMatch = line.match(/^#{1,3}\s+(.*)/);
-    if (headMatch) {
-      result.push(
-        <p key={key++} className="text-sm font-bold text-[#0f172a] mt-2 mb-0.5">
-          {parseInline(headMatch[1])}
-        </p>
-      );
-      continue;
-    }
-
-    // regular paragraph
-    result.push(
-      <p key={key++} className="text-sm leading-relaxed">{parseInline(line)}</p>
-    );
-  }
-
-  flushList();
-  return result;
 }
 
 // ── Typing animation (3 dots) ──────────────────────────────────
@@ -148,7 +38,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     return (
       <div className="flex justify-end mb-3">
         <div
-          className="max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tr-sm text-white text-sm leading-relaxed"
+          className="max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tr-sm text-white text-sm leading-relaxed whitespace-pre-wrap"
           style={{ background: '#4f6ef7' }}
         >
           {message.content}
@@ -166,10 +56,61 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
 
       {/* Bubble */}
       <div
-        className="max-w-[90%] px-4 py-3 rounded-2xl rounded-tl-sm flex flex-col gap-0.5"
+        className="max-w-[90%] px-4 py-3 rounded-2xl rounded-tl-sm claude-md"
         style={{ background: 'white', border: '1.5px solid #e2e8f0' }}
       >
-        {parseMarkdown(message.content)}
+        <Markdown
+          components={{
+            h1: ({ children }) => <p className="text-base font-bold text-[#0f172a] mt-3 mb-1">{children}</p>,
+            h2: ({ children }) => <p className="text-sm font-bold text-[#0f172a] mt-3 mb-1">{children}</p>,
+            h3: ({ children }) => <p className="text-sm font-bold text-[#0f172a] mt-2 mb-0.5">{children}</p>,
+            p: ({ children }) => <p className="text-sm leading-relaxed text-[#0f172a] mb-1.5">{children}</p>,
+            strong: ({ children }) => <strong className="font-semibold text-[#0f172a]">{children}</strong>,
+            em: ({ children }) => <em className="italic">{children}</em>,
+            ul: ({ children }) => <ul className="list-disc ml-5 my-1 flex flex-col gap-0.5">{children}</ul>,
+            ol: ({ children }) => <ol className="list-decimal ml-5 my-1 flex flex-col gap-0.5">{children}</ol>,
+            li: ({ children }) => <li className="text-sm leading-relaxed">{children}</li>,
+            code: ({ children, className }) => {
+              const isBlock = className?.includes('language-');
+              if (isBlock) {
+                return (
+                  <pre className="my-2 p-3 rounded-lg text-xs font-mono leading-relaxed overflow-x-auto"
+                    style={{ background: '#f1f5f9', color: '#0f172a' }}>
+                    <code>{children}</code>
+                  </pre>
+                );
+              }
+              return (
+                <code className="px-1 py-0.5 rounded text-[11px] font-mono bg-gray-100 text-[#065f46]">
+                  {children}
+                </code>
+              );
+            },
+            pre: ({ children }) => <>{children}</>,
+            blockquote: ({ children }) => (
+              <blockquote className="border-l-3 border-[#4f6ef7] pl-3 my-2 text-sm text-muted italic">
+                {children}
+              </blockquote>
+            ),
+            hr: () => <hr className="my-3 border-border" />,
+            a: ({ href, children }) => (
+              <a href={href} target="_blank" rel="noopener noreferrer"
+                className="text-[#4f6ef7] underline underline-offset-2 text-sm">
+                {children}
+              </a>
+            ),
+            table: ({ children }) => (
+              <div className="overflow-x-auto my-2">
+                <table className="text-xs border border-border w-full">{children}</table>
+              </div>
+            ),
+            thead: ({ children }) => <thead style={{ background: '#f8fafc' }}>{children}</thead>,
+            th: ({ children }) => <th className="border border-border px-2 py-1 text-left font-semibold">{children}</th>,
+            td: ({ children }) => <td className="border border-border px-2 py-1">{children}</td>,
+          }}
+        >
+          {message.content}
+        </Markdown>
       </div>
     </div>
   );
