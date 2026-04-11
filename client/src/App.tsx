@@ -232,21 +232,33 @@ export default function App() {
   const initStore = useStudyStore((s) => s.initStore);
 
   const bootstrap = async () => {
-    const { data } = await getSession();
-    const user = data.session?.user ?? null;
-    setUserEmail(user?.email ?? null);
-    if (user) await initStore(user.id);
-    setLoading(false);
+    try {
+      const { data } = await getSession();
+      const user = data.session?.user ?? null;
+      setUserEmail(user?.email ?? null);
+      if (user) await initStore(user.id).catch(() => {});
+    } catch (e) {
+      console.error('[bootstrap] Failed:', e);
+      setUserEmail(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     bootstrap();
-    const { data: { subscription } } = onAuthChange(async (_event, session) => {
-      const user = session?.user ?? null;
-      setUserEmail(user?.email ?? null);
-      if (user) await initStore(user.id);
-    });
-    return () => subscription.unsubscribe();
+    let subscription: { unsubscribe: () => void } | null = null;
+    try {
+      const { data } = onAuthChange(async (_event, session) => {
+        const user = session?.user ?? null;
+        setUserEmail(user?.email ?? null);
+        if (user) await initStore(user.id).catch(() => {});
+      });
+      subscription = data.subscription;
+    } catch (e) {
+      console.error('[onAuthChange] Failed:', e);
+    }
+    return () => subscription?.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
