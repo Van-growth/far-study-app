@@ -155,7 +155,10 @@ function AppLayout({ email }: { email: string }) {
 
   return (
     <div className="flex flex-col h-[100dvh] overflow-hidden bg-bg">
-      <Header email={email} onSignOut={signOut} />
+      <Header email={email} onSignOut={async () => {
+        await signOut();
+        window.location.href = '/';
+      }} />
 
       <div className="flex flex-1 overflow-hidden" style={{ paddingTop: 54 }}>
         {/* Sidebar — desktop only */}
