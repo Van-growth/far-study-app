@@ -1,18 +1,95 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { allTopics, areas, Topic } from '../data/far-topics';
 import useStudyStore, { QuizLogPayload } from '../store/studyStore';
 import { getAccuracy, SRCard } from '../lib/srs';
 import QuizView, { QuizItemWithContext, QuizResult } from '../components/quiz/QuizView';
-import { generateQuestion, GeneratedQuestion, WeakModuleRef } from '../hooks/useDynamicQuiz';
+import { generateQuestion, WeakModuleRef } from '../hooks/useDynamicQuiz';
 import MobileSectionDrawer from '../components/layout/MobileSectionDrawer';
 
 const SESSION_MAX = 20;
+const BUFFER_CAPACITY = 2;
 
 type QuizMode = 'interleave' | 'due' | 'weak' | 'single';
 
+// ── Shape of one rendered question ────────────────────────────
+interface Question {
+  moduleId: string;
+  moduleLabel: string;
+  areaColor: string;
+  q: string;
+  opts: [string, string, string, string];
+  ans: number;
+  exp: string;
+}
+
+// ── Per-(mode|topicId) session snapshot ───────────────────────
+interface ModuleSnapshot {
+  currentQuestion: Question | null;
+  buffer: Question[];
+  questionCount: number;
+  wrongIds: string[];
+}
+
+// ─────────────────────────────────────────────────────────────
+// QuestionBuffer — rolling prefetch of up to `capacity` questions.
+// Current displayed question is NOT counted; the queue holds items that
+// will be returned from subsequent take() / takeInstant() calls.
+// ─────────────────────────────────────────────────────────────
+class QuestionBuffer {
+  private readonly capacity: number;
+  private readonly fetcher: () => Promise<Question>;
+  private queue: Question[] = [];
+  private inFlight: Promise<void> | null = null;
+
+  constructor(capacity: number, fetcher: () => Promise<Question>) {
+    this.capacity = capacity;
+    this.fetcher = fetcher;
+  }
+
+  /** Kick off background fetches until the queue fills to capacity. */
+  prefetch(): void {
+    if (this.queue.length >= this.capacity) return;
+    if (this.inFlight) return;
+    this.inFlight = this.fetcher()
+      .then((q) => {
+        this.queue.push(q);
+        this.inFlight = null;
+        if (this.queue.length < this.capacity) this.prefetch();
+      })
+      .catch(() => {
+        this.inFlight = null;
+        // Don't chain on error — caller will retry via take() or a manual button.
+      });
+  }
+
+  /** Synchronous pop. Returns null if the queue is empty. */
+  takeInstant(): Question | null {
+    if (this.queue.length === 0) return null;
+    const next = this.queue.shift()!;
+    this.prefetch();
+    return next;
+  }
+
+  /** Async take — instant if buffered, else awaits a fresh fetch. */
+  async take(): Promise<Question> {
+    const instant = this.takeInstant();
+    if (instant) return instant;
+    const q = await this.fetcher();
+    this.prefetch();
+    return q;
+  }
+
+  snapshot(): Question[] {
+    return [...this.queue];
+  }
+
+  hydrate(questions: Question[]): void {
+    this.queue = [...questions];
+  }
+}
+
 // ── Weighted module picker ────────────────────────────────────
-// Weight: weak modules (<60% or never-attempted) get boost; rest baseline.
 function pickNextModule(
   mode: QuizMode,
   singleId: string | null,
@@ -20,18 +97,19 @@ function pickNextModule(
   srsCards: Record<string, SRCard>,
 ): Topic | null {
   if (singleId) return pool.find((t) => t.id === singleId) ?? null;
-  const candidates = mode === 'weak'
-    ? pool.filter((t) => {
-        const c = srsCards[t.id];
-        if (!c || c.attempts === 0) return true;
-        return getAccuracy(c) < 60;
-      })
-    : pool;
+  const candidates =
+    mode === 'weak'
+      ? pool.filter((t) => {
+          const c = srsCards[t.id];
+          if (!c || c.attempts === 0) return true;
+          return getAccuracy(c) < 60;
+        })
+      : pool;
   if (candidates.length === 0) return null;
 
-  const weighted: { t: Topic; w: number }[] = candidates.map((t) => {
+  const weighted = candidates.map((t) => {
     const c = srsCards[t.id];
-    if (!c || c.attempts === 0) return { t, w: 3 }; // unseen → boost
+    if (!c || c.attempts === 0) return { t, w: 3 };
     const acc = getAccuracy(c);
     const w = acc < 60 ? 4 : acc < 80 ? 2 : 1;
     return { t, w };
@@ -45,77 +123,141 @@ function pickNextModule(
   return weighted[weighted.length - 1].t;
 }
 
-interface SessionItem {
-  moduleId: string;
-  moduleLabel: string;
-  areaColor: string;
-  question: GeneratedQuestion;
+function computeWeakList(srsCards: Record<string, SRCard>): WeakModuleRef[] {
+  return Object.entries(srsCards)
+    .map(([id, c]) => ({
+      id,
+      label: allTopics.find((t) => t.id === id)?.label ?? id,
+      accuracy: getAccuracy(c),
+    }))
+    .filter((w) => w.accuracy >= 0 && w.accuracy < 60)
+    .slice(0, 8);
 }
 
+// ─────────────────────────────────────────────────────────────
 export default function QuizPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const recordAnswer = useStudyStore((s) => s.recordAnswer);
-  const srsCards = useStudyStore((s) => s.srsCards);
 
   const mode = (params.get('mode') ?? 'interleave') as QuizMode;
   const topicId = params.get('topicId');
+  const sessionKey = topicId ?? `__mode:${mode}__`;
 
-  const [items, setItems] = useState<SessionItem[]>([]);
+  const [items, setItems] = useState<Question[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [recentWrong, setRecentWrong] = useState<string[]>([]);
+  const [wrongIds, setWrongIds] = useState<string[]>([]);
+  const [questionCount, setQuestionCount] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const bufferRef = useRef<QuestionBuffer | null>(null);
+  const sessionStoreRef = useRef<Record<string, ModuleSnapshot>>({});
+  const prevKeyRef = useRef<string | null>(null);
+  const wrongIdsRef = useRef<string[]>([]);
   const completedRef = useRef(false);
+  const moduleHistoryRef = useRef<string[]>([]);
+  const isBackNavRef = useRef(false);
+  // Bumps whenever history changes — forces a re-render so the back button's
+  // enabled/disabled state and label stay in sync with the ref.
+  const [historyTick, setHistoryTick] = useState(0);
 
-  const weakModules = useMemo<WeakModuleRef[]>(() => {
-    return Object.entries(srsCards)
-      .map(([id, c]) => ({ id, label: allTopics.find((t) => t.id === id)?.label ?? id, accuracy: getAccuracy(c) }))
-      .filter((w) => w.accuracy >= 0 && w.accuracy < 60)
-      .slice(0, 8);
-  }, [srsCards]);
+  useEffect(() => { wrongIdsRef.current = wrongIds; }, [wrongIds]);
 
-  const fetchNext = useCallback(async () => {
-    if (completedRef.current) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const target = pickNextModule(mode, topicId, allTopics as Topic[], srsCards);
-      if (!target) {
-        setError('생성할 모듈을 찾지 못했습니다.');
-        setLoading(false);
-        return;
-      }
-      const q = await generateQuestion(target.id, target.label, weakModules, recentWrong);
+  // Build a fetcher bound to current (mode, topicId). wrongIds is read via
+  // ref so each fetch sees fresh context without invalidating the buffer.
+  const buildFetcher = useCallback((): (() => Promise<Question>) => {
+    return async () => {
+      const store = useStudyStore.getState();
+      const target = pickNextModule(mode, topicId, allTopics as Topic[], store.srsCards);
+      if (!target) throw new Error('생성할 모듈을 찾지 못했습니다.');
+      const weak = computeWeakList(store.srsCards);
+      const gen = await generateQuestion(target.id, target.label, weak, wrongIdsRef.current);
       const area = areas.find((a) => a.topics.some((t) => t.id === target.id));
-      setItems((prev) => [
-        ...prev,
-        {
-          moduleId: target.id,
-          moduleLabel: target.label,
-          areaColor: area?.color ?? '#4f6ef7',
-          question: q,
-        },
-      ]);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '문제 생성 실패');
-    } finally {
-      setLoading(false);
-    }
-  }, [mode, topicId, srsCards, weakModules, recentWrong]);
+      return {
+        moduleId: target.id,
+        moduleLabel: target.label,
+        areaColor: area?.color ?? '#4f6ef7',
+        q: gen.q,
+        opts: gen.opts as [string, string, string, string],
+        ans: gen.ans,
+        exp: gen.exp,
+      };
+    };
+  }, [mode, topicId]);
 
-  // Initial kickoff per (mode, topicId)
+  // ── Module switch effect ────────────────────────────────────
+  // 1. Save previous session snapshot
+  // 2. Rebuild buffer with new fetcher
+  // 3. Restore snapshot or kick first fetch
   useEffect(() => {
+    const prevKey = prevKeyRef.current;
+    if (prevKey && prevKey !== sessionKey) {
+      sessionStoreRef.current[prevKey] = {
+        currentQuestion: items[items.length - 1] ?? null,
+        buffer: bufferRef.current?.snapshot() ?? [],
+        questionCount,
+        wrongIds,
+      };
+    }
+
+    const buf = new QuestionBuffer(BUFFER_CAPACITY, buildFetcher());
+    bufferRef.current = buf;
     completedRef.current = false;
-    setItems([]);
-    setRecentWrong([]);
     setError(null);
-    // kick off first question
-    void fetchNext();
-    // intentionally skip fetchNext from deps to avoid re-kick on state change
+
+    const snap = sessionStoreRef.current[sessionKey];
+    if (snap && snap.currentQuestion) {
+      setItems([snap.currentQuestion]);
+      setWrongIds(snap.wrongIds);
+      wrongIdsRef.current = snap.wrongIds;
+      setQuestionCount(snap.questionCount);
+      buf.hydrate(snap.buffer);
+      buf.prefetch();
+      setLoading(false);
+    } else {
+      setItems([]);
+      setWrongIds([]);
+      wrongIdsRef.current = [];
+      setQuestionCount(0);
+      setLoading(true);
+      buf
+        .take()
+        .then((q) => {
+          setItems([q]);
+          setQuestionCount(1);
+          setLoading(false);
+          sessionStoreRef.current[sessionKey] = {
+            currentQuestion: q,
+            buffer: buf.snapshot(),
+            questionCount: 1,
+            wrongIds: [],
+          };
+          buf.prefetch();
+        })
+        .catch((e) => {
+          setError(e instanceof Error ? e.message : '문제 생성 실패');
+          setLoading(false);
+        });
+    }
+    prevKeyRef.current = sessionKey;
+
+    // Push to history unless this transition is a back navigation.
+    if (isBackNavRef.current) {
+      isBackNavRef.current = false;
+    } else {
+      const h = moduleHistoryRef.current;
+      if (h[h.length - 1] !== sessionKey) {
+        h.push(sessionKey);
+      }
+    }
+    setHistoryTick((t) => t + 1);
+    // Intentionally only rerun on route change. items/questionCount/wrongIds
+    // are read as "current state at transition time" — not a dep loop driver.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, topicId]);
 
+  // ── Answer handler ─────────────────────────────────────────
   const handleAnswer = (result: QuizResult) => {
     const log: QuizLogPayload = {
       topicId: result.topicId,
@@ -127,17 +269,136 @@ export default function QuizPage() {
       answer: result.answer,
     };
     recordAnswer(result.topicId, result.correct, log);
+
+    let nextWrong = wrongIds;
     if (!result.correct) {
-      setRecentWrong((prev) => [result.topicId, ...prev].slice(0, 8));
+      nextWrong = [result.topicId, ...wrongIds].slice(0, 8);
+      setWrongIds(nextWrong);
+      wrongIdsRef.current = nextWrong;
     }
+    // Keep snapshot fresh so a mid-answer module switch is captured.
+    sessionStoreRef.current[sessionKey] = {
+      currentQuestion: items[items.length - 1] ?? null,
+      buffer: bufferRef.current?.snapshot() ?? [],
+      questionCount,
+      wrongIds: nextWrong,
+    };
   };
 
+  // ── "Next question" handler ────────────────────────────────
+  // Buffer hit → synchronous setItems runs inside the same React batch as
+  // QuizView's setCurrentIdx(nextIdx), so the new question renders with no
+  // blank frame. Buffer miss → async fallback shows the skeleton briefly.
   const handleRequestNext = () => {
-    if (items.length >= SESSION_MAX) {
+    if (questionCount >= SESSION_MAX) {
       completedRef.current = true;
       return;
     }
-    void fetchNext();
+    const buf = bufferRef.current;
+    if (!buf) return;
+
+    const instant = buf.takeInstant();
+    if (instant) {
+      const newCount = questionCount + 1;
+      setItems((prev) => [...prev, instant]);
+      setQuestionCount(newCount);
+      sessionStoreRef.current[sessionKey] = {
+        currentQuestion: instant,
+        buffer: buf.snapshot(),
+        questionCount: newCount,
+        wrongIds: wrongIdsRef.current,
+      };
+      buf.prefetch();
+      return;
+    }
+
+    setLoading(true);
+    buf
+      .take()
+      .then((q) => {
+        const newCount = questionCount + 1;
+        setItems((prev) => [...prev, q]);
+        setQuestionCount(newCount);
+        setLoading(false);
+        sessionStoreRef.current[sessionKey] = {
+          currentQuestion: q,
+          buffer: buf.snapshot(),
+          questionCount: newCount,
+          wrongIds: wrongIdsRef.current,
+        };
+        buf.prefetch();
+      })
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : '문제 생성 실패');
+        setLoading(false);
+      });
+  };
+
+  // ── Back navigation ────────────────────────────────────────
+  const handleBack = () => {
+    const h = moduleHistoryRef.current;
+    if (h.length < 2) return;
+
+    // Save current session (the effect's prelude also does this, but capture
+    // the very latest state here so nothing is lost).
+    sessionStoreRef.current[sessionKey] = {
+      currentQuestion: items[items.length - 1] ?? null,
+      buffer: bufferRef.current?.snapshot() ?? [],
+      questionCount,
+      wrongIds,
+    };
+
+    h.pop(); // drop current
+    const prevKey = h[h.length - 1];
+    isBackNavRef.current = true;
+
+    if (prevKey.startsWith('__mode:')) {
+      const m = prevKey.slice('__mode:'.length).replace(/__$/, '');
+      navigate(`/quiz?mode=${m}`);
+    } else {
+      navigate(`/quiz?topicId=${prevKey}`);
+    }
+  };
+
+  // Label of the session we'd jump to if the back button were pressed now.
+  const prevSessionKey =
+    moduleHistoryRef.current.length >= 2
+      ? moduleHistoryRef.current[moduleHistoryRef.current.length - 2]
+      : null;
+  const prevSessionLabel = (() => {
+    if (!prevSessionKey) return null;
+    if (prevSessionKey.startsWith('__mode:')) {
+      const m = prevSessionKey.slice('__mode:'.length).replace(/__$/, '');
+      return m === 'interleave' ? '전체' : m === 'due' ? 'DUE' : m === 'weak' ? '약점' : m;
+    }
+    return prevSessionKey; // e.g. "F1-M2"
+  })();
+  // Reference historyTick to make the back button re-evaluate on history changes.
+  void historyTick;
+
+  const handleRetry = () => {
+    setError(null);
+    const buf = bufferRef.current;
+    if (!buf) return;
+    setLoading(true);
+    buf
+      .take()
+      .then((q) => {
+        setItems([q]);
+        setQuestionCount(1);
+        setLoading(false);
+        sessionStoreRef.current[sessionKey] = {
+          currentQuestion: q,
+          buffer: buf.snapshot(),
+          questionCount: 1,
+          wrongIds: [],
+        };
+        buf.prefetch();
+      })
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : '재시도 실패');
+        setLoading(false);
+      });
   };
 
   const modeLabel: Record<string, string> = {
@@ -149,15 +410,14 @@ export default function QuizPage() {
     ? allTopics.find((t) => t.id === topicId)?.label ?? '모듈 퀴즈'
     : modeLabel[mode] ?? '퀴즈';
 
-  // Transform current items into QuizView's expected shape
   const quizItems: QuizItemWithContext[] = items.map((it) => ({
     topicId: it.moduleId,
     topicLabel: it.moduleLabel,
     areaColor: it.areaColor,
-    q: it.question.q,
-    opts: it.question.opts as [string, string, string, string],
-    ans: it.question.ans,
-    exp: it.question.exp,
+    q: it.q,
+    opts: it.opts,
+    ans: it.ans,
+    exp: it.exp,
   }));
 
   return (
@@ -177,7 +437,7 @@ export default function QuizPage() {
           <div>
             <h1 className="font-bold text-[#0f172a] text-lg">{label}</h1>
             <p className="text-xs text-muted mt-0.5">
-              {items.length} / {SESSION_MAX} · AI 동적 생성
+              {questionCount} / {SESSION_MAX} · AI 온디맨드 생성 · 버퍼 {BUFFER_CAPACITY}
             </p>
           </div>
           <div className="flex gap-2">
@@ -204,7 +464,7 @@ export default function QuizPage() {
           >
             <span>🔀</span>
             <p className="text-xs text-[#4c1d95]">
-              <strong>Interleaving 모드:</strong> 약점 모듈을 더 자주 출제합니다. Claude가 매 문제 동적 생성.
+              <strong>Interleaving 모드:</strong> 약점 모듈을 더 자주 출제합니다. 문제는 1개씩 온디맨드 생성, 다음 {BUFFER_CAPACITY}개를 미리 준비합니다.
             </p>
           </div>
         )}
@@ -214,21 +474,36 @@ export default function QuizPage() {
             className="p-3 rounded-xl text-xs text-[#991b1b]"
             style={{ background: '#fef2f2', border: '1px solid #fecaca' }}
           >
-            ⚠️ {error} <button onClick={() => void fetchNext()} className="underline ml-2">재시도</button>
+            ⚠️ {error}{' '}
+            <button onClick={handleRetry} className="underline ml-2">재시도</button>
           </div>
         )}
 
         {quizItems.length > 0 && (
-          <QuizView
-            key={mode + (topicId ?? 'all')}
-            questions={quizItems}
-            onAnswer={handleAnswer}
-            onComplete={() => { completedRef.current = true; }}
-            onRequestNext={handleRequestNext}
-            sessionMax={SESSION_MAX}
-            isLoadingNext={loading}
-            title={label}
-          />
+          <>
+            <button
+              onClick={handleBack}
+              disabled={!prevSessionLabel}
+              className="self-start flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                color: prevSessionLabel ? '#4f6ef7' : '#94a3b8',
+                background: prevSessionLabel ? '#eef2ff' : '#f1f5f9',
+                border: `1px solid ${prevSessionLabel ? '#c7d2fe' : '#e2e8f0'}`,
+              }}
+            >
+              ← {prevSessionLabel ?? '이전 없음'}
+            </button>
+            <QuizView
+              key={sessionKey + ':' + (items[0]?.q ?? '')}
+              questions={quizItems}
+              onAnswer={handleAnswer}
+              onComplete={() => { completedRef.current = true; }}
+              onRequestNext={handleRequestNext}
+              sessionMax={SESSION_MAX}
+              isLoadingNext={loading}
+              title={label}
+            />
+          </>
         )}
 
         {quizItems.length === 0 && loading && <QuestionSkeleton />}
