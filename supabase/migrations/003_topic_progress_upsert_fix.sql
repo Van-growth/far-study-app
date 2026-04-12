@@ -1,0 +1,45 @@
+-- ──────────────────────────────────────────────────────────────
+-- Fix: topic_progress UPSERT 400 — missing unique constraint
+-- ──────────────────────────────────────────────────────────────
+-- Symptom:
+--   PATCH/POST /rest/v1/topic_progress?on_conflict=user_id%2Ctopic_id
+--   → 400 with Postgres error "there is no unique or exclusion
+--     constraint matching the ON CONFLICT specification"
+--
+-- Cause:
+--   The inline `unique(user_id, topic_id)` from 001_init.sql was never
+--   applied to this instance (table created via UI / partial migration).
+--   PostgREST needs a matching unique index or constraint to honor the
+--   `on_conflict=user_id,topic_id` query parameter.
+--
+-- Fix:
+--   Idempotently ensure a unique index on (user_id, topic_id) exists.
+--   `CREATE UNIQUE INDEX IF NOT EXISTS` is safe to re-run.
+-- ──────────────────────────────────────────────────────────────
+
+create unique index if not exists topic_progress_user_topic_key
+  on public.topic_progress (user_id, topic_id);
+
+-- Optional sanity: also covers the same pair under a named constraint.
+-- Skip if the unique index above already does the job — PostgREST only
+-- needs one matching unique definition, and the index satisfies it.
+--
+-- do $$
+-- begin
+--   if not exists (
+--     select 1
+--     from pg_constraint c
+--     join pg_class t on t.oid = c.conrelid
+--     join pg_namespace n on n.oid = t.relnamespace
+--     where n.nspname = 'public'
+--       and t.relname = 'topic_progress'
+--       and c.contype = 'u'
+--       and c.conkey @> array[
+--         (select attnum from pg_attribute where attrelid = t.oid and attname = 'user_id'),
+--         (select attnum from pg_attribute where attrelid = t.oid and attname = 'topic_id')
+--       ]::int2[]
+--   ) then
+--     alter table public.topic_progress
+--       add constraint topic_progress_user_topic_unique unique (user_id, topic_id);
+--   end if;
+-- end$$;
