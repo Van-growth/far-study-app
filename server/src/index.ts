@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import claudeRouter from './routes/claude';
+import quizRouter from './routes/quiz';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -18,6 +19,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
 
 // ── Claude proxy ──────────────────────────────────────────────
 app.use('/api/claude', claudeRouter);
+
+// ── Dynamic quiz endpoints ────────────────────────────────────
+app.use('/api', quizRouter);
 
 // ── 404 ───────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

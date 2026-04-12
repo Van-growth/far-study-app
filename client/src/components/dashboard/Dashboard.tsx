@@ -51,6 +51,24 @@ export default function Dashboard() {
   const dueTopics = topicsWithStats.filter((t) => t.due);
   const weakTopics = topicsWithStats.filter((t) => t.accuracy >= 0 && t.accuracy < 60).sort((a, b) => a.accuracy - b.accuracy);
 
+  // Section-level (F1-F6) aggregates
+  const sectionStats = areas.map((area) => {
+    const mods = area.topics.map((t) => {
+      const c = srsCards[t.id];
+      return {
+        id: t.id,
+        label: t.label,
+        attempts: c?.attempts ?? 0,
+        correct: c?.correct ?? 0,
+      };
+    });
+    const totalAtt = mods.reduce((s, m) => s + m.attempts, 0);
+    const totalCor = mods.reduce((s, m) => s + m.correct, 0);
+    const acc = totalAtt > 0 ? Math.round((totalCor / totalAtt) * 100) : -1;
+    const attempted = mods.filter((m) => m.attempts > 0).length;
+    return { area, mods, acc, attempted, totalAtt };
+  });
+
   const overallAccuracy = started.length > 0 ? Math.round(started.reduce((s, t) => s + t.accuracy, 0) / started.length) : 0;
   const totalAttempts = Object.values(srsCards).reduce((s, c) => s + c.attempts, 0);
   const totalCorrect = Object.values(srsCards).reduce((s, c) => s + c.correct, 0);
@@ -89,7 +107,7 @@ export default function Dashboard() {
           ) : (
             <div className="flex flex-col gap-2">
               {dueTopics.map((t) => (
-                <button key={t.id} onClick={() => { setCurrentTopic(t.id); navigate('/'); }} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 text-left">
+                <button key={t.id} onClick={() => { setCurrentTopic(t.id); navigate(`/quiz?topicId=${t.id}`); }} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 text-left">
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getStatusColor(t.accuracy) }} />
                   <span className="text-sm flex-1">{t.label}</span>
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#ef4444', color: 'white' }}>DUE</span>
@@ -119,10 +137,50 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Section-level (F1-F6) summary */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-[#0f172a]">Becker 섹션별 정답률</h3>
+          <p className="text-xs text-muted">F1~F6 누적 집계</p>
+        </div>
+        <div className="flex flex-col gap-2">
+          {sectionStats.map(({ area, mods, acc, attempted, totalAtt }) => {
+            const color = acc >= 80 ? '#22c55e' : acc >= 60 ? '#f59e0b' : acc >= 0 ? '#ef4444' : '#94a3b8';
+            return (
+              <div key={area.id} className="flex items-center gap-3">
+                <span
+                  className="text-xs font-bold px-2 py-0.5 rounded shrink-0"
+                  style={{ background: area.color + '18', color: area.color, minWidth: 32, textAlign: 'center' }}
+                >
+                  {area.id}
+                </span>
+                <span className="text-xs flex-1 truncate">{area.label.replace(/^F\d · /, '')}</span>
+                <span className="text-[10px] text-muted shrink-0 w-16 text-right">
+                  {attempted}/{mods.length} 모듈
+                </span>
+                <div className="w-28 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: acc >= 0 ? `${acc}%` : '0%', background: color }}
+                  />
+                </div>
+                <span
+                  className="text-xs font-semibold w-12 text-right"
+                  style={{ color: acc >= 0 ? color : '#94a3b8' }}
+                >
+                  {acc >= 0 ? `${acc}%` : '-'}
+                </span>
+                <span className="text-[10px] text-muted shrink-0 w-10 text-right">{totalAtt}회</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* All topics */}
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-[#0f172a]">전체 토픽 진도</h3>
+          <h3 className="font-semibold text-[#0f172a]">전체 모듈 진도</h3>
           <div className="flex items-center gap-3 text-xs text-muted">
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#22c55e] inline-block" /> ≥80%</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#f59e0b] inline-block" /> 60-79%</span>
@@ -133,7 +191,7 @@ export default function Dashboard() {
           {topicsWithStats.map((t) => {
             const color = getStatusColor(t.accuracy);
             return (
-              <button key={t.id} onClick={() => { setCurrentTopic(t.id); navigate('/'); }}
+              <button key={t.id} onClick={() => { setCurrentTopic(t.id); navigate(`/quiz?topicId=${t.id}`); }}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 text-left">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
                 <span className="text-sm flex-1">{t.label}</span>
