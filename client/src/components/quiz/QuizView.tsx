@@ -11,6 +11,7 @@ import {
   CalculationBlock,
   TimelineBlock,
   TrapBlock,
+  TrapCalcRow,
   StatementRow,
   StatementNote,
   IncomeStatementData,
@@ -368,16 +369,59 @@ function TrapsView({ traps }: { traps: TrapBlock[] }) {
   return (
     <div className="p-3 rounded-lg bg-[#fff1f2] border border-[#fecaca]">
       <p className="text-[11px] font-bold mb-1.5 text-[#991b1b]">⚠️ 함정</p>
-      <ul className="flex flex-col gap-1 text-xs leading-snug">
-        {traps.map((t, i) => (
-          <li key={i} className="flex gap-2">
-            <span className="shrink-0 w-5 h-5 rounded-full bg-[#ef4444] text-white text-[10px] font-bold flex items-center justify-center">
-              {t.option}
-            </span>
-            <span className="flex-1 text-[#7f1d1d]">{t.reason}</span>
-          </li>
-        ))}
+      <ul className="flex flex-col gap-2 text-xs leading-snug">
+        {traps.map((t, i) => {
+          const hasCalc = Array.isArray(t.calculation) && t.calculation.length > 0;
+          return (
+            <li key={i} className="flex flex-col gap-1">
+              <div className="flex items-start gap-2">
+                <span className="shrink-0 w-5 h-5 rounded-full bg-[#ef4444] text-white text-[10px] font-bold flex items-center justify-center">
+                  {t.option}
+                </span>
+                <div className="flex-1 text-[#7f1d1d]">
+                  {typeof t.amount === 'number' && (
+                    <div className="font-mono tabular-nums text-[#991b1b] text-[11px] mb-0.5">
+                      → {formatAmount(t.amount, false)}
+                    </div>
+                  )}
+                  <div>{t.reason}</div>
+                </div>
+              </div>
+              {hasCalc && <TrapCalcTable rows={t.calculation as TrapCalcRow[]} />}
+            </li>
+          );
+        })}
       </ul>
+    </div>
+  );
+}
+
+function TrapCalcTable({ rows }: { rows: TrapCalcRow[] }) {
+  return (
+    <div
+      className="ml-7 rounded border border-[#fecaca]"
+      style={{ background: 'rgba(255,255,255,0.6)' }}
+    >
+      {rows.map((row, i) => {
+        const isTotal = row.is_total === true;
+        const isSub = row.is_subtraction === true;
+        return (
+          <div
+            key={i}
+            className="flex items-center justify-between text-[11px] px-2 py-1"
+            style={{
+              borderTop: isTotal ? '0.5px solid #fca5a5' : undefined,
+              fontWeight: isTotal ? 600 : 400,
+              color: isTotal ? '#7f1d1d' : '#991b1b',
+            }}
+          >
+            <span className="flex-1 truncate pr-2">{row.label}</span>
+            <span className="font-mono tabular-nums whitespace-nowrap">
+              {formatAmount(row.amount, isSub)}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -413,6 +413,22 @@ Notes:
 - timeline: { "events":[{"label","detail"}] } — 2-4개
 - markdown: 200자 이내, 테이블/코드블록 금지
 - traps: [{"option":"B","reason":"한 문장"}] — 1-2개
+  · 오답 선택지가 구체적 금액/숫자일 때는 반드시 "amount" 필드에 해당
+    숫자(순수 number, 문자열 금지)를 넣고 "calculation" 배열에 그 오답을
+    유도한 step-by-step 계산을 기록한다. 각 row 스키마:
+      { "label": "...", "amount": 50400, "is_total"?: bool, "is_subtraction"?: bool }
+    마지막 row는 is_total=true로 합계 표시, 차감 step은 is_subtraction=true.
+  · 개념 오답(금액 무관)은 calculation 생략, reason 문장으로 충분.
+  · 예시 — 오답이 $50,400인 경우:
+    {
+      "option": "C", "amount": 50400,
+      "calculation": [
+        { "label": "Dealer price", "amount": 51200 },
+        { "label": "Transaction costs", "amount": -800, "is_subtraction": true },
+        { "label": "오답 금액", "amount": 50400, "is_total": true }
+      ],
+      "reason": "이미 틀린 dealer price에서 거래비용까지 차감한 이중 오류"
+    }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 6) 언어 / 출력 규칙

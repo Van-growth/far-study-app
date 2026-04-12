@@ -30,9 +30,23 @@ export interface CalculationBlock {
 export interface TimelineBlock {
   events: { label: string; detail?: string }[];
 }
+/** Single-line item inside a trap's derivation table. */
+export interface TrapCalcRow {
+  label: string;
+  amount: number;
+  is_total?: boolean;
+  is_subtraction?: boolean;
+}
+
 export interface TrapBlock {
   option: string;
   reason: string;
+  /** The numeric value the wrong option represents (if the wrong answer
+   * is a specific dollar amount or number). */
+  amount?: number | null;
+  /** Step-by-step derivation of how a student would arrive at this wrong
+   * answer. Rendered as a compact computation block in the trap card. */
+  calculation?: TrapCalcRow[];
 }
 // ── Statement-shaped rows (I/S, B/S, SCF, multi) ──────────────
 export type HighlightColor = 'amber' | 'blue' | 'purple' | 'green';
