@@ -1,6 +1,41 @@
 import { supabase } from './supabase'
 import { localDateStr } from './date'
 
+// ── Auth guard ────────────────────────────────────────────────
+// All write helpers below check this first. If userId is missing, we
+// skip the Supabase call entirely — without this, an unauthenticated
+// write hits an RLS policy and returns 400, polluting the console and
+// wasting a round trip.
+//
+// A valid Supabase UUID is 36 chars, but we only enforce "non-empty
+// string that looks uuid-ish" so that test fixtures still work.
+function hasAuth(userId: string | null | undefined): userId is string {
+  if (typeof userId !== 'string') return false
+  const trimmed = userId.trim()
+  if (trimmed.length < 10) return false
+  return true
+}
+
+function logSkip(fn: string) {
+  console.warn(`[db] ${fn} skipped — no authenticated user`)
+}
+
+// Supabase error objects sometimes include extra context (details, hint,
+// code). Dump the whole thing so we can distinguish RLS/NOT NULL/missing
+// column failures at a glance in DevTools.
+function logError(fn: string, error: unknown) {
+  if (error && typeof error === 'object') {
+    console.warn(`[db] ${fn} failed:`, {
+      message: (error as { message?: string }).message,
+      details: (error as { details?: string }).details,
+      hint: (error as { hint?: string }).hint,
+      code: (error as { code?: string }).code,
+    })
+  } else {
+    console.warn(`[db] ${fn} failed:`, error)
+  }
+}
+
 // ── 진도 ──────────────────────────────────────────────────────
 export const getProgress = async (userId: string) => {
   const { data } = await supabase
@@ -37,8 +72,9 @@ export const upsertProgress = async (
     correct: number
   },
 ) => {
-  if (!userId || !p.topicId) return
-  await supabase.from('topic_progress').upsert(
+  if (!hasAuth(userId)) return logSkip('upsertProgress')
+  if (!p.topicId) return
+  const { error } = await supabase.from('topic_progress').upsert(
     {
       user_id: userId,
       topic_id: p.topicId,
@@ -51,6 +87,10 @@ export const upsertProgress = async (
     },
     { onConflict: 'user_id,topic_id' },
   )
+  if (error) {
+    logError('upsertProgress', error)
+    throw error
+  }
 }
 
 // ── 퀴즈 로그 ─────────────────────────────────────────────────
@@ -67,7 +107,8 @@ export const saveQuizLog = async (
     elapsedSeconds?: number | null
   },
 ) => {
-  await supabase.from('quiz_logs').insert({
+  if (!hasAuth(userId)) return logSkip('saveQuizLog')
+  const { error } = await supabase.from('quiz_logs').insert({
     user_id: userId,
     topic_id: log.topicId,
     topic_label: log.topicLabel,
@@ -78,6 +119,10 @@ export const saveQuizLog = async (
     answer: log.answer,
     elapsed_seconds: log.elapsedSeconds ?? null,
   })
+  if (error) {
+    logError('saveQuizLog', error)
+    throw error
+  }
 }
 
 // ── 모듈별 성과 집계 (오답노트 상단용) ─────────────────────────
@@ -317,16 +362,14 @@ export const updateTodaySession = async (
   userId: string,
   correct: boolean,
 ) => {
+  if (!hasAuth(userId)) return logSkip('updateTodaySession')
   const { error } = await supabase.rpc('upsert_study_session', {
     p_user_id: userId,
     p_date: localDateStr(),
     p_correct: correct,
   })
   if (error) {
-    // Previously this was silently swallowed via .catch(() => {}) at the
-    // call site, hiding RPC-missing / RLS / permission issues that kept
-    // today's row from ever being written.
-    console.warn('[db] updateTodaySession failed:', error.message, error)
+    logError('updateTodaySession', error)
     throw error
   }
 }

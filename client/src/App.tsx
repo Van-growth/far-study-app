@@ -307,9 +307,14 @@ export default function App() {
         // Race the Supabase auth call against an explicit 5s timeout so a
         // hanging promise can't dangle forever (it used to silently sit in
         // the microtask queue even after the outer setTimeout fired).
+        // 15s — Supabase token refresh occasionally needs >5s on cold
+        // cache. Previous 5s was too aggressive and pushed the app into
+        // the null-user fallback even for legitimately authenticated
+        // sessions, which then caused every subsequent DB write to hit
+        // RLS with auth.uid() = null and return 400.
         const sessionResult = await withTimeout(
           getSession(),
-          5000,
+          15000,
           { data: { session: null } } as Awaited<ReturnType<typeof getSession>>,
           'getSession',
         );
@@ -322,7 +327,7 @@ export default function App() {
           lastInitStoredUid.current = user.id;
           await withTimeout(
             initStore(user.id),
-            5000,
+            15000,
             undefined,
             'initStore',
           );
@@ -353,7 +358,7 @@ export default function App() {
         }
         if (lastInitStoredUid.current === user.id) return; // dedupe
         lastInitStoredUid.current = user.id;
-        await withTimeout(initStore(user.id), 5000, undefined, 'initStore(auth-change)');
+        await withTimeout(initStore(user.id), 15000, undefined, 'initStore(auth-change)');
       });
       subscription = data.subscription;
     } catch (e) {
