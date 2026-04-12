@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { areas } from '../../data/far-topics';
+import { areas, Topic } from '../../data/far-topics';
 import useStudyStore from '../../store/studyStore';
 import { getAccuracy, getStatusColor, getDaysUntilReview, isDue } from '../../lib/srs';
 
@@ -13,7 +13,7 @@ export default function Sidebar() {
 
   const handleTopicClick = (topicId: string) => {
     setCurrentTopic(topicId);
-    navigate('/');
+    navigate(`/quiz?topicId=${topicId}`);
   };
 
   return (
@@ -23,15 +23,16 @@ export default function Sidebar() {
     >
       <div className="p-3">
         <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-0.5 px-1">
-          FAR Topics
+          Becker F1–F6
         </p>
         <p className="text-[9px] text-muted px-1 mb-3">
-          출처: AICPA Blueprint 2026
+          출처: AICPA Blueprint 2026 · Becker 구조
         </p>
 
         <div className="flex flex-col gap-1">
           {areas.map((area) => {
-            const isExpanded = expandedAreas[area.id] !== false; // default expanded
+            // Default collapsed — user expands each section manually.
+            const isExpanded = expandedAreas[area.id] === true;
 
             return (
               <div key={area.id}>
@@ -64,22 +65,27 @@ export default function Sidebar() {
                 {/* Topics */}
                 {isExpanded && (
                   <div className="ml-4 pl-2 border-l-2 flex flex-col gap-0.5 mb-1" style={{ borderColor: area.color + '40' }}>
-                    {area.topics.map((topic) => {
+                    {area.topics.map((topic: Topic) => {
                       const card = srsCards[topic.id];
                       const accuracy = card ? getAccuracy(card) : -1;
                       const due = card ? isDue(card) : false;
                       const daysUntil = card ? getDaysUntilReview(card) : -1;
                       const statusColor = getStatusColor(accuracy);
                       const isSelected = currentTopicId === topic.id;
+                      const hasContent = topic.quiz.length > 0;
 
                       return (
                         <button
                           key={topic.id}
-                          onClick={() => handleTopicClick(topic.id)}
+                          onClick={() => hasContent && handleTopicClick(topic.id)}
+                          disabled={!hasContent}
+                          title={hasContent ? topic.label : `${topic.label} (문제 준비 중)`}
                           className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors ${
                             isSelected
                               ? 'bg-[#4f6ef7]/10'
-                              : 'hover:bg-gray-50'
+                              : hasContent
+                              ? 'hover:bg-gray-50'
+                              : 'opacity-40 cursor-not-allowed'
                           }`}
                         >
                           {/* Status dot */}

@@ -11,7 +11,6 @@ export default function QuizPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const recordAnswer = useStudyStore((s) => s.recordAnswer);
-  const setCurrentTopic = useStudyStore((s) => s.setCurrentTopic);
 
   const mode = (params.get('mode') ?? 'interleave') as QuizMode;
   const topicId = params.get('topicId');
@@ -96,15 +95,18 @@ export default function QuizPage() {
           </div>
         )}
 
-        {!topicId && (
-          <div className="flex flex-wrap gap-2">
-            {areas.map((area) => area.topics.map((t) => (
-              <button key={t.id} onClick={() => { setCurrentTopic(t.id); navigate(`/quiz?topicId=${t.id}`); }}
-                className="px-2.5 py-1 rounded-lg text-xs font-medium hover:opacity-80"
-                style={{ background: area.color + '15', color: area.color, border: `1px solid ${area.color}30` }}>
-                {t.label}
-              </button>
-            )))}
+        {questions.length === 0 && topicId && (
+          <div className="card p-8 text-center">
+            <p className="text-4xl mb-3">🛠️</p>
+            <p className="font-semibold text-[#0f172a] mb-1">이 모듈은 문제 준비 중입니다</p>
+            <p className="text-sm text-muted mb-4">사이드바에서 다른 모듈을 선택하거나 전체 퀴즈를 풀어보세요.</p>
+            <button
+              onClick={() => navigate('/quiz?mode=interleave')}
+              className="px-4 py-2 rounded-xl text-sm font-medium text-white"
+              style={{ background: '#4f6ef7' }}
+            >
+              전체 퀴즈 (Interleaving) →
+            </button>
           </div>
         )}
 

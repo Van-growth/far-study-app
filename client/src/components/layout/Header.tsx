@@ -3,10 +3,9 @@ import useStudyStore from '../../store/studyStore';
 import useClaudeStore from '../../store/claudeStore';
 
 const desktopTabs = [
-  { label: '개념트리', path: '/' },
-  { label: '플래시카드', path: '/flashcard' },
-  { label: '현황', path: '/dashboard' },
+  { label: '퀴즈', path: '/quiz?mode=interleave' },
   { label: '📕 오답노트', path: '/wrong' },
+  { label: '현황', path: '/dashboard' },
   { label: '🧬 학습 과학', path: '/science' },
 ];
 
@@ -24,8 +23,11 @@ export default function Header({ email, onSignOut }: HeaderProps) {
   const isPanelOpen = useClaudeStore((s) => s.isOpen);
   const togglePanel = useClaudeStore((s) => s.togglePanel);
 
-  const isActive = (path: string) =>
-    path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+  const isActive = (path: string) => {
+    const base = path.split('?')[0];
+    if (base === '/') return location.pathname === '/';
+    return location.pathname.startsWith(base);
+  };
 
   return (
     <header

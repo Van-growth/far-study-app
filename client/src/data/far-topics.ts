@@ -27,7 +27,9 @@ export interface Area {
   topics: Topic[];
 }
 
-export const areas: Area[] = [
+// Legacy topic data — kept internally and remapped to Becker F1–F6 modules below.
+// Do NOT consume directly; use the `areas` / `allTopics` exports near the bottom.
+const _LEGACY_AREAS: Area[] = [
   // ─────────────────────────────────────────────
   // AREA 1: Conceptual Framework
   // ─────────────────────────────────────────────
@@ -1265,15 +1267,170 @@ export const areas: Area[] = [
   }
 ];
 
-// Flat list of all topics for easy access
-export const allTopics: (Topic & { areaId: string; areaColor: string; areaLabel: string })[] = areas.flatMap(area =>
-  area.topics.map(topic => ({
-    ...topic,
-    areaId: area.id,
-    areaColor: area.color,
-    areaLabel: area.label,
-  }))
+// ─────────────────────────────────────────────
+// Becker F1–F6 remapping
+// Legacy topics above are repacked into Becker module IDs (F[section]-M[n]).
+// Topic.id is now a moduleId; Topic.label is the Becker module name.
+// Modules without legacy content become empty placeholders (quiz: []).
+// ─────────────────────────────────────────────
+
+const LEGACY_TOPICS: Record<string, Topic> = Object.fromEntries(
+  _LEGACY_AREAS.flatMap(a => a.topics).map(t => [t.id, t] as const),
 );
+
+function emptyModule(id: string, label: string): Topic {
+  return {
+    id,
+    label,
+    feynmanPrompt: '',
+    rules: [],
+    formulas: [],
+    tips: [],
+    triggers: [],
+    quiz: [],
+  };
+}
+
+function pickModule(legacyId: string, moduleId: string, moduleLabel: string): Topic {
+  const t = LEGACY_TOPICS[legacyId];
+  if (!t) return emptyModule(moduleId, moduleLabel);
+  return { ...t, id: moduleId, label: moduleLabel };
+}
+
+function mergeModules(legacyIds: string[], moduleId: string, moduleLabel: string): Topic {
+  const sources = legacyIds.map(id => LEGACY_TOPICS[id]).filter((x): x is Topic => !!x);
+  if (sources.length === 0) return emptyModule(moduleId, moduleLabel);
+  return {
+    id: moduleId,
+    label: moduleLabel,
+    feynmanPrompt: sources[0].feynmanPrompt,
+    rules: sources.flatMap(s => s.rules),
+    formulas: sources.flatMap(s => s.formulas),
+    tips: sources.flatMap(s => s.tips),
+    triggers: sources.flatMap(s => s.triggers),
+    quiz: sources.flatMap(s => s.quiz),
+  };
+}
+
+export const areas: Area[] = [
+  {
+    id: 'F1',
+    label: 'F1 · Financial Reporting',
+    color: '#4f6ef7',
+    blueprintArea: 'I',
+    blueprintAreaName: 'Financial Reporting',
+    blueprintRange: '30-40%',
+    topics: [
+      mergeModules(
+        ['qualitative-chars', 'fs-elements'],
+        'F1-M1',
+        'Balance Sheet, Income Statement & Comprehensive Income',
+      ),
+      mergeModules(['eps', 'segment-reporting'], 'F1-M2', 'EPS & Public Company Reporting'),
+      pickModule('stockholders-equity', 'F1-M3', "Stockholders' Equity Part 1"),
+      emptyModule('F1-M4', "Stockholders' Equity Part 2"),
+      emptyModule('F1-M5', 'Subsequent Events'),
+      emptyModule('F1-M6', 'Fair Value Measurements'),
+      emptyModule('F1-M7', 'Special Purpose Frameworks'),
+      emptyModule('F1-M8', 'Ratio & Variance Analysis'),
+    ],
+  },
+  {
+    id: 'F2',
+    label: 'F2 · Financial Reporting and Disclosures',
+    color: '#6366f1',
+    blueprintArea: 'III',
+    blueprintAreaName: 'Select Transactions',
+    blueprintRange: '25-35%',
+    topics: [
+      pickModule('revenue', 'F2-M1', 'Revenue Recognition Introduction'),
+      pickModule('oci-changes', 'F2-M2', 'Accounting Changes & Error Corrections'),
+      emptyModule('F2-M3', 'Adjusting Journal Entries'),
+      emptyModule('F2-M4', 'Notes to Financial Statements'),
+      emptyModule('F2-M5', 'Subsequent Events'),
+      emptyModule('F2-M6', 'Fair Value Measurements'),
+      emptyModule('F2-M7', 'Special Purpose Frameworks'),
+      emptyModule('F2-M8', 'Ratio & Variance Analysis'),
+    ],
+  },
+  {
+    id: 'F3',
+    label: 'F3 · Assets and Related Topics',
+    color: '#0ea5e9',
+    blueprintArea: 'II',
+    blueprintAreaName: 'Select Balance Sheet Accounts',
+    blueprintRange: '30-40%',
+    topics: [
+      pickModule('cash-equivalents', 'F3-M1', 'Cash & Cash Equivalents'),
+      pickModule('ar-bad-debts', 'F3-M2', 'Trade Receivables'),
+      pickModule('inventory', 'F3-M3', 'Inventory'),
+      emptyModule('F3-M4', 'PP&E: Cost Basis'),
+      pickModule('ppe-depreciation', 'F3-M5', 'PP&E: Depreciation, Disposal & Impairment'),
+      pickModule('intangibles-impairment', 'F3-M6', 'Intangibles With Finite Lives'),
+    ],
+  },
+  {
+    id: 'F4',
+    label: 'F4 · Liabilities',
+    color: '#f59e0b',
+    blueprintArea: 'II',
+    blueprintAreaName: 'Select Balance Sheet Accounts',
+    blueprintRange: '30-40%',
+    topics: [
+      emptyModule('F4-M1', 'Payables & Accrued Liabilities'),
+      pickModule('contingencies', 'F4-M2', 'Contingencies & Commitments'),
+      emptyModule('F4-M3', 'Long-Term Liabilities'),
+      pickModule('bonds-payable', 'F4-M4', 'Bonds Part 1'),
+      emptyModule('F4-M5', 'Bonds Part 2'),
+      emptyModule('F4-M6', 'Troubled Debt Restructuring & Extinguishment'),
+      pickModule('leases', 'F4-M7', 'Lessee Accounting'),
+    ],
+  },
+  {
+    id: 'F5',
+    label: 'F5 · Investments, SCF & Income Taxes',
+    color: '#10b981',
+    blueprintArea: 'III',
+    blueprintAreaName: 'Select Transactions',
+    blueprintRange: '25-35%',
+    topics: [
+      pickModule('investments', 'F5-M1', 'Financial Instruments'),
+      emptyModule('F5-M2', 'Equity Method'),
+      pickModule('business-combinations', 'F5-M3', 'Consolidated Financial Statements'),
+      emptyModule('F5-M4', 'Partnerships'),
+      pickModule('scf', 'F5-M5', 'Statement of Cash Flows'),
+      pickModule('deferred-taxes', 'F5-M6', 'Income Taxes Part 1'),
+      emptyModule('F5-M7', 'Income Taxes Part 2'),
+    ],
+  },
+  {
+    id: 'F6',
+    label: 'F6 · NFP & Governmental Accounting',
+    color: '#8b5cf6',
+    blueprintArea: 'I',
+    blueprintAreaName: 'Financial Reporting',
+    blueprintRange: '30-40%',
+    topics: [
+      pickModule('nfp', 'F6-M1', 'Not-for-Profit Financial Reporting Part 1'),
+      emptyModule('F6-M2', 'Not-for-Profit Financial Reporting Part 2'),
+      emptyModule('F6-M3', 'Not-for-Profit Revenue Recognition'),
+      emptyModule('F6-M4', 'Not-for-Profit Transfers & Other Accounting Issues'),
+      pickModule('gov-accounting', 'F6-M5', 'Governmental Accounting Overview'),
+      emptyModule('F6-M6', 'Governmental Fund Structure & Fund Accounting'),
+    ],
+  },
+];
+
+// Flat list of all modules with section metadata (keeps legacy export shape).
+export const allTopics: (Topic & { areaId: string; areaColor: string; areaLabel: string })[] =
+  areas.flatMap(area =>
+    area.topics.map(topic => ({
+      ...topic,
+      areaId: area.id,
+      areaColor: area.color,
+      areaLabel: area.label,
+    })),
+  );
 
 export function getTopicById(id: string) {
   return allTopics.find(t => t.id === id);

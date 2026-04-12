@@ -1,11 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { getSession, onAuthChange, signOut } from './lib/auth';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import ClaudePanel from './components/claude/ClaudePanel';
-import ConceptPage from './pages/ConceptPage';
-import FlashCardPage from './pages/FlashCardPage';
 import QuizPage from './pages/QuizPage';
 import DashboardPage from './pages/DashboardPage';
 import WrongPage from './pages/WrongPage';
@@ -20,9 +18,8 @@ const PANEL_DEFAULT = 340;
 
 // ── Bottom Tab Bar (mobile only) ──────────────────────────────
 const MOBILE_TABS = [
-  { label: '개념', icon: '📋', path: '/' },
-  { label: '카드', icon: '🔁', path: '/flashcard' },
   { label: '퀴즈', icon: '✏️', path: '/quiz?mode=interleave' },
+  { label: '오답', icon: '📕', path: '/wrong' },
   { label: '현황', icon: '📊', path: '/dashboard' },
   { label: '더보기', icon: '···', path: '/more' },
 ];
@@ -38,8 +35,7 @@ function BottomTabBar() {
     return location.pathname.startsWith(path);
   };
 
-  const moreActive =
-    location.pathname === '/wrong' || location.pathname === '/science';
+  const moreActive = location.pathname === '/science';
 
   return (
     <>
@@ -51,7 +47,6 @@ function BottomTabBar() {
             onClick={(e) => e.stopPropagation()}
           >
             {[
-              { label: '📕 오답노트', path: '/wrong' },
               { label: '🧬 학습 과학', path: '/science' },
             ].map((item) => (
               <button
@@ -174,12 +169,13 @@ function AppLayout({ email }: { email: string }) {
           style={{ background: '#f0f4f8' }}
         >
           <Routes>
-            <Route path="/" element={<ConceptPage />} />
-            <Route path="/flashcard" element={<FlashCardPage />} />
+            <Route path="/" element={<Navigate to="/quiz?mode=interleave" replace />} />
+            <Route path="/flashcard" element={<Navigate to="/quiz?mode=interleave" replace />} />
             <Route path="/quiz" element={<QuizPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/wrong" element={<WrongPage />} />
             <Route path="/science" element={<SciencePage />} />
+            <Route path="*" element={<Navigate to="/quiz?mode=interleave" replace />} />
           </Routes>
         </main>
 
