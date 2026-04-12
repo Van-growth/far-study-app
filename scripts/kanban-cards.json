@@ -1,0 +1,22 @@
+{
+  "date": "2026-04-12",
+  "cards": [
+    { "title": "rolling buffer (capacity=2) + 온디맨드 문제 생성", "label": "feat", "status": "Done" },
+    { "title": "모듈별 세션 스냅샷 + 뒤로가기 버튼", "label": "feat", "status": "Done" },
+    { "title": "해설 6타입 구조화 렌더러", "label": "feat", "status": "Done" },
+    { "title": "재무제표 실제 레이아웃 렌더러", "label": "feat", "status": "Done" },
+    { "title": "문제별 타이머 + pause/resume", "label": "feat", "status": "In Progress" },
+    { "title": "오답노트 파트별 평균 풀이시간", "label": "feat", "status": "In Progress" },
+    { "title": "문제 분석 탭 신설", "label": "feat", "status": "In Progress" },
+    { "title": "개념 추출 저장", "label": "feat", "status": "In Progress" },
+    { "title": "풀이 히스토리 영구 저장", "label": "feat", "status": "In Progress" },
+    { "title": "AI 코치 탭 신설 + 4분기 진입 분기", "label": "feat", "status": "In Progress" },
+    { "title": "AI 코치 → 퀴즈 탭 직접 연결", "label": "feat", "status": "In Progress" },
+    { "title": "오늘 마무리 버튼 + session_logs", "label": "feat", "status": "In Progress" },
+    { "title": "학습과학 탭 Hero + 탭 인터랙티브 UI", "label": "feat", "status": "In Progress" },
+    { "title": "학습 분석 API 무한 호출 버그", "label": "fix", "status": "In Progress" },
+    { "title": "마크다운 remark-gfm 적용", "label": "fix", "status": "Done" },
+    { "title": "SSE → JSON 단일 응답 전환", "label": "refactor", "status": "Done" },
+    { "title": "Haiku → Sonnet 통일, max_tokens 3000", "label": "refactor", "status": "Done" }
+  ]
+}
