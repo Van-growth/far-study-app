@@ -25,9 +25,12 @@ router.post('/chat', async (req: Request, res: Response) => {
 
   // SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
+  // Disable reverse-proxy buffering so chunks reach the client immediately.
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
+  res.write(': ping\n\n');
 
   try {
     const stream = anthropic.messages.stream({

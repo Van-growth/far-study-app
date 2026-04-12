@@ -91,9 +91,16 @@ router.post('/analyze', async (req: Request, res: Response) => {
       : history;
 
   res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
+  // Disable reverse-proxy buffering (Nginx / Render / Vercel) so SSE chunks
+  // reach the browser as soon as Node writes them instead of being collected
+  // into a single payload.
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
+  // Prime the stream with a comment-line event so any intermediary stops
+  // waiting for a large buffer before emitting.
+  res.write(': ping\n\n');
 
   try {
     const stream = anthropic.messages.stream({

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -173,17 +174,24 @@ export default function CoachPage() {
       writeCache(uid, ctx.stats, ctx.bootstrap, ctx.scenario, seedMessages);
 
       setIsStreaming(true);
+      // Explicit accumulator + flushSync forces React to commit each
+      // chunk immediately so the message grows character-by-character
+      // instead of being batched into a single render at stream end.
+      let accumulated = '';
       void streamCoachResponse(
         ctx.stats,
         [{ role: 'user', content: seed }],
         (chunk) => {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === coachId ? { ...m, content: m.content + chunk } : m)),
-          );
+          accumulated += chunk;
+          const snapshot = accumulated;
+          flushSync(() => {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === coachId ? { ...m, content: snapshot } : m)),
+            );
+          });
         },
         () => {
           setIsStreaming(false);
-          // Final commit: store the fully-streamed message list.
           setMessages((prev) => {
             writeCache(uid, ctx.stats, ctx.bootstrap, ctx.scenario, prev);
             return prev;
@@ -282,13 +290,18 @@ export default function CoachPage() {
       // use cached context; stream still proceeds
     }
 
+    let turnAccumulated = '';
     void streamCoachResponse(
       freshStats,
       history,
       (chunk) => {
-        setMessages((prev) =>
-          prev.map((m) => (m.id === asstId ? { ...m, content: m.content + chunk } : m)),
-        );
+        turnAccumulated += chunk;
+        const snapshot = turnAccumulated;
+        flushSync(() => {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === asstId ? { ...m, content: snapshot } : m)),
+          );
+        });
       },
       () => {
         setIsStreaming(false);
