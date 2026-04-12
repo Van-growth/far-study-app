@@ -61,6 +61,14 @@ const safeIsoFromMs = (ms: unknown): string => {
   return new Date().toISOString()
 }
 
+// topicId "F1-M3" → "F1". Returns null for malformed input so the caller
+// can decide to skip the write instead of sending a bogus area_id.
+function areaIdFromTopic(topicId: string): string | null {
+  if (!topicId) return null
+  const head = topicId.split('-')[0]
+  return head && /^F\d$/.test(head) ? head : null
+}
+
 export const upsertProgress = async (
   userId: string,
   p: {
@@ -74,10 +82,16 @@ export const upsertProgress = async (
 ) => {
   if (!hasAuth(userId)) return logSkip('upsertProgress')
   if (!p.topicId) return
+  const areaId = areaIdFromTopic(p.topicId)
+  if (!areaId) {
+    console.warn('[db] upsertProgress skipped — invalid topicId format:', p.topicId)
+    return
+  }
   const { error } = await supabase.from('topic_progress').upsert(
     {
       user_id: userId,
       topic_id: p.topicId,
+      area_id: areaId,
       interval: safeInt(p.interval, 0),
       next_review: safeIsoFromMs(p.nextReview),
       streak: safeInt(p.streak, 0),
