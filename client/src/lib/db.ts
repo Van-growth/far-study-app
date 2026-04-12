@@ -23,6 +23,51 @@ function logSkip(fn: string) {
 // Supabase error objects sometimes include extra context (details, hint,
 // code). Dump the whole thing so we can distinguish RLS/NOT NULL/missing
 // column failures at a glance in DevTools.
+// ── Feature detection: quiz_logs.elapsed_seconds ─────────────
+// The column was added in migration 002. If a deployment hasn't run
+// that migration yet, every write/read that references the column
+// fails with PGRST204 ("column not in schema cache"). Instead of
+// blocking the whole app, we probe once per session and cache the
+// result. All timing-related code then gracefully degrades when the
+// column is missing — the student can still quiz; only the timing
+// metrics are skipped until the migration is applied.
+let elapsedSecondsSupported: boolean | null = null
+let elapsedSecondsProbe: Promise<boolean> | null = null
+
+export async function hasElapsedSecondsColumn(): Promise<boolean> {
+  if (elapsedSecondsSupported !== null) return elapsedSecondsSupported
+  if (elapsedSecondsProbe) return elapsedSecondsProbe
+  elapsedSecondsProbe = (async () => {
+    const { error } = await supabase
+      .from('quiz_logs')
+      .select('elapsed_seconds')
+      .limit(1)
+    if (error) {
+      const msg = (error.message ?? '').toLowerCase()
+      const code = (error as { code?: string }).code ?? ''
+      const isMissing =
+        code === 'PGRST204' ||
+        code === '42703' ||
+        msg.includes('elapsed_seconds') ||
+        msg.includes('schema cache')
+      if (isMissing) {
+        console.warn(
+          '[db] quiz_logs.elapsed_seconds missing — timing metrics disabled. ' +
+            'Run supabase/migrations/002_quiz_logs_elapsed_seconds.sql to enable.',
+        )
+        elapsedSecondsSupported = false
+      } else {
+        // Unknown error — assume column exists and let the caller surface it.
+        elapsedSecondsSupported = true
+      }
+    } else {
+      elapsedSecondsSupported = true
+    }
+    return elapsedSecondsSupported
+  })()
+  return elapsedSecondsProbe
+}
+
 function logError(fn: string, error: unknown) {
   if (error && typeof error === 'object') {
     console.warn(`[db] ${fn} failed:`, {
@@ -122,7 +167,8 @@ export const saveQuizLog = async (
   },
 ) => {
   if (!hasAuth(userId)) return logSkip('saveQuizLog')
-  const { error } = await supabase.from('quiz_logs').insert({
+  const hasCol = await hasElapsedSecondsColumn()
+  const payload: Record<string, unknown> = {
     user_id: userId,
     topic_id: log.topicId,
     topic_label: log.topicLabel,
@@ -131,8 +177,11 @@ export const saveQuizLog = async (
     correct: log.correct,
     selected: log.selected,
     answer: log.answer,
-    elapsed_seconds: log.elapsedSeconds ?? null,
-  })
+  }
+  if (hasCol) {
+    payload.elapsed_seconds = log.elapsedSeconds ?? null
+  }
+  const { error } = await supabase.from('quiz_logs').insert(payload)
   if (error) {
     logError('saveQuizLog', error)
     throw error
@@ -150,14 +199,15 @@ export interface ModulePerf {
 export const getModulePerformance = async (
   userId: string,
 ): Promise<Record<string, ModulePerf>> => {
+  const hasCol = await hasElapsedSecondsColumn()
   const { data, error } = await supabase
     .from('quiz_logs')
-    .select('topic_id, correct, elapsed_seconds')
+    .select(hasCol ? 'topic_id, correct, elapsed_seconds' : 'topic_id, correct')
     .eq('user_id', userId)
   if (error || !data) return {}
 
   const acc: Record<string, { topicId: string; total: number; correct: number; secSum: number; secCount: number }> = {}
-  for (const row of data as { topic_id: string; correct: boolean; elapsed_seconds: number | null }[]) {
+  for (const row of data as unknown as { topic_id: string; correct: boolean; elapsed_seconds: number | null }[]) {
     const id = row.topic_id
     if (!id) continue
     if (!acc[id]) acc[id] = { topicId: id, total: 0, correct: 0, secSum: 0, secCount: 0 }
@@ -222,17 +272,21 @@ export interface CoachBootstrap {
 }
 
 export const getCoachBootstrap = async (userId: string): Promise<CoachBootstrap> => {
+  const hasCol = await hasElapsedSecondsColumn()
+  const selectList = hasCol
+    ? 'topic_id, correct, elapsed_seconds, created_at'
+    : 'topic_id, correct, created_at'
   const [logsRes, countRes] = await Promise.all([
     supabase
       .from('quiz_logs')
-      .select('topic_id, correct, elapsed_seconds, created_at')
+      .select(selectList)
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(500),
     supabase.from('quiz_logs').select('*', { count: 'exact', head: true }).eq('user_id', userId),
   ])
 
-  const logs = (logsRes.data ?? []) as {
+  const logs = (logsRes.data ?? []) as unknown as {
     topic_id: string
     correct: boolean
     elapsed_seconds: number | null
