@@ -167,10 +167,16 @@ export const saveQuizLog = async (
   },
 ) => {
   if (!hasAuth(userId)) return logSkip('saveQuizLog')
+  const areaId = areaIdFromTopic(log.topicId)
+  if (!areaId) {
+    console.warn('[db] saveQuizLog skipped — invalid topicId format:', log.topicId)
+    return
+  }
   const hasCol = await hasElapsedSecondsColumn()
   const payload: Record<string, unknown> = {
     user_id: userId,
     topic_id: log.topicId,
+    area_id: areaId,
     topic_label: log.topicLabel,
     question: log.question,
     options: log.options,
