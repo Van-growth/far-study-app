@@ -860,7 +860,61 @@ export default function QuizView({
   }
 
   if (!current) {
+    // No current item AND we still have a non-empty questions array
+    // means our currentIdx walked past the last fetched item — usually a
+    // race after handleNext fires onRequestNext but the parent hasn't
+    // appended the new item yet. Show a tiny placeholder so the user
+    // sees *something* instead of a blank canvas.
+    if (questions.length === 0 && isLoadingNext) {
+      return (
+        <div className="card p-8 text-center">
+          <div className="w-5 h-5 border-2 border-[#4f6ef7] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-muted">다음 문제 생성 중...</p>
+        </div>
+      );
+    }
     return null;
+  }
+
+  // Defensive: server-side schema is well-defined, but if Claude ever
+  // returns an empty stem or malformed options the UI silently went
+  // blank. Detect and surface it so the student isn't stuck on a
+  // visually empty card with no way to advance.
+  const hasValidStem = typeof current.q === 'string' && current.q.trim().length > 0;
+  const hasValidOpts =
+    Array.isArray(current.opts) &&
+    current.opts.length === 4 &&
+    current.opts.every((o) => typeof o === 'string');
+  if (!hasValidStem || !hasValidOpts) {
+    console.warn('[QuizView] received malformed question, skipping render', {
+      currentIdx,
+      current,
+      questionsLength: questions.length,
+    });
+    return (
+      <div className="card p-6 flex flex-col gap-3 text-center">
+        <p className="text-3xl">⚠️</p>
+        <p className="font-semibold text-[#0f172a]">문제 데이터가 비어 있습니다</p>
+        <p className="text-xs text-muted">
+          AI가 빈 응답을 반환했어요. 다음 문제로 넘어가거나 새로고침해주세요.
+        </p>
+        <button
+          onClick={() => {
+            stopTimer();
+            const nextIdx = currentIdx + 1;
+            if (onRequestNext && nextIdx >= questions.length) onRequestNext();
+            setCurrentIdx(nextIdx);
+            setSelected(null);
+            setCardData(null);
+            setCardError(null);
+          }}
+          className="mt-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+          style={{ background: '#4f6ef7' }}
+        >
+          다음 문제 →
+        </button>
+      </div>
+    );
   }
 
   const optLabels = ['A', 'B', 'C', 'D'];

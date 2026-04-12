@@ -192,6 +192,20 @@ export default function QuizPage() {
         wrongIdsRef.current,
         focusConcept,
       );
+      // Sanity check the AI response BEFORE we hand it to the buffer.
+      // An empty stem or wrong-shaped opts would render a blank card
+      // downstream, so reject here and let the buffer surface the error.
+      if (
+        !gen ||
+        typeof gen.q !== 'string' ||
+        gen.q.trim().length === 0 ||
+        !Array.isArray(gen.opts) ||
+        gen.opts.length !== 4 ||
+        gen.opts.some((o) => typeof o !== 'string')
+      ) {
+        console.warn('[QuizPage] generateQuestion returned empty/invalid payload', gen);
+        throw new Error('AI 응답이 비어 있습니다. 잠시 후 다시 시도해주세요.');
+      }
       const area = areas.find((a) => a.topics.some((t) => t.id === target.id));
       return {
         moduleId: target.id,
@@ -453,17 +467,28 @@ export default function QuizPage() {
     ? allTopics.find((t) => t.id === topicId)?.label ?? '모듈 퀴즈'
     : modeLabel[mode] ?? '퀴즈';
 
-  const quizItems: QuizItemWithContext[] = items.map((it) => ({
-    topicId: it.moduleId,
-    topicLabel: it.moduleLabel,
-    areaColor: it.areaColor,
-    q: it.q,
-    opts: it.opts,
-    ans: it.ans,
-    exp: it.exp,
-    confidence: it.confidence,
-    warning: it.warning ?? null,
-  }));
+  // Filter out any undefined / null entries that may have slipped into
+  // the items array (race conditions, stale closures, malformed pushes)
+  // before they reach QuizView and cause a silent blank render.
+  const quizItems: QuizItemWithContext[] = items
+    .filter((it): it is Question => !!it && typeof it.q === 'string' && Array.isArray(it.opts))
+    .map((it) => ({
+      topicId: it.moduleId,
+      topicLabel: it.moduleLabel,
+      areaColor: it.areaColor,
+      q: it.q,
+      opts: it.opts,
+      ans: it.ans,
+      exp: it.exp,
+      confidence: it.confidence,
+      warning: it.warning ?? null,
+    }));
+  if (items.length !== quizItems.length) {
+    console.warn(
+      '[QuizPage] dropped malformed items',
+      { rawCount: items.length, validCount: quizItems.length },
+    );
+  }
 
   // Skip handler — fire-and-forget log, no SRS / accuracy side effects.
   // Writes directly to Supabase with correct=false + selected=-1 so the
