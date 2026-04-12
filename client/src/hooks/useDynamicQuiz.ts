@@ -13,6 +13,41 @@ export interface WeakModuleRef {
   accuracy: number;
 }
 
+// ── Structured concept card ───────────────────────────────────
+export interface CompareBlock {
+  left: { label: string; rows: string[] };
+  right: { label: string; rows: string[] };
+}
+export interface GapBlock {
+  label: string;
+  rows: string[];
+  note?: string;
+}
+export interface CalculationBlock {
+  steps: string[];
+  result: string;
+}
+export interface TimelineBlock {
+  events: { label: string; detail?: string }[];
+}
+export interface TrapBlock {
+  option: string;
+  reason: string;
+}
+export type ConceptCardType = 'comparison' | 'timeline' | 'formula' | 'plain';
+export interface ConceptCard {
+  type: ConceptCardType;
+  headline: string;
+  sections: {
+    compare?: CompareBlock;
+    gap?: GapBlock;
+    calculation?: CalculationBlock;
+    timeline?: TimelineBlock;
+    markdown?: string;
+    traps?: TrapBlock[];
+  };
+}
+
 // ── localStorage cache ────────────────────────────────────────
 // Bucketed by moduleId → list of generated questions. Grows across sessions
 // so students see variety and don't burn API on repeats.
@@ -85,58 +120,38 @@ export async function generateQuestion(
   return data;
 }
 
-// Concept card streaming. Caller provides an onChunk to accumulate text.
-export async function streamConceptCard(
-  input: {
-    moduleId: string;
-    moduleName: string;
-    question: string;
-    options: string[];
-    correctIdx: number;
-    selectedIdx: number;
-  },
-  onChunk: (text: string) => void,
-  onDone: () => void,
-  onError: (msg: string) => void,
-): Promise<void> {
-  try {
-    const res = await fetch(`${API_URL}/api/concept-card`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    });
-    if (!res.ok || !res.body) {
-      onError(`HTTP ${res.status}`);
-      onDone();
-      return;
-    }
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith('data: ')) continue;
-        const data = trimmed.slice(6);
-        if (data === '[DONE]') { onDone(); return; }
-        try {
-          const payload = JSON.parse(data) as { text?: string; error?: string };
-          if (payload.error) { onError(payload.error); continue; }
-          if (payload.text) onChunk(payload.text);
-        } catch {
-          // skip malformed chunk
-        }
-      }
-    }
-    onDone();
-  } catch (e) {
-    onError(e instanceof Error ? e.message : 'network error');
-    onDone();
+// Structured concept card fetch (non-streaming).
+// Server returns a ConceptCard shaped by problem type; client renders
+// per-type sections. Falls back to a "plain" card with an error note if the
+// server response is malformed.
+export async function fetchConceptCard(input: {
+  moduleId: string;
+  moduleName: string;
+  question: string;
+  options: string[];
+  correctIdx: number;
+  selectedIdx: number;
+}): Promise<ConceptCard> {
+  const res = await fetch(`${API_URL}/api/concept-card`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(err.error ?? `HTTP ${res.status}`);
   }
+  const data = (await res.json()) as Partial<ConceptCard> | null;
+  if (!data || typeof data !== 'object') {
+    throw new Error('invalid concept card response');
+  }
+  const type: ConceptCardType =
+    data.type === 'comparison' || data.type === 'timeline' || data.type === 'formula'
+      ? data.type
+      : 'plain';
+  return {
+    type,
+    headline: typeof data.headline === 'string' ? data.headline : '',
+    sections: (data.sections ?? {}) as ConceptCard['sections'],
+  };
 }

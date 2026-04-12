@@ -3,7 +3,145 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import useClaudeStore from '../../store/claudeStore';
 import { useClaudeChat, QuizContext } from '../../hooks/useClaudeChat';
-import { streamConceptCard } from '../../hooks/useDynamicQuiz';
+import {
+  fetchConceptCard,
+  ConceptCard,
+  CompareBlock,
+  GapBlock,
+  CalculationBlock,
+  TimelineBlock,
+  TrapBlock,
+} from '../../hooks/useDynamicQuiz';
+
+// ── Concept card renderers ────────────────────────────────────
+function typeLabel(t: ConceptCard['type']): string {
+  switch (t) {
+    case 'comparison': return '비교';
+    case 'timeline': return '시점/순서';
+    case 'formula': return '공식/계산';
+    default: return '요약';
+  }
+}
+
+function ConceptCardView({ card }: { card: ConceptCard }) {
+  const s = card.sections;
+  return (
+    <div className="flex flex-col gap-3 text-[#451a03]">
+      {card.headline && (
+        <p className="text-sm font-semibold leading-snug">🎯 {card.headline}</p>
+      )}
+      {card.type === 'comparison' && s.compare && <CompareView compare={s.compare} />}
+      {card.type === 'timeline' && s.timeline && <TimelineView timeline={s.timeline} />}
+      {card.type === 'formula' && s.calculation && <CalculationView calc={s.calculation} />}
+      {card.type === 'plain' && s.markdown && <PlainView markdown={s.markdown} />}
+      {s.gap && <GapView gap={s.gap} />}
+      {s.traps && s.traps.length > 0 && <TrapsView traps={s.traps} />}
+    </div>
+  );
+}
+
+function CompareView({ compare }: { compare: CompareBlock }) {
+  const side = (label: string, rows: string[], bg: string) => (
+    <div className="flex-1 min-w-0 p-3 rounded-lg" style={{ background: bg, border: '1px solid #fcd34d' }}>
+      <p className="text-[11px] font-bold mb-1.5 text-[#78350f]">{label}</p>
+      <ul className="flex flex-col gap-1 text-xs leading-snug">
+        {rows.map((r, i) => (
+          <li key={i} className="flex gap-1.5">
+            <span className="text-[#a16207]">·</span>
+            <span className="flex-1">{r}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+  return (
+    <div className="flex flex-col sm:flex-row gap-2">
+      {side(compare.left.label, compare.left.rows, '#fef9c3')}
+      {side(compare.right.label, compare.right.rows, '#fde68a')}
+    </div>
+  );
+}
+
+function GapView({ gap }: { gap: GapBlock }) {
+  return (
+    <div className="p-3 rounded-lg bg-white/70 border border-[#fcd34d]">
+      <p className="text-[11px] font-bold mb-1 text-[#78350f]">⚖️ {gap.label}</p>
+      <ul className="flex flex-col gap-1 text-xs leading-snug text-[#451a03]">
+        {gap.rows.map((r, i) => <li key={i}>· {r}</li>)}
+      </ul>
+      {gap.note && <p className="text-[11px] italic text-[#78350f] mt-1.5">{gap.note}</p>}
+    </div>
+  );
+}
+
+function CalculationView({ calc }: { calc: CalculationBlock }) {
+  return (
+    <div className="p-3 rounded-lg bg-white/70 border border-[#fcd34d]">
+      <p className="text-[11px] font-bold mb-1.5 text-[#78350f]">📐 풀이 흐름</p>
+      <ol className="flex flex-col gap-1 text-xs leading-snug text-[#451a03]">
+        {calc.steps.map((s, i) => (
+          <li key={i} className="flex gap-2">
+            <span className="shrink-0 w-4 h-4 rounded-full bg-[#f59e0b] text-white text-[10px] font-bold flex items-center justify-center">
+              {i + 1}
+            </span>
+            <span className="flex-1">{s}</span>
+          </li>
+        ))}
+      </ol>
+      <div className="mt-2 pt-2 border-t border-[#fcd34d]">
+        <p className="text-xs font-bold text-[#78350f]">= {calc.result}</p>
+      </div>
+    </div>
+  );
+}
+
+function TimelineView({ timeline }: { timeline: TimelineBlock }) {
+  return (
+    <div className="p-3 rounded-lg bg-white/70 border border-[#fcd34d]">
+      <p className="text-[11px] font-bold mb-2 text-[#78350f]">⏱ 시점별 처리</p>
+      <ol className="relative border-l-2 border-[#f59e0b] ml-1 pl-3 flex flex-col gap-2">
+        {timeline.events.map((ev, i) => (
+          <li key={i} className="relative">
+            <span
+              className="absolute -left-[17px] top-1 w-2 h-2 rounded-full bg-[#f59e0b]"
+              aria-hidden
+            />
+            <p className="text-xs font-semibold text-[#78350f] leading-tight">{ev.label}</p>
+            {ev.detail && <p className="text-xs text-[#451a03] leading-snug mt-0.5">{ev.detail}</p>}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function PlainView({ markdown }: { markdown: string }) {
+  return (
+    <div className="p-3 rounded-lg bg-white/70 border border-[#fcd34d] text-xs leading-snug text-[#451a03]">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
+        {markdown}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
+function TrapsView({ traps }: { traps: TrapBlock[] }) {
+  return (
+    <div className="p-3 rounded-lg bg-[#fff1f2] border border-[#fecaca]">
+      <p className="text-[11px] font-bold mb-1.5 text-[#991b1b]">⚠️ 함정</p>
+      <ul className="flex flex-col gap-1 text-xs leading-snug">
+        {traps.map((t, i) => (
+          <li key={i} className="flex gap-2">
+            <span className="shrink-0 w-5 h-5 rounded-full bg-[#ef4444] text-white text-[10px] font-bold flex items-center justify-center">
+              {t.option}
+            </span>
+            <span className="flex-1 text-[#7f1d1d]">{t.reason}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 // Shared markdown component map for exp/concept-card blocks.
 // Tight spacing, small table that scrolls horizontally if it overflows.
@@ -106,8 +244,8 @@ export default function QuizView({
   const [results, setResults] = useState<QuizResult[]>([]);
   const [finished, setFinished] = useState(false);
 
-  // Concept card streaming state (keyed by question index so it resets per Q)
-  const [cardText, setCardText] = useState('');
+  // Structured concept card state (reset per question)
+  const [cardData, setCardData] = useState<ConceptCard | null>(null);
   const [cardLoading, setCardLoading] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
 
@@ -134,23 +272,21 @@ export default function QuizView({
       onAnswer(result);
       setResults((prev) => [...prev, result]);
 
-      // Stream concept card inline
-      setCardText('');
+      // Fetch structured concept card
+      setCardData(null);
       setCardError(null);
       setCardLoading(true);
-      void streamConceptCard(
-        {
-          moduleId: current.topicId,
-          moduleName: current.topicLabel,
-          question: current.q,
-          options: [...current.opts],
-          correctIdx: current.ans,
-          selectedIdx: i,
-        },
-        (chunk) => setCardText((prev) => prev + chunk),
-        () => setCardLoading(false),
-        (err) => setCardError(err),
-      );
+      fetchConceptCard({
+        moduleId: current.topicId,
+        moduleName: current.topicLabel,
+        question: current.q,
+        options: [...current.opts],
+        correctIdx: current.ans,
+        selectedIdx: i,
+      })
+        .then((card) => setCardData(card))
+        .catch((e) => setCardError(e instanceof Error ? e.message : 'concept card 실패'))
+        .finally(() => setCardLoading(false));
     },
     [selected, current, onAnswer],
   );
@@ -172,7 +308,7 @@ export default function QuizView({
     }
     setCurrentIdx(nextIdx);
     setSelected(null);
-    setCardText('');
+    setCardData(null);
     setCardError(null);
   }, [current, selected, currentIdx, questions.length, onRequestNext, sessionMax, results, onComplete]);
 
@@ -189,11 +325,11 @@ export default function QuizView({
     sendQuizExplanation(ctx);
   }, [current, selected, openPanel, sendQuizExplanation]);
 
-  // Scroll concept card into view when it starts streaming
+  // Scroll concept card into view as soon as it's loading or rendered
   const cardRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (cardLoading || cardText) cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [cardLoading, cardText]);
+    if (cardLoading || cardData) cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [cardLoading, cardData]);
 
   if (finished) {
     const correct = results.filter((r) => r.correct).length;
@@ -322,31 +458,25 @@ export default function QuizView({
               </div>
             </div>
 
-            {/* Streaming concept card */}
+            {/* Structured concept card */}
             <div
               ref={cardRef}
               className="p-4 rounded-xl"
               style={{ background: '#fffbeb', border: '1.5px solid #fde68a' }}
             >
-              <p className="text-xs font-semibold text-[#92400e] mb-1.5">🧠 개념 카드 (AI 실시간 생성)</p>
+              <p className="text-xs font-semibold text-[#92400e] mb-2">
+                🧠 개념 카드 {cardData && `· ${typeLabel(cardData.type)}`}
+              </p>
               {cardError ? (
                 <p className="text-sm text-[#991b1b]">⚠️ {cardError}</p>
-              ) : (
-                <div className="text-sm text-[#451a03] leading-relaxed">
-                  {cardText ? (
-                    <>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
-                        {cardText}
-                      </ReactMarkdown>
-                      {cardLoading && (
-                        <span className="inline-block w-1.5 h-4 bg-[#92400e] ml-0.5 animate-pulse align-text-bottom rounded-sm" />
-                      )}
-                    </>
-                  ) : cardLoading ? (
-                    <span className="text-muted">생성 중...</span>
-                  ) : null}
+              ) : cardLoading && !cardData ? (
+                <div className="flex items-center gap-2 text-sm text-muted">
+                  <div className="w-3 h-3 border-2 border-[#92400e] border-t-transparent rounded-full animate-spin" />
+                  <span>구조 분석 중...</span>
                 </div>
-              )}
+              ) : cardData ? (
+                <ConceptCardView card={cardData} />
+              ) : null}
             </div>
 
             <button

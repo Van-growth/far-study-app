@@ -216,8 +216,9 @@ Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
 });
 
 // ─────────────────────────────────────────────
-// POST /api/concept-card — SSE streaming concept card after an answer
+// POST /api/concept-card — structured JSON concept card after an answer
 // body: { moduleId, moduleName, question, options, correctIdx, selectedIdx }
+// returns: ConceptCard (see client/src/hooks/useDynamicQuiz.ts)
 // ─────────────────────────────────────────────
 router.post('/concept-card', async (req: Request, res: Response) => {
   const { moduleId, moduleName, question, options, correctIdx, selectedIdx } =
@@ -236,6 +237,56 @@ router.post('/concept-card', async (req: Request, res: Response) => {
 
   const ALPHA = ['A', 'B', 'C', 'D'];
   const isCorrect = correctIdx === selectedIdx;
+
+  const system = `당신은 USCPA FAR 시험 튜터입니다. 방금 푼 문제에 대한 구조화된 복습 카드를 생성합니다.
+
+반환 규칙:
+1) type 선택 — 문제 유형에 가장 잘 맞는 하나만:
+   - "comparison": 두 개념/금액/처리 방식을 대조해야 이해되는 문제
+     (예: 이연법인세 자산 vs 부채, operating vs finance lease, cost vs equity method,
+      direct vs indirect SCF, 회계정책변경 vs 추정변경, FIFO vs LIFO, gross vs net method)
+   - "timeline": 시점/순서/기간에 따라 처리가 달라지는 문제
+     (예: subsequent events type I/II, 감가상각 시작-중단-처분, 취득-보유-매각,
+      revenue recognition over time)
+   - "formula": 공식 한두 개로 결론이 나는 계산 중심 문제
+     (예: bond interest, PV/FV, EPS, straight-line/DDB depreciation, impairment test)
+   - "plain": 위 셋에 해당하지 않는 경우만 선택
+
+2) sections 채우기 — type 별 요구:
+   - comparison: compare(필수) + traps(1-2개 필수) + gap(옵션)
+   - timeline: timeline.events(필수) + traps(옵션)
+   - formula: calculation(필수) + traps(옵션)
+   - plain: markdown(필수, 200자 이내) + traps(옵션)
+
+3) headline: 이 문제의 핵심을 한국어 1문장으로. 모든 type에 필수.
+
+4) 분량:
+   - compare.left/right.rows: 각 3-5개 bullet, 각 한 줄 한국어
+   - gap.rows: 1-3줄, note는 1문장
+   - calculation.steps: 2-5 스텝, 각 한 줄에 "왜 그 스텝인지"까지 포함
+   - calculation.result: 최종 답 한 줄(단위/통화 포함)
+   - timeline.events: 2-4개, label=시점, detail=옵션 한 문장
+   - markdown: 200자 이내 한국어, 테이블/코드블록 금지
+   - traps[]: 1-2개. option은 선택지 레이블(A/B/C/D) 또는 숫자, reason은 한 문장
+
+5) 언어: 모든 값 한국어. option 이름만 영문 대문자(A-D) 유지.
+
+6) STRICT JSON ONLY. 마크다운 펜스 금지, 부연 설명 금지, 인사말 금지. { 로 시작하고 } 로 끝낼 것.
+
+스키마 (optional 필드는 type에 맞지 않으면 아예 생략):
+{
+  "type": "comparison" | "timeline" | "formula" | "plain",
+  "headline": "...",
+  "sections": {
+    "compare": { "left": {"label": "...", "rows": ["..."]}, "right": {"label": "...", "rows": ["..."]} },
+    "gap": { "label": "...", "rows": ["..."], "note": "..." },
+    "calculation": { "steps": ["..."], "result": "..." },
+    "timeline": { "events": [{"label": "...", "detail": "..."}] },
+    "markdown": "...",
+    "traps": [{"option": "B", "reason": "..."}]
+  }
+}`;
+
   const userMsg = `모듈: ${moduleId} · ${moduleName}
 
 문제: ${question}
@@ -245,55 +296,55 @@ ${options.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
 
 정답: ${ALPHA[correctIdx]} · 내가 선택한 답: ${ALPHA[selectedIdx]} ${isCorrect ? '✅' : '❌'}
 
-위 문제에 대한 초간결 개념 카드를 생성해줘.`;
-
-  const system = `당신은 USCPA FAR 시험 튜터입니다. 문제 직후 복습용 "개념 카드"를 한국어로 작성합니다.
-
-반드시 아래 4개 섹션을 순서대로 출력하고, 각 섹션은 1-2문장으로 압축:
-
-🎯 핵심 — 이 문제의 핵심 개념 한 문장
-📐 풀이 구조 — 어떻게 접근/계산해야 하는지 구조
-⚠️ 함정 — 가장 유혹적인 오답이 왜 틀렸는지
-🔁 트리거 — "~가 나오면 → ~한다" 조건반사 규칙
-
-엄격한 제약:
-- 전체 150단어 이내 (한국어 기준)
-- 마크다운 테이블(|) 절대 금지
-- 코드 블록 금지
-- 불필요한 설명/인사말 금지, 바로 🎯 부터 시작
-- 각 섹션은 이모지 + 공백 + 내용 형식, 줄바꿈으로 구분`;
-
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
+위 문제에 대한 구조화 개념 카드를 스키마대로 반환해줘.`;
 
   try {
-    const stream = anthropic.messages.stream({
+    const msg = await anthropic.messages.create({
       model: CONCEPT_CARD_MODEL,
-      max_tokens: 800,
+      max_tokens: 1200,
       system,
       messages: [{ role: 'user', content: userMsg }],
     });
+    const block = msg.content.find((b) => b.type === 'text');
+    if (!block || block.type !== 'text') {
+      return res.status(502).json({ error: 'no text in response' });
+    }
+    const text = block.text.trim();
+    const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+    const body = fenced ? fenced[1] : text;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(body);
+    } catch (e) {
+      // Fallback: wrap raw text as plain card so the client still has something to show.
+      console.warn('[concept-card] JSON parse failed, falling back to plain:', e instanceof Error ? e.message : e);
+      return res.json({
+        type: 'plain',
+        headline: '개념 카드',
+        sections: { markdown: text.slice(0, 400) },
+      });
+    }
 
-    stream.on('text', (text: string) => {
-      res.write(`data: ${JSON.stringify({ text })}\n\n`);
+    if (!parsed || typeof parsed !== 'object') {
+      return res.status(502).json({ error: 'invalid card shape' });
+    }
+    const card = parsed as {
+      type?: string;
+      headline?: string;
+      sections?: unknown;
+    };
+    const type =
+      card.type === 'comparison' || card.type === 'timeline' || card.type === 'formula'
+        ? card.type
+        : 'plain';
+    return res.json({
+      type,
+      headline: typeof card.headline === 'string' ? card.headline : '',
+      sections: card.sections && typeof card.sections === 'object' ? card.sections : {},
     });
-
-    stream.on('error', (err: Error) => {
-      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
-      res.write('data: [DONE]\n\n');
-      res.end();
-    });
-
-    await stream.finalMessage();
-    res.write('data: [DONE]\n\n');
-    res.end();
   } catch (err) {
     const m = err instanceof Error ? err.message : 'unknown';
-    res.write(`data: ${JSON.stringify({ error: m })}\n\n`);
-    res.write('data: [DONE]\n\n');
-    res.end();
+    return res.status(500).json({ error: m });
   }
 });
 
