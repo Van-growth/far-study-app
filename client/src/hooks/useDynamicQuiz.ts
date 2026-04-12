@@ -179,11 +179,18 @@ export async function generateQuestion(
   moduleName: string,
   weakModules: WeakModuleRef[],
   recentWrongTopics: string[],
+  focusConcept?: string | null,
 ): Promise<GeneratedQuestion> {
   const res = await fetch(`${API_URL}/api/generate-question`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ moduleId, moduleName, weakModules, recentWrongTopics }),
+    body: JSON.stringify({
+      moduleId,
+      moduleName,
+      weakModules,
+      recentWrongTopics,
+      ...(focusConcept ? { focusConcept } : {}),
+    }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
@@ -192,6 +199,79 @@ export async function generateQuestion(
   const data = (await res.json()) as GeneratedQuestion;
   cacheQuestion(moduleId, data);
   return data;
+}
+
+// ── Learned concept data types ────────────────────────────────
+export interface LearnedConcepts {
+  concepts: Record<string, number>;
+  asc_references: Record<string, number>;
+  topic_tags: Record<string, number>;
+  trap_patterns: string[];
+  updated_at: string;
+}
+
+export interface ExtractedConcepts {
+  concepts: string[];
+  asc_references: string[];
+  topic_tags: string[];
+  trap_pattern: string | null;
+}
+
+export async function extractConcepts(input: {
+  questionText: string;
+  userAnswer?: string | null;
+  correctAnswer?: string | null;
+  topicId?: string | null;
+}): Promise<{ extracted: ExtractedConcepts; learned: LearnedConcepts }> {
+  const res = await fetch(`${API_URL}/api/extract-concepts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(err.error ?? `HTTP ${res.status}`);
+  }
+  return (await res.json()) as { extracted: ExtractedConcepts; learned: LearnedConcepts };
+}
+
+export async function fetchLearnedConcepts(): Promise<LearnedConcepts> {
+  const res = await fetch(`${API_URL}/api/learned-concepts`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()) as LearnedConcepts;
+}
+
+// Raw-text concept card — for the "문제 분석" paste flow.
+// Reuses /api/concept-card but sends the rawText branch.
+export async function fetchConceptCardFromText(input: {
+  rawText: string;
+  userAnswer?: string | null;
+  correctAnswer?: string | null;
+  topicId?: string | null;
+}): Promise<ConceptCard> {
+  const res = await fetch(`${API_URL}/api/concept-card`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(err.error ?? `HTTP ${res.status}`);
+  }
+  const data = (await res.json()) as Partial<ConceptCard> | null;
+  if (!data || typeof data !== 'object') throw new Error('invalid concept card response');
+  const ALLOWED: ConceptCardType[] = [
+    'comparison', 'timeline', 'formula', 'plain',
+    'income_statement', 'balance_sheet', 'scf', 'multi_statement',
+  ];
+  const type: ConceptCardType = data.type && ALLOWED.includes(data.type) ? data.type : 'plain';
+  return {
+    type,
+    headline: typeof data.headline === 'string' ? data.headline : '',
+    sections: (data.sections ?? {}) as ConceptCard['sections'],
+    statement: (data as ConceptCard).statement,
+    notes: (data as ConceptCard).notes,
+  };
 }
 
 // Structured concept card fetch (non-streaming).

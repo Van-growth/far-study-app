@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import { read as readLearned, topConcepts, topTrapPatterns } from '../lib/learnedConcepts';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -75,11 +76,12 @@ ${item.opts.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
 // returns: { q, opts: [a,b,c,d], ans: 0-3, exp }
 // ─────────────────────────────────────────────
 router.post('/generate-question', async (req: Request, res: Response) => {
-  const { moduleId, moduleName, weakModules, recentWrongTopics } = req.body as {
+  const { moduleId, moduleName, weakModules, recentWrongTopics, focusConcept } = req.body as {
     moduleId: string;
     moduleName: string;
     weakModules?: { id: string; label: string; accuracy: number }[];
     recentWrongTopics?: string[];
+    focusConcept?: string;
   };
 
   if (!moduleId || !moduleName) {
@@ -96,10 +98,41 @@ router.post('/generate-question', async (req: Request, res: Response) => {
     ? `\nRecent wrong topics: ${recentWrongTopics.slice(0, 8).join(', ')}.`
     : '';
 
+  // Inject accumulated learned-concept metadata from analyze sessions.
+  // We never have the original question text here — only keyword counts
+  // and trap descriptions — so no licensing risk.
+  let learnedLine = '';
+  try {
+    const learned = await readLearned();
+    const tops = topConcepts(learned, 5);
+    const traps = topTrapPatterns(learned, 5);
+    if (tops.length || traps.length) {
+      const parts: string[] = [];
+      if (tops.length) {
+        parts.push(
+          `자주 등장한 개념: ${tops.map((t) => `${t.key}(${t.count}회)`).join(', ')}`,
+        );
+      }
+      if (traps.length) {
+        parts.push(`자주 틀린 패턴: ${traps.join(' / ')}`);
+      }
+      parts.push(
+        '→ 위 개념/함정을 자연스럽게 포함하는 문제로 출제. 단, 개념 이름을 문제 stem에 직접 언급하는 건 금지 (HARD RULES 준수).',
+      );
+      learnedLine = '\n\nLearned student context:\n' + parts.join('\n');
+    }
+  } catch {
+    // If learned data unavailable, fall through silently.
+  }
+
+  const focusLine = focusConcept
+    ? `\n\nFocus concept: "${focusConcept}" — 이 개념을 반드시 테스트하는 문제로 생성. (stem에 직접 이름 금지는 그대로)`
+    : '';
+
   const prompt = `You are an expert USCPA FAR exam item writer. Generate EXACTLY ONE high-quality multiple-choice question matching the actual exam's writing style.
 
 Internal tag (for YOUR selection only — NEVER mention in the question):
-- Target module: ${moduleId} — ${moduleName}${weakLine}${wrongLine}
+- Target module: ${moduleId} — ${moduleName}${weakLine}${wrongLine}${learnedLine}${focusLine}
 
 HARD RULES — style of the stem (question body):
 
@@ -222,22 +255,39 @@ Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
 // returns: ConceptCard (see client/src/hooks/useDynamicQuiz.ts)
 // ─────────────────────────────────────────────
 router.post('/concept-card', async (req: Request, res: Response) => {
-  const { moduleId, moduleName, question, options, correctIdx, selectedIdx } =
-    req.body as {
-      moduleId: string;
-      moduleName: string;
-      question: string;
-      options: string[];
-      correctIdx: number;
-      selectedIdx: number;
-    };
+  const {
+    moduleId,
+    moduleName,
+    question,
+    options,
+    correctIdx,
+    selectedIdx,
+    rawText,
+    userAnswer,
+    correctAnswer,
+    topicId,
+  } = req.body as {
+    moduleId?: string;
+    moduleName?: string;
+    question?: string;
+    options?: string[];
+    correctIdx?: number;
+    selectedIdx?: number;
+    rawText?: string;
+    userAnswer?: string | null;
+    correctAnswer?: string | null;
+    topicId?: string | null;
+  };
 
-  if (!question || !Array.isArray(options) || options.length !== 4) {
-    return res.status(400).json({ error: 'question and 4 options required' });
+  const isRawMode = typeof rawText === 'string' && rawText.trim().length > 0;
+  if (!isRawMode) {
+    if (!question || !Array.isArray(options) || options.length !== 4) {
+      return res.status(400).json({ error: 'question and 4 options (or rawText) required' });
+    }
   }
 
   const ALPHA = ['A', 'B', 'C', 'D'];
-  const isCorrect = correctIdx === selectedIdx;
+  const isCorrect = !isRawMode && correctIdx === selectedIdx;
 
   const system = `당신은 USCPA FAR 시험 튜터입니다. 방금 푼 문제에 대한 구조화된 복습 카드를 JSON으로 반환합니다.
 
@@ -388,14 +438,21 @@ Notes:
 
 불필요한 필드는 아예 생략(빈 객체/빈 배열보다 삭제가 낫다).`;
 
-  const userMsg = `모듈: ${moduleId} · ${moduleName}
+  const userMsg = isRawMode
+    ? `사용자가 분석 요청한 문제 원문${topicId ? ` (현재 모듈: ${topicId})` : ''}:
+
+${rawText!.trim()}
+${userAnswer != null ? `\n사용자 답: ${userAnswer}` : ''}${correctAnswer != null ? `\n정답: ${correctAnswer}` : ''}
+
+위 문제를 분석해서 구조화 개념 카드를 스키마대로 반환해줘. 선택지가 텍스트에 포함되어 있으면 그대로 해석하고, 없으면 핵심 개념 중심으로 작성.`
+    : `모듈: ${moduleId} · ${moduleName}
 
 문제: ${question}
 
 선택지:
-${options.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
+${options!.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
 
-정답: ${ALPHA[correctIdx]} · 내가 선택한 답: ${ALPHA[selectedIdx]} ${isCorrect ? '✅' : '❌'}
+정답: ${ALPHA[correctIdx!]} · 내가 선택한 답: ${ALPHA[selectedIdx!]} ${isCorrect ? '✅' : '❌'}
 
 위 문제에 대한 구조화 개념 카드를 스키마대로 반환해줘.`;
 

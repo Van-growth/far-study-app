@@ -25,6 +25,9 @@ npm-debug.log*
 # Prisma (legacy, no longer used)
 server/prisma/
 
+# Runtime learned-concept store (server/data/*.json)
+server/data/
+
 # Misc
 *.tsbuildinfo
 

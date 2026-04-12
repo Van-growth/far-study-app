@@ -142,7 +142,9 @@ export default function QuizPage() {
 
   const mode = (params.get('mode') ?? 'interleave') as QuizMode;
   const topicId = params.get('topicId');
-  const sessionKey = topicId ?? `__mode:${mode}__`;
+  const focusConcept = params.get('focusConcept');
+  const sessionKey =
+    (topicId ?? `__mode:${mode}__`) + (focusConcept ? `#${focusConcept}` : '');
 
   const [items, setItems] = useState<Question[]>([]);
   const [loading, setLoading] = useState(false);
@@ -172,7 +174,13 @@ export default function QuizPage() {
       const target = pickNextModule(mode, topicId, allTopics as Topic[], store.srsCards);
       if (!target) throw new Error('생성할 모듈을 찾지 못했습니다.');
       const weak = computeWeakList(store.srsCards);
-      const gen = await generateQuestion(target.id, target.label, weak, wrongIdsRef.current);
+      const gen = await generateQuestion(
+        target.id,
+        target.label,
+        weak,
+        wrongIdsRef.current,
+        focusConcept,
+      );
       const area = areas.find((a) => a.topics.some((t) => t.id === target.id));
       return {
         moduleId: target.id,
@@ -184,7 +192,7 @@ export default function QuizPage() {
         exp: gen.exp,
       };
     };
-  }, [mode, topicId]);
+  }, [mode, topicId, focusConcept]);
 
   // ── Module switch effect ────────────────────────────────────
   // 1. Save previous session snapshot
@@ -255,7 +263,7 @@ export default function QuizPage() {
     // Intentionally only rerun on route change. items/questionCount/wrongIds
     // are read as "current state at transition time" — not a dep loop driver.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, topicId]);
+  }, [mode, topicId, focusConcept]);
 
   // ── Answer handler ─────────────────────────────────────────
   const handleAnswer = (result: QuizResult) => {

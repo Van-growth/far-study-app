@@ -8,6 +8,7 @@ import QuizPage from './pages/QuizPage';
 import DashboardPage from './pages/DashboardPage';
 import WrongPage from './pages/WrongPage';
 import SciencePage from './pages/SciencePage';
+import AnalyzePage from './pages/AnalyzePage';
 import AuthPage from './pages/AuthPage';
 import useClaudeStore from './store/claudeStore';
 import useStudyStore from './store/studyStore';
@@ -35,7 +36,7 @@ function BottomTabBar() {
     return location.pathname.startsWith(path);
   };
 
-  const moreActive = location.pathname === '/science';
+  const moreActive = location.pathname === '/science' || location.pathname === '/analyze';
 
   return (
     <>
@@ -47,6 +48,7 @@ function BottomTabBar() {
             onClick={(e) => e.stopPropagation()}
           >
             {[
+              { label: '📝 문제 분석', path: '/analyze' },
               { label: '🧬 학습 과학', path: '/science' },
             ].map((item) => (
               <button
@@ -174,6 +176,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/quiz" element={<QuizPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/wrong" element={<WrongPage />} />
+            <Route path="/analyze" element={<AnalyzePage />} />
             <Route path="/science" element={<SciencePage />} />
             <Route path="*" element={<Navigate to="/quiz?mode=interleave" replace />} />
           </Routes>
