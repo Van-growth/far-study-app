@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import useStudyStore from '../store/studyStore';
-import { allTopics, areas, getTopicById } from '../data/far-topics';
+import { allTopics, areas } from '../data/far-topics';
 import FlashCard from '../components/flashcard/FlashCard';
 
 export default function FlashCardPage() {
@@ -8,17 +8,16 @@ export default function FlashCardPage() {
   const setCurrentTopic = useStudyStore((s) => s.setCurrentTopic);
   const srsCards = useStudyStore((s) => s.srsCards);
 
-  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(
-    currentTopicId ?? null
-  );
-  const [cardIdx, setCardIdx] = useState(0);
+  const [cardIdx, setCardIdx] = useState(() => {
+    if (!currentTopicId) return 0;
+    const idx = allTopics.findIndex((t) => t.id === currentTopicId);
+    return idx >= 0 ? idx : 0;
+  });
 
-  // For "all topics" mode, cycle through topics
-  const topicsToStudy = selectedTopicId
-    ? allTopics.filter((t) => t.id === selectedTopicId)
-    : allTopics;
-
+  // Always cycle through all topics so "next" advances to a different card.
+  const topicsToStudy = allTopics;
   const currentTopic = topicsToStudy[cardIdx % topicsToStudy.length];
+  const selectedTopicId = currentTopic?.id ?? null;
   const area = areas.find((a) => a.topics.some((t) => t.id === currentTopic?.id));
 
   const handleNext = () => {
@@ -35,8 +34,13 @@ export default function FlashCardPage() {
             <select
               value={selectedTopicId ?? ''}
               onChange={(e) => {
-                setSelectedTopicId(e.target.value || null);
-                setCardIdx(0);
+                const id = e.target.value;
+                if (!id) {
+                  setCardIdx(0);
+                  return;
+                }
+                const idx = allTopics.findIndex((t) => t.id === id);
+                if (idx >= 0) setCardIdx(idx);
               }}
               className="w-full text-sm rounded-lg px-3 py-2 border border-border bg-white text-[#0f172a]"
               style={{ outline: 'none' }}

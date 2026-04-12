@@ -1,4 +1,5 @@
 import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Message } from '../../store/claudeStore';
 import useClaudeStore from '../../store/claudeStore';
 
@@ -112,7 +113,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           </div>
         ) : (
           // Streaming done: render full markdown
-          <Markdown components={MD_COMPONENTS as never}>
+          <Markdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
             {message.content}
           </Markdown>
         )}

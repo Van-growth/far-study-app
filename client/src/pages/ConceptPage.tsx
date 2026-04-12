@@ -7,11 +7,20 @@ import FeynmanMode from '../components/feynman/FeynmanMode';
 type ViewMode = 'concept' | 'feynman';
 
 export default function ConceptPage() {
-  const currentTopicId = useStudyStore((s) => s.currentTopicId);
   const setCurrentTopic = useStudyStore((s) => s.setCurrentTopic);
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('concept');
 
-  const topic = currentTopicId ? getTopicById(currentTopicId) : null;
+  const handleSelect = (id: string) => {
+    setSelectedTopicId(id);
+    setCurrentTopic(id);
+  };
+
+  const handleBack = () => {
+    setSelectedTopicId(null);
+  };
+
+  const topic = selectedTopicId ? getTopicById(selectedTopicId) : null;
   const area = topic ? areas.find((a) => a.topics.some((t) => t.id === topic.id)) : null;
 
   if (!topic || !area) {
@@ -43,13 +52,13 @@ export default function ConceptPage() {
           <h2 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">
             전체 토픽
           </h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {allTopics.map((t) => {
               const topicArea = areas.find((a) => a.topics.some((tp) => tp.id === t.id));
               return (
                 <button
                   key={t.id}
-                  onClick={() => setCurrentTopic(t.id)}
+                  onClick={() => handleSelect(t.id)}
                   className="card p-4 text-left hover:shadow-md transition-shadow"
                   style={{ borderLeft: `3px solid ${topicArea?.color}` }}
                 >
@@ -67,6 +76,14 @@ export default function ConceptPage() {
   return (
     <div className="p-6">
       <div className="max-w-2xl mx-auto flex flex-col gap-4">
+        {/* Back to list */}
+        <button
+          onClick={handleBack}
+          className="self-start text-xs font-medium text-muted hover:text-[#0f172a] px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          ← 목록으로
+        </button>
+
         {/* Mode Toggle */}
         <div className="flex items-center gap-2">
           <button

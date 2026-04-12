@@ -10,23 +10,27 @@ type QuizMode = 'interleave' | 'due' | 'weak' | 'single';
 export default function QuizPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const srsCards = useStudyStore((s) => s.srsCards);
   const recordAnswer = useStudyStore((s) => s.recordAnswer);
   const setCurrentTopic = useStudyStore((s) => s.setCurrentTopic);
 
   const mode = (params.get('mode') ?? 'interleave') as QuizMode;
   const topicId = params.get('topicId');
 
+  // Snapshot questions once per (mode, topicId). We intentionally exclude
+  // `srsCards` from deps: recordAnswer() during the quiz mutates it and would
+  // otherwise re-shuffle the list under QuizView, making currentIdx land on a
+  // freshly-answered question and appearing as "same question repeats".
   const questions: QuizItemWithContext[] = useMemo(() => {
+    const snap = useStudyStore.getState().srsCards;
     let filtered = allTopics;
 
     if (topicId) {
       filtered = allTopics.filter((t) => t.id === topicId);
     } else if (mode === 'due') {
-      filtered = allTopics.filter((t) => { const c = srsCards[t.id]; return c ? isDue(c) : false; });
+      filtered = allTopics.filter((t) => { const c = snap[t.id]; return c ? isDue(c) : false; });
     } else if (mode === 'weak') {
       filtered = allTopics.filter((t) => {
-        const c = srsCards[t.id];
+        const c = snap[t.id];
         if (!c) return false;
         const acc = getAccuracy(c);
         return acc >= 0 && acc < 60;
@@ -41,7 +45,8 @@ export default function QuizPage() {
     });
 
     return interleaveQuestions(raw);
-  }, [mode, topicId, srsCards]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, topicId]);
 
   const handleAnswer = (result: QuizResult) => {
     const log: QuizLogPayload = {
