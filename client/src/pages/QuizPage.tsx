@@ -5,6 +5,7 @@ import useStudyStore, { QuizLogPayload } from '../store/studyStore';
 import { getAccuracy, SRCard } from '../lib/srs';
 import QuizView, { QuizItemWithContext, QuizResult } from '../components/quiz/QuizView';
 import { generateQuestion, GeneratedQuestion, WeakModuleRef } from '../hooks/useDynamicQuiz';
+import MobileSectionDrawer from '../components/layout/MobileSectionDrawer';
 
 const SESSION_MAX = 20;
 
@@ -64,6 +65,7 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recentWrong, setRecentWrong] = useState<string[]>([]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const completedRef = useRef(false);
 
   const weakModules = useMemo<WeakModuleRef[]>(() => {
@@ -161,6 +163,16 @@ export default function QuizPage() {
   return (
     <div className="p-4 sm:p-6">
       <div className="max-w-2xl mx-auto flex flex-col gap-4">
+        {/* Mobile section drawer trigger — hidden on desktop */}
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="md:hidden w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+          style={{ border: '1.5px solid #e2e8f0', background: 'white', color: '#0f172a' }}
+        >
+          <span>📚 Becker F1–F6</span>
+          <span className="text-xs text-muted">탭하여 모듈 선택 ▾</span>
+        </button>
+
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-bold text-[#0f172a] text-lg">{label}</h1>
@@ -229,6 +241,8 @@ export default function QuizPage() {
           </div>
         )}
       </div>
+
+      <MobileSectionDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </div>
   );
 }

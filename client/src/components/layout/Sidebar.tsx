@@ -3,7 +3,12 @@ import { areas, Topic } from '../../data/far-topics';
 import useStudyStore from '../../store/studyStore';
 import { getAccuracy, getStatusColor, getDaysUntilReview, isDue } from '../../lib/srs';
 
-export default function Sidebar() {
+interface SidebarProps {
+  /** Called after navigating to a topic — lets the mobile drawer close itself. */
+  onItemClick?: () => void;
+}
+
+export default function Sidebar({ onItemClick }: SidebarProps = {}) {
   const navigate = useNavigate();
   const expandedAreas = useStudyStore((s) => s.expandedAreas);
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
@@ -14,12 +19,15 @@ export default function Sidebar() {
   const handleTopicClick = (topicId: string) => {
     setCurrentTopic(topicId);
     navigate(`/quiz?topicId=${topicId}`);
+    onItemClick?.();
   };
 
+  // When rendered inside the mobile drawer (onItemClick provided), fill parent.
+  const isDrawer = !!onItemClick;
   return (
     <aside
-      className="overflow-y-auto bg-white border-r border-border shrink-0"
-      style={{ width: 250, minHeight: 0 }}
+      className={`bg-white shrink-0 ${isDrawer ? '' : 'overflow-y-auto border-r border-border'}`}
+      style={isDrawer ? { width: '100%', minHeight: 0 } : { width: 250, minHeight: 0 }}
     >
       <div className="p-3">
         <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-0.5 px-1">
@@ -72,20 +80,14 @@ export default function Sidebar() {
                       const daysUntil = card ? getDaysUntilReview(card) : -1;
                       const statusColor = getStatusColor(accuracy);
                       const isSelected = currentTopicId === topic.id;
-                      const hasContent = topic.quiz.length > 0;
 
                       return (
                         <button
                           key={topic.id}
-                          onClick={() => hasContent && handleTopicClick(topic.id)}
-                          disabled={!hasContent}
-                          title={hasContent ? topic.label : `${topic.label} (문제 준비 중)`}
-                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors ${
-                            isSelected
-                              ? 'bg-[#4f6ef7]/10'
-                              : hasContent
-                              ? 'hover:bg-gray-50'
-                              : 'opacity-40 cursor-not-allowed'
+                          onClick={() => handleTopicClick(topic.id)}
+                          title={topic.label}
+                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors cursor-pointer ${
+                            isSelected ? 'bg-[#4f6ef7]/10' : 'hover:bg-gray-50'
                           }`}
                         >
                           {/* Status dot */}
