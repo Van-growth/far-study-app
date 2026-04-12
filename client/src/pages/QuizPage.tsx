@@ -4,7 +4,12 @@ import { allTopics, areas, Topic } from '../data/far-topics';
 import useStudyStore, { QuizLogPayload } from '../store/studyStore';
 import { getAccuracy, SRCard } from '../lib/srs';
 import QuizView, { QuizItemWithContext, QuizResult } from '../components/quiz/QuizView';
-import { generateQuestion, WeakModuleRef } from '../hooks/useDynamicQuiz';
+import {
+  generateQuestion,
+  WeakModuleRef,
+  saveHistory,
+  ConceptCard,
+} from '../hooks/useDynamicQuiz';
 import MobileSectionDrawer from '../components/layout/MobileSectionDrawer';
 
 const SESSION_MAX = 20;
@@ -278,6 +283,8 @@ export default function QuizPage() {
       elapsedSeconds: result.elapsedSeconds,
     };
     recordAnswer(result.topicId, result.correct, log);
+    // History save happens in handleConceptCardReady once the card resolves
+    // — this keeps the full payload together (answer + structured card).
 
     let nextWrong = wrongIds;
     if (!result.correct) {
@@ -292,6 +299,25 @@ export default function QuizPage() {
       questionCount,
       wrongIds: nextWrong,
     };
+  };
+
+  // Fired after the structured concept card has been generated for the
+  // most recent answer. Fire-and-forget persistent history save — failures
+  // do NOT interrupt the quiz flow.
+  const handleConceptCardReady = (card: ConceptCard, result: QuizResult) => {
+    const ALPHA = ['A', 'B', 'C', 'D'];
+    saveHistory({
+      moduleId: result.topicId,
+      question: result.question,
+      options: result.options,
+      correctAnswer: ALPHA[result.answer] ?? String(result.answer),
+      userAnswer: ALPHA[result.selected] ?? String(result.selected),
+      isCorrect: result.correct,
+      elapsed_seconds: result.elapsedSeconds,
+      conceptCard: card,
+    }).catch(() => {
+      // swallow — background persistence, no user-facing toast
+    });
   };
 
   // ── "Next question" handler ────────────────────────────────
@@ -506,6 +532,7 @@ export default function QuizPage() {
               key={sessionKey + ':' + (items[0]?.q ?? '')}
               questions={quizItems}
               onAnswer={handleAnswer}
+              onConceptCardReady={handleConceptCardReady}
               onComplete={() => { completedRef.current = true; }}
               onRequestNext={handleRequestNext}
               sessionMax={SESSION_MAX}

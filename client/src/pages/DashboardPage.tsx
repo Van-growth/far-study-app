@@ -1,5 +1,6 @@
 import Dashboard from '../components/dashboard/Dashboard';
 import StudyCalendar from '../components/dashboard/StudyCalendar';
+import HistoryView from '../components/dashboard/HistoryView';
 
 export default function DashboardPage() {
   return (
@@ -11,6 +12,7 @@ export default function DashboardPage() {
         </div>
         <StudyCalendar />
         <Dashboard />
+        <HistoryView />
       </div>
     </div>
   );

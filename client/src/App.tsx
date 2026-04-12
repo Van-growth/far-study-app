@@ -9,6 +9,7 @@ import DashboardPage from './pages/DashboardPage';
 import WrongPage from './pages/WrongPage';
 import SciencePage from './pages/SciencePage';
 import AnalyzePage from './pages/AnalyzePage';
+import ReplayPage from './pages/ReplayPage';
 import AuthPage from './pages/AuthPage';
 import useClaudeStore from './store/claudeStore';
 import useStudyStore from './store/studyStore';
@@ -177,6 +178,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/wrong" element={<WrongPage />} />
             <Route path="/analyze" element={<AnalyzePage />} />
+            <Route path="/replay" element={<ReplayPage />} />
             <Route path="/science" element={<SciencePage />} />
             <Route path="*" element={<Navigate to="/quiz?mode=interleave" replace />} />
           </Routes>

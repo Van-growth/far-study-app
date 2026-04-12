@@ -201,6 +201,60 @@ export async function generateQuestion(
   return data;
 }
 
+// ── Persistent quiz history ───────────────────────────────────
+export interface HistoryItem {
+  id: string;
+  timestamp: string;
+  moduleId: string;
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  userAnswer: string;
+  isCorrect: boolean;
+  elapsed_seconds: number | null;
+  conceptCard: ConceptCard | null;
+}
+
+export async function saveHistory(input: {
+  moduleId: string;
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  userAnswer: string;
+  isCorrect: boolean;
+  elapsed_seconds: number | null;
+  conceptCard: ConceptCard | null;
+}): Promise<{ id: string; saved: boolean }> {
+  const res = await fetch(`${API_URL}/api/history/save`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()) as { id: string; saved: boolean };
+}
+
+export async function fetchHistory(opts: {
+  moduleId?: string;
+  isCorrect?: boolean;
+  limit?: number;
+} = {}): Promise<{ items: HistoryItem[]; total: number }> {
+  const params = new URLSearchParams();
+  if (opts.moduleId) params.set('moduleId', opts.moduleId);
+  if (typeof opts.isCorrect === 'boolean') params.set('isCorrect', String(opts.isCorrect));
+  if (typeof opts.limit === 'number') params.set('limit', String(opts.limit));
+  const qs = params.toString();
+  const res = await fetch(`${API_URL}/api/history${qs ? `?${qs}` : ''}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()) as { items: HistoryItem[]; total: number };
+}
+
+export async function fetchHistoryItem(id: string): Promise<HistoryItem> {
+  const res = await fetch(`${API_URL}/api/history/${encodeURIComponent(id)}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()) as HistoryItem;
+}
+
 // ── Learned concept data types ────────────────────────────────
 export interface LearnedConcepts {
   concepts: Record<string, number>;

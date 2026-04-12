@@ -47,7 +47,7 @@ function typeLabel(t: ConceptCard['type']): string {
   }
 }
 
-function ConceptCardView({ card }: { card: ConceptCard }) {
+export function ConceptCardView({ card }: { card: ConceptCard }) {
   const s = card.sections;
   return (
     <div className="flex flex-col gap-3 text-[#451a03]">
@@ -467,6 +467,7 @@ interface QuizViewProps {
   onAnswer: (result: QuizResult) => void;
   onComplete: (results: QuizResult[]) => void;
   onRequestNext?: () => void;
+  onConceptCardReady?: (card: ConceptCard, result: QuizResult) => void;
   sessionMax?: number;
   isLoadingNext?: boolean;
   title?: string;
@@ -477,6 +478,7 @@ export default function QuizView({
   onAnswer,
   onComplete,
   onRequestNext,
+  onConceptCardReady,
   sessionMax,
   isLoadingNext,
   title,
@@ -671,7 +673,10 @@ export default function QuizView({
         correctIdx: current.ans,
         selectedIdx: i,
       })
-        .then((card) => setCardData(card))
+        .then((card) => {
+          setCardData(card);
+          onConceptCardReady?.(card, result);
+        })
         .catch((e) => setCardError(e instanceof Error ? e.message : 'concept card 실패'))
         .finally(() => setCardLoading(false));
     },

@@ -4,6 +4,7 @@ import cors from 'cors';
 import claudeRouter from './routes/claude';
 import quizRouter from './routes/quiz';
 import analyzeRouter from './routes/analyze';
+import historyRouter from './routes/history';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -26,6 +27,9 @@ app.use('/api', quizRouter);
 
 // ── Analyze / learned concepts ────────────────────────────────
 app.use('/api', analyzeRouter);
+
+// ── Quiz history (persistent) ─────────────────────────────────
+app.use('/api', historyRouter);
 
 // ── 404 ───────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {
