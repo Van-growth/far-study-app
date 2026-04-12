@@ -109,9 +109,55 @@ export default function CoachPage() {
   // Fetch + stream the initial greeting. Used by the mount effect AND by
   // the manual refresh button. Writes the result into MODULE_CACHE so
   // subsequent mounts hydrate from memory without an API call.
+  //
+  // Hardened against hanging Supabase calls:
+  //  · 8s timeout on loadCoachContext — if it doesn't settle we fall back
+  //    to empty stats + first_use scenario instead of retrying.
+  //  · Single attempt, no retry loop. On hard failure the coach still
+  //    greets the user with "first user" branch so they can start typing.
   const runInitialFetch = async (uid: string) => {
+    const emptyStats: CoachStats = {
+      totalSolved: 0,
+      lastActive: null,
+      dueCount: 0,
+      moduleStats: [],
+      recentWrong: [],
+      strongModules: [],
+      weakModules: [],
+    };
+    const emptyBootstrap: CoachBootstrap = {
+      totalSolved: 0,
+      lastActive: null,
+      daysSinceLastActive: null,
+      todayCount: 0,
+      todayCorrect: 0,
+      todayAvgSeconds: null,
+      todayBreakdown: [],
+      lastSolvedModuleId: null,
+      lastSolvedModuleCorrectRate: null,
+    };
+
+    // Race the context load against a timeout. On failure/timeout we
+    // intentionally DO NOT retry — the coach page continues with the
+    // empty-data "first_use" branch so the user is never stuck.
+    let ctx: { stats: CoachStats; bootstrap: CoachBootstrap; scenario: CoachScenario };
     try {
-      const ctx = await loadCoachContext(uid);
+      ctx = await Promise.race([
+        loadCoachContext(uid),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('timeout after 8s')), 8000),
+        ),
+      ]);
+    } catch (e) {
+      console.warn(
+        '[CoachPage] loadCoachContext failed — falling back to empty data (first_use):',
+        e instanceof Error ? e.message : e,
+      );
+      ctx = { stats: emptyStats, bootstrap: emptyBootstrap, scenario: 'first_use' };
+      setError('학습 데이터를 불러오지 못해 기본 화면으로 시작합니다.');
+    }
+
+    try {
       setStats(ctx.stats);
       setBootstrap(ctx.bootstrap);
       setScenario(ctx.scenario);

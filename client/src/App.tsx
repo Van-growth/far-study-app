@@ -233,6 +233,39 @@ function AppLayout({ email }: { email: string }) {
   );
 }
 
+// Module-level guard: ensures bootstrap runs at most once per page load,
+// even if React 18 StrictMode double-invokes the mount effect in dev.
+let bootstrapHasRun = false;
+const lastInitStoredUid: { current: string | null } = { current: null };
+
+/** Wrap a promise in a timeout. Resolves to `fallback` if it doesn't settle. */
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T, label: string): Promise<T> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const t = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      console.warn(`[App] ${label} timed out after ${ms}ms — using fallback`);
+      resolve(fallback);
+    }, ms);
+    promise.then(
+      (v) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(t);
+        console.warn(`[App] ${label} rejected — using fallback:`, e);
+        resolve(fallback);
+      },
+    );
+  });
+}
+
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -240,6 +273,15 @@ export default function App() {
   const initStore = useStudyStore((s) => s.initStore);
 
   useEffect(() => {
+    // Bootstrap-once guard: protects against StrictMode double-invoke AND
+    // any other remount of the root <App>. The previous version used a
+    // setTimeout which could fire repeatedly and feel like a "retry loop".
+    if (bootstrapHasRun) {
+      setLoading(false);
+      return;
+    }
+    bootstrapHasRun = true;
+
     // Check env vars at startup
     const url = import.meta.env.VITE_SUPABASE_URL;
     const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -256,41 +298,62 @@ export default function App() {
       return;
     }
 
-    // Timeout: force stop loading after 5s
-    const timeout = setTimeout(() => {
-      console.warn('[App] Bootstrap timeout after 5s — forcing load');
-      setLoading(false);
-    }, 5000);
-
+    // Single-shot bootstrap. No retry. On any failure, proceed with null
+    // user and let the downstream pages (Coach / Auth) handle their own
+    // empty-state.
     const bootstrap = async () => {
       try {
         console.log('[App] getSession() start');
-        const { data, error } = await getSession();
-        console.log('[App] getSession() done', { user: data.session?.user?.email, error });
-        const user = data.session?.user ?? null;
+        // Race the Supabase auth call against an explicit 5s timeout so a
+        // hanging promise can't dangle forever (it used to silently sit in
+        // the microtask queue even after the outer setTimeout fired).
+        const sessionResult = await withTimeout(
+          getSession(),
+          5000,
+          { data: { session: null } } as Awaited<ReturnType<typeof getSession>>,
+          'getSession',
+        );
+        const user = sessionResult.data?.session?.user ?? null;
+        console.log('[App] getSession() done', { user: user?.email });
         setUserEmail(user?.email ?? null);
+
         if (user) {
           console.log('[App] initStore() start');
-          await initStore(user.id).catch((e) => console.warn('[App] initStore failed:', e));
+          lastInitStoredUid.current = user.id;
+          await withTimeout(
+            initStore(user.id),
+            5000,
+            undefined,
+            'initStore',
+          );
           console.log('[App] initStore() done');
         }
       } catch (e) {
-        console.error('[App] bootstrap error:', e);
+        // Should be unreachable — withTimeout swallows rejections — but keep
+        // a belt-and-suspenders catch so the finally still runs.
+        console.error('[App] bootstrap error (ignored, proceeding with null user):', e);
         setUserEmail(null);
       } finally {
-        clearTimeout(timeout);
         setLoading(false);
       }
     };
 
-    bootstrap();
+    void bootstrap();
 
+    // Auth state listener: only re-init when the uid actually changes,
+    // so TOKEN_REFRESHED / INITIAL_SESSION events don't hammer initStore.
     let subscription: { unsubscribe: () => void } | null = null;
     try {
       const { data } = onAuthChange(async (_event, session) => {
         const user = session?.user ?? null;
         setUserEmail(user?.email ?? null);
-        if (user) await initStore(user.id).catch(() => {});
+        if (!user) {
+          lastInitStoredUid.current = null;
+          return;
+        }
+        if (lastInitStoredUid.current === user.id) return; // dedupe
+        lastInitStoredUid.current = user.id;
+        await withTimeout(initStore(user.id), 5000, undefined, 'initStore(auth-change)');
       });
       subscription = data.subscription;
     } catch (e) {
@@ -298,7 +361,6 @@ export default function App() {
     }
 
     return () => {
-      clearTimeout(timeout);
       subscription?.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
