@@ -5,13 +5,11 @@ import remarkGfm from 'remark-gfm';
 import useStudyStore from '../store/studyStore';
 import { allTopics } from '../data/far-topics';
 import {
-  assembleCoachStats,
   streamCoachResponse,
   loadCoachContext,
   buildScenarioSeed,
   saveSessionLog,
   todayStr,
-  detectScenario,
   CoachStats,
   CoachBootstrap,
   CoachScenario,
@@ -23,6 +21,51 @@ interface DisplayMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Module-level cache — survives CoachPage remounts (SPA tab switches).
+// Invalidated when:
+//   · userId changes (login/logout)
+//   · local day rolls over (YYYY-MM-DD boundary)
+//   · user clicks the explicit refresh button
+// ─────────────────────────────────────────────────────────────
+interface CoachCache {
+  userId: string;
+  date: string; // YYYY-MM-DD — invalidates automatically at midnight
+  stats: CoachStats;
+  bootstrap: CoachBootstrap;
+  scenario: CoachScenario;
+  messages: DisplayMessage[];
+}
+let MODULE_CACHE: CoachCache | null = null;
+
+function isCacheValid(userId: string, day: string): boolean {
+  if (!MODULE_CACHE) return false;
+  if (MODULE_CACHE.userId !== userId) return false;
+  if (MODULE_CACHE.date !== day) return false;
+  return true;
+}
+
+function writeCache(
+  userId: string,
+  stats: CoachStats,
+  bootstrap: CoachBootstrap,
+  scenario: CoachScenario,
+  messages: DisplayMessage[],
+) {
+  MODULE_CACHE = {
+    userId,
+    date: todayStr(),
+    stats,
+    bootstrap,
+    scenario,
+    messages,
+  };
+}
+
+export function clearCoachCache() {
+  MODULE_CACHE = null;
 }
 
 interface ActionChip {
@@ -63,47 +106,95 @@ export default function CoachPage() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ── Initial kickoff ────────────────────────────────────────
+  // Fetch + stream the initial greeting. Used by the mount effect AND by
+  // the manual refresh button. Writes the result into MODULE_CACHE so
+  // subsequent mounts hydrate from memory without an API call.
+  const runInitialFetch = async (uid: string) => {
+    try {
+      const ctx = await loadCoachContext(uid);
+      setStats(ctx.stats);
+      setBootstrap(ctx.bootstrap);
+      setScenario(ctx.scenario);
+      setInitializing(false);
+
+      const seed = buildScenarioSeed(ctx.scenario, ctx.bootstrap, ctx.stats);
+      const coachId = 'coach-init';
+      const seedMessages: DisplayMessage[] = [
+        { id: coachId, role: 'assistant', content: '' },
+      ];
+      setMessages(seedMessages);
+      // Pre-warm cache so a rapid tab-switch mid-stream finds something.
+      writeCache(uid, ctx.stats, ctx.bootstrap, ctx.scenario, seedMessages);
+
+      setIsStreaming(true);
+      void streamCoachResponse(
+        ctx.stats,
+        [{ role: 'user', content: seed }],
+        (chunk) => {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === coachId ? { ...m, content: m.content + chunk } : m)),
+          );
+        },
+        () => {
+          setIsStreaming(false);
+          // Final commit: store the fully-streamed message list.
+          setMessages((prev) => {
+            writeCache(uid, ctx.stats, ctx.bootstrap, ctx.scenario, prev);
+            return prev;
+          });
+        },
+        (err) => {
+          setError(err);
+          setIsStreaming(false);
+        },
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'init failed');
+      setInitializing(false);
+    }
+  };
+
+  // ── Initial kickoff (with cache) ──────────────────────────
+  // 1. Hard single-fire guard via ref — survives React 18 StrictMode double-invoke
+  // 2. Module cache hydration — survives tab-switch remounts
+  // 3. Fresh fetch only on cache miss (new user / new day / first ever)
   useEffect(() => {
     if (initKickedRef.current) return;
     if (!userId) return;
     initKickedRef.current = true;
 
-    (async () => {
-      try {
-        const ctx = await loadCoachContext(userId);
-        setStats(ctx.stats);
-        setBootstrap(ctx.bootstrap);
-        setScenario(ctx.scenario);
-        setInitializing(false);
+    const day = todayStr();
 
-        const seed = buildScenarioSeed(ctx.scenario, ctx.bootstrap, ctx.stats);
-        const coachId = 'coach-init';
-        setMessages([{ id: coachId, role: 'assistant', content: '' }]);
-        setIsStreaming(true);
-        void streamCoachResponse(
-          ctx.stats,
-          // Single synthetic user message with scenario context — the server
-          // treats this as the opening turn and the coach replies with a
-          // scenario-appropriate greeting.
-          [{ role: 'user', content: seed }],
-          (chunk) => {
-            setMessages((prev) =>
-              prev.map((m) => (m.id === coachId ? { ...m, content: m.content + chunk } : m)),
-            );
-          },
-          () => setIsStreaming(false),
-          (err) => {
-            setError(err);
-            setIsStreaming(false);
-          },
-        );
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'init failed');
-        setInitializing(false);
-      }
-    })();
+    // Cache hit — hydrate state from memory, no API call.
+    if (isCacheValid(userId, day) && MODULE_CACHE) {
+      const c = MODULE_CACHE;
+      setStats(c.stats);
+      setBootstrap(c.bootstrap);
+      setScenario(c.scenario);
+      setMessages(c.messages);
+      setInitializing(false);
+      return;
+    }
+
+    // Cache miss — fetch and stream once.
+    void runInitialFetch(userId);
+    // Deps: userId only. The ref guard + cache check ensure this body runs
+    // at most once per (userId, day) combination, even across remounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
+
+  // Manual refresh — explicit user action, clears cache + re-fetches.
+  const handleRefresh = () => {
+    if (isStreaming || !userId) return;
+    clearCoachCache();
+    setMessages([]);
+    setStats(null);
+    setBootstrap(null);
+    setScenario(null);
+    setInitializing(true);
+    setError(null);
+    void runInitialFetch(userId);
+  };
 
   // Track the latest assistant content so "wrap up save" can read it.
   useEffect(() => {
@@ -128,18 +219,22 @@ export default function CoachPage() {
       content: m.content,
     }));
 
+    // One combined fetch (previously called BOTH assembleCoachStats and
+    // loadCoachContext, duplicating the stats query every turn).
     let freshStats: CoachStats = stats!;
-    try {
-      freshStats = await assembleCoachStats(userId);
-      setStats(freshStats);
-    } catch {/* use cached */}
     let freshBootstrap: CoachBootstrap | null = bootstrap;
+    let freshScenario: CoachScenario | null = scenario;
     try {
       const ctx = await loadCoachContext(userId);
+      freshStats = ctx.stats;
       freshBootstrap = ctx.bootstrap;
+      freshScenario = ctx.scenario;
+      setStats(ctx.stats);
       setBootstrap(ctx.bootstrap);
       setScenario(ctx.scenario);
-    } catch {/* use cached */}
+    } catch {
+      // use cached context; stream still proceeds
+    }
 
     void streamCoachResponse(
       freshStats,
@@ -152,9 +247,15 @@ export default function CoachPage() {
       () => {
         setIsStreaming(false);
         if (opts?.wrapup && freshBootstrap) {
-          // After the wrap-up reply finishes streaming, persist it.
           persistSessionFromStream(asstId, freshBootstrap);
         }
+        // Update cache with the fully-streamed turn so tab switches retain it.
+        setMessages((prev) => {
+          if (userId && freshBootstrap && freshScenario) {
+            writeCache(userId, freshStats, freshBootstrap, freshScenario, prev);
+          }
+          return prev;
+        });
       },
       (err) => {
         setError(err);
@@ -309,16 +410,26 @@ export default function CoachPage() {
   return (
     <div className="p-4 sm:p-6">
       <div className="max-w-2xl mx-auto flex flex-col gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-[#0f172a]">🤖 AI 코치</h1>
-          <p className="text-xs text-muted mt-0.5">
-            학습 데이터를 바탕으로 오늘 뭘 할지 제안해드려요
-            {scenario && (
-              <span className="ml-2 text-[10px] uppercase tracking-wider text-[#4f6ef7]">
-                {scenarioLabel(scenario)}
-              </span>
-            )}
-          </p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h1 className="text-xl font-bold text-[#0f172a]">🤖 AI 코치</h1>
+            <p className="text-xs text-muted mt-0.5">
+              학습 데이터를 바탕으로 오늘 뭘 할지 제안해드려요
+              {scenario && (
+                <span className="ml-2 text-[10px] uppercase tracking-wider text-[#4f6ef7]">
+                  {scenarioLabel(scenario)}
+                </span>
+              )}
+            </p>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={isStreaming || initializing}
+            title="학습 데이터 새로고침 (캐시 무시)"
+            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-xs text-muted hover:text-[#0f172a] hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent"
+          >
+            ↻
+          </button>
         </div>
 
         {stats && (
@@ -531,5 +642,3 @@ function CoachBubble({
   );
 }
 
-// Silence unused-var warnings for helpers that aren't referenced yet.
-void detectScenario;
