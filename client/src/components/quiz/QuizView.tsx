@@ -1,7 +1,66 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import useClaudeStore from '../../store/claudeStore';
 import { useClaudeChat, QuizContext } from '../../hooks/useClaudeChat';
 import { streamConceptCard } from '../../hooks/useDynamicQuiz';
+
+// Shared markdown component map for exp/concept-card blocks.
+// Tight spacing, small table that scrolls horizontally if it overflows.
+const MD_COMPONENTS = {
+  p: ({ children }: { children?: React.ReactNode }) => (
+    <p className="text-sm leading-relaxed mb-1.5 last:mb-0">{children}</p>
+  ),
+  strong: ({ children }: { children?: React.ReactNode }) => (
+    <strong className="font-semibold">{children}</strong>
+  ),
+  em: ({ children }: { children?: React.ReactNode }) => <em className="italic">{children}</em>,
+  ul: ({ children }: { children?: React.ReactNode }) => (
+    <ul className="list-disc ml-5 my-1 flex flex-col gap-0.5">{children}</ul>
+  ),
+  ol: ({ children }: { children?: React.ReactNode }) => (
+    <ol className="list-decimal ml-5 my-1 flex flex-col gap-0.5">{children}</ol>
+  ),
+  li: ({ children }: { children?: React.ReactNode }) => (
+    <li className="text-sm leading-relaxed">{children}</li>
+  ),
+  code: ({ children, className }: { children?: React.ReactNode; className?: string }) => {
+    if (className?.includes('language-')) {
+      return (
+        <pre
+          className="my-2 p-3 rounded-lg text-xs font-mono leading-relaxed overflow-x-auto"
+          style={{ background: '#f1f5f9', color: '#0f172a' }}
+        >
+          <code>{children}</code>
+        </pre>
+      );
+    }
+    return (
+      <code className="px-1 py-0.5 rounded text-[11px] font-mono bg-black/5">{children}</code>
+    );
+  },
+  pre: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  hr: () => <hr className="my-2 border-black/10" />,
+  blockquote: ({ children }: { children?: React.ReactNode }) => (
+    <blockquote className="border-l-2 pl-3 my-2 text-sm italic border-current opacity-80">
+      {children}
+    </blockquote>
+  ),
+  table: ({ children }: { children?: React.ReactNode }) => (
+    <div className="overflow-x-auto my-2">
+      <table className="text-xs border border-black/10 w-full">{children}</table>
+    </div>
+  ),
+  thead: ({ children }: { children?: React.ReactNode }) => (
+    <thead style={{ background: 'rgba(0,0,0,0.04)' }}>{children}</thead>
+  ),
+  th: ({ children }: { children?: React.ReactNode }) => (
+    <th className="border border-black/10 px-2 py-1 text-left font-semibold">{children}</th>
+  ),
+  td: ({ children }: { children?: React.ReactNode }) => (
+    <td className="border border-black/10 px-2 py-1 align-top">{children}</td>
+  ),
+};
 
 export interface QuizItemWithContext {
   topicId: string;
@@ -256,7 +315,11 @@ export default function QuizView({
             {/* Quick explanation from question payload */}
             <div className="p-4 rounded-xl" style={{ background: '#f8faff', border: '1.5px solid #c7d2fe' }}>
               <p className="text-xs font-semibold text-[#4f6ef7] mb-1.5">💡 정답 해설</p>
-              <p className="text-sm text-[#0f172a] leading-relaxed whitespace-pre-wrap">{current.exp}</p>
+              <div className="text-sm text-[#0f172a] leading-relaxed">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
+                  {current.exp}
+                </ReactMarkdown>
+              </div>
             </div>
 
             {/* Streaming concept card */}
@@ -269,11 +332,19 @@ export default function QuizView({
               {cardError ? (
                 <p className="text-sm text-[#991b1b]">⚠️ {cardError}</p>
               ) : (
-                <div className="text-sm text-[#451a03] leading-relaxed whitespace-pre-wrap">
-                  {cardText || (cardLoading ? <span className="text-muted">생성 중...</span> : null)}
-                  {cardLoading && cardText && (
-                    <span className="inline-block w-1.5 h-4 bg-[#92400e] ml-0.5 animate-pulse align-text-bottom rounded-sm" />
-                  )}
+                <div className="text-sm text-[#451a03] leading-relaxed">
+                  {cardText ? (
+                    <>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
+                        {cardText}
+                      </ReactMarkdown>
+                      {cardLoading && (
+                        <span className="inline-block w-1.5 h-4 bg-[#92400e] ml-0.5 animate-pulse align-text-bottom rounded-sm" />
+                      )}
+                    </>
+                  ) : cardLoading ? (
+                    <span className="text-muted">생성 중...</span>
+                  ) : null}
                 </div>
               )}
             </div>
