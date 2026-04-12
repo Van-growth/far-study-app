@@ -174,8 +174,8 @@ function AppLayout({ email }: { email: string }) {
           style={{ background: '#f0f4f8' }}
         >
           <Routes>
-            <Route path="/" element={<Navigate to="/quiz?mode=interleave" replace />} />
-            <Route path="/flashcard" element={<Navigate to="/quiz?mode=interleave" replace />} />
+            <Route path="/" element={<Navigate to="/coach" replace />} />
+            <Route path="/flashcard" element={<Navigate to="/coach" replace />} />
             <Route path="/quiz" element={<QuizPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/wrong" element={<WrongPage />} />
@@ -183,7 +183,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/replay" element={<ReplayPage />} />
             <Route path="/coach" element={<CoachPage />} />
             <Route path="/science" element={<SciencePage />} />
-            <Route path="*" element={<Navigate to="/quiz?mode=interleave" replace />} />
+            <Route path="*" element={<Navigate to="/coach" replace />} />
           </Routes>
         </main>
 

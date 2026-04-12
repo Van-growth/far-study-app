@@ -128,6 +128,131 @@ export const getQuizMeta = async (
   }
 }
 
+// Consolidated bootstrap for the AI coach: detects which scenario the
+// student is in (first use / first today / continuing / returning) and
+// surfaces the handful of fields the prompt needs.
+export interface CoachBootstrap {
+  totalSolved: number
+  lastActive: string | null
+  daysSinceLastActive: number | null
+  todayCount: number
+  todayCorrect: number
+  todayAvgSeconds: number | null
+  todayBreakdown: { moduleId: string; total: number; correct: number; avgSec: number | null }[]
+  lastSolvedModuleId: string | null
+  lastSolvedModuleCorrectRate: number | null
+}
+
+export const getCoachBootstrap = async (userId: string): Promise<CoachBootstrap> => {
+  const [logsRes, countRes] = await Promise.all([
+    supabase
+      .from('quiz_logs')
+      .select('topic_id, correct, elapsed_seconds, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(500),
+    supabase.from('quiz_logs').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+  ])
+
+  const logs = (logsRes.data ?? []) as {
+    topic_id: string
+    correct: boolean
+    elapsed_seconds: number | null
+    created_at: string
+  }[]
+  const totalSolved = countRes.count ?? logs.length
+
+  if (logs.length === 0) {
+    return {
+      totalSolved: 0,
+      lastActive: null,
+      daysSinceLastActive: null,
+      todayCount: 0,
+      todayCorrect: 0,
+      todayAvgSeconds: null,
+      todayBreakdown: [],
+      lastSolvedModuleId: null,
+      lastSolvedModuleCorrectRate: null,
+    }
+  }
+
+  const lastActive = logs[0].created_at
+  const daysSinceLastActive = Math.floor(
+    (Date.now() - new Date(lastActive).getTime()) / (24 * 60 * 60 * 1000),
+  )
+
+  // Local-day boundary
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayLogs = logs.filter((l) => new Date(l.created_at) >= todayStart)
+
+  const byModule: Record<
+    string,
+    { total: number; correct: number; secSum: number; secCount: number }
+  > = {}
+  for (const l of todayLogs) {
+    const id = l.topic_id
+    if (!id) continue
+    if (!byModule[id]) byModule[id] = { total: 0, correct: 0, secSum: 0, secCount: 0 }
+    byModule[id].total++
+    if (l.correct) byModule[id].correct++
+    if (
+      typeof l.elapsed_seconds === 'number' &&
+      l.elapsed_seconds >= 0 &&
+      l.elapsed_seconds <= 120
+    ) {
+      byModule[id].secSum += l.elapsed_seconds
+      byModule[id].secCount++
+    }
+  }
+  const todayBreakdown = Object.entries(byModule)
+    .map(([moduleId, v]) => ({
+      moduleId,
+      total: v.total,
+      correct: v.correct,
+      avgSec: v.secCount > 0 ? Math.round(v.secSum / v.secCount) : null,
+    }))
+    .sort((a, b) => b.total - a.total)
+
+  const todayCount = todayLogs.length
+  const todayCorrect = todayLogs.filter((l) => l.correct).length
+  const todaySecVals = todayLogs
+    .map((l) => l.elapsed_seconds)
+    .filter((s): s is number => typeof s === 'number' && s >= 0 && s <= 120)
+  const todayAvgSeconds =
+    todaySecVals.length > 0
+      ? Math.round(todaySecVals.reduce((a, b) => a + b, 0) / todaySecVals.length)
+      : null
+
+  const lastSolvedModuleId = logs[0].topic_id ?? null
+  let lastSolvedModuleCorrectRate: number | null = null
+  if (lastSolvedModuleId) {
+    const todayStat = byModule[lastSolvedModuleId]
+    if (todayStat) {
+      lastSolvedModuleCorrectRate = Math.round((todayStat.correct / todayStat.total) * 100)
+    } else {
+      // Fall back to all fetched logs for that module (up to 500 recent)
+      const modLogs = logs.filter((l) => l.topic_id === lastSolvedModuleId)
+      if (modLogs.length > 0) {
+        const c = modLogs.filter((l) => l.correct).length
+        lastSolvedModuleCorrectRate = Math.round((c / modLogs.length) * 100)
+      }
+    }
+  }
+
+  return {
+    totalSolved,
+    lastActive,
+    daysSinceLastActive,
+    todayCount,
+    todayCorrect,
+    todayAvgSeconds,
+    todayBreakdown,
+    lastSolvedModuleId,
+    lastSolvedModuleCorrectRate,
+  }
+}
+
 // Distinct moduleIds from the most recent wrong answers.
 export const getRecentWrongModules = async (
   userId: string,

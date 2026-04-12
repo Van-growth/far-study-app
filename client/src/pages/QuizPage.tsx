@@ -146,7 +146,9 @@ export default function QuizPage() {
   const recordAnswer = useStudyStore((s) => s.recordAnswer);
 
   const mode = (params.get('mode') ?? 'interleave') as QuizMode;
-  const topicId = params.get('topicId');
+  // Accept both `topicId` (legacy) and `moduleId` (used by the AI coach
+  // deep-links). Both resolve to the same session key under the hood.
+  const topicId = params.get('topicId') ?? params.get('moduleId');
   const focusConcept = params.get('focusConcept');
   const sessionKey =
     (topicId ?? `__mode:${mode}__`) + (focusConcept ? `#${focusConcept}` : '');
