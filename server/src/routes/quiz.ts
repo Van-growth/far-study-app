@@ -32,26 +32,50 @@ router.post('/generate-question', async (req: Request, res: Response) => {
     ? `\nRecent wrong topics: ${recentWrongTopics.slice(0, 8).join(', ')}.`
     : '';
 
-  const prompt = `You are an expert USCPA FAR exam item writer. Generate EXACTLY ONE high-quality multiple-choice question for this Becker module:
+  const prompt = `You are an expert USCPA FAR exam item writer. Generate EXACTLY ONE high-quality multiple-choice question matching the actual exam's writing style.
 
-Target module: ${moduleId} — ${moduleName}${weakLine}${wrongLine}
+Internal tag (for YOUR selection only — NEVER mention in the question):
+- Target module: ${moduleId} — ${moduleName}${weakLine}${wrongLine}
 
-Requirements:
-- One question, 4 options
-- Mix computational and conceptual across calls (vary style)
-- At least 2 plausible trap distractors
-- Question + options in English (USCPA exam style)
-- Explanation in Korean, explain WHY correct is correct AND why wrong options are wrong
-- Use realistic $, %, shares, years when applicable
-- Cite ASC/GASB briefly when relevant
+HARD RULES — style of the stem (question body):
+
+FORBIDDEN in the question stem and options:
+- DO NOT reference ASC / ASU / GASB / SFAS codification numbers (no "ASC 330", "ASC 606", "ASC 842", "GASB 34", etc.)
+- DO NOT name the topic or module (no "Inventory", "Leases", "Revenue Recognition", "Business Combinations", etc.)
+- DO NOT use parenthetical topic hints like "(Inventory)" or "(Lease Accounting)"
+- DO NOT use hint-y prefaces like "Under GAAP...", "Under U.S. GAAP...", "Per the standards..."
+- DO NOT label the question with its area/module
+
+REQUIRED style of the stem:
+- Pure business scenario centered on a company, person, or transaction
+- Concrete numbers, dates, terms (e.g., $, %, shares, years, FOB terms)
+- Crisp terminal question like: "What amount should be recorded?" / "How should this be reported?" / "What is the gain or loss?" / "What amount, if any, should be recognized?"
+- Let the student infer which concept is being tested purely from the facts
+
+BAD (never do this):
+  "Under ASC 330 (Inventory), what amount..."
+  "Per ASC 842 for leases, how should the lessee..."
+  "Under U.S. GAAP, when does a company recognize revenue..."
+
+GOOD (do this):
+  "A company purchased goods for $50,000 with FOB shipping point terms. The goods were in transit at year-end. What amount should be included in the company's year-end balance?"
+  "On January 1, Year 1, Alpha Co. signed a 5-year noncancelable agreement to use equipment with annual payments of $20,000 due each December 31. The implicit rate is 6%. What amount should Alpha record as a liability on January 1, Year 1?"
+
+Other requirements:
+- One question, exactly 4 options
+- Mix computational and conceptual across calls (vary style each time)
+- At least 2 plausible trap distractors with realistic wrong-number rationale
+- Question and all 4 options written in English, USCPA exam tone
+- Explanation ("exp") in Korean: explain WHY the correct answer is correct AND why each wrong option is wrong
+- In the EXPLANATION you MAY reference ASC/GASB codification and the underlying concept for teaching purposes — the forbidden words only apply to the question stem and options
 
 Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
 
 {
-  "q": "Question text in English",
+  "q": "Question text in English — pure business scenario, no standard numbers, no topic names",
   "opts": ["Option A", "Option B", "Option C", "Option D"],
   "ans": 0,
-  "exp": "Korean explanation"
+  "exp": "Korean explanation — may cite ASC/GASB and concepts here"
 }
 
 "ans" is the 0-based index (0=A, 1=B, 2=C, 3=D). Start response with { and end with }.`;
