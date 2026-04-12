@@ -3,7 +3,70 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const MODEL = 'claude-haiku-4-5-20251001';
+const GENERATOR_MODEL = 'claude-sonnet-4-5-20250929';
+const VALIDATOR_MODEL = 'claude-sonnet-4-5-20250929';
+const CONCEPT_CARD_MODEL = 'claude-haiku-4-5-20251001';
+const MAX_VALIDATION_RETRIES = 2;
+
+interface GeneratedMcq {
+  q: string;
+  opts: string[];
+  ans: number;
+  exp: string;
+}
+
+// ── Validate a generated question with a second model pass ────
+// Returns null if valid, or a rejection reason string.
+async function validateQuestion(item: GeneratedMcq): Promise<string | null> {
+  const ALPHA = ['A', 'B', 'C', 'D'];
+  const review = `아래 FAR 시험 MCQ 문제와 정답이 회계 원칙상 정확한지 검토해줘.
+
+문제: ${item.q}
+
+선택지:
+${item.opts.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
+
+출제자 정답: ${ALPHA[item.ans]} (${item.opts[item.ans]})
+
+해설: ${item.exp}
+
+검토 기준:
+- 정답(ans로 표시된 선택지)이 US GAAP / FASB ASC / GASB 기준으로 실제로 정확한가?
+- 다른 선택지가 "우연히도" 더 정확한 답은 아닌가?
+- 계산 문제라면 산술이 맞는가?
+- 해설이 정답을 실제로 뒷받침하는가 (모순 없음)?
+- 문제 자체가 ambiguous하거나 복수 정답이 가능한 경우 valid=false
+
+반환 형식 — STRICT JSON 만. 부연 설명 금지, 마크다운 코드 펜스 금지:
+
+정답이 맞고 문제에 문제가 없으면:
+{"valid": true}
+
+정답이 틀렸거나 문제에 결함이 있으면:
+{"valid": false, "reason": "한국어로 한 줄 사유"}
+
+{ 로 시작하고 } 로 끝내.`;
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: VALIDATOR_MODEL,
+      max_tokens: 300,
+      messages: [{ role: 'user', content: review }],
+    });
+    const block = msg.content.find((b) => b.type === 'text');
+    if (!block || block.type !== 'text') return 'no validator response';
+    const text = block.text.trim();
+    const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+    const body = fenced ? fenced[1] : text;
+    const parsed = JSON.parse(body) as { valid?: boolean; reason?: string };
+    if (parsed.valid === true) return null;
+    return parsed.reason ?? 'validator rejected without reason';
+  } catch (e) {
+    // Don't fail the whole pipeline if validator misbehaves — accept the original item.
+    console.warn('[validate] failed, accepting item:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
 
 // ─────────────────────────────────────────────
 // POST /api/generate-question
@@ -80,39 +143,72 @@ Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
 
 "ans" is the 0-based index (0=A, 1=B, 2=C, 3=D). Start response with { and end with }.`;
 
+  async function generateOnce(extraSystemNote?: string): Promise<GeneratedMcq | { error: string }> {
+    const fullPrompt = extraSystemNote
+      ? `${prompt}\n\nADDITIONAL CONSTRAINT (previous attempt rejected):\n${extraSystemNote}\nAvoid the exact issue above. Produce a fresh, correct question.`
+      : prompt;
+    try {
+      const msg = await anthropic.messages.create({
+        model: GENERATOR_MODEL,
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: fullPrompt }],
+      });
+      const block = msg.content.find((b) => b.type === 'text');
+      if (!block || block.type !== 'text') return { error: 'no text in response' };
+      const text = block.text.trim();
+      const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+      const body = fenced ? fenced[1] : text;
+      const parsed = JSON.parse(body);
+      if (
+        typeof parsed.q !== 'string' ||
+        !Array.isArray(parsed.opts) ||
+        parsed.opts.length !== 4 ||
+        typeof parsed.ans !== 'number' ||
+        parsed.ans < 0 ||
+        parsed.ans > 3 ||
+        typeof parsed.exp !== 'string'
+      ) {
+        return { error: 'invalid question shape' };
+      }
+      return {
+        q: parsed.q.trim(),
+        opts: parsed.opts.map((o: unknown) => String(o)),
+        ans: parsed.ans,
+        exp: parsed.exp.trim(),
+      };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'generator error' };
+    }
+  }
+
   try {
-    const msg = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 2000,
-      messages: [{ role: 'user', content: prompt }],
-    });
-    const block = msg.content.find((b) => b.type === 'text');
-    if (!block || block.type !== 'text') {
-      return res.status(502).json({ error: 'no text in response' });
-    }
-    const text = block.text.trim();
-    const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
-    const body = fenced ? fenced[1] : text;
-    const parsed = JSON.parse(body);
+    let lastReason: string | undefined;
+    for (let attempt = 0; attempt <= MAX_VALIDATION_RETRIES; attempt++) {
+      const result = await generateOnce(lastReason);
+      if ('error' in result) {
+        // Shape / network error — retry until budget runs out.
+        lastReason = `previous attempt produced invalid output: ${result.error}`;
+        if (attempt === MAX_VALIDATION_RETRIES) {
+          return res.status(502).json({ error: result.error });
+        }
+        continue;
+      }
 
-    if (
-      typeof parsed.q !== 'string' ||
-      !Array.isArray(parsed.opts) ||
-      parsed.opts.length !== 4 ||
-      typeof parsed.ans !== 'number' ||
-      parsed.ans < 0 ||
-      parsed.ans > 3 ||
-      typeof parsed.exp !== 'string'
-    ) {
-      return res.status(502).json({ error: 'invalid question shape' });
+      const rejection = await validateQuestion(result);
+      if (rejection === null) {
+        if (attempt > 0) console.log(`[generate] accepted on retry ${attempt}`);
+        return res.json(result);
+      }
+      console.log(`[generate] retry ${attempt + 1}/${MAX_VALIDATION_RETRIES} — ${rejection}`);
+      lastReason = rejection;
     }
-
-    return res.json({
-      q: parsed.q.trim(),
-      opts: parsed.opts.map((o: unknown) => String(o)),
-      ans: parsed.ans,
-      exp: parsed.exp.trim(),
-    });
+    // Ran out of retries — return the last generated item anyway rather than 500.
+    // (Validator may be overly strict; a best-effort item is better than nothing.)
+    const fallback = await generateOnce(lastReason);
+    if ('error' in fallback) {
+      return res.status(502).json({ error: fallback.error });
+    }
+    return res.json(fallback);
   } catch (err) {
     const m = err instanceof Error ? err.message : 'unknown';
     return res.status(500).json({ error: m });
@@ -174,7 +270,7 @@ ${options.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
 
   try {
     const stream = anthropic.messages.stream({
-      model: MODEL,
+      model: CONCEPT_CARD_MODEL,
       max_tokens: 800,
       system,
       messages: [{ role: 'user', content: userMsg }],
