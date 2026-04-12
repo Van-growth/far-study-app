@@ -110,7 +110,9 @@ if (!Array.isArray(manifest.cards)) die('Manifest "cards" must be an array.');
 const date = manifest.date || process.env.CARD_DATE || todayStr();
 
 // ── GraphQL helper ────────────────────────────────────────────
-async function gql(query, variables = {}) {
+// `allowPartialErrors` lets callers tolerate partial failures — useful when
+// querying user/org in parallel where one of them might legitimately 404.
+async function gql(query, variables = {}, { allowPartialErrors = false } = {}) {
   const res = await fetch('https://api.github.com/graphql', {
     method: 'POST',
     headers: {
@@ -130,7 +132,7 @@ async function gql(query, variables = {}) {
   if (!res.ok) {
     die(`HTTP ${res.status} from GitHub: ${JSON.stringify(json, null, 2)}`);
   }
-  if (json.errors) {
+  if (json.errors && !allowPartialErrors) {
     die(`GraphQL errors:\n${JSON.stringify(json.errors, null, 2)}`);
   }
   return json.data;
@@ -141,68 +143,65 @@ function normalize(s) {
 }
 
 // ── 1. Resolve project + Status field ────────────────────────
+// We try the user namespace first, then the organization namespace.
+// Querying both in a single operation causes a hard GraphQL error when
+// one of them doesn't exist (e.g. no org with that login), so they're
+// split into sequential calls with allowPartialErrors so a 404 on one
+// side doesn't kill the run.
 console.log(`→ Resolving project ${OWNER}#${NUMBER}...`);
 
-const lookup = `
-query($owner: String!, $number: Int!) {
-  user(login: $owner) {
-    projectV2(number: $number) {
-      id
-      title
-      fields(first: 50) {
-        nodes {
-          __typename
-          ... on ProjectV2SingleSelectField {
-            id
-            name
-            options { id name }
-          }
-        }
-      }
-      items(first: 200) {
-        nodes {
-          id
-          content {
-            __typename
-            ... on DraftIssue { title }
-            ... on Issue { title }
-            ... on PullRequest { title }
-          }
-        }
+const projectFragment = `
+  id
+  title
+  fields(first: 50) {
+    nodes {
+      __typename
+      ... on ProjectV2SingleSelectField {
+        id
+        name
+        options { id name }
       }
     }
   }
-  organization(login: $owner) {
-    projectV2(number: $number) {
+  items(first: 100) {
+    nodes {
       id
-      title
-      fields(first: 50) {
-        nodes {
-          __typename
-          ... on ProjectV2SingleSelectField {
-            id
-            name
-            options { id name }
-          }
-        }
-      }
-      items(first: 200) {
-        nodes {
-          id
-          content {
-            __typename
-            ... on DraftIssue { title }
-            ... on Issue { title }
-            ... on PullRequest { title }
-          }
-        }
+      content {
+        __typename
+        ... on DraftIssue { title }
+        ... on Issue { title }
+        ... on PullRequest { title }
       }
     }
+  }
+`;
+
+const userQuery = `
+query($owner: String!, $number: Int!) {
+  user(login: $owner) {
+    projectV2(number: $number) { ${projectFragment} }
+  }
+}`;
+const orgQuery = `
+query($owner: String!, $number: Int!) {
+  organization(login: $owner) {
+    projectV2(number: $number) { ${projectFragment} }
   }
 }`;
 
-const projectData = await gql(lookup, { owner: OWNER, number: NUMBER });
-const project = projectData.user?.projectV2 || projectData.organization?.projectV2;
+let project = null;
+// Try user namespace first.
+try {
+  const userData = await gql(userQuery, { owner: OWNER, number: NUMBER }, { allowPartialErrors: true });
+  project = userData?.user?.projectV2 ?? null;
+} catch {/* fall through to org */}
+// If not found under user, try organization.
+if (!project) {
+  try {
+    const orgData = await gql(orgQuery, { owner: OWNER, number: NUMBER }, { allowPartialErrors: true });
+    project = orgData?.organization?.projectV2 ?? null;
+  } catch {/* neither — die below */}
+}
 if (!project) {
   die(
     `Project #${NUMBER} not found under "${OWNER}" (tried user and org). ` +
