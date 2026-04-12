@@ -17,9 +17,18 @@ interface GeneratedMcq {
   exp: string;
 }
 
+type Confidence = 'high' | 'medium' | 'low';
+interface ValidationResult {
+  valid: boolean;
+  confidence: Confidence;
+  warning: string | null;
+}
+
 // ── Validate a generated question with a second model pass ────
-// Returns null if valid, or a rejection reason string.
-async function validateQuestion(item: GeneratedMcq): Promise<string | null> {
+// Returns a structured { valid, confidence, warning } triple. If the
+// validator model misbehaves, we default to accepting the item with
+// 'high' confidence so the pipeline never blocks on a buggy reviewer.
+async function validateQuestion(item: GeneratedMcq): Promise<ValidationResult> {
   const ALPHA = ['A', 'B', 'C', 'D'];
   const review = `아래 FAR 시험 MCQ 문제와 정답이 회계 원칙상 정확한지 검토해줘.
 
@@ -41,32 +50,61 @@ ${item.opts.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
 
 반환 형식 — STRICT JSON 만. 부연 설명 금지, 마크다운 코드 펜스 금지:
 
-정답이 맞고 문제에 문제가 없으면:
-{"valid": true}
+{
+  "valid": true | false,
+  "confidence": "high" | "medium" | "low",
+  "warning": "한국어 한 줄 경고 메시지" | null
+}
 
-정답이 틀렸거나 문제에 결함이 있으면:
-{"valid": false, "reason": "한국어로 한 줄 사유"}
+confidence 판단 기준:
+- "high": 문제 정확, 계산 검증 완료, 정답이 명확하고 다른 선택지가
+   애매하지 않음
+- "medium": 정답 자체는 맞지만 수치 재확인이 필요하거나 선택지 간
+   구분이 살짝 헷갈릴 수 있는 요소가 있음
+- "low": 계산 오류 가능성이 있거나 정답 근거가 불명확함
 
-{ 로 시작하고 } 로 끝내.`;
+warning 예시:
+- "계산 수치 검토 필요"
+- "선택지 간 구분이 모호할 수 있음"
+- "ASC 기준 해석 차이 가능"
+- null (문제 없음, 일반적으로 high confidence에 사용)
+
+규칙:
+- valid=true + confidence="high" + warning=null 이 이상적인 통과
+- valid=true + confidence="medium" 이면 문제는 맞지만 warning은 반드시 제공
+- confidence="low" 또는 valid=false 면 warning 필수
+- 수치/금액이 포함된 문제는 산술을 반드시 검증한 후 confidence 결정
+
+{로 시작하고 }로 끝내. JSON 외 텍스트 금지.`;
 
   try {
     const msg = await anthropic.messages.create({
       model: VALIDATOR_MODEL,
-      max_tokens: 300,
+      max_tokens: 400,
       messages: [{ role: 'user', content: review }],
     });
     const block = msg.content.find((b) => b.type === 'text');
-    if (!block || block.type !== 'text') return 'no validator response';
+    if (!block || block.type !== 'text') {
+      return { valid: true, confidence: 'high', warning: null };
+    }
     const text = block.text.trim();
     const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
     const body = fenced ? fenced[1] : text;
-    const parsed = JSON.parse(body) as { valid?: boolean; reason?: string };
-    if (parsed.valid === true) return null;
-    return parsed.reason ?? 'validator rejected without reason';
+    const parsed = JSON.parse(body) as Partial<ValidationResult>;
+    const valid = parsed.valid === true;
+    const confidence: Confidence =
+      parsed.confidence === 'high' || parsed.confidence === 'medium' || parsed.confidence === 'low'
+        ? parsed.confidence
+        : 'high';
+    const warning =
+      typeof parsed.warning === 'string' && parsed.warning.trim().length > 0
+        ? parsed.warning.trim()
+        : null;
+    return { valid, confidence, warning };
   } catch (e) {
-    // Don't fail the whole pipeline if validator misbehaves — accept the original item.
-    console.warn('[validate] failed, accepting item:', e instanceof Error ? e.message : e);
-    return null;
+    // Validator misbehaved — accept the item so the student isn't blocked.
+    console.warn('[validate] failed, accepting with high confidence:', e instanceof Error ? e.message : e);
+    return { valid: true, confidence: 'high', warning: null };
   }
 }
 
@@ -217,32 +255,56 @@ Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
 
   try {
     let lastReason: string | undefined;
+    let lastResult: GeneratedMcq | null = null;
+    let lastValidation: ValidationResult = { valid: true, confidence: 'high', warning: null };
+
     for (let attempt = 0; attempt <= MAX_VALIDATION_RETRIES; attempt++) {
       const result = await generateOnce(lastReason);
       if ('error' in result) {
         // Shape / network error — retry until budget runs out.
         lastReason = `previous attempt produced invalid output: ${result.error}`;
         if (attempt === MAX_VALIDATION_RETRIES) {
+          if (lastResult) {
+            return res.json({
+              ...lastResult,
+              confidence: lastValidation.confidence,
+              warning: lastValidation.warning,
+            });
+          }
           return res.status(502).json({ error: result.error });
         }
         continue;
       }
 
-      const rejection = await validateQuestion(result);
-      if (rejection === null) {
-        if (attempt > 0) console.log(`[generate] accepted on retry ${attempt}`);
-        return res.json(result);
+      lastResult = result;
+      lastValidation = await validateQuestion(result);
+
+      const needsRetry = !lastValidation.valid || lastValidation.confidence === 'low';
+      const outOfRetries = attempt === MAX_VALIDATION_RETRIES;
+
+      if (!needsRetry || outOfRetries) {
+        if (attempt > 0) {
+          console.log(
+            `[generate] accepted on retry ${attempt} — valid=${lastValidation.valid} confidence=${lastValidation.confidence}`,
+          );
+        }
+        return res.json({
+          ...result,
+          confidence: lastValidation.confidence,
+          warning: lastValidation.warning,
+        });
       }
-      console.log(`[generate] retry ${attempt + 1}/${MAX_VALIDATION_RETRIES} — ${rejection}`);
-      lastReason = rejection;
+
+      const label = lastValidation.valid ? 'low-confidence' : 'invalid';
+      const msg = lastValidation.warning ?? 'no reason';
+      console.log(
+        `[generate] retry ${attempt + 1}/${MAX_VALIDATION_RETRIES} — ${label}: ${msg}`,
+      );
+      lastReason = lastValidation.warning ?? 'previous attempt had issues';
     }
-    // Ran out of retries — return the last generated item anyway rather than 500.
-    // (Validator may be overly strict; a best-effort item is better than nothing.)
-    const fallback = await generateOnce(lastReason);
-    if ('error' in fallback) {
-      return res.status(502).json({ error: fallback.error });
-    }
-    return res.json(fallback);
+
+    // Unreachable — the outOfRetries branch inside the loop always returns.
+    return res.status(500).json({ error: 'unexpected validation loop exit' });
   } catch (err) {
     const m = err instanceof Error ? err.message : 'unknown';
     return res.status(500).json({ error: m });

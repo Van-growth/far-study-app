@@ -1,10 +1,14 @@
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
+export type QuestionConfidence = 'high' | 'medium' | 'low';
+
 export interface GeneratedQuestion {
   q: string;
   opts: string[];
   ans: number; // 0-3
   exp: string;
+  confidence?: QuestionConfidence;
+  warning?: string | null;
 }
 
 export interface WeakModuleRef {

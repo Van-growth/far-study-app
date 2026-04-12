@@ -491,6 +491,10 @@ export interface QuizItemWithContext {
   opts: [string, string, string, string];
   ans: number;
   exp: string;
+  /** Validator confidence from /api/generate-question. Drives the
+   * uncertainty banner above the question card. */
+  confidence?: 'high' | 'medium' | 'low';
+  warning?: string | null;
 }
 
 export interface QuizResult {
@@ -512,6 +516,10 @@ interface QuizViewProps {
   onComplete: (results: QuizResult[]) => void;
   onRequestNext?: () => void;
   onConceptCardReady?: (card: ConceptCard, result: QuizResult) => void;
+  /** Called when the student uses the uncertainty-banner "다음 문제로"
+   * button to skip a low-confidence item. Parent is expected to log
+   * the skip somewhere (e.g. quiz_logs with elapsed=null). */
+  onSkip?: (current: QuizItemWithContext) => void;
   sessionMax?: number;
   isLoadingNext?: boolean;
   title?: string;
@@ -523,6 +531,7 @@ export default function QuizView({
   onComplete,
   onRequestNext,
   onConceptCardReady,
+  onSkip,
   sessionMax,
   isLoadingNext,
   title,
@@ -531,6 +540,8 @@ export default function QuizView({
   const [selected, setSelected] = useState<number | null>(null);
   const [results, setResults] = useState<QuizResult[]>([]);
   const [finished, setFinished] = useState(false);
+  // Which question indexes have had their uncertainty banner dismissed.
+  const [bannerDismissed, setBannerDismissed] = useState<Record<number, boolean>>({});
 
   // Structured concept card state (reset per question)
   const [cardData, setCardData] = useState<ConceptCard | null>(null);
@@ -748,6 +759,43 @@ export default function QuizView({
     setCardError(null);
   }, [current, selected, currentIdx, questions.length, onRequestNext, sessionMax, results, onComplete]);
 
+  // Skip the current low-confidence question without recording an answer.
+  // Parent receives the skipped item to persist (elapsed=null).
+  const handleBannerSkip = useCallback(() => {
+    if (!current) return;
+    onSkip?.(current);
+    stopTimer();
+
+    const nextIdx = currentIdx + 1;
+    const atSessionMax = sessionMax !== undefined && nextIdx >= sessionMax;
+    if (atSessionMax) {
+      setFinished(true);
+      onComplete(results);
+      return;
+    }
+    if (onRequestNext && nextIdx >= questions.length) {
+      onRequestNext();
+    }
+    setCurrentIdx(nextIdx);
+    setSelected(null);
+    setCardData(null);
+    setCardError(null);
+  }, [
+    current,
+    currentIdx,
+    questions.length,
+    onRequestNext,
+    sessionMax,
+    results,
+    onComplete,
+    onSkip,
+    stopTimer,
+  ]);
+
+  const handleBannerDismiss = useCallback(() => {
+    setBannerDismissed((prev) => ({ ...prev, [currentIdx]: true }));
+  }, [currentIdx]);
+
   const handleClaudeExplain = useCallback(() => {
     if (!current || selected === null) return;
     const ctx: QuizContext = {
@@ -889,6 +937,62 @@ export default function QuizView({
       </div>
 
       <div className="p-5 flex flex-col gap-4">
+        {/* Uncertainty banner — shown only for validator-flagged items. */}
+        {(() => {
+          const level = current.confidence;
+          const hasWarning = typeof current.warning === 'string' && current.warning.trim().length > 0;
+          const show =
+            (level === 'medium' || level === 'low') &&
+            hasWarning &&
+            !bannerDismissed[currentIdx];
+          if (!show) return null;
+
+          const theme =
+            level === 'low'
+              ? { bg: '#FCEBEB', border: '#E24B4A', text: '#7f1d1d' }
+              : { bg: '#FAEEDA', border: '#EF9F27', text: '#78350f' };
+
+          return (
+            <div
+              className="rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-2"
+              style={{
+                background: theme.bg,
+                borderLeft: `3px solid ${theme.border}`,
+              }}
+            >
+              <div className="flex items-start gap-2 flex-1 min-w-0">
+                <span className="text-base shrink-0">⚠️</span>
+                <p
+                  className="text-xs leading-snug flex-1"
+                  style={{ color: theme.text }}
+                >
+                  {current.warning}
+                </p>
+              </div>
+              <div className="flex gap-1.5 shrink-0">
+                <button
+                  onClick={handleBannerDismiss}
+                  className="text-[11px] font-medium px-2.5 py-1 rounded-md"
+                  style={{
+                    background: 'rgba(255,255,255,0.7)',
+                    color: theme.text,
+                    border: `1px solid ${theme.border}80`,
+                  }}
+                >
+                  계속 풀기
+                </button>
+                <button
+                  onClick={handleBannerSkip}
+                  className="text-[11px] font-semibold px-2.5 py-1 rounded-md text-white"
+                  style={{ background: theme.border }}
+                >
+                  다음 문제로
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
         <p className="text-sm font-medium text-[#0f172a] leading-relaxed">{current.q}</p>
 
         <div className="flex flex-col gap-2">

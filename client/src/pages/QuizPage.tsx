@@ -9,7 +9,9 @@ import {
   WeakModuleRef,
   saveHistory,
   ConceptCard,
+  QuestionConfidence,
 } from '../hooks/useDynamicQuiz';
+import { saveQuizLog } from '../lib/db';
 import MobileSectionDrawer from '../components/layout/MobileSectionDrawer';
 
 const SESSION_MAX = 20;
@@ -26,6 +28,8 @@ interface Question {
   opts: [string, string, string, string];
   ans: number;
   exp: string;
+  confidence?: QuestionConfidence;
+  warning?: string | null;
 }
 
 // ── Per-(mode|topicId) session snapshot ───────────────────────
@@ -197,6 +201,8 @@ export default function QuizPage() {
         opts: gen.opts as [string, string, string, string],
         ans: gen.ans,
         exp: gen.exp,
+        confidence: gen.confidence,
+        warning: gen.warning ?? null,
       };
     };
   }, [mode, topicId, focusConcept]);
@@ -455,7 +461,27 @@ export default function QuizPage() {
     opts: it.opts,
     ans: it.ans,
     exp: it.exp,
+    confidence: it.confidence,
+    warning: it.warning ?? null,
   }));
+
+  // Skip handler — fire-and-forget log, no SRS / accuracy side effects.
+  // Writes directly to Supabase with correct=false + selected=-1 so the
+  // skipped item is traceable but not counted as a real answer.
+  const handleSkip = (item: QuizItemWithContext) => {
+    const uid = useStudyStore.getState().userId;
+    if (!uid) return;
+    void saveQuizLog(uid, {
+      topicId: item.topicId,
+      topicLabel: item.topicLabel,
+      question: item.q,
+      options: [...item.opts],
+      correct: false,
+      selected: -1,
+      answer: item.ans,
+      elapsedSeconds: null,
+    }).catch(() => {/* background */});
+  };
 
   return (
     <div className="p-4 sm:p-6">
@@ -537,6 +563,7 @@ export default function QuizPage() {
               onConceptCardReady={handleConceptCardReady}
               onComplete={() => { completedRef.current = true; }}
               onRequestNext={handleRequestNext}
+              onSkip={handleSkip}
               sessionMax={SESSION_MAX}
               isLoadingNext={loading}
               title={label}
