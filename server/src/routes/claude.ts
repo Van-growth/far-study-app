@@ -32,7 +32,7 @@ router.post('/chat', async (req: Request, res: Response) => {
   try {
     const stream = anthropic.messages.stream({
       model: MODEL,
-      max_tokens: 1500,
+      max_tokens: 4000,
       system,
       messages,
     });
@@ -84,7 +84,7 @@ Be concise and exam-focused. Respond only in Korean.`;
   try {
     const message = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 1024,
+      max_tokens: 4000,
       system,
       messages: [
         {
