@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { getSession, onAuthChange, signOut } from './lib/auth';
+import { onAuthChange, signOut } from './lib/auth';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import ClaudePanel from './components/claude/ClaudePanel';
@@ -238,34 +238,6 @@ function AppLayout({ email }: { email: string }) {
 let bootstrapHasRun = false;
 const lastInitStoredUid: { current: string | null } = { current: null };
 
-/** Wrap a promise in a timeout. Resolves to `fallback` if it doesn't settle. */
-function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T, label: string): Promise<T> {
-  return new Promise((resolve) => {
-    let settled = false;
-    const t = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      console.warn(`[App] ${label} timed out after ${ms}ms — using fallback`);
-      resolve(fallback);
-    }, ms);
-    promise.then(
-      (v) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(t);
-        resolve(v);
-      },
-      (e) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(t);
-        console.warn(`[App] ${label} rejected — using fallback:`, e);
-        resolve(fallback);
-      },
-    );
-  });
-}
-
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -274,8 +246,7 @@ export default function App() {
 
   useEffect(() => {
     // Bootstrap-once guard: protects against StrictMode double-invoke AND
-    // any other remount of the root <App>. The previous version used a
-    // setTimeout which could fire repeatedly and feel like a "retry loop".
+    // any other remount of the root <App>.
     if (bootstrapHasRun) {
       setLoading(false);
       return;
@@ -298,74 +269,71 @@ export default function App() {
       return;
     }
 
-    // Single-shot bootstrap. No retry. On any failure, proceed with null
-    // user and let the downstream pages (Coach / Auth) handle their own
-    // empty-state.
-    const bootstrap = async () => {
-      try {
-        console.log('[App] getSession() start');
-        // Race the Supabase auth call against an explicit 5s timeout so a
-        // hanging promise can't dangle forever (it used to silently sit in
-        // the microtask queue even after the outer setTimeout fired).
-        // 15s — Supabase token refresh occasionally needs >5s on cold
-        // cache. Previous 5s was too aggressive and pushed the app into
-        // the null-user fallback even for legitimately authenticated
-        // sessions, which then caused every subsequent DB write to hit
-        // RLS with auth.uid() = null and return 400.
-        const sessionResult = await withTimeout(
-          getSession(),
-          15000,
-          { data: { session: null } } as Awaited<ReturnType<typeof getSession>>,
-          'getSession',
-        );
-        const user = sessionResult.data?.session?.user ?? null;
-        console.log('[App] getSession() done', { user: user?.email });
+    // ── Event-driven auth bootstrap ──────────────────────────
+    // Previously we called getSession() wrapped in a hard timeout and
+    // fell back to "null user" when it didn't settle in time. That was
+    // brittle: on slow token refresh we'd mistakenly show AuthPage while
+    // the real session was still loading, and any immediate DB write ran
+    // without a JWT and failed RLS with 400.
+    //
+    // New approach: subscribe to onAuthStateChange and let Supabase tell
+    // us when the session is ready. It emits `INITIAL_SESSION` right
+    // after client init (usually within a few milliseconds) with the
+    // restored session or null. We unblock the loading screen on that
+    // first event — no timeout, no polling, no fallback.
+    //
+    // The only safety net is a long (30s) "stuck" detector that shows
+    // an error banner if Supabase somehow never emits anything (broken
+    // config, CSP blocking, etc.), but it does NOT silently swap in a
+    // null user — it just surfaces the problem.
+    let initialHandled = false;
+
+    const stuckTimer = window.setTimeout(() => {
+      if (initialHandled) return;
+      console.error('[App] Supabase never emitted an initial auth event in 30s');
+      setInitError('Supabase 연결이 지연되고 있습니다. 새로고침해주세요.');
+      setLoading(false);
+    }, 30000);
+
+    let subscription: { unsubscribe: () => void } | null = null;
+    try {
+      const { data } = onAuthChange(async (event, session) => {
+        const user = session?.user ?? null;
+        console.log('[App] onAuthStateChange', event, { user: user?.email });
         setUserEmail(user?.email ?? null);
 
         if (user) {
-          console.log('[App] initStore() start');
-          lastInitStoredUid.current = user.id;
-          await withTimeout(
-            initStore(user.id),
-            15000,
-            undefined,
-            'initStore',
-          );
-          console.log('[App] initStore() done');
-        }
-      } catch (e) {
-        // Should be unreachable — withTimeout swallows rejections — but keep
-        // a belt-and-suspenders catch so the finally still runs.
-        console.error('[App] bootstrap error (ignored, proceeding with null user):', e);
-        setUserEmail(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void bootstrap();
-
-    // Auth state listener: only re-init when the uid actually changes,
-    // so TOKEN_REFRESHED / INITIAL_SESSION events don't hammer initStore.
-    let subscription: { unsubscribe: () => void } | null = null;
-    try {
-      const { data } = onAuthChange(async (_event, session) => {
-        const user = session?.user ?? null;
-        setUserEmail(user?.email ?? null);
-        if (!user) {
+          if (lastInitStoredUid.current !== user.id) {
+            lastInitStoredUid.current = user.id;
+            // Fire-and-forget: initStore sets `userId` synchronously at
+            // the top of its body, so subsequent store reads see it even
+            // if the remote sync takes a while.
+            initStore(user.id).catch((e) =>
+              console.warn('[App] initStore failed:', e?.message ?? e),
+            );
+          }
+        } else {
           lastInitStoredUid.current = null;
-          return;
         }
-        if (lastInitStoredUid.current === user.id) return; // dedupe
-        lastInitStoredUid.current = user.id;
-        await withTimeout(initStore(user.id), 15000, undefined, 'initStore(auth-change)');
+
+        // Unblock the loading screen on the FIRST event (INITIAL_SESSION
+        // or an immediate SIGNED_IN). Subsequent events just update state.
+        if (!initialHandled) {
+          initialHandled = true;
+          window.clearTimeout(stuckTimer);
+          setLoading(false);
+        }
       });
       subscription = data.subscription;
     } catch (e) {
-      console.error('[App] onAuthChange error:', e);
+      console.error('[App] onAuthChange subscription error:', e);
+      window.clearTimeout(stuckTimer);
+      setInitError('인증 구독 실패');
+      setLoading(false);
     }
 
     return () => {
+      window.clearTimeout(stuckTimer);
       subscription?.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
