@@ -491,16 +491,21 @@ export default function QuizView({
   const [cardLoading, setCardLoading] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
 
-  // Per-question timer — only counts while the tab is visible (Page
-  // Visibility API), capped at 120s. Going over the cap flags the result
-  // as "don't count" (elapsedSeconds=null) so it's excluded from averages.
+  // Per-question timer — only counts while the tab is visible AND the
+  // user hasn't manually paused, capped at 120s. Going over the cap flags
+  // the result as "don't count" (elapsedSeconds=null) so it's excluded
+  // from averages.
   const ELAPSED_CAP_SEC = 120;
   const [elapsed, setElapsed] = useState(0);
+  const [manualPaused, setManualPaused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Accumulated visible milliseconds for the current question.
+  // Accumulated "active" milliseconds for the current question.
   const accumulatedRef = useRef<number>(0);
-  // Wall-clock at which the current "visible streak" started. Null when paused.
+  // Wall-clock at which the current active streak started. Null when
+  // paused by either the user or the browser tab going hidden.
   const visibleStartRef = useRef<number | null>(null);
+  // Mirror of manualPaused for synchronous access inside timer callbacks.
+  const manualPausedRef = useRef(false);
 
   const stopTimer = useCallback(() => {
     if (timerRef.current !== null) {
@@ -509,7 +514,7 @@ export default function QuizView({
     }
   }, []);
 
-  // Compute total visible milliseconds for the current question.
+  // Compute total active milliseconds for the current question.
   const currentElapsedMs = useCallback((): number => {
     const base = accumulatedRef.current;
     return visibleStartRef.current !== null
@@ -517,21 +522,31 @@ export default function QuizView({
       : base;
   }, []);
 
+  const foldStreakIntoAccumulator = useCallback(() => {
+    if (visibleStartRef.current !== null) {
+      accumulatedRef.current += Date.now() - visibleStartRef.current;
+      visibleStartRef.current = null;
+    }
+  }, []);
+
   const openPanel = useClaudeStore((s) => s.openPanel);
   const current = questions[currentIdx];
   const { sendQuizExplanation } = useClaudeChat(current?.topicLabel);
 
   // Start/restart when the displayed question changes. Stop on answer /
-  // unmount / session completion. Pauses automatically while the tab is
-  // hidden via the Page Visibility API so "away time" isn't counted.
+  // unmount / session completion. Auto-pauses while the tab is hidden
+  // (Page Visibility API) AND while the user manually paused — both fold
+  // into the same "streak / accumulator" model.
   useEffect(() => {
     if (!current || selected !== null) {
       stopTimer();
       return;
     }
 
-    // Reset accumulators for the new question.
+    // Reset accumulators and manual pause for the new question.
     accumulatedRef.current = 0;
+    setManualPaused(false);
+    manualPausedRef.current = false;
     visibleStartRef.current =
       typeof document !== 'undefined' && document.visibilityState === 'visible'
         ? Date.now()
@@ -556,16 +571,11 @@ export default function QuizView({
       if (typeof document === 'undefined') return;
       if (document.visibilityState === 'hidden') {
         // Freeze: fold the current visible streak into the accumulator.
-        if (visibleStartRef.current !== null) {
-          accumulatedRef.current += Date.now() - visibleStartRef.current;
-          visibleStartRef.current = null;
-        }
+        foldStreakIntoAccumulator();
       } else {
-        // Resume: start a new visible streak from "now".
-        if (visibleStartRef.current === null) {
+        // Only auto-resume if the user hasn't also manually paused.
+        if (visibleStartRef.current === null && !manualPausedRef.current) {
           visibleStartRef.current = Date.now();
-          // If we were frozen, restart the ticker in case it was stopped
-          // by the cap (it wasn't; cap only triggers while visible).
           if (timerRef.current === null) {
             timerRef.current = setInterval(tick, 250);
           }
@@ -582,13 +592,50 @@ export default function QuizView({
         document.removeEventListener('visibilitychange', onVis);
       }
     };
-  }, [currentIdx, current, selected, stopTimer, currentElapsedMs]);
+  }, [currentIdx, current, selected, stopTimer, currentElapsedMs, foldStreakIntoAccumulator]);
+
+  // ── Manual pause / resume handlers ─────────────────────────
+  const handlePauseClick = useCallback(() => {
+    if (manualPausedRef.current) return;
+    foldStreakIntoAccumulator();
+    manualPausedRef.current = true;
+    setManualPaused(true);
+    stopTimer();
+  }, [foldStreakIntoAccumulator, stopTimer]);
+
+  const handleResumeClick = useCallback(() => {
+    if (!manualPausedRef.current) return;
+    manualPausedRef.current = false;
+    setManualPaused(false);
+    // Only actually restart the streak if the tab is currently visible.
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      if (visibleStartRef.current === null) visibleStartRef.current = Date.now();
+      if (timerRef.current === null) {
+        timerRef.current = setInterval(() => {
+          const ms = currentElapsedMs();
+          const sec = Math.floor(ms / 1000);
+          if (sec >= ELAPSED_CAP_SEC) {
+            setElapsed(ELAPSED_CAP_SEC);
+            stopTimer();
+            return;
+          }
+          setElapsed(sec);
+        }, 250);
+      }
+    }
+  }, [currentElapsedMs, stopTimer]);
 
   const handleSelect = useCallback(
     (i: number) => {
       if (selected !== null || !current) return;
-      // Snapshot the visible-time elapsed at click. Over the cap → null so
-      // the log row still exists but the average calculation skips it.
+      // Snapshot the active-time elapsed at click. `currentElapsedMs`
+      // already returns the correct value in the paused case (accumulator
+      // only, no live streak). Implicitly clear manual pause so the next
+      // question starts cleanly if anything depends on that flag.
+      if (manualPausedRef.current) {
+        manualPausedRef.current = false;
+        setManualPaused(false);
+      }
       const rawSec = Math.floor(currentElapsedMs() / 1000);
       const loggedElapsed: number | null = rawSec >= ELAPSED_CAP_SEC ? null : rawSec;
       stopTimer();
@@ -739,24 +786,44 @@ export default function QuizView({
             {(() => {
               const capped = elapsed >= ELAPSED_CAP_SEC;
               const tone = elapsedTone(elapsed);
+              const canToggle = selected === null && !capped;
               return (
-                <span
-                  className="text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-full"
-                  style={{
-                    background: tone.color + '18',
-                    color: tone.color,
-                    fontWeight: tone.bold ? 700 : 500,
-                    border: `1px solid ${tone.color}40`,
-                  }}
-                  title={
-                    capped
-                      ? '120초 초과 — 이 문제는 평균 시간 계산에서 제외됩니다'
-                      : '문제 풀이 경과 시간 (탭 전환 시 일시정지)'
-                  }
-                >
-                  ⏱ {formatElapsed(elapsed)}
-                  {capped && '+'}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span
+                    className="text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-full"
+                    style={{
+                      background: tone.color + '18',
+                      color: manualPaused ? '#64748b' : tone.color,
+                      fontWeight: tone.bold ? 700 : 500,
+                      border: `1px solid ${(manualPaused ? '#94a3b8' : tone.color)}40`,
+                      opacity: manualPaused ? 0.7 : 1,
+                    }}
+                    title={
+                      capped
+                        ? '120초 초과 — 이 문제는 평균 시간 계산에서 제외됩니다'
+                        : manualPaused
+                        ? '일시정지됨 — ▶를 눌러 재개'
+                        : '문제 풀이 경과 시간 (탭 전환 시 자동 일시정지)'
+                    }
+                  >
+                    ⏱ {formatElapsed(elapsed)}
+                    {capped && '+'}
+                  </span>
+                  {canToggle && (
+                    <button
+                      onClick={manualPaused ? handleResumeClick : handlePauseClick}
+                      aria-label={manualPaused ? '타이머 재개' : '타이머 일시정지'}
+                      title={manualPaused ? '재개' : '일시정지'}
+                      className="w-6 h-6 flex items-center justify-center rounded-full text-[10px] transition-colors hover:bg-gray-100"
+                      style={{
+                        border: '1px solid #e2e8f0',
+                        color: manualPaused ? '#22c55e' : '#64748b',
+                      }}
+                    >
+                      {manualPaused ? '▶' : '⏸'}
+                    </button>
+                  )}
+                </div>
               );
             })()}
           </div>
