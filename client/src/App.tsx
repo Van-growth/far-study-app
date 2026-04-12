@@ -10,6 +10,7 @@ import WrongPage from './pages/WrongPage';
 import SciencePage from './pages/SciencePage';
 import AnalyzePage from './pages/AnalyzePage';
 import ReplayPage from './pages/ReplayPage';
+import CoachPage from './pages/CoachPage';
 import AuthPage from './pages/AuthPage';
 import useClaudeStore from './store/claudeStore';
 import useStudyStore from './store/studyStore';
@@ -21,6 +22,7 @@ const PANEL_DEFAULT = 340;
 // ── Bottom Tab Bar (mobile only) ──────────────────────────────
 const MOBILE_TABS = [
   { label: '퀴즈', icon: '✏️', path: '/quiz?mode=interleave' },
+  { label: '코치', icon: '🤖', path: '/coach' },
   { label: '오답', icon: '📕', path: '/wrong' },
   { label: '현황', icon: '📊', path: '/dashboard' },
   { label: '더보기', icon: '···', path: '/more' },
@@ -179,6 +181,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/wrong" element={<WrongPage />} />
             <Route path="/analyze" element={<AnalyzePage />} />
             <Route path="/replay" element={<ReplayPage />} />
+            <Route path="/coach" element={<CoachPage />} />
             <Route path="/science" element={<SciencePage />} />
             <Route path="*" element={<Navigate to="/quiz?mode=interleave" replace />} />
           </Routes>

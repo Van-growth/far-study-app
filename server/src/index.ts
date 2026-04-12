@@ -5,6 +5,7 @@ import claudeRouter from './routes/claude';
 import quizRouter from './routes/quiz';
 import analyzeRouter from './routes/analyze';
 import historyRouter from './routes/history';
+import coachRouter from './routes/coach';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -30,6 +31,9 @@ app.use('/api', analyzeRouter);
 
 // ── Quiz history (persistent) ─────────────────────────────────
 app.use('/api', historyRouter);
+
+// ── AI Coach (learning-data-driven chat) ──────────────────────
+app.use('/api/coach', coachRouter);
 
 // ── 404 ───────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

@@ -108,6 +108,51 @@ export const getModulePerformance = async (
   return out
 }
 
+// Used by the AI coach — lightweight quiz meta summary.
+export const getQuizMeta = async (
+  userId: string,
+): Promise<{ totalSolved: number; lastActive: string | null }> => {
+  const [countRes, lastRes] = await Promise.all([
+    supabase.from('quiz_logs').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase
+      .from('quiz_logs')
+      .select('created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1),
+  ])
+  const lastRow = (lastRes.data && lastRes.data[0]) as { created_at?: string } | undefined
+  return {
+    totalSolved: countRes.count ?? 0,
+    lastActive: lastRow?.created_at ?? null,
+  }
+}
+
+// Distinct moduleIds from the most recent wrong answers.
+export const getRecentWrongModules = async (
+  userId: string,
+  limit = 5,
+): Promise<string[]> => {
+  const { data } = await supabase
+    .from('quiz_logs')
+    .select('topic_id')
+    .eq('user_id', userId)
+    .eq('correct', false)
+    .order('created_at', { ascending: false })
+    .limit(50)
+  if (!data) return []
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const row of data as { topic_id: string }[]) {
+    if (row.topic_id && !seen.has(row.topic_id)) {
+      seen.add(row.topic_id)
+      out.push(row.topic_id)
+      if (out.length >= limit) break
+    }
+  }
+  return out
+}
+
 export const getWrongLogs = async (userId: string, limit = 50) => {
   const { data } = await supabase
     .from('quiz_logs')

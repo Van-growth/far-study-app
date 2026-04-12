@@ -4,6 +4,7 @@ import useClaudeStore from '../../store/claudeStore';
 
 const desktopTabs = [
   { label: '퀴즈', path: '/quiz?mode=interleave' },
+  { label: '🤖 AI 코치', path: '/coach' },
   { label: '📝 문제 분석', path: '/analyze' },
   { label: '📕 오답노트', path: '/wrong' },
   { label: '현황', path: '/dashboard' },
