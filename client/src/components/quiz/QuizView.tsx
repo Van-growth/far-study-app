@@ -457,8 +457,9 @@ export interface QuizResult {
   options: string[];
   selected: number;
   answer: number;
-  /** Seconds from question display to selection click. */
-  elapsedSeconds: number;
+  /** Seconds from question display to selection click, or null if the
+   * visible-time elapsed exceeded the 120s cap (treated as "don't count"). */
+  elapsedSeconds: number | null;
 }
 
 interface QuizViewProps {
@@ -490,10 +491,16 @@ export default function QuizView({
   const [cardLoading, setCardLoading] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
 
-  // Per-question timer — counts up from 0 until the user clicks an option.
+  // Per-question timer — only counts while the tab is visible (Page
+  // Visibility API), capped at 120s. Going over the cap flags the result
+  // as "don't count" (elapsedSeconds=null) so it's excluded from averages.
+  const ELAPSED_CAP_SEC = 120;
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startedAtRef = useRef<number>(0);
+  // Accumulated visible milliseconds for the current question.
+  const accumulatedRef = useRef<number>(0);
+  // Wall-clock at which the current "visible streak" started. Null when paused.
+  const visibleStartRef = useRef<number | null>(null);
 
   const stopTimer = useCallback(() => {
     if (timerRef.current !== null) {
@@ -502,33 +509,92 @@ export default function QuizView({
     }
   }, []);
 
+  // Compute total visible milliseconds for the current question.
+  const currentElapsedMs = useCallback((): number => {
+    const base = accumulatedRef.current;
+    return visibleStartRef.current !== null
+      ? base + (Date.now() - visibleStartRef.current)
+      : base;
+  }, []);
+
   const openPanel = useClaudeStore((s) => s.openPanel);
   const current = questions[currentIdx];
   const { sendQuizExplanation } = useClaudeChat(current?.topicLabel);
 
   // Start/restart when the displayed question changes. Stop on answer /
-  // unmount / session completion.
+  // unmount / session completion. Pauses automatically while the tab is
+  // hidden via the Page Visibility API so "away time" isn't counted.
   useEffect(() => {
     if (!current || selected !== null) {
       stopTimer();
       return;
     }
+
+    // Reset accumulators for the new question.
+    accumulatedRef.current = 0;
+    visibleStartRef.current =
+      typeof document !== 'undefined' && document.visibilityState === 'visible'
+        ? Date.now()
+        : null;
     setElapsed(0);
-    startedAtRef.current = Date.now();
-    timerRef.current = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000));
-    }, 250); // 250ms tick so the display updates within ~1s without drift
-    return stopTimer;
-  }, [currentIdx, current, selected, stopTimer]);
+
+    const tick = () => {
+      const ms = currentElapsedMs();
+      const sec = Math.floor(ms / 1000);
+      if (sec >= ELAPSED_CAP_SEC) {
+        setElapsed(ELAPSED_CAP_SEC);
+        // Freeze the ticker — further counting is meaningless once we'll
+        // record null anyway.
+        stopTimer();
+        return;
+      }
+      setElapsed(sec);
+    };
+    timerRef.current = setInterval(tick, 250);
+
+    const onVis = () => {
+      if (typeof document === 'undefined') return;
+      if (document.visibilityState === 'hidden') {
+        // Freeze: fold the current visible streak into the accumulator.
+        if (visibleStartRef.current !== null) {
+          accumulatedRef.current += Date.now() - visibleStartRef.current;
+          visibleStartRef.current = null;
+        }
+      } else {
+        // Resume: start a new visible streak from "now".
+        if (visibleStartRef.current === null) {
+          visibleStartRef.current = Date.now();
+          // If we were frozen, restart the ticker in case it was stopped
+          // by the cap (it wasn't; cap only triggers while visible).
+          if (timerRef.current === null) {
+            timerRef.current = setInterval(tick, 250);
+          }
+        }
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVis);
+    }
+
+    return () => {
+      stopTimer();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVis);
+      }
+    };
+  }, [currentIdx, current, selected, stopTimer, currentElapsedMs]);
 
   const handleSelect = useCallback(
     (i: number) => {
       if (selected !== null || !current) return;
-      // Freeze the elapsed value at click time. The interval is also stopped
-      // by the effect once `selected` flips non-null.
-      const finalElapsed = Math.floor((Date.now() - startedAtRef.current) / 1000);
+      // Snapshot the visible-time elapsed at click. Over the cap → null so
+      // the log row still exists but the average calculation skips it.
+      const rawSec = Math.floor(currentElapsedMs() / 1000);
+      const loggedElapsed: number | null = rawSec >= ELAPSED_CAP_SEC ? null : rawSec;
       stopTimer();
-      setElapsed(finalElapsed);
+      // Freeze the display at the uncapped value (or the cap) — the effect
+      // will no-op because `selected` becomes non-null on the next render.
+      setElapsed(Math.min(rawSec, ELAPSED_CAP_SEC));
       setSelected(i);
 
       // Fire result up to parent immediately
@@ -541,7 +607,7 @@ export default function QuizView({
         options: [...current.opts],
         selected: i,
         answer: current.ans,
-        elapsedSeconds: finalElapsed,
+        elapsedSeconds: loggedElapsed,
       };
       onAnswer(result);
       setResults((prev) => [...prev, result]);
@@ -671,6 +737,7 @@ export default function QuizView({
               {current.topicId} · {current.topicLabel}
             </span>
             {(() => {
+              const capped = elapsed >= ELAPSED_CAP_SEC;
               const tone = elapsedTone(elapsed);
               return (
                 <span
@@ -681,9 +748,14 @@ export default function QuizView({
                     fontWeight: tone.bold ? 700 : 500,
                     border: `1px solid ${tone.color}40`,
                   }}
-                  title="문제 풀이 경과 시간"
+                  title={
+                    capped
+                      ? '120초 초과 — 이 문제는 평균 시간 계산에서 제외됩니다'
+                      : '문제 풀이 경과 시간 (탭 전환 시 일시정지)'
+                  }
                 >
                   ⏱ {formatElapsed(elapsed)}
+                  {capped && '+'}
                 </span>
               );
             })()}

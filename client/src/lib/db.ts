@@ -45,7 +45,7 @@ export const saveQuizLog = async (
     correct: boolean
     selected: number
     answer: number
-    elapsedSeconds?: number
+    elapsedSeconds?: number | null
   },
 ) => {
   await supabase.from('quiz_logs').insert({
@@ -85,7 +85,13 @@ export const getModulePerformance = async (
     if (!acc[id]) acc[id] = { topicId: id, total: 0, correct: 0, secSum: 0, secCount: 0 }
     acc[id].total++
     if (row.correct) acc[id].correct++
-    if (typeof row.elapsed_seconds === 'number' && row.elapsed_seconds >= 0) {
+    // Exclude null AND any stray values >120s (cap). The client already
+    // nulls >120 before insert, but this is a defensive belt for older rows.
+    if (
+      typeof row.elapsed_seconds === 'number' &&
+      row.elapsed_seconds >= 0 &&
+      row.elapsed_seconds <= 120
+    ) {
       acc[id].secSum += row.elapsed_seconds
       acc[id].secCount++
     }
