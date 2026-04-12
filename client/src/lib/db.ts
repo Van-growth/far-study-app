@@ -187,6 +187,14 @@ export const saveQuizLog = async (
   if (hasCol) {
     payload.elapsed_seconds = log.elapsedSeconds ?? null
   }
+  // Last-line defence: if area_id was somehow stripped (HMR remnant /
+  // bundle cache / accidental object spread), force-inject it before
+  // hitting Supabase. Logs to console so any future regression is
+  // immediately visible.
+  if (!payload.area_id) {
+    console.warn('[db] saveQuizLog payload missing area_id — re-injecting from topic_id')
+    payload.area_id = areaId
+  }
   const { error } = await supabase.from('quiz_logs').insert(payload)
   if (error) {
     logError('saveQuizLog', error)
