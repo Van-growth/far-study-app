@@ -20,7 +20,10 @@ export interface Area {
   id: string;
   label: string;
   color: string;
-  percentage: string;
+  /** AICPA Blueprint 2026 official area this local group maps to */
+  blueprintArea: 'I' | 'II' | 'III';
+  blueprintAreaName: string;
+  blueprintRange: string;
   topics: Topic[];
 }
 
@@ -32,7 +35,9 @@ export const areas: Area[] = [
     id: 'conceptual-framework',
     label: 'Conceptual Framework',
     color: '#4f6ef7',
-    percentage: 'Area I · 30–40%',
+    blueprintArea: 'I',
+    blueprintAreaName: 'Financial Reporting',
+    blueprintRange: '30-40%',
     topics: [
       {
         id: 'qualitative-chars',
@@ -268,7 +273,9 @@ export const areas: Area[] = [
     id: 'fs-accounts',
     label: 'F/S Accounts',
     color: '#0ea5e9',
-    percentage: 'Area II · 30–40%',
+    blueprintArea: 'II',
+    blueprintAreaName: 'Select Balance Sheet Accounts',
+    blueprintRange: '30-40%',
     topics: [
       {
         id: 'cash-equivalents',
@@ -611,7 +618,9 @@ export const areas: Area[] = [
     id: 'transactions',
     label: 'Transactions',
     color: '#10b981',
-    percentage: 'Area III · 25–35%',
+    blueprintArea: 'III',
+    blueprintAreaName: 'Select Transactions',
+    blueprintRange: '25-35%',
     topics: [
       {
         id: 'bonds-payable',
@@ -1006,7 +1015,9 @@ export const areas: Area[] = [
     id: 'government',
     label: 'Government',
     color: '#f59e0b',
-    percentage: 'Area I · 30–40%',
+    blueprintArea: 'I',
+    blueprintAreaName: 'Financial Reporting',
+    blueprintRange: '30-40%',
     topics: [
       {
         id: 'gov-accounting',
@@ -1077,7 +1088,9 @@ export const areas: Area[] = [
     id: 'nfp-special',
     label: 'NFP & Special',
     color: '#8b5cf6',
-    percentage: 'Area I · 30–40%',
+    blueprintArea: 'I',
+    blueprintAreaName: 'Financial Reporting',
+    blueprintRange: '30-40%',
     topics: [
       {
         id: 'nfp',

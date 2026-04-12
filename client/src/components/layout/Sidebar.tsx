@@ -56,7 +56,9 @@ export default function Sidebar() {
                   >
                     {area.label}
                   </span>
-                  <span className="text-[10px] text-muted">{area.percentage}</span>
+                  <span className="text-[10px] text-muted" title={`AICPA Blueprint 2026 · Area ${area.blueprintArea} (${area.blueprintAreaName})`}>
+                    Area {area.blueprintArea} · {area.blueprintRange}
+                  </span>
                 </button>
 
                 {/* Topics */}

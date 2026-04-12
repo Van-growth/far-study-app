@@ -85,7 +85,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
       <QuickActions onAction={sendQuickAction} hasQuizContext={false} disabled={isLoading} />
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-4">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-4">
         {isEmpty && !isLoading ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4 gap-3">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl" style={{ background: '#eef2ff' }}>👋</div>

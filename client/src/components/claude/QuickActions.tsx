@@ -12,7 +12,7 @@ const ACTIONS = [
 
 export default function QuickActions({ onAction, disabled }: QuickActionsProps) {
   return (
-    <div className="flex flex-wrap gap-1.5 px-3 py-2 border-b border-border">
+    <div className="shrink-0 flex flex-wrap gap-1.5 px-3 py-2 border-b border-border">
       {ACTIONS.map((a) => (
         <button
           key={a.key}

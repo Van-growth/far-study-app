@@ -160,7 +160,7 @@ function AppLayout({ email }: { email: string }) {
         window.location.href = '/';
       }} />
 
-      <div className="flex flex-1 overflow-hidden" style={{ paddingTop: 54 }}>
+      <div className="flex flex-1 min-h-0 overflow-hidden" style={{ paddingTop: 54 }}>
         {/* Sidebar — desktop only */}
         {!isScience && (
           <div className="hidden md:block">
