@@ -275,6 +275,7 @@ export default function QuizPage() {
       correct: result.correct,
       selected: result.selected,
       answer: result.answer,
+      elapsedSeconds: result.elapsedSeconds,
     };
     recordAnswer(result.topicId, result.correct, log);
 

@@ -20,6 +20,19 @@ import {
   HighlightColor,
 } from '../../hooks/useDynamicQuiz';
 
+// ── Timer helpers ─────────────────────────────────────────────
+export function formatElapsed(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+export function elapsedTone(sec: number): { color: string; bold: boolean } {
+  if (sec >= 61) return { color: '#ef4444', bold: true };
+  if (sec >= 41) return { color: '#f59e0b', bold: false };
+  return { color: '#22c55e', bold: false };
+}
+
 // ── Concept card renderers ────────────────────────────────────
 function typeLabel(t: ConceptCard['type']): string {
   switch (t) {
@@ -444,6 +457,8 @@ export interface QuizResult {
   options: string[];
   selected: number;
   answer: number;
+  /** Seconds from question display to selection click. */
+  elapsedSeconds: number;
 }
 
 interface QuizViewProps {
@@ -475,13 +490,45 @@ export default function QuizView({
   const [cardLoading, setCardLoading] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
 
+  // Per-question timer — counts up from 0 until the user clicks an option.
+  const [elapsed, setElapsed] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startedAtRef = useRef<number>(0);
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current !== null) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
   const openPanel = useClaudeStore((s) => s.openPanel);
   const current = questions[currentIdx];
   const { sendQuizExplanation } = useClaudeChat(current?.topicLabel);
 
+  // Start/restart when the displayed question changes. Stop on answer /
+  // unmount / session completion.
+  useEffect(() => {
+    if (!current || selected !== null) {
+      stopTimer();
+      return;
+    }
+    setElapsed(0);
+    startedAtRef.current = Date.now();
+    timerRef.current = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000));
+    }, 250); // 250ms tick so the display updates within ~1s without drift
+    return stopTimer;
+  }, [currentIdx, current, selected, stopTimer]);
+
   const handleSelect = useCallback(
     (i: number) => {
       if (selected !== null || !current) return;
+      // Freeze the elapsed value at click time. The interval is also stopped
+      // by the effect once `selected` flips non-null.
+      const finalElapsed = Math.floor((Date.now() - startedAtRef.current) / 1000);
+      stopTimer();
+      setElapsed(finalElapsed);
       setSelected(i);
 
       // Fire result up to parent immediately
@@ -494,6 +541,7 @@ export default function QuizView({
         options: [...current.opts],
         selected: i,
         answer: current.ans,
+        elapsedSeconds: finalElapsed,
       };
       onAnswer(result);
       setResults((prev) => [...prev, result]);
@@ -613,14 +661,33 @@ export default function QuizView({
     <div className="card overflow-hidden" style={{ borderTop: `3px solid ${current.areaColor}` }}>
       {/* Header */}
       <div className="px-5 pt-4 pb-3 border-b border-border">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between gap-2 mb-2">
           {title && <p className="text-xs font-semibold text-muted">{title}</p>}
-          <span
-            className="text-[11px] font-semibold px-2 py-0.5 rounded-full ml-auto"
-            style={{ background: current.areaColor + '18', color: current.areaColor }}
-          >
-            {current.topicId} · {current.topicLabel}
-          </span>
+          <div className="flex items-center gap-2 ml-auto">
+            <span
+              className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+              style={{ background: current.areaColor + '18', color: current.areaColor }}
+            >
+              {current.topicId} · {current.topicLabel}
+            </span>
+            {(() => {
+              const tone = elapsedTone(elapsed);
+              return (
+                <span
+                  className="text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-full"
+                  style={{
+                    background: tone.color + '18',
+                    color: tone.color,
+                    fontWeight: tone.bold ? 700 : 500,
+                    border: `1px solid ${tone.color}40`,
+                  }}
+                  title="문제 풀이 경과 시간"
+                >
+                  ⏱ {formatElapsed(elapsed)}
+                </span>
+              );
+            })()}
+          </div>
         </div>
         <div className="w-full h-1.5 bg-gray-200 rounded-full">
           <div

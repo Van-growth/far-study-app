@@ -45,6 +45,7 @@ export const saveQuizLog = async (
     correct: boolean
     selected: number
     answer: number
+    elapsedSeconds?: number
   },
 ) => {
   await supabase.from('quiz_logs').insert({
@@ -56,7 +57,49 @@ export const saveQuizLog = async (
     correct: log.correct,
     selected: log.selected,
     answer: log.answer,
+    elapsed_seconds: log.elapsedSeconds ?? null,
   })
+}
+
+// ── 모듈별 성과 집계 (오답노트 상단용) ─────────────────────────
+export interface ModulePerf {
+  topicId: string
+  total: number
+  correct: number
+  avgSeconds: number | null
+}
+
+export const getModulePerformance = async (
+  userId: string,
+): Promise<Record<string, ModulePerf>> => {
+  const { data, error } = await supabase
+    .from('quiz_logs')
+    .select('topic_id, correct, elapsed_seconds')
+    .eq('user_id', userId)
+  if (error || !data) return {}
+
+  const acc: Record<string, { topicId: string; total: number; correct: number; secSum: number; secCount: number }> = {}
+  for (const row of data as { topic_id: string; correct: boolean; elapsed_seconds: number | null }[]) {
+    const id = row.topic_id
+    if (!id) continue
+    if (!acc[id]) acc[id] = { topicId: id, total: 0, correct: 0, secSum: 0, secCount: 0 }
+    acc[id].total++
+    if (row.correct) acc[id].correct++
+    if (typeof row.elapsed_seconds === 'number' && row.elapsed_seconds >= 0) {
+      acc[id].secSum += row.elapsed_seconds
+      acc[id].secCount++
+    }
+  }
+  const out: Record<string, ModulePerf> = {}
+  for (const [id, v] of Object.entries(acc)) {
+    out[id] = {
+      topicId: v.topicId,
+      total: v.total,
+      correct: v.correct,
+      avgSeconds: v.secCount > 0 ? Math.round(v.secSum / v.secCount) : null,
+    }
+  }
+  return out
 }
 
 export const getWrongLogs = async (userId: string, limit = 50) => {

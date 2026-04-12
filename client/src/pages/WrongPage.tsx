@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getWrongLogs } from '../lib/db';
+import { getWrongLogs, getModulePerformance, ModulePerf } from '../lib/db';
 import useStudyStore from '../store/studyStore';
 import useClaudeStore from '../store/claudeStore';
 import { useClaudeChat } from '../hooks/useClaudeChat';
 import { areas } from '../data/far-topics';
+import { formatElapsed, elapsedTone } from '../components/quiz/QuizView';
 
 interface WrongLog {
   id: string;
@@ -20,12 +21,128 @@ interface WrongLog {
 
 const ALPHA = ['A', 'B', 'C', 'D'];
 
+// ── Module performance tree ──────────────────────────────────
+function ModulePerformanceTree({
+  perf,
+  navigate,
+}: {
+  perf: Record<string, ModulePerf>;
+  navigate: (path: string) => void;
+}) {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const toggle = (id: string) => setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  return (
+    <div className="card p-4 flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-[#0f172a]">⏱ 모듈별 풀이 시간 · 정답률</p>
+        <p className="text-[10px] text-muted">초록 ≤40s · 주황 41–60s · 빨강 ≥61s</p>
+      </div>
+      <div className="flex flex-col gap-1">
+        {areas.map((area) => {
+          const isCollapsed = collapsed[area.id] === true;
+          return (
+            <div key={area.id}>
+              <button
+                onClick={() => toggle(area.id)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 text-left"
+              >
+                <span
+                  className="text-[10px] transition-transform"
+                  style={{
+                    color: area.color,
+                    transform: isCollapsed ? 'none' : 'rotate(90deg)',
+                    display: 'inline-block',
+                  }}
+                >
+                  ▸
+                </span>
+                <span className="text-xs font-semibold flex-1" style={{ color: area.color }}>
+                  {area.label}
+                </span>
+              </button>
+              {!isCollapsed && (
+                <div
+                  className="ml-4 pl-2 border-l-2 flex flex-col gap-0.5 mb-1"
+                  style={{ borderColor: area.color + '40' }}
+                >
+                  {area.topics.map((topic) => {
+                    const p = perf[topic.id];
+                    const hasData = p && p.total > 0;
+                    const avg = hasData ? p.avgSeconds : null;
+                    const accuracy = hasData ? Math.round((p.correct / p.total) * 100) : null;
+                    const tone = avg !== null ? elapsedTone(avg) : null;
+                    const bg = !hasData
+                      ? 'transparent'
+                      : tone
+                      ? tone.color + '10'
+                      : 'transparent';
+
+                    return (
+                      <button
+                        key={topic.id}
+                        onClick={() => navigate(`/quiz?topicId=${topic.id}`)}
+                        className="w-full flex items-center gap-2 px-2 py-1 rounded-lg text-left transition-colors hover:bg-gray-50"
+                        style={{ background: bg }}
+                      >
+                        <span className="text-[10px] text-muted shrink-0 font-mono">
+                          {topic.id.split('-')[1]}
+                        </span>
+                        <span className="text-xs flex-1 truncate text-[#0f172a]">{topic.label}</span>
+                        {!hasData ? (
+                          <span className="text-[10px] text-[#94a3b8] shrink-0">미학습</span>
+                        ) : (
+                          <div className="flex items-center gap-2 shrink-0">
+                            {avg !== null && tone ? (
+                              <span
+                                className="text-[10px] font-mono tabular-nums"
+                                style={{
+                                  color: tone.color,
+                                  fontWeight: tone.bold ? 700 : 500,
+                                }}
+                              >
+                                {formatElapsed(avg)}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-muted">—:—</span>
+                            )}
+                            <span className="text-[9px] text-muted">·</span>
+                            <span
+                              className="text-[10px] font-semibold"
+                              style={{
+                                color:
+                                  (accuracy ?? 0) >= 80
+                                    ? '#22c55e'
+                                    : (accuracy ?? 0) >= 60
+                                    ? '#f59e0b'
+                                    : '#ef4444',
+                              }}
+                            >
+                              정답률 {accuracy}%
+                            </span>
+                            <span className="text-[9px] text-muted">({p.total})</span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function WrongPage() {
   const navigate = useNavigate();
   const userId = useStudyStore((s) => s.userId);
   const [logs, setLogs] = useState<WrongLog[]>([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [perf, setPerf] = useState<Record<string, ModulePerf>>({});
 
   const openPanel = useClaudeStore((s) => s.openPanel);
   const { sendMessage } = useClaudeChat();
@@ -33,9 +150,10 @@ export default function WrongPage() {
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
-    getWrongLogs(userId, 100)
-      .then((d) => setLogs(d as WrongLog[]))
-      .finally(() => setLoading(false));
+    Promise.all([
+      getWrongLogs(userId, 100).then((d) => setLogs(d as WrongLog[])),
+      getModulePerformance(userId).then(setPerf).catch(() => setPerf({})),
+    ]).finally(() => setLoading(false));
   }, [userId]);
 
   const filtered = filter ? logs.filter((l) => l.topic_id === filter) : logs;
@@ -79,6 +197,9 @@ export default function WrongPage() {
             </button>
           )}
         </div>
+
+        {/* Module performance tree — time + accuracy by Becker section */}
+        <ModulePerformanceTree perf={perf} navigate={navigate} />
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">

@@ -21,6 +21,7 @@ export interface QuizLogPayload {
   correct: boolean;
   selected: number;
   answer: number;
+  elapsedSeconds?: number;
 }
 
 interface StudyStore {
