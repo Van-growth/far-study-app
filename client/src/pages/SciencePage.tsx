@@ -1,5 +1,6 @@
 import ScienceCard from '../components/science/ScienceCard';
 import RoutineTimeline from '../components/science/RoutineTimeline';
+import LearningScienceHero from '../components/science/LearningScienceHero';
 
 const SECTIONS = [
   { id: 'active-recall', label: 'Active Recall' },
@@ -55,22 +56,7 @@ export default function SciencePage() {
 
       <div className="max-w-[900px] mx-auto px-6 py-10 flex flex-col gap-12">
         {/* Hero */}
-        <section className="text-center py-8">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#4f6ef7] mb-3">
-            USCPA FAR · Ivy League Study Method
-          </p>
-          <h1 className="text-4xl font-black text-[#0f172a] mb-4" style={{ letterSpacing: '-1.5px' }}>
-            왜 이렇게 공부해야 하는가
-          </h1>
-          <p className="text-xl font-semibold text-muted mb-4">
-            Ivy League 학습법의 뇌과학적 근거
-          </p>
-          <p className="text-base text-[#0f172a] leading-relaxed max-w-lg mx-auto">
-            하버드·MIT·Princeton 학생들이 쓰는 공부법은 감이 아니라
-            인지과학 연구에서 검증된 방법론이다. 이 앱은 그 4가지 기법을
-            FAR 시험에 맞게 설계했다.
-          </p>
-        </section>
+        <LearningScienceHero />
 
         {/* Section 1: Active Recall */}
         <section id="active-recall">
