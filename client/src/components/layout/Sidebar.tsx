@@ -22,8 +22,11 @@ export default function Sidebar() {
       style={{ width: 250, minHeight: 0 }}
     >
       <div className="p-3">
-        <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-3 px-1">
+        <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-0.5 px-1">
           FAR Topics
+        </p>
+        <p className="text-[9px] text-muted px-1 mb-3">
+          출처: AICPA Blueprint 2026
         </p>
 
         <div className="flex flex-col gap-1">
