@@ -10,6 +10,22 @@ export const getProgress = async (userId: string) => {
   return data ?? []
 }
 
+// Coerce potentially-partial SRS card data into a shape that always
+// satisfies every NOT NULL column on `topic_progress`. This protects
+// against:
+//   · Old persisted state from localStorage missing a field
+//   · NaN/Infinity values that JSON.stringify would drop
+//   · Production schemas where column defaults have been removed
+//     (Postgres 23502 not_null_violation observed in the wild)
+const safeInt = (v: unknown, fallback = 0): number =>
+  typeof v === 'number' && Number.isFinite(v) ? v : fallback
+const safeIsoFromMs = (ms: unknown): string => {
+  if (typeof ms === 'number' && Number.isFinite(ms) && ms > 0) {
+    return new Date(ms).toISOString()
+  }
+  return new Date().toISOString()
+}
+
 export const upsertProgress = async (
   userId: string,
   p: {
@@ -21,15 +37,17 @@ export const upsertProgress = async (
     correct: number
   },
 ) => {
+  if (!userId || !p.topicId) return
   await supabase.from('topic_progress').upsert(
     {
       user_id: userId,
       topic_id: p.topicId,
-      interval: p.interval,
-      next_review: new Date(p.nextReview).toISOString(),
-      streak: p.streak,
-      attempts: p.attempts,
-      correct: p.correct,
+      interval: safeInt(p.interval, 0),
+      next_review: safeIsoFromMs(p.nextReview),
+      streak: safeInt(p.streak, 0),
+      attempts: safeInt(p.attempts, 0),
+      correct: safeInt(p.correct, 0),
+      updated_at: new Date().toISOString(),
     },
     { onConflict: 'user_id,topic_id' },
   )

@@ -129,7 +129,9 @@ const useStudyStore = create<StudyStore>()(
       // ── updateSRSCard ────────────────────────────────────────
       updateSRSCard: (topicId, correct) => {
         const cards = get().srsCards;
-        const card = cards[topicId] ?? DEFAULT_SR_CARD;
+        // Spread DEFAULT first so any field missing from a stale persisted
+        // card gets backfilled (prevents Supabase 23502 on upsert).
+        const card: SRCard = { ...DEFAULT_SR_CARD, ...(cards[topicId] ?? {}) };
         const updated = updateCard(card, correct);
         set({ srsCards: { ...cards, [topicId]: updated } });
 
@@ -141,7 +143,7 @@ const useStudyStore = create<StudyStore>()(
       recordAnswer: (topicId, correct, log) => {
         // 1. Local SRS update
         const cards = get().srsCards;
-        const card = cards[topicId] ?? DEFAULT_SR_CARD;
+        const card: SRCard = { ...DEFAULT_SR_CARD, ...(cards[topicId] ?? {}) };
         const updated = updateCard(card, correct);
         set({ srsCards: { ...cards, [topicId]: updated } });
 
