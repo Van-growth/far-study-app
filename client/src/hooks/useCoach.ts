@@ -195,14 +195,9 @@ export async function saveSessionLog(session: SessionLog): Promise<void> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
-/** Format today's local date as YYYY-MM-DD. */
-export function todayStr(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${dd}`;
-}
+/** Format today's local date as YYYY-MM-DD. Re-exports the shared util
+ * from lib/date so all timezone logic lives in one place. */
+export { localDateStr as todayStr } from '../lib/date';
 
 export async function streamCoachResponse(
   stats: CoachStats,

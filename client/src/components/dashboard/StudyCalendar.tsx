@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import useStudyStore from '../../store/studyStore';
 import { getCalendar } from '../../lib/db';
+import { localDateStr } from '../../lib/date';
 
 interface DayData {
   date: string;
@@ -44,7 +45,10 @@ export default function StudyCalendar() {
   let currentWeek: { date: Date; count: number; correct: number }[] = [];
 
   while (cursor <= today) {
-    const dateStr = cursor.toISOString().split('T')[0];
+    // Local date — must match the format used when session rows were
+    // written (db.ts updateTodaySession), otherwise the heatmap cell
+    // lookup misses by 1 day.
+    const dateStr = localDateStr(cursor);
     const entry = dayMap.get(dateStr);
     currentWeek.push({
       date: new Date(cursor),

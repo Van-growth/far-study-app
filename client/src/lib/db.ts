@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { localDateStr } from './date'
 
 // ── 진도 ──────────────────────────────────────────────────────
 export const getProgress = async (userId: string) => {
@@ -290,13 +291,17 @@ export const getWrongLogs = async (userId: string, limit = 50) => {
 }
 
 // ── 학습 세션 ─────────────────────────────────────────────────
+// Dates are stored/queried in the user's LOCAL timezone (YYYY-MM-DD).
+// toISOString() would flip to UTC and roll the date back to "yesterday"
+// any morning before UTC-midnight — which was every KST morning — making
+// writes land on the wrong day and the heatmap jump cells.
 export const updateTodaySession = async (
   userId: string,
   correct: boolean,
 ) => {
   await supabase.rpc('upsert_study_session', {
     p_user_id: userId,
-    p_date: new Date().toISOString().split('T')[0],
+    p_date: localDateStr(),
     p_correct: correct,
   })
 }
@@ -308,7 +313,7 @@ export const getCalendar = async (userId: string) => {
     .from('study_sessions')
     .select('date, quiz_count, correct_count')
     .eq('user_id', userId)
-    .gte('date', from.toISOString().split('T')[0])
+    .gte('date', localDateStr(from))
     .order('date', { ascending: true })
   return data ?? []
 }

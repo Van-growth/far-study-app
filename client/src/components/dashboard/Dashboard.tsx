@@ -4,6 +4,7 @@ import { allTopics, areas } from '../../data/far-topics';
 import useStudyStore from '../../store/studyStore';
 import { getAccuracy, getStatusColor, getDaysUntilReview, isDue, SR_INTERVALS } from '../../lib/srs';
 import { getCalendar } from '../../lib/db';
+import { localDateStr, parseLocalDate } from '../../lib/date';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -18,22 +19,27 @@ export default function Dashboard() {
     getCalendar(userId).then((rows) => {
       const data = rows as { date: string; quiz_count: number }[];
       const totalDays = data.filter((d) => d.quiz_count > 0).length;
-      // This week
+      // This week — Monday as the first day, all in local time
       const today = new Date();
       const monday = new Date(today);
       monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-      const weekStr = monday.toISOString().split('T')[0];
+      const weekStr = localDateStr(monday);
       const weekCount = data
         .filter((d) => d.date >= weekStr && d.quiz_count > 0)
         .reduce((s, d) => s + d.quiz_count, 0);
-      // Streak
+      // Streak — walk backwards from today's local date one day at a time
       let streak = 0;
       const sorted = [...data].filter((d) => d.quiz_count > 0).sort((a, b) => b.date.localeCompare(a.date));
-      const todayStr = today.toISOString().split('T')[0];
-      let cursor = todayStr;
+      let cursor = localDateStr(today);
       for (const row of sorted) {
-        if (row.date === cursor) { streak++; const d = new Date(cursor); d.setDate(d.getDate() - 1); cursor = d.toISOString().split('T')[0]; }
-        else if (row.date < cursor) break;
+        if (row.date === cursor) {
+          streak++;
+          const d = parseLocalDate(cursor);
+          d.setDate(d.getDate() - 1);
+          cursor = localDateStr(d);
+        } else if (row.date < cursor) {
+          break;
+        }
       }
       setSessionStats({ totalDays, weekCount, streak });
     });
