@@ -5,7 +5,8 @@ const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 const GENERATOR_MODEL = 'claude-sonnet-4-5-20250929';
 const VALIDATOR_MODEL = 'claude-sonnet-4-5-20250929';
-const CONCEPT_CARD_MODEL = 'claude-haiku-4-5-20251001';
+const CONCEPT_CARD_MODEL = 'claude-sonnet-4-5-20250929';
+const CONCEPT_CARD_MAX_TOKENS = 3000;
 const MAX_VALIDATION_RETRIES = 2;
 
 interface GeneratedMcq {
@@ -238,54 +239,154 @@ router.post('/concept-card', async (req: Request, res: Response) => {
   const ALPHA = ['A', 'B', 'C', 'D'];
   const isCorrect = correctIdx === selectedIdx;
 
-  const system = `당신은 USCPA FAR 시험 튜터입니다. 방금 푼 문제에 대한 구조화된 복습 카드를 생성합니다.
+  const system = `당신은 USCPA FAR 시험 튜터입니다. 방금 푼 문제에 대한 구조화된 복습 카드를 JSON으로 반환합니다.
 
-반환 규칙:
-1) type 선택 — 문제 유형에 가장 잘 맞는 하나만:
-   - "comparison": 두 개념/금액/처리 방식을 대조해야 이해되는 문제
-     (예: 이연법인세 자산 vs 부채, operating vs finance lease, cost vs equity method,
-      direct vs indirect SCF, 회계정책변경 vs 추정변경, FIFO vs LIFO, gross vs net method)
-   - "timeline": 시점/순서/기간에 따라 처리가 달라지는 문제
-     (예: subsequent events type I/II, 감가상각 시작-중단-처분, 취득-보유-매각,
-      revenue recognition over time)
-   - "formula": 공식 한두 개로 결론이 나는 계산 중심 문제
-     (예: bond interest, PV/FV, EPS, straight-line/DDB depreciation, impairment test)
-   - "plain": 위 셋에 해당하지 않는 경우만 선택
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1) type 선택 — 문제 유형에 가장 잘 맞는 하나만
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+재무제표 형태 (우선 순위 상위 — 숫자 여러 줄이 나오면 이 쪽):
+- "income_statement": I/S 항목이 핵심
+  · revenue recognition, gain/loss, impairment, bad debt expense, COGS/margin,
+    depreciation expense, tax expense, EPS 전후, continuing vs discontinued ops
+- "balance_sheet": B/S 항목이 핵심
+  · DTA/DTL, receivable/allowance, inventory valuation, PP&E/accumulated dep,
+    leases ROU/liability, bonds payable balance, equity accounts, classification(current/noncurrent)
+- "scf": Statement of Cash Flows
+  · operating/investing/financing 분류, indirect reconciliation,
+    direct method line items, non-cash disclosures
+- "multi_statement": 위 중 2개 이상이 서로 연결되어야 이해되는 문제
+  · 예: NI → RE → CF 추적, gain/loss가 I/S와 B/S와 SCF 모두에 영향,
+    deferred tax의 I/S expense + B/S 잔액 동시 질문
+  · statements 배열 순서는 반드시 I/S → B/S → SCF
 
-2) sections 채우기 — type 별 요구:
-   - comparison: compare(필수) + traps(1-2개 필수) + gap(옵션)
-   - timeline: timeline.events(필수) + traps(옵션)
-   - formula: calculation(필수) + traps(옵션)
-   - plain: markdown(필수, 200자 이내) + traps(옵션)
+그 외:
+- "comparison": 두 개념/처리를 대조 (operating vs finance lease, cost vs equity,
+  FIFO vs LIFO, direct vs indirect, 회계정책변경 vs 추정변경)
+- "timeline": 시점/순서/기간 (subsequent events type I/II, 감가상각 라이프사이클)
+- "formula": 공식 한두 개로 끝나는 단일 계산 (bond interest, PV/FV, impairment test)
+- "plain": 위 전부 해당하지 않을 때만
 
-3) headline: 이 문제의 핵심을 한국어 1문장으로. 모든 type에 필수.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2) sections / statement / notes 채우기
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+공통: headline(1문장) 필수.
 
-4) 분량:
-   - compare.left/right.rows: 각 3-5개 bullet, 각 한 줄 한국어
-   - gap.rows: 1-3줄, note는 1문장
-   - calculation.steps: 2-5 스텝, 각 한 줄에 "왜 그 스텝인지"까지 포함
-   - calculation.result: 최종 답 한 줄(단위/통화 포함)
-   - timeline.events: 2-4개, label=시점, detail=옵션 한 문장
-   - markdown: 200자 이내 한국어, 테이블/코드블록 금지
-   - traps[]: 1-2개. option은 선택지 레이블(A/B/C/D) 또는 숫자, reason은 한 문장
+재무제표 타입은 sections 대신 statement + notes 필드를 사용:
+- income_statement → statement: IncomeStatementData + notes[] (옵션)
+- balance_sheet    → statement: BalanceSheetData    + notes[] (옵션)
+- scf              → statement: SCFData             + notes[] (옵션)
+- multi_statement  → statement: { statements: [...] } + notes[] (옵션)
 
-5) 언어: 모든 값 한국어. option 이름만 영문 대문자(A-D) 유지.
+기존 타입은 sections를 사용:
+- comparison → sections.compare(필수) + traps(1-2개 필수) + gap(옵션)
+- timeline   → sections.timeline.events(필수) + traps(옵션)
+- formula    → sections.calculation(필수) + traps(옵션)
+- plain      → sections.markdown(필수, 200자 이내) + traps(옵션)
 
-6) STRICT JSON ONLY. 마크다운 펜스 금지, 부연 설명 금지, 인사말 금지. { 로 시작하고 } 로 끝낼 것.
-
-스키마 (optional 필드는 type에 맞지 않으면 아예 생략):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3) Row 공통 스키마 (statement 타입 전용)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
-  "type": "comparison" | "timeline" | "formula" | "plain",
+  "label": string,                  // 한국어 가능, 회계 표준 라벨은 영문도 OK
+  "amount": number | null,          // null = 헤더/섹션 타이틀 같이 숫자 없음
+  "indent": 0 | 1 | 2,              // 들여쓰기 레벨
+  "highlight": boolean,
+  "highlight_color": "amber" | "blue" | "purple" | "green" | null,
+  "is_total": boolean,              // true면 상단 border + bold
+  "is_subtraction": boolean,        // true면 금액에 괄호 표시 ($90,000)
+  "note_tag": string | null         // 짧은 태그 "a","b","c"... — notes[]와 매칭
+}
+
+highlight 사용 규칙:
+- highlight=true인 행마다 반드시 note_tag 설정 + notes 배열에 같은 tag로 대응 항목 존재할 것
+- note_tag 없는 highlight, highlight 없는 notes 항목 금지
+- highlight는 이 문제의 "학습 포인트"만 (보통 행당 2-4개)
+- color는 같은 문제 내에서 일관된 의미로 사용(예: 핵심 계산은 amber, 함정은 blue 등)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4) 각 statement 데이터 스키마
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IncomeStatementData:
+{
+  "title": "Income Statement for the Year Ended ...",
+  "sections": [
+    { "label": "Revenue",           "rows": [Row, ...] },
+    { "label": "Operating expenses","rows": [Row, ...] },
+    { "label": "Net income",        "rows": [Row, ...] }
+  ]
+}
+
+BalanceSheetData:
+{
+  "title": "Balance Sheet as of ...",
+  "assets":      { "current": [Row, ...], "noncurrent": [Row, ...] },
+  "liabilities": { "current": [Row, ...], "noncurrent": [Row, ...] },
+  "equity":      [Row, ...]
+}
+
+SCFData:
+{
+  "title": "Statement of Cash Flows for the Year Ended ...",
+  "method": "indirect" | "direct",
+  "sections": [
+    { "label": "Operating", "rows": [Row, ...] },
+    { "label": "Investing", "rows": [Row, ...] },
+    { "label": "Financing", "rows": [Row, ...] }
+  ]
+}
+
+MultiStatementData:
+{
+  "statements": [
+    { "type": "income_statement", "data": IncomeStatementData } | null,
+    { "type": "balance_sheet",    "data": BalanceSheetData } | null,
+    { "type": "scf",              "data": SCFData } | null
+  ]
+}
+배열 순서는 반드시 I/S → B/S → SCF. 관련 없는 statement는 null로.
+
+Notes:
+[
+  { "tag": "a", "text": "한국어로 1문장 이내 설명", "color": "amber" },
+  ...
+]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5) 기존(non-statement) 타입 sections 스키마
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- compare: { "left": {"label","rows":[...]}, "right": {"label","rows":[...]} }
+  · left/right.rows 각 3-5개 bullet, 한 줄 한국어
+- gap: { "label","rows":[...],"note" }
+- calculation: { "steps":[...], "result" }
+  · steps 2-5개, 각 "왜 그 스텝인지" 포함
+  · result는 최종 답 한 줄 (단위/통화 포함)
+- timeline: { "events":[{"label","detail"}] } — 2-4개
+- markdown: 200자 이내, 테이블/코드블록 금지
+- traps: [{"option":"B","reason":"한 문장"}] — 1-2개
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6) 언어 / 출력 규칙
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- 한국어 위주. 회계 표준 라벨(Revenue, Cost of goods sold, Deferred tax asset 등)은
+  영문 그대로 유지 가능
+- 숫자는 순수 number로 (문자열 "$90,000" 아님). 반드시 "amount": 90000 형식
+- option 이름(A/B/C/D)만 영문
+- STRICT JSON ONLY. 마크다운 코드펜스/부연 설명/인사말 금지.
+  { 로 시작하고 } 로 끝낼 것
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7) 루트 스키마
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "type": "income_statement" | "balance_sheet" | "scf" | "multi_statement" |
+          "comparison" | "timeline" | "formula" | "plain",
   "headline": "...",
-  "sections": {
-    "compare": { "left": {"label": "...", "rows": ["..."]}, "right": {"label": "...", "rows": ["..."]} },
-    "gap": { "label": "...", "rows": ["..."], "note": "..." },
-    "calculation": { "steps": ["..."], "result": "..." },
-    "timeline": { "events": [{"label": "...", "detail": "..."}] },
-    "markdown": "...",
-    "traps": [{"option": "B", "reason": "..."}]
-  }
-}`;
+  "sections": { ... },          // 기존 타입만
+  "statement": { ... },         // 재무제표 타입만
+  "notes": [ ... ]              // 재무제표 타입에서 highlight가 있을 때
+}
+
+불필요한 필드는 아예 생략(빈 객체/빈 배열보다 삭제가 낫다).`;
 
   const userMsg = `모듈: ${moduleId} · ${moduleName}
 
@@ -298,10 +399,21 @@ ${options.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
 
 위 문제에 대한 구조화 개념 카드를 스키마대로 반환해줘.`;
 
+  const ALLOWED_TYPES = new Set([
+    'comparison',
+    'timeline',
+    'formula',
+    'plain',
+    'income_statement',
+    'balance_sheet',
+    'scf',
+    'multi_statement',
+  ]);
+
   try {
     const msg = await anthropic.messages.create({
       model: CONCEPT_CARD_MODEL,
-      max_tokens: 1200,
+      max_tokens: CONCEPT_CARD_MAX_TOKENS,
       system,
       messages: [{ role: 'user', content: userMsg }],
     });
@@ -316,7 +428,6 @@ ${options.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
     try {
       parsed = JSON.parse(body);
     } catch (e) {
-      // Fallback: wrap raw text as plain card so the client still has something to show.
       console.warn('[concept-card] JSON parse failed, falling back to plain:', e instanceof Error ? e.message : e);
       return res.json({
         type: 'plain',
@@ -332,15 +443,16 @@ ${options.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
       type?: string;
       headline?: string;
       sections?: unknown;
+      statement?: unknown;
+      notes?: unknown;
     };
-    const type =
-      card.type === 'comparison' || card.type === 'timeline' || card.type === 'formula'
-        ? card.type
-        : 'plain';
+    const type = card.type && ALLOWED_TYPES.has(card.type) ? card.type : 'plain';
     return res.json({
       type,
       headline: typeof card.headline === 'string' ? card.headline : '',
       sections: card.sections && typeof card.sections === 'object' ? card.sections : {},
+      statement: card.statement && typeof card.statement === 'object' ? card.statement : undefined,
+      notes: Array.isArray(card.notes) ? card.notes : undefined,
     });
   } catch (err) {
     const m = err instanceof Error ? err.message : 'unknown';

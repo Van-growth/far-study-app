@@ -34,7 +34,77 @@ export interface TrapBlock {
   option: string;
   reason: string;
 }
-export type ConceptCardType = 'comparison' | 'timeline' | 'formula' | 'plain';
+// ── Statement-shaped rows (I/S, B/S, SCF, multi) ──────────────
+export type HighlightColor = 'amber' | 'blue' | 'purple' | 'green';
+
+export interface StatementRow {
+  label: string;
+  amount: number | null;
+  indent: 0 | 1 | 2;
+  highlight: boolean;
+  highlight_color: HighlightColor | null;
+  is_total: boolean;
+  is_subtraction: boolean;
+  note_tag: string | null;
+}
+
+export interface StatementNote {
+  tag: string;
+  text: string;
+  color?: HighlightColor;
+}
+
+export interface IncomeStatementSection {
+  label: string;
+  rows: StatementRow[];
+}
+export interface IncomeStatementData {
+  title: string;
+  sections: IncomeStatementSection[];
+}
+
+export interface BalanceSheetData {
+  title: string;
+  assets: { current: StatementRow[]; noncurrent: StatementRow[] };
+  liabilities: { current: StatementRow[]; noncurrent: StatementRow[] };
+  equity: StatementRow[];
+}
+
+export interface SCFSection {
+  label: 'Operating' | 'Investing' | 'Financing';
+  rows: StatementRow[];
+}
+export interface SCFData {
+  title: string;
+  method: 'indirect' | 'direct';
+  sections: SCFSection[];
+}
+
+export type MultiStatementEntry =
+  | { type: 'income_statement'; data: IncomeStatementData }
+  | { type: 'balance_sheet'; data: BalanceSheetData }
+  | { type: 'scf'; data: SCFData };
+
+export interface MultiStatementData {
+  statements: (MultiStatementEntry | null)[];
+}
+
+export type StatementData =
+  | IncomeStatementData
+  | BalanceSheetData
+  | SCFData
+  | MultiStatementData;
+
+export type ConceptCardType =
+  | 'comparison'
+  | 'timeline'
+  | 'formula'
+  | 'plain'
+  | 'income_statement'
+  | 'balance_sheet'
+  | 'scf'
+  | 'multi_statement';
+
 export interface ConceptCard {
   type: ConceptCardType;
   headline: string;
@@ -46,6 +116,10 @@ export interface ConceptCard {
     markdown?: string;
     traps?: TrapBlock[];
   };
+  /** For income_statement / balance_sheet / scf / multi_statement. */
+  statement?: StatementData;
+  /** Notes referenced by row.note_tag. Used by statement renderers. */
+  notes?: StatementNote[];
 }
 
 // ── localStorage cache ────────────────────────────────────────
@@ -145,13 +219,23 @@ export async function fetchConceptCard(input: {
   if (!data || typeof data !== 'object') {
     throw new Error('invalid concept card response');
   }
+  const ALLOWED: ConceptCardType[] = [
+    'comparison',
+    'timeline',
+    'formula',
+    'plain',
+    'income_statement',
+    'balance_sheet',
+    'scf',
+    'multi_statement',
+  ];
   const type: ConceptCardType =
-    data.type === 'comparison' || data.type === 'timeline' || data.type === 'formula'
-      ? data.type
-      : 'plain';
+    data.type && ALLOWED.includes(data.type) ? data.type : 'plain';
   return {
     type,
     headline: typeof data.headline === 'string' ? data.headline : '',
     sections: (data.sections ?? {}) as ConceptCard['sections'],
+    statement: (data as ConceptCard).statement,
+    notes: (data as ConceptCard).notes,
   };
 }

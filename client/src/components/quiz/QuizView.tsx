@@ -11,6 +11,13 @@ import {
   CalculationBlock,
   TimelineBlock,
   TrapBlock,
+  StatementRow,
+  StatementNote,
+  IncomeStatementData,
+  BalanceSheetData,
+  SCFData,
+  MultiStatementData,
+  HighlightColor,
 } from '../../hooks/useDynamicQuiz';
 
 // ── Concept card renderers ────────────────────────────────────
@@ -19,6 +26,10 @@ function typeLabel(t: ConceptCard['type']): string {
     case 'comparison': return '비교';
     case 'timeline': return '시점/순서';
     case 'formula': return '공식/계산';
+    case 'income_statement': return 'Income Statement';
+    case 'balance_sheet': return 'Balance Sheet';
+    case 'scf': return 'Cash Flows';
+    case 'multi_statement': return 'Multi Statement';
     default: return '요약';
   }
 }
@@ -30,12 +41,227 @@ function ConceptCardView({ card }: { card: ConceptCard }) {
       {card.headline && (
         <p className="text-sm font-semibold leading-snug">🎯 {card.headline}</p>
       )}
+      {/* Statement types */}
+      {card.type === 'income_statement' && card.statement && (
+        <IncomeStatementBlock data={card.statement as IncomeStatementData} notes={card.notes} />
+      )}
+      {card.type === 'balance_sheet' && card.statement && (
+        <BalanceSheetBlock data={card.statement as BalanceSheetData} notes={card.notes} />
+      )}
+      {card.type === 'scf' && card.statement && (
+        <SCFBlock data={card.statement as SCFData} notes={card.notes} />
+      )}
+      {card.type === 'multi_statement' && card.statement && (
+        <MultiStatementBlock data={card.statement as MultiStatementData} notes={card.notes} />
+      )}
+      {/* Existing narrative types */}
       {card.type === 'comparison' && s.compare && <CompareView compare={s.compare} />}
       {card.type === 'timeline' && s.timeline && <TimelineView timeline={s.timeline} />}
       {card.type === 'formula' && s.calculation && <CalculationView calc={s.calculation} />}
       {card.type === 'plain' && s.markdown && <PlainView markdown={s.markdown} />}
       {s.gap && <GapView gap={s.gap} />}
       {s.traps && s.traps.length > 0 && <TrapsView traps={s.traps} />}
+    </div>
+  );
+}
+
+// ── Statement renderers ──────────────────────────────────────
+const HIGHLIGHT_PALETTE: Record<
+  HighlightColor,
+  { bg: string; border: string; text: string }
+> = {
+  amber:  { bg: '#FAEEDA', border: '#EF9F27', text: '#633806' },
+  blue:   { bg: '#E6F1FB', border: '#378ADD', text: '#0C447C' },
+  purple: { bg: '#EEEDFE', border: '#7F77DD', text: '#3C3489' },
+  green:  { bg: '#EAF3DE', border: '#639922', text: '#3B6D11' },
+};
+
+const AMOUNT_FMT = new Intl.NumberFormat('en-US', { style: 'decimal' });
+
+function formatAmount(amount: number | null, isSubtraction: boolean): string {
+  if (amount === null || amount === undefined) return '';
+  const abs = AMOUNT_FMT.format(Math.abs(amount));
+  return isSubtraction ? `($${abs})` : `$${abs}`;
+}
+
+function StatementRowView({ row }: { row: StatementRow }) {
+  const indentPx = row.indent === 2 ? 38 : row.indent === 1 ? 26 : 14;
+  const hl = row.highlight && row.highlight_color ? HIGHLIGHT_PALETTE[row.highlight_color] : null;
+  const amountText = formatAmount(row.amount, row.is_subtraction);
+
+  return (
+    <div
+      className="flex items-center justify-between text-[11px] py-[3px] pr-2"
+      style={{
+        paddingLeft: `${indentPx}px`,
+        background: hl?.bg,
+        borderLeft: hl ? `3px solid ${hl.border}` : '3px solid transparent',
+        color: hl?.text ?? '#451a03',
+        fontWeight: row.is_total ? 500 : 400,
+        borderTop: row.is_total ? '0.5px solid rgba(120, 53, 15, 0.5)' : undefined,
+        marginTop: row.is_total ? 2 : 0,
+      }}
+    >
+      <span className="flex-1 truncate pr-2 leading-tight">
+        {row.label}
+        {row.note_tag && (
+          <sup className="ml-0.5 text-[9px] font-bold opacity-80">({row.note_tag})</sup>
+        )}
+      </span>
+      <span className="font-mono tabular-nums whitespace-nowrap">{amountText}</span>
+    </div>
+  );
+}
+
+function collectTags(rows: StatementRow[]): Set<string> {
+  const out = new Set<string>();
+  for (const r of rows) if (r.note_tag) out.add(r.note_tag);
+  return out;
+}
+
+function NotesView({ notes }: { notes: StatementNote[] }) {
+  if (notes.length === 0) return null;
+  return (
+    <div className="mt-2 pt-2 border-t border-[#fcd34d] flex flex-col gap-1">
+      {notes.map((n, i) => {
+        const palette = n.color ? HIGHLIGHT_PALETTE[n.color] : HIGHLIGHT_PALETTE.amber;
+        return (
+          <div
+            key={`${n.tag}-${i}`}
+            className="text-[10px] px-2 py-1 rounded leading-snug"
+            style={{
+              background: palette.bg,
+              borderLeft: `3px solid ${palette.border}`,
+              color: palette.text,
+            }}
+          >
+            <span className="font-bold">({n.tag})</span> {n.text}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function StatementSubSection({ label, rows }: { label: string; rows: StatementRow[] }) {
+  if (!rows || rows.length === 0) return null;
+  return (
+    <div className="flex flex-col">
+      <p className="text-[10px] font-bold text-[#78350f] uppercase tracking-wider px-[14px] mt-1 mb-0.5">
+        {label}
+      </p>
+      {rows.map((r, i) => <StatementRowView key={i} row={r} />)}
+    </div>
+  );
+}
+
+function statementWrapper(title: string | undefined, icon: string, children: React.ReactNode, rightBadge?: React.ReactNode) {
+  return (
+    <div className="bg-white/80 border border-[#fcd34d] rounded-lg p-3">
+      {(title || rightBadge) && (
+        <div className="flex items-center justify-between mb-2 px-[14px]">
+          <p className="text-[11px] font-bold text-[#78350f]">{icon} {title}</p>
+          {rightBadge}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function IncomeStatementBlock({ data, notes }: { data: IncomeStatementData; notes?: StatementNote[] }) {
+  const allRows = data.sections.flatMap((s) => s.rows);
+  const tags = collectTags(allRows);
+  const matched = (notes ?? []).filter((n) => tags.has(n.tag));
+
+  return statementWrapper(
+    data.title,
+    '📈',
+    <>
+      {data.sections.map((section, i) => (
+        <StatementSubSection key={i} label={section.label} rows={section.rows} />
+      ))}
+      <NotesView notes={matched} />
+    </>,
+  );
+}
+
+function BalanceSheetBlock({ data, notes }: { data: BalanceSheetData; notes?: StatementNote[] }) {
+  const allRows = [
+    ...(data.assets?.current ?? []),
+    ...(data.assets?.noncurrent ?? []),
+    ...(data.liabilities?.current ?? []),
+    ...(data.liabilities?.noncurrent ?? []),
+    ...(data.equity ?? []),
+  ];
+  const tags = collectTags(allRows);
+  const matched = (notes ?? []).filter((n) => tags.has(n.tag));
+
+  return statementWrapper(
+    data.title,
+    '📊',
+    <>
+      <StatementSubSection label="Current assets" rows={data.assets?.current ?? []} />
+      <StatementSubSection label="Noncurrent assets" rows={data.assets?.noncurrent ?? []} />
+      <StatementSubSection label="Current liabilities" rows={data.liabilities?.current ?? []} />
+      <StatementSubSection label="Noncurrent liabilities" rows={data.liabilities?.noncurrent ?? []} />
+      <StatementSubSection label="Equity" rows={data.equity ?? []} />
+      <NotesView notes={matched} />
+    </>,
+  );
+}
+
+function SCFBlock({ data, notes }: { data: SCFData; notes?: StatementNote[] }) {
+  const allRows = data.sections.flatMap((s) => s.rows);
+  const tags = collectTags(allRows);
+  const matched = (notes ?? []).filter((n) => tags.has(n.tag));
+  const badge = (
+    <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#f59e0b] text-white font-semibold uppercase">
+      {data.method}
+    </span>
+  );
+
+  return statementWrapper(
+    data.title,
+    '💵',
+    <>
+      {data.sections.map((section, i) => (
+        <StatementSubSection key={i} label={section.label} rows={section.rows} />
+      ))}
+      <NotesView notes={matched} />
+    </>,
+    badge,
+  );
+}
+
+function MultiStatementBlock({ data, notes }: { data: MultiStatementData; notes?: StatementNote[] }) {
+  // Canonical render order: I/S → B/S → SCF
+  const ORDER: Record<string, number> = {
+    income_statement: 0,
+    balance_sheet: 1,
+    scf: 2,
+  };
+  const entries = (data.statements ?? [])
+    .filter(<T,>(e: T | null): e is T => e !== null)
+    .sort(
+      (a, b) =>
+        (ORDER[(a as { type: string }).type] ?? 9) - (ORDER[(b as { type: string }).type] ?? 9),
+    );
+
+  return (
+    <div className="flex flex-col gap-2">
+      {entries.map((entry, i) => (
+        <div key={i}>
+          {entry.type === 'income_statement' && (
+            <IncomeStatementBlock data={entry.data} notes={notes} />
+          )}
+          {entry.type === 'balance_sheet' && (
+            <BalanceSheetBlock data={entry.data} notes={notes} />
+          )}
+          {entry.type === 'scf' && <SCFBlock data={entry.data} notes={notes} />}
+          {i < entries.length - 1 && <div className="h-px bg-[#fcd34d] my-2 mx-2" />}
+        </div>
+      ))}
     </div>
   );
 }
