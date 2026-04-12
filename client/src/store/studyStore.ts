@@ -86,7 +86,11 @@ function bgSync(userId: string, topicId: string, card: SRCard) {
     streak: card.streak,
     attempts: card.attempts,
     correct: card.correct,
-  }).catch(() => {/* offline — localStorage still has the data */});
+  }).catch((e) => {
+    // localStorage still has the data — quiz flow not blocked. But
+    // surface the reason so RLS/schema issues don't stay invisible.
+    console.warn('[studyStore] upsertProgress failed:', e?.message ?? e);
+  });
 }
 
 // ── Store ─────────────────────────────────────────────────────
@@ -151,8 +155,12 @@ const useStudyStore = create<StudyStore>()(
         const uid = get().userId;
         if (uid) {
           bgSync(uid, topicId, updated);
-          saveQuizLog(uid, log).catch(() => {});
-          updateTodaySession(uid, correct).catch(() => {});
+          saveQuizLog(uid, log).catch((e) => {
+            console.warn('[studyStore] saveQuizLog failed:', e?.message ?? e);
+          });
+          updateTodaySession(uid, correct).catch((e) => {
+            console.warn('[studyStore] updateTodaySession failed:', e?.message ?? e);
+          });
         }
       },
 

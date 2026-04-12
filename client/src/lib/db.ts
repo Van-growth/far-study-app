@@ -317,21 +317,38 @@ export const updateTodaySession = async (
   userId: string,
   correct: boolean,
 ) => {
-  await supabase.rpc('upsert_study_session', {
+  const { error } = await supabase.rpc('upsert_study_session', {
     p_user_id: userId,
     p_date: localDateStr(),
     p_correct: correct,
   })
+  if (error) {
+    // Previously this was silently swallowed via .catch(() => {}) at the
+    // call site, hiding RPC-missing / RLS / permission issues that kept
+    // today's row from ever being written.
+    console.warn('[db] updateTodaySession failed:', error.message, error)
+    throw error
+  }
 }
 
 export const getCalendar = async (userId: string) => {
   const from = new Date()
   from.setFullYear(from.getFullYear() - 1)
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('study_sessions')
     .select('date, quiz_count, correct_count')
     .eq('user_id', userId)
     .gte('date', localDateStr(from))
     .order('date', { ascending: true })
-  return data ?? []
+  if (error) {
+    console.warn('[db] getCalendar failed:', error.message)
+    return []
+  }
+  // Normalize date strings to YYYY-MM-DD so the heatmap's Map lookup
+  // matches regardless of whether PostgREST returns a bare date or an
+  // ISO timestamp like "2026-04-12T00:00:00+00:00".
+  return (data ?? []).map((row) => ({
+    ...row,
+    date: typeof row.date === 'string' ? row.date.slice(0, 10) : row.date,
+  }))
 }

@@ -31,9 +31,22 @@ export default function StudyCalendar() {
   }, [userId]);
 
   // Build 52-week grid (364 days)
+  // Normalize today and cursor to LOCAL midnight so iteration is
+  // deterministic and the `cursor <= today` comparison always includes
+  // the today cell regardless of the current wall-clock time or any
+  // DST transition during the year-long range.
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   const grid: { date: Date; count: number; correct: number }[][] = [];
-  const dayMap = new Map(data.map((d) => [d.date, d]));
+  // Normalize keys to YYYY-MM-DD — defensive against any stray ISO
+  // timestamp format returned by PostgREST.
+  const dayMap = new Map(
+    data.map((d) => [
+      typeof d.date === 'string' ? d.date.slice(0, 10) : String(d.date),
+      d,
+    ]),
+  );
 
   // Go back 363 days to start on a Monday
   const start = new Date(today);
