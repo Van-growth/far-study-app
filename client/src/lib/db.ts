@@ -494,6 +494,14 @@ export interface ConceptExtractionRow {
 }
 
 export async function saveConceptExtraction(row: ConceptExtractionRow): Promise<void> {
+  console.log('[db] saveConceptExtraction called', {
+    hasUserId: !!row.userId,
+    userIdPrefix: row.userId ? row.userId.slice(0, 8) : null,
+    conceptsCount: row.concepts.length,
+    ascCount: row.ascReferences.length,
+    tagsCount: row.topicTags.length,
+    hasTrap: !!row.trapPattern,
+  })
   if (!hasAuth(row.userId)) {
     logSkip('saveConceptExtraction')
     return
@@ -507,8 +515,35 @@ export async function saveConceptExtraction(row: ConceptExtractionRow): Promise<
     trap_pattern: row.trapPattern,
     was_wrong: row.wasWrong,
   }
-  const { error } = await supabase.from('concept_extractions').insert(payload)
+  const { data, error } = await supabase
+    .from('concept_extractions')
+    .insert(payload)
+    .select('id')
+    .single()
   if (error) {
-    console.warn('[db] saveConceptExtraction failed (migration 004 applied?):', error.message)
+    // Dump the whole error object so code / details / hint / message all
+    // show up in DevTools — makes "table missing" vs "RLS violation" vs
+    // "column not in schema cache" distinguishable at a glance.
+    console.error('[db] saveConceptExtraction FAILED', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      full: error,
+    })
+    if (error.code === '42P01' || /does not exist/i.test(error.message)) {
+      console.error(
+        '[db] → migration 004_concept_extractions.sql has not been applied. ' +
+          'Run it in Supabase SQL editor before analysis saves will land.',
+      )
+    }
+    if (error.code === '42501' || /row-level security/i.test(error.message)) {
+      console.error(
+        '[db] → RLS policy blocked insert. Check that auth.uid() matches user_id ' +
+          'and that the `concept_extractions_own_insert` policy exists.',
+      )
+    }
+    return
   }
+  console.log('[db] saveConceptExtraction OK', { id: data?.id })
 }

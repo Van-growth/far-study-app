@@ -68,6 +68,15 @@ export default function AnalyzePage() {
       if (extractRes.status === 'fulfilled') {
         setExtracted(extractRes.value.extracted);
         setLearned(extractRes.value.learned);
+        console.log('[AnalyzePage] extract-concepts OK, calling saveConceptExtraction', {
+          userId: userId ? `${userId.slice(0, 8)}...` : null,
+          topicId,
+          extractedCounts: {
+            concepts: extractRes.value.extracted.concepts.length,
+            asc: extractRes.value.extracted.asc_references.length,
+            tags: extractRes.value.extracted.topic_tags.length,
+          },
+        });
         // Fire-and-forget Supabase save — no original text, only metadata.
         void saveConceptExtraction({
           userId: userId ?? null,
