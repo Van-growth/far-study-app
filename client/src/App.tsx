@@ -12,6 +12,9 @@ import AnalyzePage from './pages/AnalyzePage';
 import ReplayPage from './pages/ReplayPage';
 import CoachPage from './pages/CoachPage';
 import AuthPage from './pages/AuthPage';
+import AdminPage from './pages/AdminPage';
+
+const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 import useClaudeStore from './store/claudeStore';
 import useStudyStore from './store/studyStore';
 
@@ -28,10 +31,11 @@ const MOBILE_TABS = [
   { label: '더보기', icon: '···', path: '/more' },
 ];
 
-function BottomTabBar() {
+function BottomTabBar({ email }: { email: string }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [showMore, setShowMore] = useState(false);
+  const isAdmin = email.toLowerCase() === ADMIN_EMAIL;
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -53,6 +57,7 @@ function BottomTabBar() {
             {[
               { label: '📝 문제 분석', path: '/analyze' },
               { label: '🧬 학습 과학', path: '/science' },
+              ...(isAdmin ? [{ label: '🛠️ Admin', path: '/admin' }] : []),
             ].map((item) => (
               <button
                 key={item.path}
@@ -183,6 +188,9 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/replay" element={<ReplayPage />} />
             <Route path="/coach" element={<CoachPage />} />
             <Route path="/science" element={<SciencePage />} />
+            {email.toLowerCase() === ADMIN_EMAIL && (
+              <Route path="/admin" element={<AdminPage email={email} />} />
+            )}
             <Route path="*" element={<Navigate to="/coach" replace />} />
           </Routes>
         </main>
@@ -225,7 +233,7 @@ function AppLayout({ email }: { email: string }) {
       </div>
 
       {/* Mobile bottom tab bar */}
-      {!isScience && <BottomTabBar />}
+      {!isScience && <BottomTabBar email={email} />}
 
       {/* Mobile Claude modal */}
       <ClaudeModal />

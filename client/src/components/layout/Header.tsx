@@ -2,6 +2,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import useStudyStore from '../../store/studyStore';
 import useClaudeStore from '../../store/claudeStore';
 
+const ADMIN_EMAIL = 'sg.van.p@gmail.com';
+
 const desktopTabs = [
   { label: '퀴즈', path: '/quiz?mode=interleave' },
   { label: '🤖 AI 코치', path: '/coach' },
@@ -10,6 +12,7 @@ const desktopTabs = [
   { label: '현황', path: '/dashboard' },
   { label: '🧬 학습 과학', path: '/science' },
 ];
+const adminTab = { label: '🛠️ Admin', path: '/admin' };
 
 interface HeaderProps {
   email: string;
@@ -47,7 +50,7 @@ export default function Header({ email, onSignOut }: HeaderProps) {
 
       {/* Desktop nav tabs — hidden on mobile */}
       <nav className="hidden md:flex items-center gap-1 flex-1 min-w-0">
-        {desktopTabs.map((tab) => (
+        {[...desktopTabs, ...(email.toLowerCase() === ADMIN_EMAIL ? [adminTab] : [])].map((tab) => (
           <button
             key={tab.path}
             onClick={() => navigate(tab.path)}

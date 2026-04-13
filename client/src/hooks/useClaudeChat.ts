@@ -159,6 +159,18 @@ export function useClaudeChat(currentTopicLabel?: string) {
     callStreamAPI(prompt);
   };
 
+  const sendStarter = (kind: 'explain' | 'concept' | 'critique', ctx: QuizContext) => {
+    const optLines = ctx.opts.map((o, i) => `${ALPHA[i]}. ${o}`).join(' / ');
+    const isCorrect = ctx.ans === ctx.selected;
+    const base = `문제: ${ctx.q}\n선택지: ${optLines}\n정답: ${ALPHA[ctx.ans]}. ${ctx.opts[ctx.ans]}\n내가 선택한 답: ${ALPHA[ctx.selected]}. ${ctx.opts[ctx.selected]}${isCorrect ? ' ✅' : ' ❌'}`;
+    const prompts: Record<typeof kind, string> = {
+      explain: `다음 FAR 문제를 단계별로 해설해줘.\n\n${base}\n\n형식: 핵심 한 줄 → 풀이 흐름 → 함정 포인트`,
+      concept: `이 문제가 다루는 주요 개념을 정리해줘. 시험 관점에서 꼭 알아야 할 포인트 중심으로.\n\n${base}`,
+      critique: `이 문제에 대해 의문점이나 이의를 제기하고 싶어. 문제의 함정/오류 가능성, 모호한 점을 짚어줘.\n\n${base}`,
+    };
+    callStreamAPI(prompts[kind]);
+  };
+
   const sendQuickAction = (action: string) => {
     const topic = currentTopicLabel ?? '현재 토픽';
     const prompts: Record<string, string> = {
@@ -175,6 +187,7 @@ export function useClaudeChat(currentTopicLabel?: string) {
     isOpen: store.isOpen,
     sendMessage,
     sendQuizExplanation,
+    sendStarter,
     sendQuickAction,
     clearMessages: store.clearMessages,
     togglePanel: store.togglePanel,

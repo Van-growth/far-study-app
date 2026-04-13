@@ -16,6 +16,34 @@ import MobileSectionDrawer from '../components/layout/MobileSectionDrawer';
 
 const SESSION_MAX = 20;
 const BUFFER_CAPACITY = 2;
+const SESSION_PERSIST_KEY = 'far_quiz_sessions_v1';
+const HISTORY_PERSIST_KEY = 'far_quiz_history_v1';
+const LAST_KEY_PERSIST_KEY = 'far_quiz_last_session_key_v1';
+
+function loadPersistedSessions(): Record<string, ModuleSnapshot> {
+  try {
+    const raw = localStorage.getItem(SESSION_PERSIST_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function savePersistedSessions(store: Record<string, ModuleSnapshot>) {
+  try { localStorage.setItem(SESSION_PERSIST_KEY, JSON.stringify(store)); } catch {}
+}
+function loadPersistedHistory(): string[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_PERSIST_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+function savePersistedHistory(h: string[]) {
+  try { localStorage.setItem(HISTORY_PERSIST_KEY, JSON.stringify(h)); } catch {}
+}
+function loadLastSessionKey(): string | null {
+  try { return localStorage.getItem(LAST_KEY_PERSIST_KEY); } catch { return null; }
+}
+function saveLastSessionKey(key: string) {
+  try { localStorage.setItem(LAST_KEY_PERSIST_KEY, key); } catch {}
+}
 
 type QuizMode = 'interleave' | 'due' | 'weak' | 'single';
 
@@ -165,12 +193,18 @@ export default function QuizPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const bufferRef = useRef<QuestionBuffer | null>(null);
-  const sessionStoreRef = useRef<Record<string, ModuleSnapshot>>({});
+  const sessionStoreRef = useRef<Record<string, ModuleSnapshot>>(loadPersistedSessions());
   const prevKeyRef = useRef<string | null>(null);
   const wrongIdsRef = useRef<string[]>([]);
   const completedRef = useRef(false);
-  const moduleHistoryRef = useRef<string[]>([]);
+  const moduleHistoryRef = useRef<string[]>(loadPersistedHistory());
   const isBackNavRef = useRef(false);
+
+  const persistSnapshot = useCallback((key: string, snap: ModuleSnapshot) => {
+    sessionStoreRef.current[key] = snap;
+    savePersistedSessions(sessionStoreRef.current);
+    saveLastSessionKey(key);
+  }, []);
   // Bumps whenever history changes — forces a re-render so the back button's
   // enabled/disabled state and label stay in sync with the ref.
   const [historyTick, setHistoryTick] = useState(0);
@@ -228,12 +262,12 @@ export default function QuizPage() {
   useEffect(() => {
     const prevKey = prevKeyRef.current;
     if (prevKey && prevKey !== sessionKey) {
-      sessionStoreRef.current[prevKey] = {
+      persistSnapshot(prevKey, {
         currentQuestion: items[items.length - 1] ?? null,
         buffer: bufferRef.current?.snapshot() ?? [],
         questionCount,
         wrongIds,
-      };
+      });
     }
 
     const buf = new QuestionBuffer(BUFFER_CAPACITY, buildFetcher());
@@ -262,12 +296,12 @@ export default function QuizPage() {
           setItems([q]);
           setQuestionCount(1);
           setLoading(false);
-          sessionStoreRef.current[sessionKey] = {
+          persistSnapshot(sessionKey, {
             currentQuestion: q,
             buffer: buf.snapshot(),
             questionCount: 1,
             wrongIds: [],
-          };
+          });
           buf.prefetch();
         })
         .catch((e) => {
@@ -276,6 +310,7 @@ export default function QuizPage() {
         });
     }
     prevKeyRef.current = sessionKey;
+    saveLastSessionKey(sessionKey);
 
     // Push to history unless this transition is a back navigation.
     if (isBackNavRef.current) {
@@ -284,6 +319,7 @@ export default function QuizPage() {
       const h = moduleHistoryRef.current;
       if (h[h.length - 1] !== sessionKey) {
         h.push(sessionKey);
+        savePersistedHistory(h);
       }
     }
     setHistoryTick((t) => t + 1);
@@ -315,12 +351,12 @@ export default function QuizPage() {
       wrongIdsRef.current = nextWrong;
     }
     // Keep snapshot fresh so a mid-answer module switch is captured.
-    sessionStoreRef.current[sessionKey] = {
+    persistSnapshot(sessionKey, {
       currentQuestion: items[items.length - 1] ?? null,
       buffer: bufferRef.current?.snapshot() ?? [],
       questionCount,
       wrongIds: nextWrong,
-    };
+    });
   };
 
   // Fired after the structured concept card has been generated for the
@@ -359,12 +395,12 @@ export default function QuizPage() {
       const newCount = questionCount + 1;
       setItems((prev) => [...prev, instant]);
       setQuestionCount(newCount);
-      sessionStoreRef.current[sessionKey] = {
+      persistSnapshot(sessionKey, {
         currentQuestion: instant,
         buffer: buf.snapshot(),
         questionCount: newCount,
         wrongIds: wrongIdsRef.current,
-      };
+      });
       buf.prefetch();
       return;
     }
@@ -377,12 +413,12 @@ export default function QuizPage() {
         setItems((prev) => [...prev, q]);
         setQuestionCount(newCount);
         setLoading(false);
-        sessionStoreRef.current[sessionKey] = {
+        persistSnapshot(sessionKey, {
           currentQuestion: q,
           buffer: buf.snapshot(),
           questionCount: newCount,
           wrongIds: wrongIdsRef.current,
-        };
+        });
         buf.prefetch();
       })
       .catch((e) => {
@@ -398,14 +434,15 @@ export default function QuizPage() {
 
     // Save current session (the effect's prelude also does this, but capture
     // the very latest state here so nothing is lost).
-    sessionStoreRef.current[sessionKey] = {
+    persistSnapshot(sessionKey, {
       currentQuestion: items[items.length - 1] ?? null,
       buffer: bufferRef.current?.snapshot() ?? [],
       questionCount,
       wrongIds,
-    };
+    });
 
     h.pop(); // drop current
+    savePersistedHistory(h);
     const prevKey = h[h.length - 1];
     isBackNavRef.current = true;
 
@@ -444,12 +481,12 @@ export default function QuizPage() {
         setItems([q]);
         setQuestionCount(1);
         setLoading(false);
-        sessionStoreRef.current[sessionKey] = {
+        persistSnapshot(sessionKey, {
           currentQuestion: q,
           buffer: buf.snapshot(),
           questionCount: 1,
           wrongIds: [],
-        };
+        });
         buf.prefetch();
       })
       .catch((e) => {
@@ -521,14 +558,14 @@ export default function QuizPage() {
           <span className="text-xs text-muted">탭하여 모듈 선택 ▾</span>
         </button>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-bold text-[#0f172a] text-lg">{label}</h1>
-            <p className="text-xs text-muted mt-0.5">
-              {questionCount} / {SESSION_MAX} · AI 온디맨드 생성 · 버퍼 {BUFFER_CAPACITY}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="min-w-0 flex-1">
+            <h1 className="font-bold text-[#0f172a] text-base sm:text-lg truncate">{label}</h1>
+            <p className="text-[11px] sm:text-xs text-muted mt-0.5 truncate">
+              {questionCount} / {SESSION_MAX} · AI 온디맨드 · 버퍼 {BUFFER_CAPACITY}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 sm:gap-2 shrink-0">
             {(['interleave', 'due', 'weak'] as QuizMode[]).map((m) => (
               <button
                 key={m}

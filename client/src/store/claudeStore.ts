@@ -5,6 +5,15 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  feedback?: 'up' | 'down' | null;
+}
+
+export interface PendingQuizContext {
+  q: string;
+  opts: [string, string, string, string];
+  ans: number;
+  selected: number;
+  topicLabel: string;
 }
 
 const MAX_MESSAGES = 20;
@@ -13,6 +22,7 @@ interface ClaudeStore {
   isOpen: boolean;
   messages: Message[];
   isLoading: boolean;
+  pendingQuiz: PendingQuizContext | null;
 
   togglePanel: () => void;
   openPanel: () => void;
@@ -21,16 +31,24 @@ interface ClaudeStore {
   updateLastMessage: (content: string) => void;
   setLoading: (loading: boolean) => void;
   clearMessages: () => void;
+  setPendingQuiz: (ctx: PendingQuizContext | null) => void;
+  setMessageFeedback: (id: string, fb: 'up' | 'down' | null) => void;
 }
 
 const useClaudeStore = create<ClaudeStore>((set) => ({
   isOpen: false,
   messages: [],
   isLoading: false,
+  pendingQuiz: null,
 
   togglePanel: () => set((s) => ({ isOpen: !s.isOpen })),
   openPanel: () => set({ isOpen: true }),
   closePanel: () => set({ isOpen: false }),
+  setPendingQuiz: (ctx) => set({ pendingQuiz: ctx }),
+  setMessageFeedback: (id, fb) =>
+    set((s) => ({
+      messages: s.messages.map((m) => (m.id === id ? { ...m, feedback: fb } : m)),
+    })),
 
   addMessage: (msg) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;

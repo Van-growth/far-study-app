@@ -19,8 +19,10 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
   const topic = currentTopicId ? getTopicById(currentTopicId) : null;
 
-  const { messages, isLoading, closePanel, sendMessage, sendQuickAction, clearMessages } =
+  const { messages, isLoading, closePanel, sendMessage, sendQuickAction, sendStarter, clearMessages } =
     useClaudeChat(topic?.label);
+  const pendingQuiz = useClaudeStore((s) => s.pendingQuiz);
+  const setPendingQuiz = useClaudeStore((s) => s.setPendingQuiz);
 
   const [input, setInput] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
@@ -39,7 +41,10 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   };
 
   const handleKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    if (e.key !== 'Enter' || e.shiftKey) return;
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+    e.preventDefault();
+    handleSend();
   };
 
   const autoResize = () => {
@@ -52,6 +57,12 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const lastMsg = messages[messages.length - 1];
   const showTyping = isLoading && (!lastMsg || lastMsg.role === 'user' || (lastMsg.role === 'assistant' && !lastMsg.content));
   const isEmpty = messages.length === 0;
+
+  const handleStarter = (kind: 'explain' | 'concept' | 'critique') => {
+    if (!pendingQuiz || isLoading) return;
+    sendStarter(kind, pendingQuiz);
+    setPendingQuiz(null);
+  };
 
   return (
     <div
@@ -90,8 +101,14 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
           <div className="flex flex-col items-center justify-center h-full text-center px-4 gap-3">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl" style={{ background: '#eef2ff' }}>👋</div>
             <div>
-              <p className="font-semibold text-sm text-[#0f172a] mb-1">안녕하세요!</p>
-              <p className="text-xs text-muted leading-relaxed">토픽에 대해 무엇이든 물어보세요.<br />문제 해설, 개념 설명, 예시 요청 모두 가능합니다.</p>
+              <p className="font-semibold text-sm text-[#0f172a] mb-1">
+                {pendingQuiz ? '이 문제로 무엇을 도와드릴까요?' : '안녕하세요!'}
+              </p>
+              <p className="text-xs text-muted leading-relaxed">
+                {pendingQuiz
+                  ? '아래에서 선택하거나 직접 질문해주세요.'
+                  : '토픽에 대해 무엇이든 물어보세요.'}
+              </p>
             </div>
           </div>
         ) : (
@@ -106,6 +123,26 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
           </div>
         )}
       </div>
+
+      {/* Short Starter buttons — shown when a quiz context is pending and chat is empty */}
+      {pendingQuiz && isEmpty && !isLoading && (
+        <div className="shrink-0 px-3 pb-2 flex flex-wrap gap-1.5">
+          {[
+            { k: 'explain' as const, label: '📘 문제 해설 풀이' },
+            { k: 'concept' as const, label: '💡 주요 개념 정리' },
+            { k: 'critique' as const, label: '🤔 문제 제기하기' },
+          ].map((b) => (
+            <button
+              key={b.k}
+              onClick={() => handleStarter(b.k)}
+              className="text-xs px-3 py-1.5 rounded-full hover:opacity-80 transition-opacity"
+              style={{ background: '#eef2ff', border: '1px solid #c7d2fe', color: '#4338ca' }}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Input */}
       <div

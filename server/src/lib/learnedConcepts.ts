@@ -108,8 +108,55 @@ export function applyExtraction(extracted: ExtractedConcepts): Promise<LearnedCo
     const existing = await read();
     const merged = mergeInto(existing, extracted);
     await writeAtomic(merged);
+    await appendDailyLog(extracted);
     return merged;
   });
+}
+
+// ── Daily extraction log (admin analytics) ───────────────────
+// One row per /api/extract-concepts call — no original text, only counts
+// and the trap pattern string. Used by the admin dashboard to plot
+// "Becker 분석 현황" time-series.
+export interface DailyLogEntry {
+  timestamp: string;
+  date: string; // YYYY-MM-DD
+  conceptsCount: number;
+  ascCount: number;
+  tagsCount: number;
+  trapPattern: string | null;
+}
+
+const LOG_FILE = path.join(DATA_DIR, 'concept_extraction_log.json');
+const MAX_LOG_ENTRIES = 5000;
+
+export async function readDailyLog(): Promise<DailyLogEntry[]> {
+  try {
+    const buf = await fs.readFile(LOG_FILE, 'utf8');
+    const parsed = JSON.parse(buf);
+    if (Array.isArray(parsed)) return parsed as DailyLogEntry[];
+  } catch {
+    /* empty */
+  }
+  return [];
+}
+
+async function appendDailyLog(extracted: ExtractedConcepts): Promise<void> {
+  const now = new Date();
+  const entry: DailyLogEntry = {
+    timestamp: now.toISOString(),
+    date: now.toISOString().slice(0, 10),
+    conceptsCount: extracted.concepts.length,
+    ascCount: extracted.asc_references.length,
+    tagsCount: extracted.topic_tags.length,
+    trapPattern: extracted.trap_pattern,
+  };
+  const existing = await readDailyLog();
+  existing.push(entry);
+  const trimmed = existing.length > MAX_LOG_ENTRIES ? existing.slice(-MAX_LOG_ENTRIES) : existing;
+  await ensureDir();
+  const tmp = `${LOG_FILE}.tmp-${process.pid}-${Date.now()}`;
+  await fs.writeFile(tmp, JSON.stringify(trimmed, null, 2), 'utf8');
+  await fs.rename(tmp, LOG_FILE);
 }
 
 // ── Helpers for prompt injection in other routes ──────────────

@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import useStudyStore from '../store/studyStore';
 import { allTopics } from '../data/far-topics';
+import FeedbackButtons from '../components/feedback/FeedbackButtons';
 import {
   streamCoachResponse,
   loadCoachContext,
@@ -363,10 +364,10 @@ export default function CoachPage() {
   };
 
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendInput();
-    }
+    if (e.key !== 'Enter' || e.shiftKey) return;
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+    e.preventDefault();
+    handleSendInput();
   };
 
   const handleWrapUp = () => {
@@ -434,7 +435,7 @@ export default function CoachPage() {
           });
         chips.push({
           label: '→ 다른 거 할래요?',
-          onClick: () => taRef.current?.focus(),
+          onClick: () => navigate('/quiz?mode=interleave'),
           tone: 'neutral',
         });
         break;
@@ -470,8 +471,8 @@ export default function CoachPage() {
     <div className="p-4 sm:p-6">
       <div className="max-w-2xl mx-auto flex flex-col gap-4">
         <div className="flex items-start justify-between gap-2">
-          <div>
-            <h1 className="text-xl font-bold text-[#0f172a]">🤖 AI 코치</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl font-bold text-[#0f172a]">🤖 AI 코치</h1>
             <p className="text-xs text-muted mt-0.5">
               학습 데이터를 바탕으로 오늘 뭘 할지 제안해드려요
               {scenario && (
@@ -694,6 +695,13 @@ function CoachBubble({
             >
               {message.content}
             </ReactMarkdown>
+            {message.content && (
+              <FeedbackButtons
+                messageId={message.id}
+                messagePreview={message.content}
+                source="coach"
+              />
+            )}
           </div>
         )}
       </div>

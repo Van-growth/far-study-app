@@ -477,3 +477,38 @@ export const getCalendar = async (userId: string) => {
     date: typeof row.date === 'string' ? row.date.slice(0, 10) : row.date,
   }))
 }
+
+// ── Concept extractions (Becker 분석 누적) ───────────────────
+// Writes a metadata-only row to Supabase after /api/extract-concepts.
+// Never contains the original question text. Fire-and-forget: if the
+// migration hasn't been applied yet, we swallow the error so the UI flow
+// is not blocked.
+export interface ConceptExtractionRow {
+  userId: string | null
+  topicId: string | null
+  concepts: string[]
+  ascReferences: string[]
+  topicTags: string[]
+  trapPattern: string | null
+  wasWrong: boolean | null
+}
+
+export async function saveConceptExtraction(row: ConceptExtractionRow): Promise<void> {
+  if (!hasAuth(row.userId)) {
+    logSkip('saveConceptExtraction')
+    return
+  }
+  const payload = {
+    user_id: row.userId,
+    topic_id: row.topicId,
+    concepts: row.concepts,
+    asc_references: row.ascReferences,
+    topic_tags: row.topicTags,
+    trap_pattern: row.trapPattern,
+    was_wrong: row.wasWrong,
+  }
+  const { error } = await supabase.from('concept_extractions').insert(payload)
+  if (error) {
+    console.warn('[db] saveConceptExtraction failed (migration 004 applied?):', error.message)
+  }
+}

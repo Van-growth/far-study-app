@@ -3,6 +3,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import useClaudeStore from '../../store/claudeStore';
 import { useClaudeChat, QuizContext } from '../../hooks/useClaudeChat';
+import PVFVTable, { questionNeedsPVFVTable } from './PVFVTable';
+import QuizCalculator from './QuizCalculator';
 import {
   fetchConceptCard,
   ConceptCard,
@@ -589,6 +591,7 @@ export default function QuizView({
   const openPanel = useClaudeStore((s) => s.openPanel);
   const current = questions[currentIdx];
   const { sendQuizExplanation } = useClaudeChat(current?.topicLabel);
+  const [calcOpen, setCalcOpen] = useState(false);
 
   // Start/restart when the displayed question changes. Stop on answer /
   // unmount / session completion. Auto-pauses while the tab is hidden
@@ -805,9 +808,11 @@ export default function QuizView({
       selected,
       topicLabel: current.topicLabel,
     };
+    useClaudeStore.getState().setPendingQuiz(ctx);
     openPanel();
-    sendQuizExplanation(ctx);
-  }, [current, selected, openPanel, sendQuizExplanation]);
+    // No auto-send — ClaudePanel renders Short Starter buttons instead.
+  }, [current, selected, openPanel]);
+  void sendQuizExplanation;
 
   // Scroll concept card into view as soon as it's loading or rendered
   const cardRef = useRef<HTMLDivElement>(null);
@@ -1047,7 +1052,21 @@ export default function QuizView({
           );
         })()}
 
-        <p className="text-sm font-medium text-[#0f172a] leading-relaxed">{current.q}</p>
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-medium text-[#0f172a] leading-relaxed flex-1">{current.q}</p>
+          <button
+            onClick={() => setCalcOpen(true)}
+            className="shrink-0 text-xs px-2 py-1 rounded-lg hover:bg-gray-100"
+            style={{ border: '1px solid #e2e8f0', color: '#475569' }}
+            title="계산기"
+          >
+            🧮
+          </button>
+        </div>
+
+        {questionNeedsPVFVTable(current.q) && <PVFVTable />}
+
+        <QuizCalculator open={calcOpen} onClose={() => setCalcOpen(false)} />
 
         <div className="flex flex-col gap-2">
           {current.opts.map((opt, i) => {

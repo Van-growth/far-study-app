@@ -10,19 +10,13 @@ import {
   LearnedConcepts,
   ExtractedConcepts,
 } from '../hooks/useDynamicQuiz';
-// Re-use the concept card visual from QuizView by importing its module —
-// we render the card locally via a lightweight wrapper mirroring QuizView's
-// ConceptCardView shape. To avoid cross-file coupling we rebuild a thin
-// renderer here that defers to QuizView's rendering by reusing the same
-// types + components. Since QuizView already exports only the default
-// component, we duplicate a minimal container and reuse the card data as-is.
-import QuizView from '../components/quiz/QuizView'; // side-effect import for bundle grouping
-// The `QuizView` default export is unused directly; suppress the lint rule.
-void QuizView;
+import { ConceptCardView } from '../components/quiz/QuizView';
+import { saveConceptExtraction } from '../lib/db';
 
 export default function AnalyzePage() {
   const navigate = useNavigate();
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
+  const userId = useStudyStore((s) => s.userId);
 
   const [text, setText] = useState('');
   const [userAnswer, setUserAnswer] = useState('');
@@ -74,6 +68,16 @@ export default function AnalyzePage() {
       if (extractRes.status === 'fulfilled') {
         setExtracted(extractRes.value.extracted);
         setLearned(extractRes.value.learned);
+        // Fire-and-forget Supabase save — no original text, only metadata.
+        void saveConceptExtraction({
+          userId: userId ?? null,
+          topicId,
+          concepts: extractRes.value.extracted.concepts,
+          ascReferences: extractRes.value.extracted.asc_references,
+          topicTags: extractRes.value.extracted.topic_tags,
+          trapPattern: extractRes.value.extracted.trap_pattern,
+          wasWrong: ua && ca ? ua !== ca : null,
+        });
       } else {
         setError((prev) => prev ?? `개념 추출 실패: ${extractRes.reason?.message ?? 'unknown'}`);
       }
@@ -159,7 +163,7 @@ export default function AnalyzePage() {
           )}
         </div>
 
-        {/* Concept card result */}
+        {/* Concept card result — same 6-type renderer used in QuizView */}
         {card && (
           <div
             className="p-4 rounded-xl"
@@ -168,24 +172,7 @@ export default function AnalyzePage() {
             <p className="text-xs font-semibold text-[#92400e] mb-2">
               🧠 AI 구조화 해설 · {card.type}
             </p>
-            <pre
-              className="text-[11px] text-[#451a03] whitespace-pre-wrap font-mono"
-              style={{
-                background: 'rgba(255,255,255,0.5)',
-                padding: 8,
-                borderRadius: 6,
-                border: '1px solid #fcd34d',
-              }}
-            >
-{card.headline && `🎯 ${card.headline}\n\n`}{JSON.stringify(
-              { type: card.type, sections: card.sections, statement: card.statement, notes: card.notes },
-              null,
-              2,
-            )}
-            </pre>
-            <p className="text-[10px] text-muted mt-2">
-              ※ 리치 렌더링은 퀴즈 탭에서 볼 수 있습니다. 분석 탭은 JSON 구조를 직접 확인하는 디버그 뷰로 운영 중.
-            </p>
+            <ConceptCardView card={card} />
           </div>
         )}
 

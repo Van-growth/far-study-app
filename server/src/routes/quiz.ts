@@ -8,7 +8,7 @@ const GENERATOR_MODEL = 'claude-sonnet-4-5-20250929';
 const VALIDATOR_MODEL = 'claude-sonnet-4-5-20250929';
 const CONCEPT_CARD_MODEL = 'claude-sonnet-4-5-20250929';
 const CONCEPT_CARD_MAX_TOKENS = 3000;
-const MAX_VALIDATION_RETRIES = 2;
+const MAX_VALIDATION_RETRIES = 3;
 
 interface GeneratedMcq {
   q: string;
@@ -44,9 +44,18 @@ ${item.opts.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
 검토 기준:
 - 정답(ans로 표시된 선택지)이 US GAAP / FASB ASC / GASB 기준으로 실제로 정확한가?
 - 다른 선택지가 "우연히도" 더 정확한 답은 아닌가?
-- 계산 문제라면 산술이 맞는가?
 - 해설이 정답을 실제로 뒷받침하는가 (모순 없음)?
 - 문제 자체가 ambiguous하거나 복수 정답이 가능한 경우 valid=false
+
+⚠️ 계산 문제(숫자/금액/비율/이자/감가상각/PV/FV 등)의 경우 — 반드시 아래 절차로 **단계별 검증**:
+1. 문제에서 주어진 모든 수치를 식별하고 목록화
+2. 적용해야 할 공식/회계 규칙을 명시적으로 쓴다
+3. 실제로 계산을 단계별로 수행 (중간값을 전부 적는다)
+4. 최종값을 정답 선택지와 비교
+5. 반올림/부호/단위(천/백만)가 일치하는지 확인
+6. 1원이라도 불일치하면 confidence="low" 또는 valid=false
+7. 다른 선택지 중 흔한 계산 실수(부호 반대, 0 하나 빠짐, 공식 혼동)로 나올 값이 있으면 함정으로 간주하고 정답이 맞는지 재확인
+산술 검증 과정을 생략하지 말 것 — 머릿속으로 훑고 "맞겠지"로 넘기면 안 된다.
 
 반환 형식 — STRICT JSON 만. 부연 설명 금지, 마크다운 코드 펜스 금지:
 
