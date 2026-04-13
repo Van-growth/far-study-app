@@ -27,7 +27,6 @@ const PANEL_DEFAULT = 340;
 const MOBILE_TABS = [
   { label: '퀴즈', icon: '✏️', path: '/quiz?mode=interleave' },
   { label: '코치', icon: '🤖', path: '/coach' },
-  { label: '오답', icon: '📕', path: '/wrong' },
   { label: '현황', icon: '📊', path: '/dashboard' },
   { label: '더보기', icon: '···', path: '/more' },
 ];
@@ -44,7 +43,8 @@ function BottomTabBar({ email }: { email: string }) {
     return location.pathname.startsWith(path);
   };
 
-  const moreActive = location.pathname === '/science' || location.pathname === '/analyze';
+  const morePaths = ['/analyze', '/wrong', '/science', '/valuation', '/admin'];
+  const moreActive = morePaths.some((p) => location.pathname.startsWith(p));
 
   return (
     <>
@@ -57,6 +57,7 @@ function BottomTabBar({ email }: { email: string }) {
           >
             {[
               { label: '📝 문제 분석', path: '/analyze' },
+              { label: '📕 오답노트', path: '/wrong' },
               { label: '🧬 학습 과학', path: '/science' },
               { label: '💰 Valuation', path: '/valuation' },
               ...(isAdmin ? [{ label: '🛠️ Admin', path: '/admin' }] : []),

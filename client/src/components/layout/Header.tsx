@@ -1,19 +1,25 @@
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useStudyStore from '../../store/studyStore';
 import useClaudeStore from '../../store/claudeStore';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 
-const desktopTabs = [
+const mainTabs = [
   { label: '퀴즈', path: '/quiz?mode=interleave' },
   { label: '🤖 AI 코치', path: '/coach' },
+  { label: '현황', path: '/dashboard' },
+];
+
+const moreTabs = [
   { label: '📝 문제 분석', path: '/analyze' },
   { label: '📕 오답노트', path: '/wrong' },
-  { label: '현황', path: '/dashboard' },
   { label: '🧬 학습 과학', path: '/science' },
   { label: '💰 Valuation', path: '/valuation' },
 ];
 const adminTab = { label: '🛠️ Admin', path: '/admin' };
+
+const MORE_PATHS = new Set([...moreTabs, adminTab].map((t) => t.path));
 
 interface HeaderProps {
   email: string;
@@ -29,11 +35,28 @@ export default function Header({ email, onSignOut }: HeaderProps) {
   const isPanelOpen = useClaudeStore((s) => s.isOpen);
   const togglePanel = useClaudeStore((s) => s.togglePanel);
 
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!moreRef.current?.contains(e.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [moreOpen]);
+
   const isActive = (path: string) => {
     const base = path.split('?')[0];
     if (base === '/') return location.pathname === '/';
     return location.pathname.startsWith(base);
   };
+  const isAdmin = email.toLowerCase() === ADMIN_EMAIL;
+  const moreActive = MORE_PATHS.has(
+    // Match by path prefix, same semantics as isActive.
+    [...MORE_PATHS].find((p) => location.pathname.startsWith(p.split('?')[0])) ?? '',
+  );
+  const moreMenuItems = [...moreTabs, ...(isAdmin ? [adminTab] : [])];
 
   return (
     <header
@@ -51,7 +74,7 @@ export default function Header({ email, onSignOut }: HeaderProps) {
 
       {/* Desktop nav tabs — hidden on mobile */}
       <nav className="hidden md:flex items-center gap-1 flex-1 min-w-0">
-        {[...desktopTabs, ...(email.toLowerCase() === ADMIN_EMAIL ? [adminTab] : [])].map((tab) => (
+        {mainTabs.map((tab) => (
           <button
             key={tab.path}
             onClick={() => navigate(tab.path)}
@@ -64,6 +87,38 @@ export default function Header({ email, onSignOut }: HeaderProps) {
             {tab.label}
           </button>
         ))}
+        <div ref={moreRef} className="relative">
+          <button
+            onClick={() => setMoreOpen((v) => !v)}
+            className={`px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors shrink-0 ${
+              moreActive || moreOpen
+                ? 'bg-[#4f6ef7]/10 text-[#4f6ef7]'
+                : 'text-muted hover:text-[#0f172a] hover:bg-gray-100'
+            }`}
+          >
+            더보기 ▾
+          </button>
+          {moreOpen && (
+            <div
+              className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-lg border border-border py-1 min-w-[180px] z-50"
+            >
+              {moreMenuItems.map((item) => (
+                <button
+                  key={item.path}
+                  onClick={() => {
+                    navigate(item.path);
+                    setMoreOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-[13px] hover:bg-gray-50 transition-colors ${
+                    isActive(item.path) ? 'text-[#4f6ef7] font-semibold' : 'text-[#0f172a]'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </nav>
 
       {/* Mobile spacer */}
