@@ -90,6 +90,16 @@ export default function AnalyzePage() {
     navigate(`/quiz?mode=interleave&focusConcept=${encodeURIComponent(concept)}`);
   };
 
+  const handleAnalyzeNext = () => {
+    setText('');
+    setUserAnswer('');
+    setCorrectAnswer('');
+    setCard(null);
+    setExtracted(null);
+    setError(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const topConcepts = learned
     ? Object.entries(learned.concepts)
         .sort((a, b) => b[1] - a[1])
@@ -277,6 +287,17 @@ export default function AnalyzePage() {
             </>
           )}
         </div>
+
+        {/* 다음 문제 분석하기 — 분석 결과가 있을 때만 노출 */}
+        {(card || extracted) && (
+          <button
+            onClick={handleAnalyzeNext}
+            className="w-full py-3 rounded-xl text-sm font-semibold text-white hover:opacity-90"
+            style={{ background: '#4f6ef7' }}
+          >
+            ➕ 다음 문제 분석하기
+          </button>
+        )}
       </div>
     </div>
   );
