@@ -5,6 +5,7 @@ import useClaudeStore from '../../store/claudeStore';
 import { useClaudeChat, QuizContext } from '../../hooks/useClaudeChat';
 import PVFVTable, { questionNeedsPVFVTable } from './PVFVTable';
 import QuizCalculator from './QuizCalculator';
+import FeedbackButtons from '../feedback/FeedbackButtons';
 import {
   fetchConceptCard,
   ConceptCard,
@@ -1114,6 +1115,12 @@ export default function QuizView({
                   {current.exp}
                 </ReactMarkdown>
               </div>
+              <FeedbackButtons
+                messageId={`quiz-exp-${current.topicId}-${currentIdx}`}
+                messagePreview={current.exp}
+                source="quiz"
+                topicId={current.topicId}
+              />
             </div>
 
             {/* Structured concept card */}
