@@ -11,6 +11,7 @@ const desktopTabs = [
   { label: '📕 오답노트', path: '/wrong' },
   { label: '현황', path: '/dashboard' },
   { label: '🧬 학습 과학', path: '/science' },
+  { label: '💰 Valuation', path: '/valuation' },
 ];
 const adminTab = { label: '🛠️ Admin', path: '/admin' };
 

@@ -13,6 +13,7 @@ import ReplayPage from './pages/ReplayPage';
 import CoachPage from './pages/CoachPage';
 import AuthPage from './pages/AuthPage';
 import AdminPage from './pages/AdminPage';
+import ValuationPage from './pages/ValuationPage';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 import useClaudeStore from './store/claudeStore';
@@ -57,6 +58,7 @@ function BottomTabBar({ email }: { email: string }) {
             {[
               { label: '📝 문제 분석', path: '/analyze' },
               { label: '🧬 학습 과학', path: '/science' },
+              { label: '💰 Valuation', path: '/valuation' },
               ...(isAdmin ? [{ label: '🛠️ Admin', path: '/admin' }] : []),
             ].map((item) => (
               <button
@@ -188,6 +190,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/replay" element={<ReplayPage />} />
             <Route path="/coach" element={<CoachPage />} />
             <Route path="/science" element={<SciencePage />} />
+            <Route path="/valuation" element={<ValuationPage />} />
             {email.toLowerCase() === ADMIN_EMAIL && (
               <Route path="/admin" element={<AdminPage email={email} />} />
             )}
