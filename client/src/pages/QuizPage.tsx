@@ -13,6 +13,7 @@ import {
 } from '../hooks/useDynamicQuiz';
 import { saveQuizLog } from '../lib/db';
 import MobileSectionDrawer from '../components/layout/MobileSectionDrawer';
+import { drainPrewarmed } from '../hooks/prewarmQuiz';
 
 const SESSION_MAX = 20;
 const BUFFER_CAPACITY = 2;
@@ -290,6 +291,17 @@ export default function QuizPage() {
       wrongIdsRef.current = [];
       setQuestionCount(0);
       setLoading(true);
+
+      // Seed from app-boot prewarmed questions when the session is an
+      // interleave run (any module is valid there). Gives an instant
+      // first question if prewarm completed before the click.
+      if (mode === 'interleave' && !topicId) {
+        const pre = drainPrewarmed();
+        if (pre.length > 0) {
+          buf.hydrate(pre as unknown as Question[]);
+        }
+      }
+
       buf
         .take()
         .then((q) => {

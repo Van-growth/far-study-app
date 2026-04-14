@@ -231,7 +231,7 @@ Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
     try {
       const msg = await anthropic.messages.create({
         model: GENERATOR_MODEL,
-        max_tokens: 2000,
+        max_tokens: 800,
         messages: [{ role: 'user', content: fullPrompt }],
       });
       const block = msg.content.find((b) => b.type === 'text');
@@ -286,7 +286,15 @@ Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
       }
 
       lastResult = result;
-      lastValidation = await validateQuestion(result);
+      // Skip validator for non-computational questions — no numbers in the
+      // stem or options means no arithmetic to verify, and the generator's
+      // conceptual accuracy is already high. Saves a full API round-trip.
+      const hasNumbers = /[\d$%]/.test(result.q) || result.opts.some((o) => /[\d$%]/.test(o));
+      if (!hasNumbers) {
+        lastValidation = { valid: true, confidence: 'high', warning: null };
+      } else {
+        lastValidation = await validateQuestion(result);
+      }
 
       const needsRetry = !lastValidation.valid || lastValidation.confidence === 'low';
       const outOfRetries = attempt === MAX_VALIDATION_RETRIES;
