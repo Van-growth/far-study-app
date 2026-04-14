@@ -4,7 +4,6 @@ import useStudyStore from '../../store/studyStore';
 import { useClaudeChat } from '../../hooks/useClaudeChat';
 import { getTopicById } from '../../data/far-topics';
 import MessageBubble, { TypingBubble } from './MessageBubble';
-import QuickActions from './QuickActions';
 
 const BOUNCE_CSS = `@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}`;
 if (typeof document !== 'undefined' && !document.getElementById('claude-bounce')) {
@@ -19,7 +18,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
   const topic = currentTopicId ? getTopicById(currentTopicId) : null;
 
-  const { messages, isLoading, closePanel, sendMessage, sendQuickAction, sendStarter, clearMessages } =
+  const { messages, isLoading, closePanel, sendMessage, sendStarter, clearMessages } =
     useClaudeChat(topic?.label);
   const pendingQuiz = useClaudeStore((s) => s.pendingQuiz);
   const setPendingQuiz = useClaudeStore((s) => s.setPendingQuiz);
@@ -92,8 +91,6 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
           </div>
         )}
       </div>
-
-      <QuickActions onAction={sendQuickAction} hasQuizContext={false} disabled={isLoading} />
 
       {/* Messages */}
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-4">

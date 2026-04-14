@@ -815,11 +815,7 @@ export default function QuizView({
   }, [current, selected, openPanel]);
   void sendQuizExplanation;
 
-  // Scroll concept card into view as soon as it's loading or rendered
   const cardRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (cardLoading || cardData) cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [cardLoading, cardData]);
 
   if (finished) {
     const correct = results.filter((r) => r.correct).length;

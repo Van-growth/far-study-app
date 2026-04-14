@@ -566,8 +566,15 @@ ${options!.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
       return res.status(502).json({ error: 'no text in response' });
     }
     const text = block.text.trim();
-    const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
-    const body = fenced ? fenced[1] : text;
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    let body = fenced ? fenced[1] : text;
+    // Strip any leading/trailing non-JSON preamble by extracting the
+    // outermost {...} block.
+    const first = body.indexOf('{');
+    const last = body.lastIndexOf('}');
+    if (first !== -1 && last > first) {
+      body = body.slice(first, last + 1);
+    }
     let parsed: unknown;
     try {
       parsed = JSON.parse(body);
