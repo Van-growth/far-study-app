@@ -117,6 +117,7 @@ export default function AdminPage({ email }: AdminPageProps) {
   }
 
   const upPct = Math.round(data.feedback.upRate * 100);
+  const totalExtractions = data.coverage.topics.reduce((s, t) => s + t.count, 0);
 
   return (
     <div className="p-4 sm:p-6">
@@ -124,11 +125,12 @@ export default function AdminPage({ email }: AdminPageProps) {
         <h1 className="text-xl font-bold text-[#0f172a]">🛠️ 어드민 대시보드</h1>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <StatCard label="총 응답" value={String(data.totalAnswered)} />
           <StatCard label="평균 풀이" value={`${data.avgSolveSeconds}초`} />
           <StatCard label="👍 비율" value={`${upPct}%`} />
           <StatCard label="피드백 수" value={String(data.feedback.total)} />
+          <StatCard label="📚 학습 데이터" value={String(totalExtractions)} />
         </div>
 
         {/* Feedback */}
