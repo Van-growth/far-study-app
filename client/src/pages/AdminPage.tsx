@@ -43,9 +43,18 @@ interface AdminPageProps {
   email: string;
 }
 
+interface ReclassifyResult {
+  topicId: string;
+  total: number;
+  reclassified: number;
+  details: Array<{ id: string; from: string; to: string }>;
+}
+
 export default function AdminPage({ email }: AdminPageProps) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reclassifying, setReclassifying] = useState<string | null>(null);
+  const [reclassifyResult, setReclassifyResult] = useState<ReclassifyResult | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +75,30 @@ export default function AdminPage({ email }: AdminPageProps) {
       cancelled = true;
     };
   }, [email]);
+
+  const handleReclassify = async (topicId: string) => {
+    setReclassifying(topicId);
+    setReclassifyResult(null);
+    try {
+      const r = await fetch(`${API_URL}/api/admin/reclassify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-email': email },
+        body: JSON.stringify({ topicId }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const result = await r.json();
+      setReclassifyResult({ topicId, ...result });
+    } catch (e) {
+      setReclassifyResult({
+        topicId,
+        total: 0,
+        reclassified: 0,
+        details: [],
+      });
+    } finally {
+      setReclassifying(null);
+    }
+  };
 
   if (error) {
     return (
@@ -285,7 +318,8 @@ export default function AdminPage({ email }: AdminPageProps) {
                     <th className="py-1.5 pr-2">모듈</th>
                     <th className="py-1.5 pr-2 text-right">건수</th>
                     <th className="py-1.5 pr-2 text-right">함정</th>
-                    <th className="py-1.5 text-right">마지막 업데이트</th>
+                    <th className="py-1.5 pr-2 text-right">마지막 업데이트</th>
+                    <th className="py-1.5 text-right">재분류</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -299,10 +333,20 @@ export default function AdminPage({ email }: AdminPageProps) {
                         </td>
                         <td className="py-1.5 pr-2 text-right font-semibold">{t.count}</td>
                         <td className="py-1.5 pr-2 text-right">{t.trap_count}</td>
-                        <td className="py-1.5 text-right text-muted">
+                        <td className="py-1.5 pr-2 text-right text-muted">
                           {t.last_updated
                             ? new Date(t.last_updated).toLocaleDateString('ko-KR')
                             : '-'}
+                        </td>
+                        <td className="py-1.5 text-right">
+                          <button
+                            onClick={() => handleReclassify(t.topic_id)}
+                            disabled={reclassifying === t.topic_id}
+                            className="px-2 py-0.5 rounded text-[10px] font-medium hover:opacity-80 disabled:opacity-40"
+                            style={{ background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe' }}
+                          >
+                            {reclassifying === t.topic_id ? '처리중...' : '🔄'}
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -320,12 +364,57 @@ export default function AdminPage({ email }: AdminPageProps) {
             <p className="font-semibold text-sm text-[#0f172a] mb-1">💬 피드백 로그 안내</p>
             <p className="text-xs text-muted">
               아직 피드백 데이터가 없습니다. 퀴즈/튜터 화면에서 👍/👎 버튼을 누르면
-              서버의 feedback_logs.json에 기록되며 여기에 표시됩니다.
-              (Supabase 테이블이 아닌 서버 파일 기반 저장)
+              Supabase feedback_logs 테이블에 기록되며 여기에 표시됩니다.
             </p>
           </section>
         )}
       </div>
+
+      {/* 재분류 결과 팝업 */}
+      {reclassifyResult && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setReclassifyResult(null)}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-2xl p-5 flex flex-col gap-3 max-h-[80dvh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="font-semibold text-sm text-[#0f172a]">
+              🔄 {reclassifyResult.topicId} 재분류 결과
+            </p>
+            <p className="text-sm">
+              <span className="font-bold text-[#4f6ef7]">{reclassifyResult.total}</span>개 중{' '}
+              <span className="font-bold text-[#16a34a]">{reclassifyResult.reclassified}</span>개
+              재분류 완료
+            </p>
+            {reclassifyResult.details.length > 0 && (
+              <div className="flex flex-col gap-1 mt-1">
+                <p className="text-[11px] text-muted font-semibold">변경 내역</p>
+                {reclassifyResult.details.map((d) => (
+                  <div key={d.id} className="text-xs flex items-center gap-1">
+                    <span className="text-[#ef4444] font-mono">{d.from}</span>
+                    <span className="text-muted">→</span>
+                    <span className="text-[#16a34a] font-mono">{d.to}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {reclassifyResult.reclassified === 0 && reclassifyResult.total > 0 && (
+              <p className="text-xs text-muted">
+                모든 데이터가 올바른 모듈에 분류되어 있습니다.
+              </p>
+            )}
+            <button
+              onClick={() => setReclassifyResult(null)}
+              className="self-end px-4 py-1.5 rounded-lg text-sm font-semibold text-white mt-1"
+              style={{ background: '#4f6ef7' }}
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

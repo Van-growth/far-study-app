@@ -306,4 +306,62 @@ router.get('/dashboard', async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/admin/reclassify
+router.post('/reclassify', async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  if (!supabase) {
+    return res.status(503).json({ error: 'Supabase not configured' });
+  }
+
+  const topicId = (req.body?.topicId as string) ?? '';
+  if (!topicId) {
+    return res.status(400).json({ error: 'topicId required' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('concept_extractions')
+      .select('id, concepts, asc_references, topic_tags, topic_id')
+      .eq('topic_id', topicId);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+    if (!data || data.length === 0) {
+      return res.json({ total: 0, reclassified: 0, details: [] });
+    }
+
+    const { inferTopicId } = await import('../lib/topicInference');
+
+    const details: Array<{ id: string; from: string; to: string }> = [];
+
+    for (const row of data) {
+      const concepts = Array.isArray(row.concepts) ? row.concepts as string[] : [];
+      const topicTags = Array.isArray(row.topic_tags) ? row.topic_tags as string[] : [];
+      const ascRefs = Array.isArray(row.asc_references) ? row.asc_references as string[] : [];
+
+      const result = inferTopicId(concepts, topicTags, ascRefs, row.topic_id);
+      if (result.corrected && result.topicId) {
+        const { error: updateErr } = await supabase
+          .from('concept_extractions')
+          .update({ topic_id: result.topicId })
+          .eq('id', row.id);
+
+        if (!updateErr) {
+          details.push({ id: row.id, from: row.topic_id, to: result.topicId });
+        }
+      }
+    }
+
+    return res.json({
+      total: data.length,
+      reclassified: details.length,
+      details,
+    });
+  } catch (err) {
+    const m = err instanceof Error ? err.message : 'unknown';
+    return res.status(500).json({ error: m });
+  }
+});
+
 export default router;
