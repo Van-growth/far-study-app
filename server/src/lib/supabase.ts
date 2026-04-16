@@ -7,7 +7,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_KEY;
 
-const supabase: SupabaseClient | null =
+export const supabase: SupabaseClient | null =
   url && key ? createClient(url, key) : null;
 
 if (!supabase) {

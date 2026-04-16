@@ -1,22 +1,16 @@
 import { Router, Request, Response } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 
 const router = Router();
 
 const DATA_DIR = path.resolve(__dirname, '../../data');
 const HISTORY_FILE = path.join(DATA_DIR, 'quiz_history.json');
-const FEEDBACK_FILE = path.join(DATA_DIR, 'feedback_logs.json');
 const LEARNED_FILE = path.join(DATA_DIR, 'learned_concepts.json');
 const EXTRACTION_LOG_FILE = path.join(DATA_DIR, 'concept_extraction_log.json');
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
-
-// Supabase client for concept_extractions coverage query
-const sbUrl = process.env.SUPABASE_URL;
-const sbKey = process.env.SUPABASE_SERVICE_KEY;
-const supabase = sbUrl && sbKey ? createClient(sbUrl, sbKey) : null;
 
 // 전체 Becker 모듈 목록 — 커버리지 공백 계산용
 const ALL_TOPICS: { id: string; label: string }[] = [
@@ -93,13 +87,11 @@ interface HistoryItem {
   userId?: string | null;
 }
 
-interface FeedbackEntry {
+interface FeedbackRow {
   id: string;
-  timestamp: string;
-  userId?: string | null;
-  rating: 'up' | 'down';
-  reason?: string | null;
-  source: string;
+  rating: string;
+  reason: string | null;
+  created_at: string;
 }
 
 interface LearnedState {
@@ -183,9 +175,18 @@ async function fetchTopicCoverage(): Promise<{
 router.get('/dashboard', async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
-    const [history, feedback, learned, extractionLog, coverage] = await Promise.all([
+    const [history, feedbackRows, learned, extractionLog, coverage] = await Promise.all([
       readJson<HistoryItem[]>(HISTORY_FILE, []),
-      readJson<FeedbackEntry[]>(FEEDBACK_FILE, []),
+      (async (): Promise<FeedbackRow[]> => {
+        if (!supabase) return [];
+        const { data, error } = await supabase
+          .from('feedback_logs')
+          .select('id, rating, reason, created_at')
+          .order('created_at', { ascending: false })
+          .limit(1000);
+        if (error) { console.error('[admin] feedback query:', error.message); return []; }
+        return (data ?? []) as FeedbackRow[];
+      })(),
       readJson<LearnedState>(LEARNED_FILE, {
         concepts: {},
         asc_references: {},
@@ -198,11 +199,11 @@ router.get('/dashboard', async (req: Request, res: Response) => {
     ]);
 
     // Feedback stats
-    const ups = feedback.filter((f) => f.rating === 'up').length;
-    const downs = feedback.filter((f) => f.rating === 'down').length;
-    const total = feedback.length;
+    const ups = feedbackRows.filter((f) => f.rating === 'up').length;
+    const downs = feedbackRows.filter((f) => f.rating === 'down').length;
+    const total = feedbackRows.length;
     const reasonCounts: Record<string, number> = {};
-    for (const f of feedback) {
+    for (const f of feedbackRows) {
       if (f.rating === 'down' && f.reason) {
         reasonCounts[f.reason] = (reasonCounts[f.reason] ?? 0) + 1;
       }
