@@ -41,6 +41,9 @@ export default function AnalyzePage() {
   const [learned, setLearned] = useState<LearnedConcepts | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [extractedOpen, setExtractedOpen] = useState(true);  // 추출된 개념: 기본 펼침
+  const [cardOpen, setCardOpen] = useState(false);           // AI 해설: 기본 접힘
+  const [learnedOpen, setLearnedOpen] = useState(false);     // 학습된 개념: 기본 접힘
 
   // 우선순위: 텍스트 자동 감지 > 수동 드롭다운 > 사이드바 선택 모듈
   const detectedTopicId = detectTopicId(text);
@@ -147,6 +150,9 @@ export default function AnalyzePage() {
     setCard(null);
     setExtracted(null);
     setError(null);
+    setExtractedOpen(true);
+    setCardOpen(false);
+    setLearnedOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -297,118 +303,156 @@ export default function AnalyzePage() {
           </div>
         )}
 
-        {/* Concept card result — same 6-type renderer used in QuizView */}
-        {card && (
-          <div
-            className="p-4 rounded-xl"
-            style={{ background: '#fffbeb', border: '1.5px solid #fde68a' }}
-          >
-            <p className="text-xs font-semibold text-[#92400e] mb-2">
-              🧠 AI 구조화 해설 · {safeStr(card.type)}
-            </p>
-            <ConceptCardView card={card} />
-          </div>
-        )}
-
-        {/* This run's extraction */}
+        {/* 추출된 개념 accordion */}
         {extracted && (
-          <div className="card p-4">
-            <p className="text-xs font-semibold text-[#0f172a] mb-2">🔍 이 문제에서 추출된 개념</p>
-            <ChipList label="concepts" items={extracted.concepts} tint="#e0f2fe" border="#7dd3fc" color="#075985" />
-            <ChipList
-              label="asc_references"
-              items={extracted.asc_references}
-              tint="#f0fdf4"
-              border="#86efac"
-              color="#166534"
-            />
-            <ChipList
-              label="topic_tags"
-              items={extracted.topic_tags}
-              tint="#fef3c7"
-              border="#fcd34d"
-              color="#78350f"
-            />
-            {extracted.trap_pattern != null && (
-              <div className="mt-2">
-                <p className="text-[10px] font-semibold text-muted mb-1">trap_pattern</p>
-                <div
-                  className="text-xs p-2 rounded"
-                  style={{ background: '#fff1f2', border: '1px solid #fecaca', color: '#991b1b' }}
-                >
-                  ⚠️ {safeStr(extracted.trap_pattern)}
-                </div>
+          <div className="card rounded-xl overflow-hidden">
+            <button
+              onClick={() => setExtractedOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 text-left"
+            >
+              <span className="text-xs font-semibold text-[#0f172a]">🔍 이 문제에서 추출된 개념</span>
+              <span className="text-xs text-muted">{extractedOpen ? '▲' : '▼'}</span>
+            </button>
+            {extractedOpen && (
+              <div className="px-4 pb-4">
+                <ChipList label="concepts" items={extracted.concepts} tint="#e0f2fe" border="#7dd3fc" color="#075985" />
+                <ChipList
+                  label="asc_references"
+                  items={extracted.asc_references}
+                  tint="#f0fdf4"
+                  border="#86efac"
+                  color="#166534"
+                />
+                <ChipList
+                  label="topic_tags"
+                  items={extracted.topic_tags}
+                  tint="#fef3c7"
+                  border="#fcd34d"
+                  color="#78350f"
+                />
+                {extracted.trap_pattern != null && (
+                  <div className="mt-2">
+                    <p className="text-[10px] font-semibold text-muted mb-1">trap_pattern</p>
+                    <div
+                      className="text-xs p-2 rounded"
+                      style={{ background: '#fff1f2', border: '1px solid #fecaca', color: '#991b1b' }}
+                    >
+                      ⚠️ {safeStr(extracted.trap_pattern)}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* Accumulated learned concepts */}
-        <div className="card p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-semibold text-[#0f172a]">📚 학습된 개념</p>
-            {learned?.updated_at && (
-              <p className="text-[10px] text-muted">
-                업데이트 {new Date(learned.updated_at).toLocaleString('ko-KR')}
-              </p>
+        {/* AI 구조화 해설 accordion */}
+        {(card || loading) && (
+          <div className="rounded-xl overflow-hidden" style={{ border: '1.5px solid #fde68a' }}>
+            <button
+              onClick={() => setCardOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 text-left"
+              style={{ background: '#fffbeb' }}
+            >
+              <span className="text-xs font-semibold text-[#92400e]">
+                🧠 AI 구조화 해설
+                {loading && !card && ' 🔄'}
+                {card && ' ✅'}
+                {card && ` · ${safeStr(card.type)}`}
+              </span>
+              <span className="text-xs text-[#92400e]">{cardOpen ? '▲' : '▼'}</span>
+            </button>
+            {cardOpen && (
+              <div className="px-4 pb-4 pt-1" style={{ background: '#fffbeb' }}>
+                {loading && !card ? (
+                  <div className="flex items-center gap-2 text-sm text-muted">
+                    <div className="w-3 h-3 border-2 border-[#92400e] border-t-transparent rounded-full animate-spin" />
+                    <span>해설 생성 중...</span>
+                  </div>
+                ) : card ? (
+                  <ConceptCardView card={card} />
+                ) : null}
+              </div>
             )}
           </div>
-          {!learned || topConcepts.length === 0 ? (
-            <p className="text-xs text-muted">
-              아직 학습 데이터가 없습니다. 위에서 문제를 분석하면 여기에 누적됩니다.
-            </p>
-          ) : (
-            <>
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {topConcepts.map(([key, count]) => (
-                  <button
-                    key={key}
-                    onClick={() => handlePracticeWithConcept(key)}
-                    title={`"${key}" 개념으로 문제 풀기`}
-                    className="text-xs px-2.5 py-1 rounded-full transition-colors hover:opacity-80"
-                    style={{
-                      background: '#eef2ff',
-                      border: '1px solid #c7d2fe',
-                      color: '#4338ca',
-                    }}
-                  >
-                    {safeStr(key)} <span className="opacity-60">×{safeStr(count)}</span>
-                  </button>
-                ))}
-              </div>
-              {learned.trap_patterns.length > 0 && (
-                <div>
-                  <p className="text-[11px] font-semibold text-[#991b1b] mb-1">⚠️ 자주 틀린 패턴</p>
-                  <ul className="flex flex-col gap-1">
-                    {learned.trap_patterns.slice(0, 8).map((p, i) => (
-                      <li
-                        key={i}
-                        className="text-xs px-2 py-1 rounded"
+        )}
+
+        {/* 학습된 개념 accordion */}
+        <div className="card rounded-xl overflow-hidden">
+          <button
+            onClick={() => setLearnedOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 text-left"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-[#0f172a]">📚 학습된 개념</span>
+              {learned?.updated_at && (
+                <span className="text-[10px] text-muted">
+                  {new Date(learned.updated_at).toLocaleString('ko-KR')}
+                </span>
+              )}
+            </div>
+            <span className="text-xs text-muted">{learnedOpen ? '▲' : '▼'}</span>
+          </button>
+          {learnedOpen && (
+            <div className="px-4 pb-4">
+              {!learned || topConcepts.length === 0 ? (
+                <p className="text-xs text-muted">
+                  아직 학습 데이터가 없습니다. 위에서 문제를 분석하면 여기에 누적됩니다.
+                </p>
+              ) : (
+                <>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {topConcepts.map(([key, count]) => (
+                      <button
+                        key={key}
+                        onClick={() => handlePracticeWithConcept(key)}
+                        title={`"${key}" 개념으로 문제 풀기`}
+                        className="text-xs px-2.5 py-1 rounded-full transition-colors hover:opacity-80"
                         style={{
-                          background: '#fef2f2',
-                          border: '1px solid #fecaca',
-                          color: '#7f1d1d',
+                          background: '#eef2ff',
+                          border: '1px solid #c7d2fe',
+                          color: '#4338ca',
                         }}
                       >
-                        · {safeStr(p)}
-                      </li>
+                        {safeStr(key)} <span className="opacity-60">×{safeStr(count)}</span>
+                      </button>
                     ))}
-                  </ul>
-                </div>
+                  </div>
+                  {learned.trap_patterns.length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-semibold text-[#991b1b] mb-1">⚠️ 자주 틀린 패턴</p>
+                      <ul className="flex flex-col gap-1">
+                        {learned.trap_patterns.slice(0, 8).map((p, i) => (
+                          <li
+                            key={i}
+                            className="text-xs px-2 py-1 rounded"
+                            style={{
+                              background: '#fef2f2',
+                              border: '1px solid #fecaca',
+                              color: '#7f1d1d',
+                            }}
+                          >
+                            · {safeStr(p)}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <button
+                      onClick={() => navigate('/quiz?mode=interleave')}
+                      className="w-full py-2 rounded-lg text-xs font-medium text-white"
+                      style={{ background: '#4f6ef7' }}
+                    >
+                      누적된 개념으로 전체 퀴즈 풀기 →
+                    </button>
+                    <p className="text-[10px] text-muted mt-1 text-center">
+                      생성된 문제 프롬프트에 위 데이터가 자동 주입됩니다.
+                    </p>
+                  </div>
+                </>
               )}
-              <div className="mt-3 pt-3 border-t border-border">
-                <button
-                  onClick={() => navigate('/quiz?mode=interleave')}
-                  className="w-full py-2 rounded-lg text-xs font-medium text-white"
-                  style={{ background: '#4f6ef7' }}
-                >
-                  누적된 개념으로 전체 퀴즈 풀기 →
-                </button>
-                <p className="text-[10px] text-muted mt-1 text-center">
-                  생성된 문제 프롬프트에 위 데이터가 자동 주입됩니다.
-                </p>
-              </div>
-            </>
+            </div>
           )}
         </div>
 

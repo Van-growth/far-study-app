@@ -601,6 +601,8 @@ export default function QuizView({
   const current = questions[currentIdx];
   const { sendQuizExplanation } = useClaudeChat(current?.topicLabel);
   const [calcOpen, setCalcOpen] = useState(false);
+  const [expOpen, setExpOpen] = useState(true);    // 해설: 기본 펼침
+  const [cardOpen, setCardOpen] = useState(false); // 개념 카드: 기본 접힘
 
   // Start/restart when the displayed question changes. Stop on answer /
   // unmount / session completion. Auto-pauses while the tab is hidden
@@ -769,6 +771,8 @@ export default function QuizView({
     setSelected(null);
     setCardData(null);
     setCardError(null);
+    setExpOpen(true);
+    setCardOpen(false);
   }, [current, selected, currentIdx, questions.length, onRequestNext, sessionMax, results, onComplete]);
 
   // Skip the current low-confidence question without recording an answer.
@@ -1111,41 +1115,66 @@ export default function QuizView({
 
         {selected !== null && (
           <>
-            {/* Quick explanation from question payload */}
-            <div className="p-4 rounded-xl" style={{ background: '#f8faff', border: '1.5px solid #c7d2fe' }}>
-              <p className="text-xs font-semibold text-[#4f6ef7] mb-1.5">💡 정답 해설</p>
-              <div className="text-sm text-[#0f172a] leading-relaxed">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
-                  {current.exp}
-                </ReactMarkdown>
-              </div>
-              <FeedbackButtons
-                messageId={`quiz-exp-${current.topicId}-${currentIdx}`}
-                messagePreview={current.exp}
-                source="quiz"
-                topicId={current.topicId}
-              />
+            {/* 정답 해설 accordion */}
+            <div className="rounded-xl overflow-hidden" style={{ border: '1.5px solid #c7d2fe' }}>
+              <button
+                onClick={() => setExpOpen((v) => !v)}
+                className="w-full flex items-center justify-between px-4 py-3 text-left"
+                style={{ background: '#f8faff' }}
+              >
+                <span className="text-xs font-semibold text-[#4f6ef7]">💡 정답 해설</span>
+                <span className="text-xs text-[#4f6ef7]">{expOpen ? '▲' : '▼'}</span>
+              </button>
+              {expOpen && (
+                <div className="px-4 pb-4 pt-1" style={{ background: '#f8faff' }}>
+                  <div className="text-sm text-[#0f172a] leading-relaxed">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
+                      {current.exp}
+                    </ReactMarkdown>
+                  </div>
+                  <FeedbackButtons
+                    messageId={`quiz-exp-${current.topicId}-${currentIdx}`}
+                    messagePreview={current.exp}
+                    source="quiz"
+                    topicId={current.topicId}
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Structured concept card */}
+            {/* 개념 카드 accordion */}
             <div
               ref={cardRef}
-              className="p-4 rounded-xl"
-              style={{ background: '#fffbeb', border: '1.5px solid #fde68a' }}
+              className="rounded-xl overflow-hidden"
+              style={{ border: '1.5px solid #fde68a' }}
             >
-              <p className="text-xs font-semibold text-[#92400e] mb-2">
-                🧠 개념 카드 {cardData && `· ${typeLabel(cardData.type)}`}
-              </p>
-              {cardError ? (
-                <p className="text-sm text-[#991b1b]">⚠️ {cardError}</p>
-              ) : cardLoading && !cardData ? (
-                <div className="flex items-center gap-2 text-sm text-muted">
-                  <div className="w-3 h-3 border-2 border-[#92400e] border-t-transparent rounded-full animate-spin" />
-                  <span>구조 분석 중...</span>
+              <button
+                onClick={() => setCardOpen((v) => !v)}
+                className="w-full flex items-center justify-between px-4 py-3 text-left"
+                style={{ background: '#fffbeb' }}
+              >
+                <span className="text-xs font-semibold text-[#92400e]">
+                  🧠 개념 카드
+                  {cardLoading && !cardData && ' 🔄'}
+                  {cardData && ' ✅'}
+                  {cardData && ` · ${typeLabel(cardData.type)}`}
+                </span>
+                <span className="text-xs text-[#92400e]">{cardOpen ? '▲' : '▼'}</span>
+              </button>
+              {cardOpen && (
+                <div className="px-4 pb-4 pt-1" style={{ background: '#fffbeb' }}>
+                  {cardError ? (
+                    <p className="text-sm text-[#991b1b]">⚠️ {cardError}</p>
+                  ) : cardLoading && !cardData ? (
+                    <div className="flex items-center gap-2 text-sm text-muted">
+                      <div className="w-3 h-3 border-2 border-[#92400e] border-t-transparent rounded-full animate-spin" />
+                      <span>구조 분석 중...</span>
+                    </div>
+                  ) : cardData ? (
+                    <ConceptCardView card={cardData} />
+                  ) : null}
                 </div>
-              ) : cardData ? (
-                <ConceptCardView card={cardData} />
-              ) : null}
+              )}
             </div>
 
             <button
