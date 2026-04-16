@@ -10,11 +10,22 @@ const CONCEPT_CARD_MODEL = 'claude-sonnet-4-5-20250929';
 const CONCEPT_CARD_MAX_TOKENS = 3000;
 const MAX_VALIDATION_RETRIES = 3;
 
+interface CalculationStep {
+  label: string;
+  amount: number;
+  is_subtraction?: boolean;
+  is_total?: boolean;
+}
+
 interface GeneratedMcq {
   q: string;
   opts: string[];
   ans: number;
   exp: string;
+  // 계산형 문제일 때만 존재. 개념형은 null.
+  // Generator가 1회 계산하고, Validator/해설은 이걸 재사용.
+  calculation_steps: CalculationStep[] | null;
+  raw_answer: number | null; // opts[ans]의 숫자값 (계산형만)
 }
 
 type Confidence = 'high' | 'medium' | 'low';
@@ -24,67 +35,85 @@ interface ValidationResult {
   warning: string | null;
 }
 
-// ── Validate a generated question with a second model pass ────
-// Returns a structured { valid, confidence, warning } triple. If the
-// validator model misbehaves, we default to accepting the item with
-// 'high' confidence so the pipeline never blocks on a buggy reviewer.
+// ─────────────────────────────────────────────────────────────
+// validateQuestion
+//
+// 핵심 원칙: 계산은 Generator가 1번만 한다.
+// Validator는 calculation_steps를 전달받아 재계산 없이 대조만 한다.
+// 환각 확률 = Generator 1회. Validator/해설은 그 결과를 재사용.
+// ─────────────────────────────────────────────────────────────
 async function validateQuestion(item: GeneratedMcq): Promise<ValidationResult> {
   const ALPHA = ['A', 'B', 'C', 'D'];
-  const review = `아래 FAR 시험 MCQ 문제와 정답이 회계 원칙상 정확한지 검토해줘.
+  const isCalc = item.calculation_steps !== null && item.raw_answer !== null;
 
-문제: ${item.q}
+  // ── 1. 로컬 체크 (API 호출 없이 즉시 reject) ──────────────────
+  // "approximately" / "closest to" 표현 → 정답이 보기에 없다는 신호
+  const approxPattern = /approximately|closest to|nearest to|about \$|roughly/i;
+  if (approxPattern.test(item.q) || approxPattern.test(item.exp)) {
+    return {
+      valid: false,
+      confidence: 'low',
+      warning: '"approximately" / "closest to" 표현 감지 — 정답이 보기에 정확히 없을 가능성',
+    };
+  }
 
-선택지:
+  // ── 2. 계산형: raw_answer가 보기에 정확히 존재하는지 확인 ────────
+  if (isCalc && item.raw_answer !== null) {
+    const rawStr = String(item.raw_answer);
+    const exactMatch = item.opts.some((opt) => {
+      // 숫자만 추출해서 비교 (콤마, $, () 제거)
+      const cleaned = opt.replace(/[$,()]/g, '').trim();
+      return cleaned === rawStr || cleaned === `-${rawStr}`;
+    });
+    if (!exactMatch) {
+      return {
+        valid: false,
+        confidence: 'low',
+        warning: `raw_answer(${item.raw_answer})가 보기 4개에 정확히 존재하지 않음 — 근사치 오류`,
+      };
+    }
+  }
+
+  // ── 3. Model 검증 (재계산 없이 대조만) ─────────────────────────
+  const stepsBlock = isCalc
+    ? `\n\n[Generator가 계산한 과정 — 재계산하지 말고 이 결과가 맞는지만 검증]\n${JSON.stringify(item.calculation_steps, null, 2)}\nGenerator 주장 정답값: ${item.raw_answer}`
+    : '';
+
+  const review = `You are a strict USCPA FAR MCQ auditor. Verify this question WITHOUT recalculating from scratch.
+${isCalc ? 'CRITICAL: The generator already did ALL the math. You must NOT redo any arithmetic. Your ONLY job: verify that each step logically follows from the previous step and that the final amount matches raw_answer. If you recalculate, you introduce hallucination risk.' : 'This is a conceptual question. Check GAAP/AICPA Blueprint scope and answer correctness only.'}
+
+Question: ${item.q}
+
+Options:
 ${item.opts.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
 
-출제자 정답: ${ALPHA[item.ans]} (${item.opts[item.ans]})
+Claimed correct answer: ${ALPHA[item.ans]} (${item.opts[item.ans]})
 
-해설: ${item.exp}
+Explanation: ${item.exp}
+${stepsBlock}
 
-검토 기준:
-- 정답(ans로 표시된 선택지)이 US GAAP / FASB ASC / GASB 기준으로 실제로 정확한가?
-- 다른 선택지가 "우연히도" 더 정확한 답은 아닌가?
-- 해설이 정답을 실제로 뒷받침하는가 (모순 없음)?
-- 문제 자체가 ambiguous하거나 복수 정답이 가능한 경우 valid=false
+Validation rules:
+1. REJECT if answer is wrong per US GAAP / FASB ASC / GASB
+2. REJECT if question is ambiguous with multiple defensible answers
+3. REJECT if "approximately" or "closest to" language exists (already caught locally, flag if missed)
+${isCalc ? `4. CHECK: does each calculation step follow logically from the previous?
+5. CHECK: does the final step equal raw_answer (${item.raw_answer})?
+6. DO NOT redo the arithmetic yourself — verify the logic chain only` : `4. CHECK: is this within AICPA Blueprint FAR scope?
+5. CHECK: is the correct answer clearly supported by GAAP?`}
 
-⚠️ 계산 문제(숫자/금액/비율/이자/감가상각/PV/FV 등)의 경우 — 반드시 아래 절차로 **단계별 검증**:
-1. 문제에서 주어진 모든 수치를 식별하고 목록화
-2. 적용해야 할 공식/회계 규칙을 명시적으로 쓴다
-3. 실제로 계산을 단계별로 수행 (중간값을 전부 적는다)
-4. 최종값을 정답 선택지와 비교
-5. 반올림/부호/단위(천/백만)가 일치하는지 확인
-6. 1원이라도 불일치하면 confidence="low" 또는 valid=false
-7. 다른 선택지 중 흔한 계산 실수(부호 반대, 0 하나 빠짐, 공식 혼동)로 나올 값이 있으면 함정으로 간주하고 정답이 맞는지 재확인
-산술 검증 과정을 생략하지 말 것 — 머릿속으로 훑고 "맞겠지"로 넘기면 안 된다.
-
-반환 형식 — STRICT JSON 만. 부연 설명 금지, 마크다운 코드 펜스 금지:
-
+Return STRICT JSON only. No prose, no markdown:
 {
   "valid": true | false,
   "confidence": "high" | "medium" | "low",
-  "warning": "한국어 한 줄 경고 메시지" | null
+  "warning": "one-line reason" | null
 }
 
-confidence 판단 기준:
-- "high": 문제 정확, 계산 검증 완료, 정답이 명확하고 다른 선택지가
-   애매하지 않음
-- "medium": 정답 자체는 맞지만 수치 재확인이 필요하거나 선택지 간
-   구분이 살짝 헷갈릴 수 있는 요소가 있음
-- "low": 계산 오류 가능성이 있거나 정답 근거가 불명확함
+confidence guide:
+- "high": answer verified, no issues
+- "medium": minor concern but answer likely correct
+- "low": serious doubt about correctness
 
-warning 예시:
-- "계산 수치 검토 필요"
-- "선택지 간 구분이 모호할 수 있음"
-- "ASC 기준 해석 차이 가능"
-- null (문제 없음, 일반적으로 high confidence에 사용)
-
-규칙:
-- valid=true + confidence="high" + warning=null 이 이상적인 통과
-- valid=true + confidence="medium" 이면 문제는 맞지만 warning은 반드시 제공
-- confidence="low" 또는 valid=false 면 warning 필수
-- 수치/금액이 포함된 문제는 산술을 반드시 검증한 후 confidence 결정
-
-{로 시작하고 }로 끝내. JSON 외 텍스트 금지.`;
+Start with { and end with }.`;
 
   try {
     const msg = await anthropic.messages.create({
@@ -111,25 +140,24 @@ warning 예시:
         : null;
     return { valid, confidence, warning };
   } catch (e) {
-    // Validator misbehaved — accept the item so the student isn't blocked.
-    console.warn('[validate] failed, accepting with high confidence:', e instanceof Error ? e.message : e);
+    console.warn('[validate] failed, accepting:', e instanceof Error ? e.message : e);
     return { valid: true, confidence: 'high', warning: null };
   }
 }
 
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // POST /api/generate-question
-// body: { moduleId, moduleName, weakModules?, recentWrongTopics? }
-// returns: { q, opts: [a,b,c,d], ans: 0-3, exp }
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 router.post('/generate-question', async (req: Request, res: Response) => {
-  const { moduleId, moduleName, weakModules, recentWrongTopics, focusConcept } = req.body as {
-    moduleId: string;
-    moduleName: string;
-    weakModules?: { id: string; label: string; accuracy: number }[];
-    recentWrongTopics?: string[];
-    focusConcept?: string;
-  };
+  const { moduleId, moduleName, weakModules, recentWrongTopics, focusConcept, excludeIds } =
+    req.body as {
+      moduleId: string;
+      moduleName: string;
+      weakModules?: { id: string; label: string; accuracy: number }[];
+      recentWrongTopics?: string[];
+      focusConcept?: string;
+      excludeIds?: string[]; // 최근 20개 question_id — 중복 방지용 (PR2에서 DB 연동)
+    };
 
   if (!moduleId || !moduleName) {
     return res.status(400).json({ error: 'moduleId and moduleName required' });
@@ -145,9 +173,6 @@ router.post('/generate-question', async (req: Request, res: Response) => {
     ? `\nRecent wrong topics: ${recentWrongTopics.slice(0, 8).join(', ')}.`
     : '';
 
-  // Inject accumulated learned-concept metadata from analyze sessions.
-  // We never have the original question text here — only keyword counts
-  // and trap descriptions — so no licensing risk.
   let learnedLine = '';
   try {
     const learned = await readLearned();
@@ -156,82 +181,93 @@ router.post('/generate-question', async (req: Request, res: Response) => {
     if (tops.length || traps.length) {
       const parts: string[] = [];
       if (tops.length) {
-        parts.push(
-          `자주 등장한 개념: ${tops.map((t) => `${t.key}(${t.count}회)`).join(', ')}`,
-        );
+        parts.push(`자주 틀린 개념: ${tops.map((t) => `${t.key}(${t.count}회)`).join(', ')}`);
       }
       if (traps.length) {
-        parts.push(`자주 틀린 패턴: ${traps.join(' / ')}`);
+        parts.push(`자주 걸리는 함정: ${traps.join(' / ')}`);
       }
-      parts.push(
-        '→ 위 개념/함정을 자연스럽게 포함하는 문제로 출제. 단, 개념 이름을 문제 stem에 직접 언급하는 건 금지 (HARD RULES 준수).',
-      );
+      parts.push('위 개념/함정을 의도적으로 포함하는 문제로 출제. 단, 개념 이름은 문제 stem에 직접 언급하는 것 금지 (HARD RULES 이하).');
       learnedLine = '\n\nLearned student context:\n' + parts.join('\n');
     }
   } catch {
-    // If learned data unavailable, fall through silently.
+    // fall through
   }
 
   const focusLine = focusConcept
-    ? `\n\nFocus concept: "${focusConcept}" — 이 개념을 반드시 테스트하는 문제로 생성. (stem에 직접 이름 금지는 그대로)`
+    ? `\n\nFocus concept: "${focusConcept}" — 이 개념을 반드시 포함하는 문제로 출제. (stem에 직접 언급 금지, 시나리오로)`
     : '';
 
-  const prompt = `You are an expert USCPA FAR exam item writer. Generate EXACTLY ONE high-quality multiple-choice question matching the actual exam's writing style.
+  // ── Generator 프롬프트 ──────────────────────────────────────
+  // 핵심: 계산형 문제는 calculation_steps + raw_answer를 JSON에 포함.
+  // 이 값을 Validator와 해설이 재사용 → 환각 확률 최소화.
+  const prompt = `You are an expert USCPA FAR exam item writer. Generate EXACTLY ONE high-quality multiple-choice question.
 
-Internal tag (for YOUR selection only — NEVER mention in the question):
+Internal tag (NEVER mention in the question):
 - Target module: ${moduleId} — ${moduleName}${weakLine}${wrongLine}${learnedLine}${focusLine}
 
-HARD RULES — style of the stem (question body):
+━━━ HARD RULES — stem & options ━━━
 
-FORBIDDEN in the question stem and options:
-- DO NOT reference ASC / ASU / GASB / SFAS codification numbers (no "ASC 330", "ASC 606", "ASC 842", "GASB 34", etc.)
-- DO NOT name the topic or module (no "Inventory", "Leases", "Revenue Recognition", "Business Combinations", etc.)
-- DO NOT use parenthetical topic hints like "(Inventory)" or "(Lease Accounting)"
-- DO NOT use hint-y prefaces like "Under GAAP...", "Under U.S. GAAP...", "Per the standards..."
-- DO NOT label the question with its area/module
+FORBIDDEN:
+- ASC / ASU / GASB / SFAS codification numbers in stem or options
+- Topic/module names (Inventory, Leases, Revenue Recognition, etc.)
+- Parenthetical hints like "(Inventory)" or "(Lease Accounting)"
+- Hint-y prefaces: "Under GAAP...", "Under U.S. GAAP...", "Per the standards..."
+- "approximately", "closest to", "nearest to", "about $", "roughly" — NEVER use these
+  (Every option must be a precise, exact number. The correct answer MUST appear exactly in the options.)
 
-REQUIRED style of the stem:
-- Pure business scenario centered on a company, person, or transaction
-- Concrete numbers, dates, terms (e.g., $, %, shares, years, FOB terms)
-- Crisp terminal question like: "What amount should be recorded?" / "How should this be reported?" / "What is the gain or loss?" / "What amount, if any, should be recognized?"
-- Let the student infer which concept is being tested purely from the facts
+REQUIRED:
+- Pure business scenario: company, person, or transaction
+- Concrete numbers, dates, terms ($, %, shares, years, FOB terms)
+- Crisp terminal question: "What amount should be recorded?" / "How should this be reported?" / "What is the gain or loss?"
+- Exactly 4 options
+- At least 2 plausible trap distractors
 
-BAD (never do this):
-  "Under ASC 330 (Inventory), what amount..."
-  "Per ASC 842 for leases, how should the lessee..."
-  "Under U.S. GAAP, when does a company recognize revenue..."
+━━━ CALCULATION DISCIPLINE (핵심: 계산은 여기서 1번만) ━━━
 
-GOOD (do this):
-  "A company purchased goods for $50,000 with FOB shipping point terms. The goods were in transit at year-end. What amount should be included in the company's year-end balance?"
-  "On January 1, Year 1, Alpha Co. signed a 5-year noncancelable agreement to use equipment with annual payments of $20,000 due each December 31. The implicit rate is 6%. What amount should Alpha record as a liability on January 1, Year 1?"
+If this is a computational question (involves $, %, rates, periods, depreciation, PV/FV, etc.):
+1. Solve the problem yourself FIRST, step by step
+2. Write down each step as a calculation_steps entry
+3. The final step's amount = raw_answer
+4. Place raw_answer EXACTLY as one of the 4 options (no rounding, no approximation)
+5. Set ans to the index (0-3) of that exact option
+6. Write exp by RESTATING calculation_steps in natural Korean — do NOT redo the math independently.
+   exp must be consistent with calculation_steps. If they disagree, the question is broken.
 
-Other requirements:
-- One question, exactly 4 options
-- Mix computational and conceptual across calls (vary style each time)
-- At least 2 plausible trap distractors with realistic wrong-number rationale
-- Question and all 4 options written in English, USCPA exam tone
-- Explanation ("exp") in Korean: explain WHY the correct answer is correct AND why each wrong option is wrong
-- In the EXPLANATION you MAY reference ASC/GASB codification and the underlying concept for teaching purposes — the forbidden words only apply to the question stem and options
+If this is a pure conceptual question (no arithmetic needed):
+- Set calculation_steps to null
+- Set raw_answer to null
 
-Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
+━━━ OUTPUT SCHEMA ━━━
+
+Return STRICT JSON ONLY. No prose, no markdown fences.
 
 {
-  "q": "Question text in English — pure business scenario, no standard numbers, no topic names",
+  "q": "Question text — pure business scenario, no standard numbers, no topic names",
   "opts": ["Option A", "Option B", "Option C", "Option D"],
   "ans": 0,
-  "exp": "Korean explanation — may cite ASC/GASB and concepts here"
+  "exp": "Korean explanation — calculation_steps를 그대로 인용하여 작성. 새로 계산하지 않음. WHY correct answer is right AND why each wrong option is wrong. MAY cite ASC/GAAP here.",
+  "calculation_steps": [
+    { "label": "설명", "amount": 100000 },
+    { "label": "차감 항목", "amount": -20000, "is_subtraction": true },
+    { "label": "최종 결과", "amount": 80000, "is_total": true }
+  ],
+  "raw_answer": 80000
 }
 
-"ans" is the 0-based index (0=A, 1=B, 2=C, 3=D). Start response with { and end with }.`;
+For conceptual questions:
+  "calculation_steps": null,
+  "raw_answer": null
 
-  async function generateOnce(extraSystemNote?: string): Promise<GeneratedMcq | { error: string }> {
-    const fullPrompt = extraSystemNote
-      ? `${prompt}\n\nADDITIONAL CONSTRAINT (previous attempt rejected):\n${extraSystemNote}\nAvoid the exact issue above. Produce a fresh, correct question.`
+"ans" is 0-based index. Start with { end with }.`;
+
+  async function generateOnce(extraNote?: string): Promise<GeneratedMcq | { error: string }> {
+    const fullPrompt = extraNote
+      ? `${prompt}\n\nADDITIONAL CONSTRAINT (previous attempt rejected):\n${extraNote}\nProduce a fresh, correct question avoiding the same issue.`
       : prompt;
     try {
       const msg = await anthropic.messages.create({
         model: GENERATOR_MODEL,
-        max_tokens: 800,
+        max_tokens: 1000, // calculation_steps 포함으로 800 → 1000
         messages: [{ role: 'user', content: fullPrompt }],
       });
       const block = msg.content.find((b) => b.type === 'text');
@@ -240,6 +276,8 @@ Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
       const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
       const body = fenced ? fenced[1] : text;
       const parsed = JSON.parse(body);
+
+      // shape 검증
       if (
         typeof parsed.q !== 'string' ||
         !Array.isArray(parsed.opts) ||
@@ -251,11 +289,21 @@ Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
       ) {
         return { error: 'invalid question shape' };
       }
+
+      // calculation_steps 파싱
+      const steps: CalculationStep[] | null = Array.isArray(parsed.calculation_steps)
+        ? parsed.calculation_steps
+        : null;
+      const rawAnswer: number | null =
+        typeof parsed.raw_answer === 'number' ? parsed.raw_answer : null;
+
       return {
         q: parsed.q.trim(),
         opts: parsed.opts.map((o: unknown) => String(o)),
         ans: parsed.ans,
         exp: parsed.exp.trim(),
+        calculation_steps: steps,
+        raw_answer: rawAnswer,
       };
     } catch (e) {
       return { error: e instanceof Error ? e.message : 'generator error' };
@@ -270,7 +318,6 @@ Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
     for (let attempt = 0; attempt <= MAX_VALIDATION_RETRIES; attempt++) {
       const result = await generateOnce(lastReason);
       if ('error' in result) {
-        // Shape / network error — retry until budget runs out.
         lastReason = `previous attempt produced invalid output: ${result.error}`;
         if (attempt === MAX_VALIDATION_RETRIES) {
           if (lastResult) {
@@ -286,15 +333,9 @@ Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
       }
 
       lastResult = result;
-      // Skip validator for non-computational questions — no numbers in the
-      // stem or options means no arithmetic to verify, and the generator's
-      // conceptual accuracy is already high. Saves a full API round-trip.
-      const hasNumbers = /[\d$%]/.test(result.q) || result.opts.some((o) => /[\d$%]/.test(o));
-      if (!hasNumbers) {
-        lastValidation = { valid: true, confidence: 'high', warning: null };
-      } else {
-        lastValidation = await validateQuestion(result);
-      }
+
+      // 모든 문제 검증 (hasNumbers 조건부 스킵 제거)
+      lastValidation = await validateQuestion(result);
 
       const needsRetry = !lastValidation.valid || lastValidation.confidence === 'low';
       const outOfRetries = attempt === MAX_VALIDATION_RETRIES;
@@ -305,8 +346,14 @@ Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
             `[generate] accepted on retry ${attempt} — valid=${lastValidation.valid} confidence=${lastValidation.confidence}`,
           );
         }
+        // calculation_steps는 서버 내부용이므로 클라이언트에 노출해도 무방하나
+        // 필요시 제거 가능. 현재는 포함해서 반환 (디버깅 + 해설 재사용).
         return res.json({
-          ...result,
+          q: result.q,
+          opts: result.opts,
+          ans: result.ans,
+          exp: result.exp,
+          calculation_steps: result.calculation_steps,
           confidence: lastValidation.confidence,
           warning: lastValidation.warning,
         });
@@ -314,13 +361,10 @@ Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
 
       const label = lastValidation.valid ? 'low-confidence' : 'invalid';
       const msg = lastValidation.warning ?? 'no reason';
-      console.log(
-        `[generate] retry ${attempt + 1}/${MAX_VALIDATION_RETRIES} — ${label}: ${msg}`,
-      );
+      console.log(`[generate] retry ${attempt + 1}/${MAX_VALIDATION_RETRIES} — ${label}: ${msg}`);
       lastReason = lastValidation.warning ?? 'previous attempt had issues';
     }
 
-    // Unreachable — the outOfRetries branch inside the loop always returns.
     return res.status(500).json({ error: 'unexpected validation loop exit' });
   } catch (err) {
     const m = err instanceof Error ? err.message : 'unknown';
@@ -328,11 +372,10 @@ Return STRICT JSON ONLY. No prose, no markdown fences. Schema:
   }
 });
 
-// ─────────────────────────────────────────────
-// POST /api/concept-card — structured JSON concept card after an answer
-// body: { moduleId, moduleName, question, options, correctIdx, selectedIdx }
-// returns: ConceptCard (see client/src/hooks/useDynamicQuiz.ts)
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// POST /api/concept-card
+// (변경 없음 — 기존 코드 유지)
+// ─────────────────────────────────────────────────────────────
 router.post('/concept-card', async (req: Request, res: Response) => {
   const {
     moduleId,
@@ -368,80 +411,64 @@ router.post('/concept-card', async (req: Request, res: Response) => {
   const ALPHA = ['A', 'B', 'C', 'D'];
   const isCorrect = !isRawMode && correctIdx === selectedIdx;
 
-  const system = `당신은 USCPA FAR 시험 튜터입니다. 방금 푼 문제에 대한 구조화된 복습 카드를 JSON으로 반환합니다.
+  const system = `당신은 USCPA FAR 시험 전문가입니다. 풀었던 문제를 바탕으로 핵심 개념 카드를 JSON으로 반환합니다.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1) type 선택 — 문제 유형에 가장 잘 맞는 하나만
+1) type 선택 — 문제 성격에 맞는 타입을 고르세요
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-재무제표 형태 (우선 순위 상위 — 숫자 여러 줄이 나오면 이 쪽):
-- "income_statement": I/S 항목이 핵심
-  · revenue recognition, gain/loss, impairment, bad debt expense, COGS/margin,
-    depreciation expense, tax expense, EPS 전후, continuing vs discontinued ops
-- "balance_sheet": B/S 항목이 핵심
-  · DTA/DTL, receivable/allowance, inventory valuation, PP&E/accumulated dep,
-    leases ROU/liability, bonds payable balance, equity accounts, classification(current/noncurrent)
+재무제표 타입 (계정 항목, 금액, 분류가 핵심이면 사용):
+- "income_statement": I/S 관련 문제
+- "balance_sheet": B/S 관련 문제
 - "scf": Statement of Cash Flows
-  · operating/investing/financing 분류, indirect reconciliation,
-    direct method line items, non-cash disclosures
-- "multi_statement": 위 중 2개 이상이 서로 연결되어야 이해되는 문제
-  · 예: NI → RE → CF 추적, gain/loss가 I/S와 B/S와 SCF 모두에 영향,
-    deferred tax의 I/S expense + B/S 잔액 동시 질문
-  · statements 배열 순서는 반드시 I/S → B/S → SCF
+- "multi_statement": 2개 이상 재무제표에 걸친 문제
 
-그 외:
-- "comparison": 두 개념/처리를 대조 (operating vs finance lease, cost vs equity,
-  FIFO vs LIFO, direct vs indirect, 회계정책변경 vs 추정변경)
-- "timeline": 시점/순서/기간 (subsequent events type I/II, 감가상각 라이프사이클)
-- "formula": 공식 한두 개로 끝나는 단일 계산 (bond interest, PV/FV, impairment test)
-- "plain": 위 전부 해당하지 않을 때만
+그외:
+- "comparison": 두 개념/처리를 비교 (operating vs finance lease, FIFO vs LIFO 등)
+- "timeline": 시점/기간/이벤트 (subsequent events, 이자 자본화 등)
+- "formula": 계산 공식 위주 (bond interest, PV/FV, impairment test)
+- "plain": 위 어디에도 해당하지 않을 때
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-2) sections / statement / notes 채우기
+2) sections / statement / notes 작성하기
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 공통: headline(1문장) 필수.
 
-재무제표 타입은 sections 대신 statement + notes 필드를 사용:
-- income_statement → statement: IncomeStatementData + notes[] (옵션)
-- balance_sheet    → statement: BalanceSheetData    + notes[] (옵션)
-- scf              → statement: SCFData             + notes[] (옵션)
-- multi_statement  → statement: { statements: [...] } + notes[] (옵션)
+재무제표 타입은 sections 대신 statement + notes 사용:
+- income_statement → statement: IncomeStatementData + notes[] (선택)
+- balance_sheet    → statement: BalanceSheetData    + notes[] (선택)
+- scf              → statement: SCFData             + notes[] (선택)
+- multi_statement  → statement: { statements: [...] } + notes[] (선택)
 
-기존 타입은 sections를 사용:
-- comparison → sections.compare(필수) + traps(1-2개 필수) + gap(옵션)
-- timeline   → sections.timeline.events(필수) + traps(옵션)
-- formula    → sections.calculation(필수) + traps(옵션)
-- plain      → sections.markdown(필수, 200자 이내) + traps(옵션)
+그외 타입은 sections 사용:
+- comparison → sections.compare(필수) + traps(1-2개 필수) + gap(선택)
+- timeline   → sections.timeline.events(필수) + traps(선택)
+- formula    → sections.calculation(필수) + traps(선택)
+- plain      → sections.markdown(필수, 200자 이하) + traps(선택)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-3) Row 공통 스키마 (statement 타입 전용)
+3) Row 기본 구조 (statement 타입에만 적용)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
-  "label": string,                  // 한국어 가능, 회계 표준 라벨은 영문도 OK
-  "amount": number | null,          // null = 헤더/섹션 타이틀 같이 숫자 없음
-  "indent": 0 | 1 | 2,              // 들여쓰기 레벨
+  "label": string,
+  "amount": number | null,
+  "indent": 0 | 1 | 2,
   "highlight": boolean,
   "highlight_color": "amber" | "blue" | "purple" | "green" | null,
-  "is_total": boolean,              // true면 상단 border + bold
-  "is_subtraction": boolean,        // true면 금액에 괄호 표시 ($90,000)
-  "note_tag": string | null         // 짧은 태그 "a","b","c"... — notes[]와 매칭
+  "is_total": boolean,
+  "is_subtraction": boolean,
+  "note_tag": string | null
 }
 
-highlight 사용 규칙:
-- highlight=true인 행마다 반드시 note_tag 설정 + notes 배열에 같은 tag로 대응 항목 존재할 것
-- note_tag 없는 highlight, highlight 없는 notes 항목 금지
-- highlight는 이 문제의 "학습 포인트"만 (보통 행당 2-4개)
-- color는 같은 문제 내에서 일관된 의미로 사용(예: 핵심 계산은 amber, 함정은 blue 등)
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-4) 각 statement 데이터 스키마
+4) 각 statement 데이터 구조
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 IncomeStatementData:
 {
   "title": "Income Statement for the Year Ended ...",
   "sections": [
-    { "label": "Revenue",           "rows": [Row, ...] },
-    { "label": "Operating expenses","rows": [Row, ...] },
-    { "label": "Net income",        "rows": [Row, ...] }
+    { "label": "Revenue",            "rows": [Row, ...] },
+    { "label": "Operating expenses", "rows": [Row, ...] },
+    { "label": "Net income",         "rows": [Row, ...] }
   ]
 }
 
@@ -459,8 +486,8 @@ SCFData:
   "method": "indirect" | "direct",
   "sections": [
     { "label": "Operating", "rows": [Row, ...] },
-    { "label": "Investing", "rows": [Row, ...] },
-    { "label": "Financing", "rows": [Row, ...] }
+    { "label": "Investing",  "rows": [Row, ...] },
+    { "label": "Financing",  "rows": [Row, ...] }
   ]
 }
 
@@ -472,84 +499,70 @@ MultiStatementData:
     { "type": "scf",              "data": SCFData } | null
   ]
 }
-배열 순서는 반드시 I/S → B/S → SCF. 관련 없는 statement는 null로.
+순서: 반드시 I/S → B/S → SCF. 불필요한 statement는 null로.
 
 Notes:
 [
-  { "tag": "a", "text": "한국어로 1문장 이내 설명", "color": "amber" },
+  { "tag": "a", "text": "짧게 1문장 이내 설명", "color": "amber" },
   ...
 ]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-5) 기존(non-statement) 타입 sections 스키마
+5) 그외(non-statement) sections 구조
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - compare: { "left": {"label","rows":[...]}, "right": {"label","rows":[...]} }
-  · left/right.rows 각 3-5개 bullet, 한 줄 한국어
 - gap: { "label","rows":[...],"note" }
 - calculation: { "steps":[...], "result" }
-  · steps 2-5개, 각 "왜 그 스텝인지" 포함
-  · result는 최종 답 한 줄 (단위/통화 포함)
-- timeline: { "events":[{"label","detail"}] } — 2-4개
-- markdown: 200자 이내, 테이블/코드블록 금지
-- traps: [{"option":"B","reason":"한 문장"}] — 1-2개
-  · 오답 선택지가 구체적 금액/숫자일 때는 반드시 "amount" 필드에 해당
-    숫자(순수 number, 문자열 금지)를 넣고 "calculation" 배열에 그 오답을
-    유도한 step-by-step 계산을 기록한다. 각 row 스키마:
-      { "label": "...", "amount": 50400, "is_total"?: bool, "is_subtraction"?: bool }
-    마지막 row는 is_total=true로 합계 표시, 차감 step은 is_subtraction=true.
-  · 개념 오답(금액 무관)은 calculation 생략, reason 문장으로 충분.
-  · 예시 — 오답이 $50,400인 경우:
-    {
-      "option": "C", "amount": 50400,
+- timeline: { "events":[{"label","detail"}] }
+- markdown: 200자 이하 텍스트
+- traps: [{"option":"B","reason":"한 문장"}] 1-2개
+  ※ 오답 보기가 숫자를 포함하면 "amount" 필드 추가:
+    { "option": "C", "amount": 50400,
       "calculation": [
         { "label": "Dealer price", "amount": 51200 },
         { "label": "Transaction costs", "amount": -800, "is_subtraction": true },
-        { "label": "오답 금액", "amount": 50400, "is_total": true }
+        { "label": "오답 결과", "amount": 50400, "is_total": true }
       ],
-      "reason": "이미 틀린 dealer price에서 거래비용까지 차감한 이중 오류"
+      "reason": "왜 틀린지 한 문장"
     }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-6) 언어 / 출력 규칙
+6) 언어 / 숫자 규칙
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- 한국어 위주. 회계 표준 라벨(Revenue, Cost of goods sold, Deferred tax asset 등)은
-  영문 그대로 유지 가능
-- 숫자는 순수 number로 (문자열 "$90,000" 아님). 반드시 "amount": 90000 형식
-- option 이름(A/B/C/D)만 영문
-- STRICT JSON ONLY. 마크다운 코드펜스/부연 설명/인사말 금지.
-  { 로 시작하고 } 로 끝낼 것
+- 한국어로. 계정과목(Revenue, Cost of goods sold 등)은 영어 그대로.
+- 숫자는 number 타입으로 ($90,000 → 90000)
+- option 알파벳(A/B/C/D)만 표기
+- STRICT JSON ONLY. 마크다운/설명 없이 { 로 시작해서 } 로 끝낼 것
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-7) 루트 스키마
+7) 최종 구조
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   "type": "income_statement" | "balance_sheet" | "scf" | "multi_statement" |
           "comparison" | "timeline" | "formula" | "plain",
   "headline": "...",
-  "sections": { ... },          // 기존 타입만
-  "statement": { ... },         // 재무제표 타입만
-  "notes": [ ... ]              // 재무제표 타입에서 highlight가 있을 때
-}
-
-불필요한 필드는 아예 생략(빈 객체/빈 배열보다 삭제가 낫다).`;
+  "sections": { ... },
+  "statement": { ... },
+  "notes": [ ... ]
+}`;
 
   const userMsg = isRawMode
-    ? `사용자가 분석 요청한 문제 원문${topicId ? ` (현재 모듈: ${topicId})` : ''}:
+    ? `사용자가 방금 풀었던 문제 원문${topicId ? ` (현재 모듈: ${topicId})` : ''}:
 
 ${rawText!.trim()}
 ${userAnswer != null ? `\n사용자 답: ${userAnswer}` : ''}${correctAnswer != null ? `\n정답: ${correctAnswer}` : ''}
 
-위 문제를 분석해서 구조화 개념 카드를 스키마대로 반환해줘. 선택지가 텍스트에 포함되어 있으면 그대로 해석하고, 없으면 핵심 개념 중심으로 작성.`
+이 문제를 바탕으로 핵심 개념 카드를 스키마대로 반환해주세요. 보기가 텍스트에 포함되어 있으면 그대로 활용하고, 없으면 기본 개념 위주로 작성.`
     : `모듈: ${moduleId} · ${moduleName}
 
 문제: ${question}
 
-선택지:
+보기:
 ${options!.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
 
-정답: ${ALPHA[correctIdx!]} · 내가 선택한 답: ${ALPHA[selectedIdx!]} ${isCorrect ? '✅' : '❌'}
+정답: ${ALPHA[correctIdx!]} · 내가 선택한 답: ${ALPHA[selectedIdx!]} ${isCorrect ? '✓' : '✗'}
 
-위 문제에 대한 구조화 개념 카드를 스키마대로 반환해줘.`;
+이 문제를 바탕으로 핵심 개념 카드를 스키마대로 반환해주세요.`;
 
   const ALLOWED_TYPES = new Set([
     'comparison',
@@ -576,8 +589,6 @@ ${options!.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
     const text = block.text.trim();
     const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
     let body = fenced ? fenced[1] : text;
-    // Strip any leading/trailing non-JSON preamble by extracting the
-    // outermost {...} block.
     const first = body.indexOf('{');
     const last = body.lastIndexOf('}');
     if (first !== -1 && last > first) {
