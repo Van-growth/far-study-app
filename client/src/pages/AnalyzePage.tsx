@@ -257,7 +257,7 @@ export default function AnalyzePage() {
               className="p-2 rounded text-xs text-[#991b1b]"
               style={{ background: '#fef2f2', border: '1px solid #fecaca' }}
             >
-              ⚠️ {error}
+              ⚠️ {safeStr(error)}
             </div>
           )}
         </div>
@@ -329,14 +329,14 @@ export default function AnalyzePage() {
               border="#fcd34d"
               color="#78350f"
             />
-            {extracted.trap_pattern && (
+            {extracted.trap_pattern != null && (
               <div className="mt-2">
                 <p className="text-[10px] font-semibold text-muted mb-1">trap_pattern</p>
                 <div
                   className="text-xs p-2 rounded"
                   style={{ background: '#fff1f2', border: '1px solid #fecaca', color: '#991b1b' }}
                 >
-                  ⚠️ {extracted.trap_pattern}
+                  ⚠️ {safeStr(extracted.trap_pattern)}
                 </div>
               </div>
             )}
@@ -372,7 +372,7 @@ export default function AnalyzePage() {
                       color: '#4338ca',
                     }}
                   >
-                    {key} <span className="opacity-60">×{count}</span>
+                    {safeStr(key)} <span className="opacity-60">×{safeStr(count)}</span>
                   </button>
                 ))}
               </div>
@@ -390,7 +390,7 @@ export default function AnalyzePage() {
                           color: '#7f1d1d',
                         }}
                       >
-                        · {p}
+                        · {safeStr(p)}
                       </li>
                     ))}
                   </ul>
@@ -427,6 +427,14 @@ export default function AnalyzePage() {
   );
 }
 
+/** 안전하게 문자열로 변환 — React Error #31 방지 */
+function safeStr(v: unknown): string {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (v == null) return '';
+  return JSON.stringify(v);
+}
+
 function ChipList({
   label,
   items,
@@ -435,7 +443,7 @@ function ChipList({
   color,
 }: {
   label: string;
-  items: string[];
+  items: unknown[];
   tint: string;
   border: string;
   color: string;
@@ -451,7 +459,7 @@ function ChipList({
             className="text-[11px] px-2 py-0.5 rounded-full"
             style={{ background: tint, border: `1px solid ${border}`, color }}
           >
-            {item}
+            {safeStr(item)}
           </span>
         ))}
       </div>
