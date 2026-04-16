@@ -34,6 +34,7 @@ export default function AnalyzePage() {
   const [userAnswer, setUserAnswer] = useState('');
   const [correctAnswer, setCorrectAnswer] = useState('');
   const [manualTopicId, setManualTopicId] = useState<string>('');
+  const [topicCorrection, setTopicCorrection] = useState<{ original: string; corrected: string } | null>(null);
   const [card, setCard] = useState<ConceptCard | null>(null);
   const [extracted, setExtracted] = useState<ExtractedConcepts | null>(null);
   const [learned, setLearned] = useState<LearnedConcepts | null>(null);
@@ -64,6 +65,7 @@ export default function AnalyzePage() {
     setError(null);
     setCard(null);
     setExtracted(null);
+    setTopicCorrection(null);
 
     const topicId = resolvedTopicId;
     const ua = userAnswer.trim() || null;
@@ -93,10 +95,16 @@ export default function AnalyzePage() {
             tags: extractRes.value.extracted.topic_tags.length,
           },
         });
-        // Fire-and-forget Supabase save — no original text, only metadata.
+        // topic_id 보정 처리
+        const corrected = extractRes.value.correctedTopicId;
+        if (corrected && topicId) {
+          setTopicCorrection({ original: topicId, corrected });
+        }
+
+        // Fire-and-forget Supabase save — 보정된 topicId 사용
         void saveConceptExtraction({
           userId: userId ?? null,
-          topicId,
+          topicId: corrected || topicId,
           concepts: extractRes.value.extracted.concepts,
           ascReferences: extractRes.value.extracted.asc_references,
           topicTags: extractRes.value.extracted.topic_tags,
@@ -120,6 +128,7 @@ export default function AnalyzePage() {
     setUserAnswer('');
     setCorrectAnswer('');
     setManualTopicId('');
+    setTopicCorrection(null);
     setCard(null);
     setExtracted(null);
     setError(null);
@@ -237,6 +246,23 @@ export default function AnalyzePage() {
             </div>
           )}
         </div>
+
+        {/* topic_id 보정 알림 */}
+        {topicCorrection && (
+          <div
+            className="p-3 rounded-lg text-xs"
+            style={{ background: '#fffbeb', border: '1px solid #fcd34d', color: '#92400e' }}
+          >
+            모듈 자동 보정: <strong>{topicCorrection.original}</strong>
+            {' → '}
+            <strong>{topicCorrection.corrected}</strong>
+            {' '}
+            ({allTopics.find((t) => t.id === topicCorrection.corrected)?.label ?? topicCorrection.corrected})
+            <span className="block mt-0.5 text-[#92400e]/70">
+              추출된 개념이 다른 모듈과 더 일치하여 topic_id를 수정했습니다.
+            </span>
+          </div>
+        )}
 
         {/* Concept card result — same 6-type renderer used in QuizView */}
         {card && (

@@ -5,6 +5,7 @@ import {
   read as readLearned,
   ExtractedConcepts,
 } from '../lib/learnedConcepts';
+import { inferTopicId } from '../lib/topicInference';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -95,8 +96,23 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
       trap_pattern: typeof obj.trap_pattern === 'string' ? obj.trap_pattern : null,
     };
 
+    // topic_id 추론/보정
+    let correctedTopicId: string | null = null;
+    if (topicId) {
+      const inference = inferTopicId(
+        extracted.concepts,
+        extracted.topic_tags,
+        extracted.asc_references,
+        topicId,
+      );
+      if (inference.corrected) {
+        correctedTopicId = inference.topicId;
+        console.log(`[analyze] topic_id corrected: ${topicId} → ${correctedTopicId}`);
+      }
+    }
+
     const learned = await applyExtraction(extracted);
-    return res.json({ extracted, learned });
+    return res.json({ extracted, learned, correctedTopicId });
   } catch (err) {
     const m = err instanceof Error ? err.message : 'unknown';
     return res.status(500).json({ error: m });

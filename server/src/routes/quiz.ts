@@ -1,14 +1,14 @@
 import { Router, Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import { read as readLearned, topConcepts, topTrapPatterns } from '../lib/learnedConcepts';
+import { fetchConceptExtractions, buildExtractionContext } from '../lib/supabase';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const GENERATOR_MODEL = 'claude-sonnet-4-5-20250929';
-const VALIDATOR_MODEL = 'claude-sonnet-4-5-20250929';
+const MODEL = 'claude-sonnet-4-5-20250929';
 const CONCEPT_CARD_MODEL = 'claude-sonnet-4-5-20250929';
 const CONCEPT_CARD_MAX_TOKENS = 3000;
-const MAX_VALIDATION_RETRIES = 3;
+const MAX_RETRIES = 2; // 로컬 체크 실패 시 재시도 (최대 3회 시도)
 
 interface CalculationStep {
   label: string;
@@ -22,147 +22,63 @@ interface GeneratedMcq {
   opts: string[];
   ans: number;
   exp: string;
-  // 계산형 문제일 때만 존재. 개념형은 null.
-  // Generator가 1회 계산하고, Validator/해설은 이걸 재사용.
   calculation_steps: CalculationStep[] | null;
-  raw_answer: number | null; // opts[ans]의 숫자값 (계산형만)
-}
-
-type Confidence = 'high' | 'medium' | 'low';
-interface ValidationResult {
-  valid: boolean;
-  confidence: Confidence;
-  warning: string | null;
+  raw_answer: number | null;
 }
 
 // ─────────────────────────────────────────────────────────────
-// validateQuestion
-//
-// 핵심 원칙: 계산은 Generator가 1번만 한다.
-// Validator는 calculation_steps를 전달받아 재계산 없이 대조만 한다.
-// 환각 확률 = Generator 1회. Validator/해설은 그 결과를 재사용.
+// localPostCheck — API 호출 없이 즉시 검증
+// approx 표현 감지 + raw_answer 보기 매칭
 // ─────────────────────────────────────────────────────────────
-async function validateQuestion(item: GeneratedMcq): Promise<ValidationResult> {
-  const ALPHA = ['A', 'B', 'C', 'D'];
-  const isCalc = item.calculation_steps !== null && item.raw_answer !== null;
-
-  // ── 1. 로컬 체크 (API 호출 없이 즉시 reject) ──────────────────
-  // "approximately" / "closest to" 표현 → 정답이 보기에 없다는 신호
+function localPostCheck(item: GeneratedMcq): { pass: boolean; reason: string | null } {
+  // 1. "approximately" / "closest to" 표현 감지
   const approxPattern = /approximately|closest to|nearest to|about \$|roughly/i;
   if (approxPattern.test(item.q) || approxPattern.test(item.exp)) {
     return {
-      valid: false,
-      confidence: 'low',
-      warning: '"approximately" / "closest to" 표현 감지 — 정답이 보기에 정확히 없을 가능성',
+      pass: false,
+      reason: '"approximately" / "closest to" 표현 감지 — 정답이 보기에 정확히 없을 가능성',
     };
   }
 
-  // ── 2. 계산형: raw_answer가 보기에 정확히 존재하는지 확인 ────────
-  if (isCalc && item.raw_answer !== null) {
+  // 2. 계산형: raw_answer가 보기에 정확히 존재하는지 확인
+  if (item.calculation_steps !== null && item.raw_answer !== null) {
     const rawStr = String(item.raw_answer);
     const exactMatch = item.opts.some((opt) => {
-      // 숫자만 추출해서 비교 (콤마, $, () 제거)
       const cleaned = opt.replace(/[$,()]/g, '').trim();
       return cleaned === rawStr || cleaned === `-${rawStr}`;
     });
     if (!exactMatch) {
       return {
-        valid: false,
-        confidence: 'low',
-        warning: `raw_answer(${item.raw_answer})가 보기 4개에 정확히 존재하지 않음 — 근사치 오류`,
+        pass: false,
+        reason: `raw_answer(${item.raw_answer})가 보기 4개에 정확히 존재하지 않음`,
       };
     }
   }
 
-  // ── 3. Model 검증 (재계산 없이 대조만) ─────────────────────────
-  const stepsBlock = isCalc
-    ? `\n\n[Generator가 계산한 과정 — 재계산하지 말고 이 결과가 맞는지만 검증]\n${JSON.stringify(item.calculation_steps, null, 2)}\nGenerator 주장 정답값: ${item.raw_answer}`
-    : '';
-
-  const review = `You are a strict USCPA FAR MCQ auditor. Verify this question WITHOUT recalculating from scratch.
-${isCalc ? 'CRITICAL: The generator already did ALL the math. You must NOT redo any arithmetic. Your ONLY job: verify that each step logically follows from the previous step and that the final amount matches raw_answer. If you recalculate, you introduce hallucination risk.' : 'This is a conceptual question. Check GAAP/AICPA Blueprint scope and answer correctness only.'}
-
-Question: ${item.q}
-
-Options:
-${item.opts.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
-
-Claimed correct answer: ${ALPHA[item.ans]} (${item.opts[item.ans]})
-
-Explanation: ${item.exp}
-${stepsBlock}
-
-Validation rules:
-1. REJECT if answer is wrong per US GAAP / FASB ASC / GASB
-2. REJECT if question is ambiguous with multiple defensible answers
-3. REJECT if "approximately" or "closest to" language exists (already caught locally, flag if missed)
-${isCalc ? `4. CHECK: does each calculation step follow logically from the previous?
-5. CHECK: does the final step equal raw_answer (${item.raw_answer})?
-6. DO NOT redo the arithmetic yourself — verify the logic chain only` : `4. CHECK: is this within AICPA Blueprint FAR scope?
-5. CHECK: is the correct answer clearly supported by GAAP?`}
-
-Return STRICT JSON only. No prose, no markdown:
-{
-  "valid": true | false,
-  "confidence": "high" | "medium" | "low",
-  "warning": "one-line reason" | null
-}
-
-confidence guide:
-- "high": answer verified, no issues
-- "medium": minor concern but answer likely correct
-- "low": serious doubt about correctness
-
-Start with { and end with }.`;
-
-  try {
-    const msg = await anthropic.messages.create({
-      model: VALIDATOR_MODEL,
-      max_tokens: 400,
-      messages: [{ role: 'user', content: review }],
-    });
-    const block = msg.content.find((b) => b.type === 'text');
-    if (!block || block.type !== 'text') {
-      return { valid: true, confidence: 'high', warning: null };
-    }
-    const text = block.text.trim();
-    const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
-    const body = fenced ? fenced[1] : text;
-    const parsed = JSON.parse(body) as Partial<ValidationResult>;
-    const valid = parsed.valid === true;
-    const confidence: Confidence =
-      parsed.confidence === 'high' || parsed.confidence === 'medium' || parsed.confidence === 'low'
-        ? parsed.confidence
-        : 'high';
-    const warning =
-      typeof parsed.warning === 'string' && parsed.warning.trim().length > 0
-        ? parsed.warning.trim()
-        : null;
-    return { valid, confidence, warning };
-  } catch (e) {
-    console.warn('[validate] failed, accepting:', e instanceof Error ? e.message : e);
-    return { valid: true, confidence: 'high', warning: null };
-  }
+  return { pass: true, reason: null };
 }
 
 // ─────────────────────────────────────────────────────────────
 // POST /api/generate-question
+//
+// 단일 에이전트 구조: 생성 → 자기검증 → 최종 JSON
+// concept_extractions 기반 출제 (fallback: learnedConcepts)
 // ─────────────────────────────────────────────────────────────
 router.post('/generate-question', async (req: Request, res: Response) => {
-  const { moduleId, moduleName, weakModules, recentWrongTopics, focusConcept, excludeIds } =
+  const { moduleId, moduleName, weakModules, recentWrongTopics, focusConcept } =
     req.body as {
       moduleId: string;
       moduleName: string;
       weakModules?: { id: string; label: string; accuracy: number }[];
       recentWrongTopics?: string[];
       focusConcept?: string;
-      excludeIds?: string[]; // 최근 20개 question_id — 중복 방지용 (PR2에서 DB 연동)
     };
 
   if (!moduleId || !moduleName) {
     return res.status(400).json({ error: 'moduleId and moduleName required' });
   }
 
+  // ── 약점 정보 ──────────────────────────────────────────────
   const weakLine = weakModules?.length
     ? `\nStudent's currently weak modules (accuracy <60%): ${weakModules
         .slice(0, 6)
@@ -173,37 +89,46 @@ router.post('/generate-question', async (req: Request, res: Response) => {
     ? `\nRecent wrong topics: ${recentWrongTopics.slice(0, 8).join(', ')}.`
     : '';
 
-  let learnedLine = '';
-  try {
-    const learned = await readLearned();
-    const tops = topConcepts(learned, 5);
-    const traps = topTrapPatterns(learned, 5);
-    if (tops.length || traps.length) {
-      const parts: string[] = [];
-      if (tops.length) {
-        parts.push(`자주 틀린 개념: ${tops.map((t) => `${t.key}(${t.count}회)`).join(', ')}`);
+  // ── concept_extractions 기반 출제 컨텍스트 ─────────────────
+  let studentContext = '';
+
+  // 1차: Supabase concept_extractions
+  const extractions = await fetchConceptExtractions(moduleId);
+  const extractionCtx = buildExtractionContext(extractions);
+
+  if (extractionCtx) {
+    studentContext = '\n\nStudent learning data (concept_extractions):\n' + extractionCtx;
+  } else {
+    // 2차 fallback: learnedConcepts (파일 기반)
+    try {
+      const learned = await readLearned();
+      const tops = topConcepts(learned, 5);
+      const traps = topTrapPatterns(learned, 5);
+      if (tops.length || traps.length) {
+        const parts: string[] = [];
+        if (tops.length) {
+          parts.push(`자주 틀린 개념: ${tops.map((t) => `${t.key}(${t.count}회)`).join(', ')}`);
+        }
+        if (traps.length) {
+          parts.push(`자주 걸리는 함정: ${traps.join(' / ')}`);
+        }
+        parts.push('위 개념/함정을 의도적으로 포함하는 문제로 출제. 단, 개념 이름은 문제 stem에 직접 언급하는 것 금지.');
+        studentContext = '\n\nLearned student context (fallback):\n' + parts.join('\n');
       }
-      if (traps.length) {
-        parts.push(`자주 걸리는 함정: ${traps.join(' / ')}`);
-      }
-      parts.push('위 개념/함정을 의도적으로 포함하는 문제로 출제. 단, 개념 이름은 문제 stem에 직접 언급하는 것 금지 (HARD RULES 이하).');
-      learnedLine = '\n\nLearned student context:\n' + parts.join('\n');
+    } catch {
+      // fall through
     }
-  } catch {
-    // fall through
   }
 
   const focusLine = focusConcept
     ? `\n\nFocus concept: "${focusConcept}" — 이 개념을 반드시 포함하는 문제로 출제. (stem에 직접 언급 금지, 시나리오로)`
     : '';
 
-  // ── Generator 프롬프트 ──────────────────────────────────────
-  // 핵심: 계산형 문제는 calculation_steps + raw_answer를 JSON에 포함.
-  // 이 값을 Validator와 해설이 재사용 → 환각 확률 최소화.
-  const prompt = `You are an expert USCPA FAR exam item writer. Generate EXACTLY ONE high-quality multiple-choice question.
+  // ── 단일 에이전트 프롬프트 ─────────────────────────────────
+  const prompt = `You are an expert USCPA FAR exam item writer. Generate and self-verify EXACTLY ONE high-quality MCQ.
 
 Internal tag (NEVER mention in the question):
-- Target module: ${moduleId} — ${moduleName}${weakLine}${wrongLine}${learnedLine}${focusLine}
+- Target module: ${moduleId} — ${moduleName}${weakLine}${wrongLine}${studentContext}${focusLine}
 
 ━━━ HARD RULES — stem & options ━━━
 
@@ -237,9 +162,21 @@ If this is a pure conceptual question (no arithmetic needed):
 - Set calculation_steps to null
 - Set raw_answer to null
 
+━━━ SELF-VERIFICATION (출력 전 반드시 수행) ━━━
+
+문제를 만든 뒤 아래를 점검하라:
+1. raw_answer가 opts 4개 중 하나와 정확히 일치하는가?
+2. calculation_steps의 각 단계가 논리적으로 올바른가?
+3. "approximately"/"closest to"/"nearest to" 표현이 어디에도 없는가?
+4. GAAP 기준으로 정답이 분명히 하나뿐인가?
+5. exp가 calculation_steps와 일치하는가?
+
+하나라도 실패하면 처음부터 다시 만들어라.
+검증 통과한 최종 문제만 JSON으로 출력.
+
 ━━━ OUTPUT SCHEMA ━━━
 
-Return STRICT JSON ONLY. No prose, no markdown fences.
+Return STRICT JSON ONLY. No prose, no markdown fences, no self-verification commentary.
 
 {
   "q": "Question text — pure business scenario, no standard numbers, no topic names",
@@ -265,24 +202,13 @@ Korean terminology rule for exp:
 
 "ans" is 0-based index. Start with { end with }.`;
 
-  async function generateOnce(extraNote?: string): Promise<GeneratedMcq | { error: string }> {
-    const fullPrompt = extraNote
-      ? `${prompt}\n\nADDITIONAL CONSTRAINT (previous attempt rejected):\n${extraNote}\nProduce a fresh, correct question avoiding the same issue.`
-      : prompt;
+  function parseResponse(text: string): GeneratedMcq | { error: string } {
     try {
-      const msg = await anthropic.messages.create({
-        model: GENERATOR_MODEL,
-        max_tokens: 1000, // calculation_steps 포함으로 800 → 1000
-        messages: [{ role: 'user', content: fullPrompt }],
-      });
-      const block = msg.content.find((b) => b.type === 'text');
-      if (!block || block.type !== 'text') return { error: 'no text in response' };
-      const text = block.text.trim();
-      const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
-      const body = fenced ? fenced[1] : text;
+      const trimmed = text.trim();
+      const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+      const body = fenced ? fenced[1] : trimmed;
       const parsed = JSON.parse(body);
 
-      // shape 검증
       if (
         typeof parsed.q !== 'string' ||
         !Array.isArray(parsed.opts) ||
@@ -295,82 +221,91 @@ Korean terminology rule for exp:
         return { error: 'invalid question shape' };
       }
 
-      // calculation_steps 파싱
-      const steps: CalculationStep[] | null = Array.isArray(parsed.calculation_steps)
-        ? parsed.calculation_steps
-        : null;
-      const rawAnswer: number | null =
-        typeof parsed.raw_answer === 'number' ? parsed.raw_answer : null;
-
       return {
         q: parsed.q.trim(),
         opts: parsed.opts.map((o: unknown) => String(o)),
         ans: parsed.ans,
         exp: parsed.exp.trim(),
-        calculation_steps: steps,
-        raw_answer: rawAnswer,
+        calculation_steps: Array.isArray(parsed.calculation_steps)
+          ? parsed.calculation_steps
+          : null,
+        raw_answer: typeof parsed.raw_answer === 'number' ? parsed.raw_answer : null,
       };
     } catch (e) {
-      return { error: e instanceof Error ? e.message : 'generator error' };
+      return { error: e instanceof Error ? e.message : 'parse error' };
     }
   }
 
   try {
     let lastReason: string | undefined;
-    let lastResult: GeneratedMcq | null = null;
-    let lastValidation: ValidationResult = { valid: true, confidence: 'high', warning: null };
 
-    for (let attempt = 0; attempt <= MAX_VALIDATION_RETRIES; attempt++) {
-      const result = await generateOnce(lastReason);
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      const fullPrompt = lastReason
+        ? `${prompt}\n\nADDITIONAL CONSTRAINT (previous attempt rejected):\n${lastReason}\nProduce a fresh, correct question avoiding the same issue.`
+        : prompt;
+
+      const msg = await anthropic.messages.create({
+        model: MODEL,
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: fullPrompt }],
+      });
+
+      const block = msg.content.find((b) => b.type === 'text');
+      if (!block || block.type !== 'text') {
+        lastReason = 'no text in response';
+        if (attempt === MAX_RETRIES) {
+          return res.status(502).json({ error: 'no text in response' });
+        }
+        continue;
+      }
+
+      const result = parseResponse(block.text);
       if ('error' in result) {
-        lastReason = `previous attempt produced invalid output: ${result.error}`;
-        if (attempt === MAX_VALIDATION_RETRIES) {
-          if (lastResult) {
-            return res.json({
-              ...lastResult,
-              confidence: lastValidation.confidence,
-              warning: lastValidation.warning,
-            });
-          }
+        lastReason = `invalid output: ${result.error}`;
+        if (attempt === MAX_RETRIES) {
           return res.status(502).json({ error: result.error });
         }
         continue;
       }
 
-      lastResult = result;
-
-      // 모든 문제 검증 (hasNumbers 조건부 스킵 제거)
-      lastValidation = await validateQuestion(result);
-
-      const needsRetry = !lastValidation.valid || lastValidation.confidence === 'low';
-      const outOfRetries = attempt === MAX_VALIDATION_RETRIES;
-
-      if (!needsRetry || outOfRetries) {
-        if (attempt > 0) {
-          console.log(
-            `[generate] accepted on retry ${attempt} — valid=${lastValidation.valid} confidence=${lastValidation.confidence}`,
-          );
+      // 로컬 체크
+      const check = localPostCheck(result);
+      if (!check.pass) {
+        console.log(
+          `[generate] retry ${attempt + 1}/${MAX_RETRIES} — local check failed: ${check.reason}`,
+        );
+        lastReason = check.reason ?? 'local check failed';
+        if (attempt === MAX_RETRIES) {
+          // 마지막 시도는 경고와 함께 반환
+          return res.json({
+            q: result.q,
+            opts: result.opts,
+            ans: result.ans,
+            exp: result.exp,
+            calculation_steps: result.calculation_steps,
+            confidence: 'low' as const,
+            warning: check.reason,
+          });
         }
-        // calculation_steps는 서버 내부용이므로 클라이언트에 노출해도 무방하나
-        // 필요시 제거 가능. 현재는 포함해서 반환 (디버깅 + 해설 재사용).
-        return res.json({
-          q: result.q,
-          opts: result.opts,
-          ans: result.ans,
-          exp: result.exp,
-          calculation_steps: result.calculation_steps,
-          confidence: lastValidation.confidence,
-          warning: lastValidation.warning,
-        });
+        continue;
       }
 
-      const label = lastValidation.valid ? 'low-confidence' : 'invalid';
-      const msg = lastValidation.warning ?? 'no reason';
-      console.log(`[generate] retry ${attempt + 1}/${MAX_VALIDATION_RETRIES} — ${label}: ${msg}`);
-      lastReason = lastValidation.warning ?? 'previous attempt had issues';
+      // 성공
+      if (attempt > 0) {
+        console.log(`[generate] accepted on attempt ${attempt + 1}`);
+      }
+      return res.json({
+        q: result.q,
+        opts: result.opts,
+        ans: result.ans,
+        exp: result.exp,
+        calculation_steps: result.calculation_steps,
+        confidence: 'high' as const,
+        warning: null,
+      });
     }
 
-    return res.status(500).json({ error: 'unexpected validation loop exit' });
+    return res.status(500).json({ error: 'unexpected loop exit' });
   } catch (err) {
     const m = err instanceof Error ? err.message : 'unknown';
     return res.status(500).json({ error: m });
