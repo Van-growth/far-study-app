@@ -493,6 +493,75 @@ export interface ConceptExtractionRow {
   wasWrong: boolean | null
 }
 
+// ── 중복 감지 ───────────────────────────────────────────────
+// 저장 전 기존 데이터와 concepts 겹침 비율 계산.
+// 80%+ → full_dup, 50-80% → partial_dup, <50% → new
+export type DupCheckResult =
+  | { status: 'new' }
+  | { status: 'full_dup' }
+  | { status: 'partial_dup'; newTrap: boolean }
+
+export async function checkConceptDuplication(
+  topicId: string | null,
+  newConcepts: string[],
+  newTrapPattern: string | null,
+): Promise<DupCheckResult> {
+  if (!topicId || newConcepts.length === 0) return { status: 'new' }
+
+  try {
+    const { data, error } = await supabase
+      .from('concept_extractions')
+      .select('concepts, trap_pattern')
+      .eq('topic_id', topicId)
+      .order('created_at', { ascending: false })
+      .limit(30)
+
+    if (error || !data || data.length === 0) return { status: 'new' }
+
+    const newSet = new Set(newConcepts.map((c) => c.toLowerCase()))
+
+    // 각 기존 row와 겹침 비율 계산, 최고 겹침률 찾기
+    let maxOverlap = 0
+    let bestMatchTrap: string | null = null
+
+    for (const row of data) {
+      const existing: string[] = Array.isArray(row.concepts) ? row.concepts : []
+      const existingSet = new Set(existing.map((c: string) => c.toLowerCase()))
+
+      // 교집합 / 합집합
+      const union = new Set([...newSet, ...existingSet])
+      let intersection = 0
+      for (const k of newSet) {
+        if (existingSet.has(k)) intersection++
+      }
+
+      const overlap = union.size > 0 ? intersection / union.size : 0
+      if (overlap > maxOverlap) {
+        maxOverlap = overlap
+        bestMatchTrap = typeof row.trap_pattern === 'string' ? row.trap_pattern : null
+      }
+    }
+
+    if (maxOverlap >= 0.8) {
+      return { status: 'full_dup' }
+    }
+
+    if (maxOverlap >= 0.5) {
+      // trap_pattern이 새로운 내용인지 확인
+      const hasNewTrap =
+        !!newTrapPattern &&
+        (!bestMatchTrap ||
+          newTrapPattern.toLowerCase() !== bestMatchTrap.toLowerCase())
+      return { status: 'partial_dup', newTrap: hasNewTrap }
+    }
+
+    return { status: 'new' }
+  } catch {
+    // 조회 실패 시 저장 허용
+    return { status: 'new' }
+  }
+}
+
 export async function saveConceptExtraction(row: ConceptExtractionRow): Promise<void> {
   console.log('[db] saveConceptExtraction called', {
     hasUserId: !!row.userId,

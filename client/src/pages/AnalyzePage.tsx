@@ -11,7 +11,7 @@ import {
   ExtractedConcepts,
 } from '../hooks/useDynamicQuiz';
 import { ConceptCardView } from '../components/quiz/QuizView';
-import { saveConceptExtraction } from '../lib/db';
+import { saveConceptExtraction, checkConceptDuplication, DupCheckResult } from '../lib/db';
 
 // ── Becker 텍스트에서 topic_id 자동 감지 ─────────────────────
 // "F6 · M4 · Partnerships", "F5 M3", "F5-M3", "F5.M3" 등
@@ -35,6 +35,7 @@ export default function AnalyzePage() {
   const [correctAnswer, setCorrectAnswer] = useState('');
   const [manualTopicId, setManualTopicId] = useState<string>('');
   const [topicCorrection, setTopicCorrection] = useState<{ original: string; corrected: string } | null>(null);
+  const [dupResult, setDupResult] = useState<DupCheckResult | null>(null);
   const [card, setCard] = useState<ConceptCard | null>(null);
   const [extracted, setExtracted] = useState<ExtractedConcepts | null>(null);
   const [learned, setLearned] = useState<LearnedConcepts | null>(null);
@@ -66,6 +67,7 @@ export default function AnalyzePage() {
     setCard(null);
     setExtracted(null);
     setTopicCorrection(null);
+    setDupResult(null);
 
     const topicId = resolvedTopicId;
     const ua = userAnswer.trim() || null;
@@ -101,16 +103,28 @@ export default function AnalyzePage() {
           setTopicCorrection({ original: topicId, corrected });
         }
 
-        // Fire-and-forget Supabase save — 보정된 topicId 사용
-        void saveConceptExtraction({
-          userId: userId ?? null,
-          topicId: corrected || topicId,
-          concepts: extractRes.value.extracted.concepts,
-          ascReferences: extractRes.value.extracted.asc_references,
-          topicTags: extractRes.value.extracted.topic_tags,
-          trapPattern: extractRes.value.extracted.trap_pattern,
-          wasWrong: ua && ca ? ua !== ca : null,
-        });
+        const finalTopicId = corrected || topicId;
+        const ext = extractRes.value.extracted;
+
+        // 중복 감지 후 저장
+        const dup = await checkConceptDuplication(finalTopicId, ext.concepts, ext.trap_pattern);
+        setDupResult(dup);
+
+        const shouldSave =
+          dup.status === 'new' ||
+          (dup.status === 'partial_dup' && dup.newTrap);
+
+        if (shouldSave) {
+          void saveConceptExtraction({
+            userId: userId ?? null,
+            topicId: finalTopicId,
+            concepts: ext.concepts,
+            ascReferences: ext.asc_references,
+            topicTags: ext.topic_tags,
+            trapPattern: ext.trap_pattern,
+            wasWrong: ua && ca ? ua !== ca : null,
+          });
+        }
       } else {
         setError((prev) => prev ?? `개념 추출 실패: ${extractRes.reason?.message ?? 'unknown'}`);
       }
@@ -129,6 +143,7 @@ export default function AnalyzePage() {
     setCorrectAnswer('');
     setManualTopicId('');
     setTopicCorrection(null);
+    setDupResult(null);
     setCard(null);
     setExtracted(null);
     setError(null);
@@ -261,6 +276,24 @@ export default function AnalyzePage() {
             <span className="block mt-0.5 text-[#92400e]/70">
               추출된 개념이 다른 모듈과 더 일치하여 topic_id를 수정했습니다.
             </span>
+          </div>
+        )}
+
+        {/* 중복 감지 알림 */}
+        {dupResult && dupResult.status !== 'new' && (
+          <div
+            className="p-3 rounded-lg text-xs"
+            style={
+              dupResult.status === 'full_dup' || (dupResult.status === 'partial_dup' && !dupResult.newTrap)
+                ? { background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' }
+                : { background: '#f0fdf4', border: '1px solid #86efac', color: '#166534' }
+            }
+          >
+            {dupResult.status === 'full_dup'
+              ? '유사한 패턴이 이미 존재합니다. 저장을 건너뜁니다.'
+              : dupResult.status === 'partial_dup' && !dupResult.newTrap
+                ? '유사한 패턴이 이미 존재하고 함정 패턴도 동일합니다. 저장을 건너뜁니다.'
+                : '유사한 패턴이 있지만 새로운 함정 패턴이 감지되어 저장합니다.'}
           </div>
         )}
 
