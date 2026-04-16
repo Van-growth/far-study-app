@@ -304,7 +304,7 @@ export default function AnalyzePage() {
             style={{ background: '#fffbeb', border: '1.5px solid #fde68a' }}
           >
             <p className="text-xs font-semibold text-[#92400e] mb-2">
-              🧠 AI 구조화 해설 · {card.type}
+              🧠 AI 구조화 해설 · {safeStr(card.type)}
             </p>
             <ConceptCardView card={card} />
           </div>

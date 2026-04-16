@@ -37,6 +37,14 @@ export function elapsedTone(sec: number): { color: string; bold: boolean } {
   return { color: '#22c55e', bold: false };
 }
 
+// ── Safe string render — prevents React Error #31 ────────────
+function safeStr(v: unknown): string {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (v == null) return '';
+  return JSON.stringify(v);
+}
+
 // ── Concept card renderers ────────────────────────────────────
 function typeLabel(t: ConceptCard['type']): string {
   switch (t) {
@@ -56,7 +64,7 @@ export function ConceptCardView({ card }: { card: ConceptCard }) {
   return (
     <div className="flex flex-col gap-3 text-[#451a03]">
       {card.headline && (
-        <p className="text-sm font-semibold leading-snug">🎯 {card.headline}</p>
+        <p className="text-sm font-semibold leading-snug">🎯 {safeStr(card.headline)}</p>
       )}
       {/* Statement types */}
       {card.type === 'income_statement' && card.statement && (
@@ -120,9 +128,9 @@ function StatementRowView({ row }: { row: StatementRow }) {
       }}
     >
       <span className="flex-1 truncate pr-2 leading-tight">
-        {row.label}
+        {safeStr(row.label)}
         {row.note_tag && (
-          <sup className="ml-0.5 text-[9px] font-bold opacity-80">({row.note_tag})</sup>
+          <sup className="ml-0.5 text-[9px] font-bold opacity-80">({safeStr(row.note_tag)})</sup>
         )}
       </span>
       <span className="font-mono tabular-nums whitespace-nowrap">{amountText}</span>
@@ -152,7 +160,7 @@ function NotesView({ notes }: { notes: StatementNote[] }) {
               color: palette.text,
             }}
           >
-            <span className="font-bold">({n.tag})</span> {n.text}
+            <span className="font-bold">({safeStr(n.tag)})</span> {safeStr(n.text)}
           </div>
         );
       })}
@@ -284,14 +292,14 @@ function MultiStatementBlock({ data, notes }: { data: MultiStatementData; notes?
 }
 
 function CompareView({ compare }: { compare: CompareBlock }) {
-  const side = (label: string, rows: string[], bg: string) => (
+  const side = (label: string, rows: unknown[], bg: string) => (
     <div className="flex-1 min-w-0 p-3 rounded-lg" style={{ background: bg, border: '1px solid #fcd34d' }}>
-      <p className="text-[11px] font-bold mb-1.5 text-[#78350f]">{label}</p>
+      <p className="text-[11px] font-bold mb-1.5 text-[#78350f]">{safeStr(label)}</p>
       <ul className="flex flex-col gap-1 text-xs leading-snug">
         {rows.map((r, i) => (
           <li key={i} className="flex gap-1.5">
             <span className="text-[#a16207]">·</span>
-            <span className="flex-1">{r}</span>
+            <span className="flex-1">{safeStr(r)}</span>
           </li>
         ))}
       </ul>
@@ -308,11 +316,11 @@ function CompareView({ compare }: { compare: CompareBlock }) {
 function GapView({ gap }: { gap: GapBlock }) {
   return (
     <div className="p-3 rounded-lg bg-white/70 border border-[#fcd34d]">
-      <p className="text-[11px] font-bold mb-1 text-[#78350f]">⚖️ {gap.label}</p>
+      <p className="text-[11px] font-bold mb-1 text-[#78350f]">⚖️ {safeStr(gap.label)}</p>
       <ul className="flex flex-col gap-1 text-xs leading-snug text-[#451a03]">
-        {gap.rows.map((r, i) => <li key={i}>· {r}</li>)}
+        {gap.rows.map((r, i) => <li key={i}>· {safeStr(r)}</li>)}
       </ul>
-      {gap.note && <p className="text-[11px] italic text-[#78350f] mt-1.5">{gap.note}</p>}
+      {gap.note && <p className="text-[11px] italic text-[#78350f] mt-1.5">{safeStr(gap.note)}</p>}
     </div>
   );
 }
@@ -327,12 +335,12 @@ function CalculationView({ calc }: { calc: CalculationBlock }) {
             <span className="shrink-0 w-4 h-4 rounded-full bg-[#f59e0b] text-white text-[10px] font-bold flex items-center justify-center">
               {i + 1}
             </span>
-            <span className="flex-1">{s}</span>
+            <span className="flex-1">{safeStr(s)}</span>
           </li>
         ))}
       </ol>
       <div className="mt-2 pt-2 border-t border-[#fcd34d]">
-        <p className="text-xs font-bold text-[#78350f]">= {calc.result}</p>
+        <p className="text-xs font-bold text-[#78350f]">= {safeStr(calc.result)}</p>
       </div>
     </div>
   );
@@ -349,8 +357,8 @@ function TimelineView({ timeline }: { timeline: TimelineBlock }) {
               className="absolute -left-[17px] top-1 w-2 h-2 rounded-full bg-[#f59e0b]"
               aria-hidden
             />
-            <p className="text-xs font-semibold text-[#78350f] leading-tight">{ev.label}</p>
-            {ev.detail && <p className="text-xs text-[#451a03] leading-snug mt-0.5">{ev.detail}</p>}
+            <p className="text-xs font-semibold text-[#78350f] leading-tight">{safeStr(ev.label)}</p>
+            {ev.detail && <p className="text-xs text-[#451a03] leading-snug mt-0.5">{safeStr(ev.detail)}</p>}
           </li>
         ))}
       </ol>
@@ -358,11 +366,11 @@ function TimelineView({ timeline }: { timeline: TimelineBlock }) {
   );
 }
 
-function PlainView({ markdown }: { markdown: string }) {
+function PlainView({ markdown }: { markdown: unknown }) {
   return (
     <div className="p-3 rounded-lg bg-white/70 border border-[#fcd34d] text-xs leading-snug text-[#451a03]">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
-        {markdown}
+        {safeStr(markdown)}
       </ReactMarkdown>
     </div>
   );
@@ -387,7 +395,7 @@ function TrapsView({ traps }: { traps: TrapBlock[] }) {
                       → {formatAmount(t.amount, false)}
                     </div>
                   )}
-                  <div>{t.reason}</div>
+                  <div>{safeStr(t.reason)}</div>
                 </div>
               </div>
               {hasCalc && <TrapCalcTable rows={t.calculation as TrapCalcRow[]} />}
@@ -418,7 +426,7 @@ function TrapCalcTable({ rows }: { rows: TrapCalcRow[] }) {
               color: isTotal ? '#7f1d1d' : '#991b1b',
             }}
           >
-            <span className="flex-1 truncate pr-2">{row.label}</span>
+            <span className="flex-1 truncate pr-2">{safeStr(row.label)}</span>
             <span className="font-mono tabular-nums whitespace-nowrap">
               {formatAmount(row.amount, isSub)}
             </span>
