@@ -105,27 +105,18 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         className="max-w-[90%] px-4 py-3 rounded-2xl rounded-tl-sm"
         style={{ background: 'white', border: '1.5px solid #e2e8f0' }}
       >
-        {isStreaming ? (
-          // While streaming: show raw text with preserved whitespace
-          // This avoids react-markdown breaking on incomplete markdown
-          <div className="text-sm leading-relaxed text-[#0f172a] whitespace-pre-wrap">
-            {message.content}
-            <span className="inline-block w-1.5 h-4 bg-[#4f6ef7] ml-0.5 animate-pulse align-text-bottom rounded-sm" />
-          </div>
-        ) : (
-          // Streaming done: render full markdown
-          <>
-            <Markdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
-              {message.content}
-            </Markdown>
-            {message.content && (
-              <FeedbackButtons
-                messageId={message.id}
-                messagePreview={message.content}
-                source="claude"
-              />
-            )}
-          </>
+        <Markdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
+          {message.content}
+        </Markdown>
+        {isStreaming && (
+          <span className="inline-block w-1.5 h-4 bg-[#4f6ef7] ml-0.5 animate-pulse align-text-bottom rounded-sm" />
+        )}
+        {!isStreaming && message.content && (
+          <FeedbackButtons
+            messageId={message.id}
+            messagePreview={message.content}
+            source="claude"
+          />
         )}
       </div>
     </div>

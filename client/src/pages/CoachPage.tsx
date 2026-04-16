@@ -665,45 +665,41 @@ function CoachBubble({
         className="max-w-[90%] px-4 py-3 rounded-2xl rounded-tl-sm"
         style={{ background: 'white', border: '1.5px solid #e2e8f0' }}
       >
-        {streaming ? (
-          <div className="text-sm leading-relaxed text-[#0f172a] whitespace-pre-wrap">
+        <div className="text-sm leading-relaxed text-[#0f172a]">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              p: ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>,
+              strong: ({ children }) => (
+                <strong className="font-semibold text-[#0f172a]">{children}</strong>
+              ),
+              ul: ({ children }) => (
+                <ul className="list-disc ml-5 my-1 flex flex-col gap-0.5">{children}</ul>
+              ),
+              ol: ({ children }) => (
+                <ol className="list-decimal ml-5 my-1 flex flex-col gap-0.5">{children}</ol>
+              ),
+              li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+              code: ({ children }) => (
+                <code className="px-1 py-0.5 rounded text-[11px] font-mono bg-gray-100">
+                  {children}
+                </code>
+              ),
+            }}
+          >
             {message.content}
+          </ReactMarkdown>
+          {streaming && (
             <span className="inline-block w-1.5 h-4 bg-[#4f6ef7] ml-0.5 animate-pulse align-text-bottom rounded-sm" />
-          </div>
-        ) : (
-          <div className="text-sm leading-relaxed text-[#0f172a]">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                p: ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>,
-                strong: ({ children }) => (
-                  <strong className="font-semibold text-[#0f172a]">{children}</strong>
-                ),
-                ul: ({ children }) => (
-                  <ul className="list-disc ml-5 my-1 flex flex-col gap-0.5">{children}</ul>
-                ),
-                ol: ({ children }) => (
-                  <ol className="list-decimal ml-5 my-1 flex flex-col gap-0.5">{children}</ol>
-                ),
-                li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                code: ({ children }) => (
-                  <code className="px-1 py-0.5 rounded text-[11px] font-mono bg-gray-100">
-                    {children}
-                  </code>
-                ),
-              }}
-            >
-              {message.content}
-            </ReactMarkdown>
-            {message.content && (
-              <FeedbackButtons
-                messageId={message.id}
-                messagePreview={message.content}
-                source="coach"
-              />
-            )}
-          </div>
-        )}
+          )}
+          {!streaming && message.content && (
+            <FeedbackButtons
+              messageId={message.id}
+              messagePreview={message.content}
+              source="coach"
+            />
+          )}
+        </div>
       </div>
     </div>
   );
