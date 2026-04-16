@@ -2,6 +2,14 @@ import { useEffect, useState } from 'react';
 
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
+interface TopicCoverage {
+  topic_id: string;
+  label: string;
+  count: number;
+  trap_count: number;
+  last_updated: string | null;
+}
+
 interface DashboardData {
   feedback: {
     total: number;
@@ -24,6 +32,10 @@ interface DashboardData {
     topAsc: Array<{ key: string; count: number }>;
     dailyExtractions: Array<{ date: string; count: number }>;
     updatedAt: string | null;
+  };
+  coverage: {
+    topics: TopicCoverage[];
+    gaps: string[];
   };
 }
 
@@ -249,6 +261,70 @@ export default function AdminPage({ email }: AdminPageProps) {
             </div>
           </div>
         </section>
+        {/* concept_extractions 커버리지 */}
+        <section className="card p-4">
+          <p className="font-semibold text-sm text-[#0f172a] mb-2">📊 모듈별 concept_extractions 현황</p>
+
+          {/* 커버리지 공백 */}
+          {data.coverage.gaps.length > 0 && (
+            <div
+              className="p-3 rounded-lg text-xs mb-3"
+              style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' }}
+            >
+              ⚠️ 아직 데이터 없음 ({data.coverage.gaps.length}개 모듈):
+              <div className="mt-1 leading-relaxed">{data.coverage.gaps.join(', ')}</div>
+            </div>
+          )}
+
+          {/* topic_id별 테이블 */}
+          {data.coverage.topics.filter((t) => t.count > 0).length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left text-muted border-b border-border">
+                    <th className="py-1.5 pr-2">모듈</th>
+                    <th className="py-1.5 pr-2 text-right">건수</th>
+                    <th className="py-1.5 pr-2 text-right">함정</th>
+                    <th className="py-1.5 text-right">마지막 업데이트</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.coverage.topics
+                    .filter((t) => t.count > 0)
+                    .map((t) => (
+                      <tr key={t.topic_id} className="border-b border-border/50">
+                        <td className="py-1.5 pr-2">
+                          <span className="font-semibold">{t.topic_id}</span>
+                          <span className="text-muted ml-1">{t.label}</span>
+                        </td>
+                        <td className="py-1.5 pr-2 text-right font-semibold">{t.count}</td>
+                        <td className="py-1.5 pr-2 text-right">{t.trap_count}</td>
+                        <td className="py-1.5 text-right text-muted">
+                          {t.last_updated
+                            ? new Date(t.last_updated).toLocaleDateString('ko-KR')
+                            : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-xs text-muted">Supabase 연결 없음 또는 데이터 없음</p>
+          )}
+        </section>
+
+        {/* 피드백 안내 */}
+        {data.feedback.total === 0 && (
+          <section className="card p-4">
+            <p className="font-semibold text-sm text-[#0f172a] mb-1">💬 피드백 로그 안내</p>
+            <p className="text-xs text-muted">
+              아직 피드백 데이터가 없습니다. 퀴즈/튜터 화면에서 👍/👎 버튼을 누르면
+              서버의 feedback_logs.json에 기록되며 여기에 표시됩니다.
+              (Supabase 테이블이 아닌 서버 파일 기반 저장)
+            </p>
+          </section>
+        )}
       </div>
     </div>
   );

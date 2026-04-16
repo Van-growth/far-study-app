@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
 
@@ -11,6 +12,57 @@ const LEARNED_FILE = path.join(DATA_DIR, 'learned_concepts.json');
 const EXTRACTION_LOG_FILE = path.join(DATA_DIR, 'concept_extraction_log.json');
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
+
+// Supabase client for concept_extractions coverage query
+const sbUrl = process.env.SUPABASE_URL;
+const sbKey = process.env.SUPABASE_SERVICE_KEY;
+const supabase = sbUrl && sbKey ? createClient(sbUrl, sbKey) : null;
+
+// 전체 Becker 모듈 목록 — 커버리지 공백 계산용
+const ALL_TOPICS: { id: string; label: string }[] = [
+  { id: 'F1-M1', label: 'Balance Sheet, I/S & CI' },
+  { id: 'F1-M2', label: 'EPS & Public Company' },
+  { id: 'F1-M3', label: "Stockholders' Equity Part 1" },
+  { id: 'F1-M4', label: "Stockholders' Equity Part 2" },
+  { id: 'F1-M5', label: 'Subsequent Events' },
+  { id: 'F1-M6', label: 'Fair Value Measurements' },
+  { id: 'F1-M7', label: 'Special Purpose Frameworks' },
+  { id: 'F1-M8', label: 'Ratio & Variance Analysis' },
+  { id: 'F2-M1', label: 'Revenue Recognition' },
+  { id: 'F2-M2', label: 'Accounting Changes' },
+  { id: 'F2-M3', label: 'Adjusting Journal Entries' },
+  { id: 'F2-M4', label: 'Notes to FS' },
+  { id: 'F2-M5', label: 'Subsequent Events' },
+  { id: 'F2-M6', label: 'Fair Value Measurements' },
+  { id: 'F2-M7', label: 'Special Purpose Frameworks' },
+  { id: 'F2-M8', label: 'Ratio & Variance Analysis' },
+  { id: 'F3-M1', label: 'Cash & Equivalents' },
+  { id: 'F3-M2', label: 'Trade Receivables' },
+  { id: 'F3-M3', label: 'Inventory' },
+  { id: 'F3-M4', label: 'PP&E: Cost Basis' },
+  { id: 'F3-M5', label: 'PP&E: Depreciation' },
+  { id: 'F3-M6', label: 'Intangibles' },
+  { id: 'F4-M1', label: 'Payables & Accrued' },
+  { id: 'F4-M2', label: 'Contingencies' },
+  { id: 'F4-M3', label: 'Long-Term Liabilities' },
+  { id: 'F4-M4', label: 'Bonds Part 1' },
+  { id: 'F4-M5', label: 'Bonds Part 2' },
+  { id: 'F4-M6', label: 'TDR & Extinguishment' },
+  { id: 'F4-M7', label: 'Lessee Accounting' },
+  { id: 'F5-M1', label: 'Financial Instruments' },
+  { id: 'F5-M2', label: 'Equity Method' },
+  { id: 'F5-M3', label: 'Consolidated Statements' },
+  { id: 'F5-M4', label: 'Partnerships' },
+  { id: 'F5-M5', label: 'Statement of Cash Flows' },
+  { id: 'F5-M6', label: 'Income Taxes Part 1' },
+  { id: 'F5-M7', label: 'Income Taxes Part 2' },
+  { id: 'F6-M1', label: 'NFP Part 1' },
+  { id: 'F6-M2', label: 'NFP Part 2' },
+  { id: 'F6-M3', label: 'NFP Revenue' },
+  { id: 'F6-M4', label: 'NFP Transfers' },
+  { id: 'F6-M5', label: 'Governmental Accounting' },
+  { id: 'F6-M6', label: 'Governmental Funds' },
+];
 
 async function readJson<T>(file: string, fallback: T): Promise<T> {
   try {
@@ -67,11 +119,71 @@ interface ExtractionLogEntry {
   trapPattern: string | null;
 }
 
+interface TopicCoverage {
+  topic_id: string;
+  label: string;
+  count: number;
+  trap_count: number;
+  last_updated: string | null;
+}
+
+async function fetchTopicCoverage(): Promise<{
+  topics: TopicCoverage[];
+  gaps: string[];
+}> {
+  if (!supabase) {
+    return { topics: [], gaps: ALL_TOPICS.map((t) => t.id) };
+  }
+  try {
+    const { data, error } = await supabase
+      .from('concept_extractions')
+      .select('topic_id, trap_pattern, created_at');
+    if (error || !data) {
+      return { topics: [], gaps: ALL_TOPICS.map((t) => t.id) };
+    }
+
+    // topic_id별 집계
+    const map = new Map<string, { count: number; trapCount: number; lastAt: string }>();
+    for (const row of data) {
+      const tid = row.topic_id as string | null;
+      if (!tid) continue;
+      const existing = map.get(tid) ?? { count: 0, trapCount: 0, lastAt: '' };
+      existing.count++;
+      if (row.trap_pattern) existing.trapCount++;
+      const ca = row.created_at as string;
+      if (ca > existing.lastAt) existing.lastAt = ca;
+      map.set(tid, existing);
+    }
+
+    const topics: TopicCoverage[] = ALL_TOPICS.map((t) => {
+      const stats = map.get(t.id);
+      return {
+        topic_id: t.id,
+        label: t.label,
+        count: stats?.count ?? 0,
+        trap_count: stats?.trapCount ?? 0,
+        last_updated: stats?.lastAt || null,
+      };
+    });
+
+    // count > 0 기준 정렬 (많은 순)
+    topics.sort((a, b) => b.count - a.count);
+
+    const gaps = ALL_TOPICS
+      .filter((t) => !map.has(t.id))
+      .map((t) => `${t.id} (${t.label})`);
+
+    return { topics, gaps };
+  } catch {
+    return { topics: [], gaps: ALL_TOPICS.map((t) => t.id) };
+  }
+}
+
 // GET /api/admin/dashboard
 router.get('/dashboard', async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
-    const [history, feedback, learned, extractionLog] = await Promise.all([
+    const [history, feedback, learned, extractionLog, coverage] = await Promise.all([
       readJson<HistoryItem[]>(HISTORY_FILE, []),
       readJson<FeedbackEntry[]>(FEEDBACK_FILE, []),
       readJson<LearnedState>(LEARNED_FILE, {
@@ -82,6 +194,7 @@ router.get('/dashboard', async (req: Request, res: Response) => {
         updated_at: null,
       }),
       readJson<ExtractionLogEntry[]>(EXTRACTION_LOG_FILE, []),
+      fetchTopicCoverage(),
     ]);
 
     // Feedback stats
@@ -184,6 +297,7 @@ router.get('/dashboard', async (req: Request, res: Response) => {
       avgSolveSeconds,
       totalAnswered: history.length,
       becker,
+      coverage,
     });
   } catch (err) {
     const m = err instanceof Error ? err.message : 'unknown';
