@@ -13,6 +13,18 @@ import {
 import { ConceptCardView } from '../components/quiz/QuizView';
 import { saveConceptExtraction } from '../lib/db';
 
+// ── Becker 텍스트에서 topic_id 자동 감지 ─────────────────────
+// "F6 · M4 · Partnerships", "F5 M3", "F5-M3", "F5.M3" 등
+const TOPIC_ID_RE = /F([1-6])\s*[·.\-\s]\s*M([0-9])/i;
+
+function detectTopicId(rawText: string): string | null {
+  const m = rawText.match(TOPIC_ID_RE);
+  if (!m) return null;
+  const candidate = `F${m[1]}-M${m[2]}`;
+  // allTopics에 실제 존재하는 ID인지 확인
+  return allTopics.some((t) => t.id === candidate) ? candidate : null;
+}
+
 export default function AnalyzePage() {
   const navigate = useNavigate();
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
@@ -21,14 +33,18 @@ export default function AnalyzePage() {
   const [text, setText] = useState('');
   const [userAnswer, setUserAnswer] = useState('');
   const [correctAnswer, setCorrectAnswer] = useState('');
+  const [manualTopicId, setManualTopicId] = useState<string>('');
   const [card, setCard] = useState<ConceptCard | null>(null);
   const [extracted, setExtracted] = useState<ExtractedConcepts | null>(null);
   const [learned, setLearned] = useState<LearnedConcepts | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const topicLabel = currentTopicId
-    ? allTopics.find((t) => t.id === currentTopicId)?.label
+  // 우선순위: 텍스트 자동 감지 > 수동 드롭다운 > 사이드바 선택 모듈
+  const detectedTopicId = detectTopicId(text);
+  const resolvedTopicId = detectedTopicId || manualTopicId || currentTopicId || null;
+  const topicLabel = resolvedTopicId
+    ? allTopics.find((t) => t.id === resolvedTopicId)?.label
     : null;
 
   useEffect(() => {
@@ -49,7 +65,7 @@ export default function AnalyzePage() {
     setCard(null);
     setExtracted(null);
 
-    const topicId = currentTopicId ?? null;
+    const topicId = resolvedTopicId;
     const ua = userAnswer.trim() || null;
     const ca = correctAnswer.trim() || null;
 
@@ -103,6 +119,7 @@ export default function AnalyzePage() {
     setText('');
     setUserAnswer('');
     setCorrectAnswer('');
+    setManualTopicId('');
     setCard(null);
     setExtracted(null);
     setError(null);
@@ -122,7 +139,11 @@ export default function AnalyzePage() {
           <h1 className="text-xl font-bold text-[#0f172a]">문제 분석</h1>
           <p className="text-xs text-muted mt-0.5">
             문제 원문을 붙여넣으면 AI가 구조화 해설을 생성하고, 개념 메타데이터만 학습 데이터에 누적합니다.
-            {topicLabel && <span className="ml-2 text-[#4f6ef7]">현재 모듈: {topicLabel}</span>}
+            {resolvedTopicId && (
+              <span className="ml-2 text-[#4f6ef7]">
+                모듈: {resolvedTopicId} · {topicLabel}
+              </span>
+            )}
           </p>
           <p className="text-[10px] text-muted mt-0.5">
             ⚠ 문제 원문은 서버에 저장되지 않습니다 — 키워드/패턴만 추출해 누적.
@@ -164,6 +185,41 @@ export default function AnalyzePage() {
               />
             </div>
           </div>
+          {/* 모듈 감지/선택 */}
+          <div>
+            <label className="text-[11px] text-muted block mb-0.5">모듈</label>
+            {detectedTopicId ? (
+              <div
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg"
+                style={{ background: '#f0fdf4', border: '1px solid #86efac', color: '#166534' }}
+              >
+                <span>자동 감지:</span>
+                <span className="font-semibold">{detectedTopicId}</span>
+                <span className="text-[#166534]/70">
+                  — {allTopics.find((t) => t.id === detectedTopicId)?.label}
+                </span>
+              </div>
+            ) : (
+              <select
+                value={manualTopicId}
+                onChange={(e) => setManualTopicId(e.target.value)}
+                className="w-full text-sm rounded-lg px-3 py-2 border border-border bg-white"
+                style={{ outline: 'none' }}
+              >
+                <option value="">
+                  {currentTopicId
+                    ? `현재 모듈 사용 (${currentTopicId})`
+                    : '모듈 선택 (선택사항)'}
+                </option>
+                {allTopics.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.id} — {t.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
           <button
             onClick={handleAnalyze}
             disabled={loading || !text.trim()}
