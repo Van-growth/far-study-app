@@ -82,6 +82,7 @@ Structure your response EXACTLY as:
 1. 잘 설명한 부분 (1-2줄)
 2. 놓친 핵심 개념 (bullet points with •)
 3. 시험에서 꼭 기억할 한 줄 (wrap in **bold**)
+Terminology: "Book value/Book basis" = "장부가액/장부기준" (NEVER "책"/"책상"). Prefer "Book value(장부가액)" format.
 Be concise and exam-focused. Respond only in Korean.`;
 
   try {

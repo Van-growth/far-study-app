@@ -258,6 +258,11 @@ For conceptual questions:
   "calculation_steps": null,
   "raw_answer": null
 
+Korean terminology rule for exp:
+- "Book value" / "Book basis" = "장부가액" / "장부기준". NEVER translate Book as "책" or "책상".
+- Prefer "Book value(장부가액)" format (English + parenthetical Korean).
+- Tax vs Book: "Tax(세무)상" vs "Book(장부/GAAP)상"
+
 "ans" is 0-based index. Start with { end with }.`;
 
   async function generateOnce(extraNote?: string): Promise<GeneratedMcq | { error: string }> {
