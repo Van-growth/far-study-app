@@ -574,7 +574,9 @@ export async function checkConceptDuplication(
   }
 }
 
-export async function saveConceptExtraction(row: ConceptExtractionRow): Promise<void> {
+export async function saveConceptExtraction(
+  row: ConceptExtractionRow,
+): Promise<{ id: string } | null> {
   console.log('[db] saveConceptExtraction called', {
     hasUserId: !!row.userId,
     userIdPrefix: row.userId ? row.userId.slice(0, 8) : null,
@@ -585,7 +587,7 @@ export async function saveConceptExtraction(row: ConceptExtractionRow): Promise<
   })
   if (!hasAuth(row.userId)) {
     logSkip('saveConceptExtraction')
-    return
+    return null
   }
   const payload = {
     user_id: row.userId,
@@ -624,7 +626,31 @@ export async function saveConceptExtraction(row: ConceptExtractionRow): Promise<
           'and that the `concept_extractions_own_insert` policy exists.',
       )
     }
-    return
+    return null
   }
   console.log('[db] saveConceptExtraction OK', { id: data?.id })
+  return data?.id ? { id: data.id as string } : null
+}
+
+// ── concept_extractions 삭제 ─────────────────────────────────
+// 사용자가 방금 저장한 row를 되돌리고 싶을 때 호출. RLS의
+// `concept_extractions_own_delete` 정책(migration 005)에 의존하므로
+// 해당 마이그레이션이 적용돼 있어야 동작한다.
+export async function deleteConceptExtraction(id: string): Promise<void> {
+  const { error } = await supabase.from('concept_extractions').delete().eq('id', id)
+  if (error) {
+    console.error('[db] deleteConceptExtraction FAILED', {
+      id,
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    })
+    if (error.code === '42501' || /row-level security/i.test(error.message)) {
+      console.error(
+        '[db] → RLS policy blocked delete. Apply migration 005_concept_extractions_delete_policy.sql.',
+      )
+    }
+    throw error
+  }
 }
