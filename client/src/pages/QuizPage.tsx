@@ -11,7 +11,7 @@ import {
   ConceptCard,
   QuestionConfidence,
 } from '../hooks/useDynamicQuiz';
-import { saveQuizLog } from '../lib/db';
+import { saveQuizLog, getConceptStats } from '../lib/db';
 import MobileSectionDrawer from '../components/layout/MobileSectionDrawer';
 import { drainPrewarmed } from '../hooks/prewarmQuiz';
 
@@ -59,6 +59,8 @@ interface Question {
   exp: string;
   confidence?: QuestionConfidence;
   warning?: string | null;
+  sourceConcepts?: string[];
+  sourceTrap?: string | null;
 }
 
 // ── Per-(mode|topicId) session snapshot ───────────────────────
@@ -220,12 +222,35 @@ export default function QuizPage() {
       const target = pickNextModule(mode, topicId, allTopics as Topic[], store.srsCards);
       if (!target) throw new Error('생성할 모듈을 찾지 못했습니다.');
       const weak = computeWeakList(store.srsCards);
+
+      // 태그별 취약 개념 — 정답률 50% 미만, 최소 3회 이상 출제된 것만.
+      // 실패해도 생성은 진행 (fire-and-forget 아니라 await지만 빈 배열 fallback).
+      let weakConcepts: { tag: string; tag_type: 'concept' | 'trap'; accuracy: number; total: number }[] = [];
+      if (store.userId) {
+        try {
+          const stats = await getConceptStats(store.userId, target.id, 3);
+          weakConcepts = stats
+            .filter((s) => s.accuracy < 0.5)
+            .sort((a, b) => a.accuracy - b.accuracy)
+            .slice(0, 5)
+            .map((s) => ({
+              tag: s.tag,
+              tag_type: s.tagType,
+              accuracy: s.accuracy,
+              total: s.total,
+            }));
+        } catch (e) {
+          console.warn('[QuizPage] getConceptStats failed:', e);
+        }
+      }
+
       const gen = await generateQuestion(
         target.id,
         target.label,
         weak,
         wrongIdsRef.current,
         focusConcept,
+        weakConcepts,
       );
       // Sanity check the AI response BEFORE we hand it to the buffer.
       // An empty stem or wrong-shaped opts would render a blank card
@@ -252,6 +277,8 @@ export default function QuizPage() {
         exp: gen.exp,
         confidence: gen.confidence,
         warning: gen.warning ?? null,
+        sourceConcepts: gen.source_concepts,
+        sourceTrap: gen.source_trap ?? null,
       };
     };
   }, [mode, topicId, focusConcept]);
@@ -351,6 +378,8 @@ export default function QuizPage() {
       selected: result.selected,
       answer: result.answer,
       elapsedSeconds: result.elapsedSeconds,
+      sourceConcepts: result.sourceConcepts ?? null,
+      sourceTrap: result.sourceTrap ?? null,
     };
     recordAnswer(result.topicId, result.correct, log);
     // History save happens in handleConceptCardReady once the card resolves
@@ -531,6 +560,8 @@ export default function QuizPage() {
       exp: it.exp,
       confidence: it.confidence,
       warning: it.warning ?? null,
+      sourceConcepts: it.sourceConcepts,
+      sourceTrap: it.sourceTrap ?? null,
     }));
   if (items.length !== quizItems.length) {
     console.warn(

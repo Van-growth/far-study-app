@@ -22,6 +22,9 @@ export interface QuizLogPayload {
   selected: number;
   answer: number;
   elapsedSeconds?: number | null;
+  /** generator가 방출한 내부 태그. concept_stats 누적용. */
+  sourceConcepts?: string[] | null;
+  sourceTrap?: string | null;
 }
 
 interface StudyStore {

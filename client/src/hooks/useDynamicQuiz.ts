@@ -9,12 +9,23 @@ export interface GeneratedQuestion {
   exp: string;
   confidence?: QuestionConfidence;
   warning?: string | null;
+  /** 내부 태그 — concept_stats 누적용. stem/exp에는 노출 안 됨. */
+  source_concepts?: string[];
+  source_trap?: string | null;
 }
 
 export interface WeakModuleRef {
   id: string;
   label: string;
   accuracy: number;
+}
+
+/** concept_stats 기반 취약 태그 — /api/generate-question 요청 시 전달. */
+export interface WeakConceptRef {
+  tag: string;
+  tag_type: 'concept' | 'trap';
+  accuracy: number;
+  total: number;
 }
 
 // ── Structured concept card ───────────────────────────────────
@@ -198,6 +209,7 @@ export async function generateQuestion(
   weakModules: WeakModuleRef[],
   recentWrongTopics: string[],
   focusConcept?: string | null,
+  weakConcepts?: WeakConceptRef[],
 ): Promise<GeneratedQuestion> {
   const res = await fetch(`${API_URL}/api/generate-question`, {
     method: 'POST',
@@ -208,6 +220,7 @@ export async function generateQuestion(
       weakModules,
       recentWrongTopics,
       ...(focusConcept ? { focusConcept } : {}),
+      ...(weakConcepts && weakConcepts.length ? { weakConcepts } : {}),
     }),
   });
   if (!res.ok) {

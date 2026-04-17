@@ -164,6 +164,8 @@ export const saveQuizLog = async (
     selected: number
     answer: number
     elapsedSeconds?: number | null
+    sourceConcepts?: string[] | null
+    sourceTrap?: string | null
   },
 ) => {
   if (!hasAuth(userId)) return logSkip('saveQuizLog')
@@ -200,6 +202,131 @@ export const saveQuizLog = async (
     logError('saveQuizLog', error)
     throw error
   }
+
+  // concept_stats 누적 — quiz_logs 저장 성공 후에만. 실패해도 quiz_logs 저장은
+  // 이미 끝났으므로 throw 하지 않고 경고만 남긴다.
+  const concepts = (log.sourceConcepts ?? []).filter(
+    (c): c is string => typeof c === 'string' && c.trim().length > 0,
+  )
+  const trap =
+    typeof log.sourceTrap === 'string' && log.sourceTrap.trim().length > 0
+      ? log.sourceTrap.trim()
+      : null
+  if (concepts.length || trap) {
+    await updateConceptStats(log.topicId, log.correct, { concepts, trap })
+  }
+}
+
+// ── concept_stats — 태그별 누적 정답률 ────────────────────────
+// Migration 006 의 concept_stats_increment RPC 를 호출해 atomic upsert.
+// RPC 가 아직 배포 안 된 환경에서는 첫 호출 시 경고 후 자동 비활성화.
+let conceptStatsSupported: boolean | null = null
+
+const updateConceptStats = async (
+  topicId: string,
+  correct: boolean,
+  tags: { concepts: string[]; trap: string | null },
+) => {
+  if (conceptStatsSupported === false) return
+
+  const rows: { tag: string; tag_type: 'concept' | 'trap' }[] = [
+    ...tags.concepts.map((c) => ({ tag: c, tag_type: 'concept' as const })),
+    ...(tags.trap ? [{ tag: tags.trap, tag_type: 'trap' as const }] : []),
+  ]
+  if (!rows.length) return
+
+  const results = await Promise.allSettled(
+    rows.map((r) =>
+      supabase.rpc('concept_stats_increment', {
+        p_tag: r.tag,
+        p_tag_type: r.tag_type,
+        p_topic_id: topicId,
+        p_is_correct: correct,
+      }),
+    ),
+  )
+
+  for (const res of results) {
+    if (res.status === 'rejected') {
+      console.warn('[db] concept_stats_increment rejected:', res.reason)
+      continue
+    }
+    const err = (res.value as { error?: { message?: string; code?: string } | null })?.error
+    if (err) {
+      const msg = (err.message ?? '').toLowerCase()
+      if (
+        err.code === 'PGRST202' ||
+        err.code === '42883' ||
+        msg.includes('does not exist') ||
+        msg.includes('function concept_stats_increment')
+      ) {
+        conceptStatsSupported = false
+        console.warn(
+          '[db] concept_stats_increment RPC missing — 누적 정답률 비활성화. ' +
+            'Run supabase/migrations/006_concept_stats.sql to enable.',
+        )
+        return
+      }
+      console.warn('[db] concept_stats_increment error:', err)
+    }
+  }
+  conceptStatsSupported = true
+}
+
+export interface ConceptStat {
+  tag: string
+  tagType: 'concept' | 'trap'
+  topicId: string | null
+  total: number
+  correct: number
+  accuracy: number
+  lastSeenAt: string
+}
+
+export const getConceptStats = async (
+  userId: string,
+  topicId?: string,
+  minTotal = 3,
+): Promise<ConceptStat[]> => {
+  if (!hasAuth(userId)) return []
+  let query = supabase
+    .from('concept_stats')
+    .select('tag, tag_type, topic_id, total_count, correct_count, last_seen_at')
+    .eq('user_id', userId)
+    .gte('total_count', minTotal)
+    .order('last_seen_at', { ascending: false })
+  if (topicId) query = query.eq('topic_id', topicId)
+
+  const { data, error } = await query
+  if (error) {
+    const code = (error as { code?: string }).code ?? ''
+    const msg = (error.message ?? '').toLowerCase()
+    if (code === 'PGRST205' || msg.includes('concept_stats') || msg.includes('schema cache')) {
+      // 테이블 미배포 — 조용히 빈 배열.
+      return []
+    }
+    logError('getConceptStats', error)
+    return []
+  }
+  if (!data) return []
+
+  type Row = {
+    tag: string
+    tag_type: 'concept' | 'trap'
+    topic_id: string | null
+    total_count: number
+    correct_count: number
+    last_seen_at: string
+  }
+  return (data as unknown as Row[]).map((r) => ({
+    tag: r.tag,
+    tagType: r.tag_type,
+    topicId: r.topic_id,
+    total: r.total_count,
+    correct: r.correct_count,
+    accuracy: r.total_count > 0 ? r.correct_count / r.total_count : 0,
+    lastSeenAt: r.last_seen_at,
+  }))
 }
 
 // ── 모듈별 성과 집계 (오답노트 상단용) ─────────────────────────

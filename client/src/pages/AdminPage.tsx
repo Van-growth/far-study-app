@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import useStudyStore from '../store/studyStore';
+import { getConceptStats, ConceptStat } from '../lib/db';
+import { allTopics } from '../data/far-topics';
 
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
+
+type AdminTab = 'summary' | 'perf' | 'becker' | 'concept';
 
 interface TopicCoverage {
   topic_id: string;
@@ -55,6 +60,42 @@ export default function AdminPage({ email }: AdminPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [reclassifying, setReclassifying] = useState<string | null>(null);
   const [reclassifyResult, setReclassifyResult] = useState<ReclassifyResult | null>(null);
+  const [activeTab, setActiveTab] = useState<AdminTab>('summary');
+
+  // Concept stats state (로드 on-demand when 📈 탭 진입)
+  const userId = useStudyStore((s) => s.userId);
+  const [conceptStats, setConceptStats] = useState<ConceptStat[] | null>(null);
+  const [conceptStatsLoading, setConceptStatsLoading] = useState(false);
+  const [conceptModuleFilter, setConceptModuleFilter] = useState<string>('');
+
+  useEffect(() => {
+    if (activeTab !== 'concept') return;
+    if (!userId) return;
+    let cancelled = false;
+    setConceptStatsLoading(true);
+    getConceptStats(userId, conceptModuleFilter || undefined, 3)
+      .then((rows) => {
+        if (!cancelled) setConceptStats(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setConceptStats([]);
+      })
+      .finally(() => {
+        if (!cancelled) setConceptStatsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, userId, conceptModuleFilter]);
+
+  const conceptBuckets = useMemo(() => {
+    const rows = conceptStats ?? [];
+    const weak = rows.filter((r) => r.accuracy < 0.5);
+    const mid = rows.filter((r) => r.accuracy >= 0.5 && r.accuracy < 0.8);
+    const strong = rows.filter((r) => r.accuracy >= 0.8);
+    const cmp = (a: ConceptStat, b: ConceptStat) => a.accuracy - b.accuracy;
+    return { weak: weak.sort(cmp), mid: mid.sort(cmp), strong: strong.sort(cmp) };
+  }, [conceptStats]);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,6 +165,34 @@ export default function AdminPage({ email }: AdminPageProps) {
       <div className="max-w-3xl mx-auto flex flex-col gap-4">
         <h1 className="text-xl font-bold text-[#0f172a]">🛠️ 어드민 대시보드</h1>
 
+        {/* Tab bar */}
+        <div className="flex flex-wrap gap-1.5 text-xs">
+          {(
+            [
+              ['summary', '📊 요약'],
+              ['perf', '🎯 문제·사용자'],
+              ['becker', '📘 Becker'],
+              ['concept', '📈 개념별 정답률'],
+            ] as [AdminTab, string][]
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className="px-3 py-1.5 rounded-lg font-medium transition-colors"
+              style={{
+                background: activeTab === id ? '#4f6ef7' : '#f1f5f9',
+                color: activeTab === id ? 'white' : '#64748b',
+                border: '1px solid transparent',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── 📊 요약 탭 ───────────────────────────────── */}
+        {activeTab === 'summary' && (
+        <>
         {/* Summary cards */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <StatCard label="총 응답" value={String(data.totalAnswered)} />
@@ -155,6 +224,12 @@ export default function AdminPage({ email }: AdminPageProps) {
           )}
         </section>
 
+        </>
+        )}
+
+        {/* ── 🎯 문제·사용자 탭 ────────────────────────── */}
+        {activeTab === 'perf' && (
+        <>
         {/* Wrong top 10 */}
         <section className="card p-4">
           <p className="font-semibold text-sm text-[#0f172a] mb-2">문제별 오답률 Top 10</p>
@@ -211,6 +286,12 @@ export default function AdminPage({ email }: AdminPageProps) {
           </div>
         </section>
 
+        </>
+        )}
+
+        {/* ── 📘 Becker 탭 ────────────────────────────── */}
+        {activeTab === 'becker' && (
+        <>
         {/* Becker 분석 현황 */}
         <section className="card p-4">
           <p className="font-semibold text-sm text-[#0f172a] mb-2">📘 Becker 분석 현황</p>
@@ -360,8 +441,66 @@ export default function AdminPage({ email }: AdminPageProps) {
           )}
         </section>
 
+        </>
+        )}
+
+        {/* ── 📈 개념별 정답률 탭 ──────────────────────── */}
+        {activeTab === 'concept' && (
+          <section className="card p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="font-semibold text-sm text-[#0f172a]">
+                📈 개념별 정답률 (누적, 3회 이상 출제분)
+              </p>
+              <select
+                value={conceptModuleFilter}
+                onChange={(e) => setConceptModuleFilter(e.target.value)}
+                className="text-xs px-2 py-1 rounded-lg"
+                style={{ border: '1px solid #e2e8f0', background: 'white' }}
+              >
+                <option value="">전체 모듈</option>
+                {allTopics.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.id} — {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {!userId && (
+              <p className="text-xs text-muted">로그인이 필요합니다.</p>
+            )}
+            {userId && conceptStatsLoading && (
+              <p className="text-xs text-muted">로딩 중...</p>
+            )}
+            {userId && !conceptStatsLoading && conceptStats && conceptStats.length === 0 && (
+              <p className="text-xs text-muted">
+                누적 데이터가 아직 부족합니다 (태그별 최소 3회 출제 필요). 퀴즈를 더 풀어주세요.
+              </p>
+            )}
+            {userId && !conceptStatsLoading && conceptStats && conceptStats.length > 0 && (
+              <>
+                <ConceptBucket
+                  title="🔴 취약 (정답률 50% 미만)"
+                  rows={conceptBuckets.weak}
+                  barColor="#ef4444"
+                />
+                <ConceptBucket
+                  title="🟡 보통 (50–80%)"
+                  rows={conceptBuckets.mid}
+                  barColor="#f59e0b"
+                />
+                <ConceptBucket
+                  title="🟢 숙달 (80% 이상)"
+                  rows={conceptBuckets.strong}
+                  barColor="#16a34a"
+                />
+              </>
+            )}
+          </section>
+        )}
+
         {/* 피드백 안내 */}
-        {data.feedback.total === 0 && (
+        {activeTab === 'summary' && data.feedback.total === 0 && (
           <section className="card p-4">
             <p className="font-semibold text-sm text-[#0f172a] mb-1">💬 피드백 로그 안내</p>
             <p className="text-xs text-muted">
@@ -426,6 +565,53 @@ function StatCard({ label, value }: { label: string; value: string }) {
     <div className="card p-3">
       <p className="text-[11px] text-muted">{label}</p>
       <p className="text-lg font-bold text-[#0f172a] mt-0.5">{value}</p>
+    </div>
+  );
+}
+
+function ConceptBucket({
+  title,
+  rows,
+  barColor,
+}: {
+  title: string;
+  rows: ConceptStat[];
+  barColor: string;
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-0.5">
+      <p className="text-[11px] font-semibold text-muted mb-1">{title}</p>
+      {rows.map((r) => (
+        <div
+          key={`${r.tagType}:${r.tag}`}
+          className="flex items-center gap-3 py-1 text-xs"
+        >
+          <span className="flex-1 truncate text-[#0f172a]" title={r.tag}>
+            {r.tagType === 'trap' ? '⚠️ ' : ''}
+            {r.tag}
+          </span>
+          <div
+            className="w-24 h-1.5 rounded overflow-hidden"
+            style={{ background: '#f1f5f9' }}
+          >
+            <div
+              style={{
+                width: `${Math.round(r.accuracy * 100)}%`,
+                height: '100%',
+                background: barColor,
+              }}
+            />
+          </div>
+          <span className="w-10 text-right font-semibold" style={{ color: barColor }}>
+            {Math.round(r.accuracy * 100)}%
+          </span>
+          <span className="w-10 text-right text-muted">{r.total}회</span>
+          <span className="w-14 text-right text-muted font-mono">
+            {r.topicId ?? '-'}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

@@ -24,6 +24,8 @@ interface GeneratedMcq {
   exp: string;
   calculation_steps: CalculationStep[] | null;
   raw_answer: number | null;
+  source_concepts: string[];
+  source_trap: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -65,14 +67,26 @@ function localPostCheck(item: GeneratedMcq): { pass: boolean; reason: string | n
 // concept_extractions 기반 출제 (fallback: learnedConcepts)
 // ─────────────────────────────────────────────────────────────
 router.post('/generate-question', async (req: Request, res: Response) => {
-  const { moduleId, moduleName, weakModules, recentWrongTopics, focusConcept } =
-    req.body as {
-      moduleId: string;
-      moduleName: string;
-      weakModules?: { id: string; label: string; accuracy: number }[];
-      recentWrongTopics?: string[];
-      focusConcept?: string;
-    };
+  const {
+    moduleId,
+    moduleName,
+    weakModules,
+    recentWrongTopics,
+    focusConcept,
+    weakConcepts,
+  } = req.body as {
+    moduleId: string;
+    moduleName: string;
+    weakModules?: { id: string; label: string; accuracy: number }[];
+    recentWrongTopics?: string[];
+    focusConcept?: string;
+    weakConcepts?: {
+      tag: string;
+      tag_type: 'concept' | 'trap';
+      accuracy: number;
+      total: number;
+    }[];
+  };
 
   if (!moduleId || !moduleName) {
     return res.status(400).json({ error: 'moduleId and moduleName required' });
@@ -87,6 +101,21 @@ router.post('/generate-question', async (req: Request, res: Response) => {
     : '';
   const wrongLine = recentWrongTopics?.length
     ? `\nRecent wrong topics: ${recentWrongTopics.slice(0, 8).join(', ')}.`
+    : '';
+
+  // 태그별 누적 정답률 기반 약점. concept_stats RPC 결과를 클라이언트가
+  // 사전 필터링(정답률 <50%, total ≥3)해 전달. generator가 source_concepts/
+  // source_trap으로 방출한 태그가 다시 여기로 돌아오는 피드백 루프.
+  const weakConceptsLine = weakConcepts?.length
+    ? `\n\nWEAK CONCEPTS (이 학생의 누적 정답률 50% 미만, 우선 출제):\n${weakConcepts
+        .slice(0, 5)
+        .map(
+          (c) =>
+            `- [${c.tag_type}] ${c.tag} (${Math.round(c.accuracy * 100)}%, ${c.total}회)`,
+        )
+        .join(
+          '\n',
+        )}\n위 개념/함정 중 최소 1개를 핵심 테스트 포인트로 삼아 출제. 단, stem에 태그 이름을 직접 언급 금지 — 시나리오로 풀어낼 것.`
     : '';
 
   // ── concept_extractions 기반 출제 컨텍스트 ─────────────────
@@ -128,7 +157,7 @@ router.post('/generate-question', async (req: Request, res: Response) => {
   const prompt = `You are an expert USCPA FAR exam item writer. Generate and self-verify EXACTLY ONE high-quality MCQ.
 
 Internal tag (NEVER mention in the question):
-- Target module: ${moduleId} — ${moduleName}${weakLine}${wrongLine}${studentContext}${focusLine}
+- Target module: ${moduleId} — ${moduleName}${weakLine}${wrongLine}${studentContext}${weakConceptsLine}${focusLine}
 
 ━━━ HARD RULES — stem & options ━━━
 
@@ -231,12 +260,19 @@ Return STRICT JSON ONLY. No prose, no markdown fences, no self-verification comm
     { "label": "차감 항목", "amount": -20000, "is_subtraction": true },
     { "label": "최종 결과", "amount": 80000, "is_total": true }
   ],
-  "raw_answer": 80000
+  "raw_answer": 80000,
+  "source_concepts": ["Operating Lease", "ROU asset measurement"],
+  "source_trap": "Finance vs Operating 분류 오인"
 }
 
 For conceptual questions:
   "calculation_steps": null,
   "raw_answer": null
+
+━━━ INTERNAL TAGS (채점·통계용, stem에 언급 금지) ━━━
+- "source_concepts": 이 문제가 실제로 테스트하는 핵심 개념 1-3개. 형식은 concept_extractions의 concepts와 일치하도록 명사구로 (예: "Operating Lease", "ROU asset measurement"). 반드시 배열.
+- "source_trap": 이 문제의 주된 함정 패턴 1개(문자열) 또는 없으면 null. (예: "Finance vs Operating 분류 오인").
+- 이 두 필드는 stem/opts/exp 어디에도 직접 노출하지 말 것 — 내부 태그.
 
 Korean terminology rule for exp:
 - "Book value" / "Book basis" = "장부가액" / "장부기준". NEVER translate Book as "책" or "책상".
@@ -273,6 +309,16 @@ Korean terminology rule for exp:
           ? parsed.calculation_steps
           : null,
         raw_answer: typeof parsed.raw_answer === 'number' ? parsed.raw_answer : null,
+        source_concepts: Array.isArray(parsed.source_concepts)
+          ? parsed.source_concepts
+              .map((c: unknown) => String(c).trim())
+              .filter((c: string) => c.length > 0)
+              .slice(0, 5)
+          : [],
+        source_trap:
+          typeof parsed.source_trap === 'string' && parsed.source_trap.trim().length > 0
+            ? parsed.source_trap.trim()
+            : null,
       };
     } catch (e) {
       return { error: e instanceof Error ? e.message : 'parse error' };
@@ -326,6 +372,8 @@ Korean terminology rule for exp:
             ans: result.ans,
             exp: result.exp,
             calculation_steps: result.calculation_steps,
+            source_concepts: result.source_concepts,
+            source_trap: result.source_trap,
             confidence: 'low' as const,
             warning: check.reason,
           });
@@ -343,6 +391,8 @@ Korean terminology rule for exp:
         ans: result.ans,
         exp: result.exp,
         calculation_steps: result.calculation_steps,
+        source_concepts: result.source_concepts,
+        source_trap: result.source_trap,
         confidence: 'high' as const,
         warning: null,
       });

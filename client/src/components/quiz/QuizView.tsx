@@ -530,6 +530,9 @@ export interface QuizItemWithContext {
    * uncertainty banner above the question card. */
   confidence?: 'high' | 'medium' | 'low';
   warning?: string | null;
+  /** 내부 태그 — concept_stats 누적. stem/exp에는 노출 안 됨. */
+  sourceConcepts?: string[];
+  sourceTrap?: string | null;
 }
 
 export interface QuizResult {
@@ -543,6 +546,8 @@ export interface QuizResult {
   /** Seconds from question display to selection click, or null if the
    * visible-time elapsed exceeded the 120s cap (treated as "don't count"). */
   elapsedSeconds: number | null;
+  sourceConcepts?: string[];
+  sourceTrap?: string | null;
 }
 
 interface QuizViewProps {
@@ -750,6 +755,8 @@ export default function QuizView({
         selected: i,
         answer: current.ans,
         elapsedSeconds: loggedElapsed,
+        sourceConcepts: current.sourceConcepts,
+        sourceTrap: current.sourceTrap ?? null,
       };
       onAnswer(result);
       setResults((prev) => [...prev, result]);
