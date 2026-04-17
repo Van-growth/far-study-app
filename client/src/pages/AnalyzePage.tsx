@@ -11,7 +11,13 @@ import {
   ExtractedConcepts,
 } from '../hooks/useDynamicQuiz';
 import { ConceptCardView } from '../components/quiz/QuizView';
-import { saveConceptExtraction, checkConceptDuplication, DupCheckResult } from '../lib/db';
+import {
+  saveConceptExtraction,
+  checkConceptDuplication,
+  DupCheckResult,
+  DupMatchedRow,
+  ConceptExtractionRow,
+} from '../lib/db';
 
 // ── Becker 텍스트에서 topic_id 자동 감지 ─────────────────────
 // "F6 · M4 · Partnerships", "F5 M3", "F5-M3", "F5.M3" 등
@@ -36,6 +42,9 @@ export default function AnalyzePage() {
   const [manualTopicId, setManualTopicId] = useState<string>('');
   const [topicCorrection, setTopicCorrection] = useState<{ original: string; corrected: string } | null>(null);
   const [dupResult, setDupResult] = useState<DupCheckResult | null>(null);
+  // 중복 감지로 자동 저장을 보류한 payload. "그래도 저장" 클릭 시 사용.
+  const [pendingExtraction, setPendingExtraction] = useState<ConceptExtractionRow | null>(null);
+  const [manualSaved, setManualSaved] = useState(false);
   const [card, setCard] = useState<ConceptCard | null>(null);
   const [extracted, setExtracted] = useState<ExtractedConcepts | null>(null);
   const [learned, setLearned] = useState<LearnedConcepts | null>(null);
@@ -71,6 +80,8 @@ export default function AnalyzePage() {
     setExtracted(null);
     setTopicCorrection(null);
     setDupResult(null);
+    setPendingExtraction(null);
+    setManualSaved(false);
 
     const topicId = resolvedTopicId;
     const ua = userAnswer.trim() || null;
@@ -109,24 +120,30 @@ export default function AnalyzePage() {
         const finalTopicId = corrected || topicId;
         const ext = extractRes.value.extracted;
 
-        // 중복 감지 후 저장
+        // 중복 감지
         const dup = await checkConceptDuplication(finalTopicId, ext.concepts, ext.trap_pattern);
         setDupResult(dup);
 
-        const shouldSave =
+        const payload: ConceptExtractionRow = {
+          userId: userId ?? null,
+          topicId: finalTopicId,
+          concepts: ext.concepts,
+          ascReferences: ext.asc_references,
+          topicTags: ext.topic_tags,
+          trapPattern: ext.trap_pattern,
+          wasWrong: ua && ca ? ua !== ca : null,
+        };
+
+        const shouldAutoSave =
           dup.status === 'new' ||
           (dup.status === 'partial_dup' && dup.newTrap);
 
-        if (shouldSave) {
-          void saveConceptExtraction({
-            userId: userId ?? null,
-            topicId: finalTopicId,
-            concepts: ext.concepts,
-            ascReferences: ext.asc_references,
-            topicTags: ext.topic_tags,
-            trapPattern: ext.trap_pattern,
-            wasWrong: ua && ca ? ua !== ca : null,
-          });
+        if (shouldAutoSave) {
+          void saveConceptExtraction(payload);
+        } else {
+          // full_dup / partial_dup+!newTrap → 저장 보류. 사용자가 배너의
+          // "그래도 저장" 버튼으로 직접 판단할 때까지 대기.
+          setPendingExtraction(payload);
         }
       } else {
         setError((prev) => prev ?? `개념 추출 실패: ${extractRes.reason?.message ?? 'unknown'}`);
@@ -147,6 +164,8 @@ export default function AnalyzePage() {
     setManualTopicId('');
     setTopicCorrection(null);
     setDupResult(null);
+    setPendingExtraction(null);
+    setManualSaved(false);
     setCard(null);
     setExtracted(null);
     setError(null);
@@ -154,6 +173,13 @@ export default function AnalyzePage() {
     setCardOpen(false);
     setLearnedOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // 사용자가 배너에서 "그래도 저장"을 눌렀을 때.
+  const handleForceSave = () => {
+    if (!pendingExtraction || manualSaved) return;
+    void saveConceptExtraction(pendingExtraction);
+    setManualSaved(true);
   };
 
   const topConcepts = learned
@@ -285,22 +311,15 @@ export default function AnalyzePage() {
           </div>
         )}
 
-        {/* 중복 감지 알림 */}
-        {dupResult && dupResult.status !== 'new' && (
-          <div
-            className="p-3 rounded-lg text-xs"
-            style={
-              dupResult.status === 'full_dup' || (dupResult.status === 'partial_dup' && !dupResult.newTrap)
-                ? { background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' }
-                : { background: '#f0fdf4', border: '1px solid #86efac', color: '#166534' }
-            }
-          >
-            {dupResult.status === 'full_dup'
-              ? '유사한 패턴이 이미 존재합니다. 저장을 건너뜁니다.'
-              : dupResult.status === 'partial_dup' && !dupResult.newTrap
-                ? '유사한 패턴이 이미 존재하고 함정 패턴도 동일합니다. 저장을 건너뜁니다.'
-                : '유사한 패턴이 있지만 새로운 함정 패턴이 감지되어 저장합니다.'}
-          </div>
+        {/* 중복 감지 알림 — 사용자 비교/결정용 */}
+        {dupResult && dupResult.status !== 'new' && extracted && (
+          <DupBanner
+            dup={dupResult}
+            extracted={extracted}
+            canForceSave={!!pendingExtraction}
+            manualSaved={manualSaved}
+            onForceSave={handleForceSave}
+          />
         )}
 
         {/* 추출된 개념 accordion */}
@@ -507,6 +526,212 @@ function ChipList({
           </span>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ── 중복 감지 배너 ───────────────────────────────────────────
+// 현재 분석한 concepts/trap vs 기존 기록을 나란히 보여주고, full_dup /
+// partial_dup+!newTrap 케이스에서 "그래도 저장"으로 사용자가 override 가능.
+function ConceptChipsInline({
+  items,
+  tint,
+  border,
+  color,
+}: {
+  items: unknown[];
+  tint: string;
+  border: string;
+  color: string;
+}) {
+  if (!items || items.length === 0) return <span className="text-[11px] text-muted">—</span>;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {items.map((item, i) => (
+        <span
+          key={i}
+          className="text-[11px] px-2 py-0.5 rounded-full"
+          style={{ background: tint, border: `1px solid ${border}`, color }}
+        >
+          {safeStr(item)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function DupBanner({
+  dup,
+  extracted,
+  canForceSave,
+  manualSaved,
+  onForceSave,
+}: {
+  dup: DupCheckResult;
+  extracted: ExtractedConcepts;
+  canForceSave: boolean;
+  manualSaved: boolean;
+  onForceSave: () => void;
+}) {
+  if (dup.status === 'new') return null;
+
+  const matchedRows: DupMatchedRow[] =
+    dup.status === 'full_dup' || dup.status === 'partial_dup' ? dup.matchedRows : [];
+  const topOverlap = matchedRows[0]?.overlap ?? 0;
+  const topPct = Math.round(topOverlap * 100);
+
+  const autoSaved = dup.status === 'partial_dup' && dup.newTrap;
+
+  // 3-way 색상/문구
+  let theme: { bg: string; border: string; text: string; accent: string };
+  let title: string;
+  let subtitle: string;
+  if (autoSaved) {
+    theme = { bg: '#f0fdf4', border: '#86efac', text: '#166534', accent: '#16a34a' };
+    title = '새 함정 패턴 감지 — 자동 저장됨';
+    subtitle = '기존 기록과 50~80% 유사하지만 함정 패턴이 새로워 저장했습니다.';
+  } else if (dup.status === 'full_dup') {
+    theme = { bg: '#fef2f2', border: '#fecaca', text: '#991b1b', accent: '#dc2626' };
+    title = '기존 기록과 매우 유사';
+    subtitle = '아래 기존 기록과 비교 후 저장 여부를 결정하세요.';
+  } else {
+    theme = { bg: '#fff7ed', border: '#fdba74', text: '#9a3412', accent: '#ea580c' };
+    title = '부분 유사 · 함정 패턴 동일';
+    subtitle = '기존 기록과 50~80% 유사하고 함정 패턴도 같습니다.';
+  }
+
+  const formatDate = (iso: string): string => {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleDateString('ko-KR', {
+        year: '2-digit',
+        month: '2-digit',
+        day: '2-digit',
+      });
+    } catch {
+      return iso.slice(0, 10);
+    }
+  };
+
+  return (
+    <div
+      className="rounded-lg p-3 sm:p-4 flex flex-col gap-3"
+      style={{ background: theme.bg, border: `1px solid ${theme.border}` }}
+    >
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-base shrink-0">⚠️</span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold leading-tight" style={{ color: theme.text }}>
+              {title}
+            </p>
+            <p className="text-[11px] leading-snug mt-0.5" style={{ color: theme.text, opacity: 0.8 }}>
+              {subtitle}
+            </p>
+          </div>
+        </div>
+        {topPct > 0 && (
+          <span
+            className="text-[11px] font-bold px-2 py-1 rounded-full shrink-0"
+            style={{ background: theme.accent, color: 'white' }}
+          >
+            유사도 {topPct}%
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {/* 이번 분석 */}
+        <div
+          className="p-2.5 rounded-md bg-white/80"
+          style={{ border: `1px solid ${theme.border}` }}
+        >
+          <p className="text-[10px] font-bold mb-1.5 uppercase tracking-wide" style={{ color: theme.text }}>
+            이번 분석
+          </p>
+          <ConceptChipsInline
+            items={extracted.concepts}
+            tint="#e0f2fe"
+            border="#7dd3fc"
+            color="#075985"
+          />
+          {extracted.trap_pattern && (
+            <div className="mt-2 text-[11px] leading-snug" style={{ color: '#7f1d1d' }}>
+              <span className="font-semibold">⚠ trap:</span> {safeStr(extracted.trap_pattern)}
+            </div>
+          )}
+        </div>
+
+        {/* 기존 기록 (top 1-2) */}
+        <div className="flex flex-col gap-2">
+          {matchedRows.length === 0 ? (
+            <div
+              className="p-2.5 rounded-md bg-white/80 text-[11px] text-muted"
+              style={{ border: `1px solid ${theme.border}` }}
+            >
+              매치된 기존 기록 없음
+            </div>
+          ) : (
+            matchedRows.map((row, i) => {
+              const topicLabel = row.topicId
+                ? allTopics.find((t) => t.id === row.topicId)?.label ?? row.topicId
+                : '';
+              return (
+                <div
+                  key={i}
+                  className="p-2.5 rounded-md bg-white/80"
+                  style={{ border: `1px solid ${theme.border}` }}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: theme.text }}>
+                      기존 기록 #{i + 1}
+                    </p>
+                    <span className="text-[10px] font-mono" style={{ color: theme.text, opacity: 0.7 }}>
+                      {Math.round(row.overlap * 100)}% · {formatDate(row.createdAt)}
+                    </span>
+                  </div>
+                  <ConceptChipsInline
+                    items={row.concepts}
+                    tint="#f1f5f9"
+                    border="#cbd5e1"
+                    color="#334155"
+                  />
+                  {row.trapPattern && (
+                    <div className="mt-2 text-[11px] leading-snug text-[#475569]">
+                      <span className="font-semibold">⚠ trap:</span> {safeStr(row.trapPattern)}
+                    </div>
+                  )}
+                  {topicLabel && (
+                    <p className="text-[10px] text-muted mt-1.5">{row.topicId} · {topicLabel}</p>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Footer: "그래도 저장" (override) */}
+      {canForceSave && !autoSaved && (
+        <div className="flex items-center justify-end gap-2">
+          {manualSaved ? (
+            <span
+              className="text-xs font-semibold px-3 py-1.5 rounded-md"
+              style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }}
+            >
+              ✓ 저장됨
+            </span>
+          ) : (
+            <button
+              onClick={onForceSave}
+              className="text-xs font-semibold px-3 py-1.5 rounded-md text-white hover:opacity-90"
+              style={{ background: theme.accent }}
+            >
+              그래도 저장
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

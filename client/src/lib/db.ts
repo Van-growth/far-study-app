@@ -494,12 +494,22 @@ export interface ConceptExtractionRow {
 }
 
 // ── 중복 감지 ───────────────────────────────────────────────
-// 저장 전 기존 데이터와 concepts 겹침 비율 계산.
+// 저장 전 기존 데이터와 concepts 겹침 비율(Jaccard) 계산.
 // 80%+ → full_dup, 50-80% → partial_dup, <50% → new
+// full_dup / partial_dup 케이스는 매치된 상위 row 최대 2개를 함께 반환해
+// UI에서 사용자가 직접 비교하고 "그래도 저장" 판단을 내릴 수 있게 한다.
+export interface DupMatchedRow {
+  concepts: string[]
+  trapPattern: string | null
+  topicId: string | null
+  createdAt: string
+  overlap: number
+}
+
 export type DupCheckResult =
   | { status: 'new' }
-  | { status: 'full_dup' }
-  | { status: 'partial_dup'; newTrap: boolean }
+  | { status: 'full_dup'; matchedRows: DupMatchedRow[] }
+  | { status: 'partial_dup'; newTrap: boolean; matchedRows: DupMatchedRow[] }
 
 export async function checkConceptDuplication(
   topicId: string | null,
@@ -511,7 +521,7 @@ export async function checkConceptDuplication(
   try {
     const { data, error } = await supabase
       .from('concept_extractions')
-      .select('concepts, trap_pattern')
+      .select('concepts, trap_pattern, topic_id, created_at')
       .eq('topic_id', topicId)
       .order('created_at', { ascending: false })
       .limit(30)
@@ -520,39 +530,41 @@ export async function checkConceptDuplication(
 
     const newSet = new Set(newConcepts.map((c) => c.toLowerCase()))
 
-    // 각 기존 row와 겹침 비율 계산, 최고 겹침률 찾기
-    let maxOverlap = 0
-    let bestMatchTrap: string | null = null
-
+    // 각 기존 row의 Jaccard overlap을 수집 → 내림차순 정렬 → 상위 N개 유지.
+    const scored: DupMatchedRow[] = []
     for (const row of data) {
       const existing: string[] = Array.isArray(row.concepts) ? row.concepts : []
       const existingSet = new Set(existing.map((c: string) => c.toLowerCase()))
-
-      // 교집합 / 합집합
       const union = new Set([...newSet, ...existingSet])
       let intersection = 0
       for (const k of newSet) {
         if (existingSet.has(k)) intersection++
       }
-
       const overlap = union.size > 0 ? intersection / union.size : 0
-      if (overlap > maxOverlap) {
-        maxOverlap = overlap
-        bestMatchTrap = typeof row.trap_pattern === 'string' ? row.trap_pattern : null
-      }
+      scored.push({
+        concepts: existing,
+        trapPattern: typeof row.trap_pattern === 'string' ? row.trap_pattern : null,
+        topicId: typeof row.topic_id === 'string' ? row.topic_id : null,
+        createdAt: typeof row.created_at === 'string' ? row.created_at : '',
+        overlap,
+      })
+    }
+    scored.sort((a, b) => b.overlap - a.overlap)
+
+    const topOverlap = scored[0]?.overlap ?? 0
+    const matchedRows = scored.filter((r) => r.overlap >= 0.5).slice(0, 2)
+
+    if (topOverlap >= 0.8) {
+      return { status: 'full_dup', matchedRows }
     }
 
-    if (maxOverlap >= 0.8) {
-      return { status: 'full_dup' }
-    }
-
-    if (maxOverlap >= 0.5) {
-      // trap_pattern이 새로운 내용인지 확인
+    if (topOverlap >= 0.5) {
+      const bestMatchTrap = scored[0]?.trapPattern ?? null
       const hasNewTrap =
         !!newTrapPattern &&
         (!bestMatchTrap ||
           newTrapPattern.toLowerCase() !== bestMatchTrap.toLowerCase())
-      return { status: 'partial_dup', newTrap: hasNewTrap }
+      return { status: 'partial_dup', newTrap: hasNewTrap, matchedRows }
     }
 
     return { status: 'new' }
