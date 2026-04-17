@@ -11,7 +11,7 @@ import {
   ConceptCard,
   QuestionConfidence,
 } from '../hooks/useDynamicQuiz';
-import { saveQuizLog, getConceptStats } from '../lib/db';
+import { saveQuizLog, getConceptStats, getCoachBootstrap } from '../lib/db';
 import MobileSectionDrawer from '../components/layout/MobileSectionDrawer';
 import { drainPrewarmed } from '../hooks/prewarmQuiz';
 
@@ -194,6 +194,10 @@ export default function QuizPage() {
   const [wrongIds, setWrongIds] = useState<string[]>([]);
   const [questionCount, setQuestionCount] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // 오늘 누적(전체 모듈 합산) — mount 시 1회 fetch, 답변마다 optimistic 증분.
+  const [todayStats, setTodayStats] = useState<{ count: number; correct: number } | null>(null);
+  const srsCards = useStudyStore((s) => s.srsCards);
+  const userIdState = useStudyStore((s) => s.userId);
 
   const bufferRef = useRef<QuestionBuffer | null>(null);
   const sessionStoreRef = useRef<Record<string, ModuleSnapshot>>(loadPersistedSessions());
@@ -213,6 +217,22 @@ export default function QuizPage() {
   const [historyTick, setHistoryTick] = useState(0);
 
   useEffect(() => { wrongIdsRef.current = wrongIds; }, [wrongIds]);
+
+  // 오늘 누적 1회 fetch. user가 로그인돼 있을 때만. 이후는 handleAnswer에서
+  // optimistic 증분 — getCoachBootstrap은 500 row quiz_logs 쿼리라 비싸서
+  // 답변마다 재호출하지 않는다.
+  useEffect(() => {
+    if (!userIdState) return;
+    let cancelled = false;
+    getCoachBootstrap(userIdState)
+      .then((b) => {
+        if (!cancelled) {
+          setTodayStats({ count: b.todayCount, correct: b.todayCorrect });
+        }
+      })
+      .catch(() => { /* 네트워크 실패 시 조용히 — 바는 숨겨짐 */ });
+    return () => { cancelled = true; };
+  }, [userIdState]);
 
   // Build a fetcher bound to current (mode, topicId). wrongIds is read via
   // ref so each fetch sees fresh context without invalidating the buffer.
@@ -382,6 +402,12 @@ export default function QuizPage() {
       sourceTrap: result.sourceTrap ?? null,
     };
     recordAnswer(result.topicId, result.correct, log);
+    // 오늘 누적 — 네트워크 재호출 없이 낙관적 증분.
+    setTodayStats((prev) =>
+      prev
+        ? { count: prev.count + 1, correct: prev.correct + (result.correct ? 1 : 0) }
+        : prev,
+    );
     // History save happens in handleConceptCardReady once the card resolves
     // — this keeps the full payload together (answer + structured card).
 
@@ -625,6 +651,14 @@ export default function QuizPage() {
           </div>
         </div>
 
+        {/* 누적 정답률 바 — 오늘 전체 + 현재 질문 모듈 lifetime */}
+        <AccuracyBar
+          todayStats={todayStats}
+          moduleId={items[items.length - 1]?.moduleId ?? topicId ?? null}
+          srsCards={srsCards}
+          loggedIn={!!userIdState}
+        />
+
         {mode === 'interleave' && !topicId && (
           <div
             className="p-3 rounded-xl flex items-start gap-2"
@@ -688,6 +722,64 @@ export default function QuizPage() {
       </div>
 
       <MobileSectionDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+    </div>
+  );
+}
+
+// ── Accuracy bar ──────────────────────────────────────────────
+// 오늘 전체 풀이(로그인 시) + 현재 질문 모듈 누적 정답률. 두 데이터 소스
+// 모두 네트워크 없이 store/이미-fetch된 값만 읽는다.
+function AccuracyBar({
+  todayStats,
+  moduleId,
+  srsCards,
+  loggedIn,
+}: {
+  todayStats: { count: number; correct: number } | null;
+  moduleId: string | null;
+  srsCards: Record<string, SRCard>;
+  loggedIn: boolean;
+}) {
+  const card = moduleId ? srsCards[moduleId] : null;
+  const accuracy = card ? getAccuracy(card) : -1;
+  const attempts = card?.attempts ?? 0;
+
+  const showToday = loggedIn && todayStats !== null;
+  const showModule = accuracy >= 0;
+  if (!showToday && !showModule) return null;
+
+  const todayPct =
+    showToday && todayStats!.count > 0
+      ? Math.round((todayStats!.correct / todayStats!.count) * 100)
+      : null;
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap text-[11px]">
+      {showToday && (
+        <span
+          className="px-2.5 py-1 rounded-full font-medium"
+          style={{
+            background: '#eef2ff',
+            border: '1px solid #c7d2fe',
+            color: '#3730a3',
+          }}
+        >
+          📅 오늘 {todayStats!.correct}/{todayStats!.count}
+          {todayPct !== null && ` · ${todayPct}%`}
+        </span>
+      )}
+      {showModule && (
+        <span
+          className="px-2.5 py-1 rounded-full font-medium"
+          style={{
+            background: accuracy >= 80 ? '#f0fdf4' : accuracy >= 50 ? '#fffbeb' : '#fef2f2',
+            border: `1px solid ${accuracy >= 80 ? '#86efac' : accuracy >= 50 ? '#fcd34d' : '#fecaca'}`,
+            color: accuracy >= 80 ? '#166534' : accuracy >= 50 ? '#92400e' : '#991b1b',
+          }}
+        >
+          📊 {moduleId} 누적 {accuracy}% ({attempts}회)
+        </span>
+      )}
     </div>
   );
 }
