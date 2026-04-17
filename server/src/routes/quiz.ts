@@ -147,6 +147,49 @@ REQUIRED:
 - Exactly 4 options
 - At least 2 plausible trap distractors
 
+━━━ STEM FORMATTING — 나열 데이터는 반드시 markdown으로 ━━━
+
+q(문제 지문)는 plain text가 아니라 **GitHub-flavored markdown**으로 작성한다.
+지문에 데이터 포인트가 여러 개 나열되면 줄글로 풀어쓰지 말고 아래 규칙을 따른다:
+
+1) **단순 나열 (3개 이상의 조건·조항·특징)** → unordered list
+   예: 리스 조건, 사채 발행 조건, 계약 조항, 거래 단계
+   사용: \`- \` 불렛. 각 항목은 한 줄.
+
+2) **여러 항목 × 여러 속성 (표 형태가 자연스러울 때)** → markdown table
+   예: 자산 2개 이상에 각각 cost/useful life/salvage, 연도별 depreciation/income, 품목별 수량·단가
+   반드시 header row + \`|---|\` separator + body rows.
+
+3) **데이터 포인트가 1-2개뿐**이거나 서술이 더 자연스러울 때는 평문 유지.
+
+예시 A — 리스 조건 5개 (불렛):
+\`\`\`
+On January 1, Year 1, Apex Corp entered into a non-cancelable lease with the following terms:
+
+- Lease term: 5 years
+- Annual payment: $12,000, due at year-end
+- Implicit rate: 6% (known to lessee)
+- Fair value of leased asset: $55,000
+- No purchase option or transfer of title
+
+What amount should Apex record as the right-of-use asset at lease inception?
+\`\`\`
+
+예시 B — 자산 3개의 취득원가/내용연수/잔존가치 (표):
+\`\`\`
+On January 1, Year 1, Harbor Inc acquired three machines:
+
+| Machine | Cost     | Useful life | Salvage value |
+|---------|----------|-------------|---------------|
+| A       | $100,000 | 10 years    | $10,000       |
+| B       | $60,000  | 6 years     | $6,000        |
+| C       | $45,000  | 5 years     | $0            |
+
+Harbor uses straight-line depreciation. What is the total Year 1 depreciation expense?
+\`\`\`
+
+금지: 세 개 이상의 조건/항목을 "...with lease term of 5 years, annual payment of $12,000, implicit rate of 6%, fair value of $55,000, and no purchase option..." 같은 한 줄 줄글로 욱여넣는 것.
+
 ━━━ CALCULATION DISCIPLINE (핵심: 계산은 여기서 1번만) ━━━
 
 If this is a computational question (involves $, %, rates, periods, depreciation, PV/FV, etc.):
@@ -179,7 +222,7 @@ If this is a pure conceptual question (no arithmetic needed):
 Return STRICT JSON ONLY. No prose, no markdown fences, no self-verification commentary.
 
 {
-  "q": "Question text — pure business scenario, no standard numbers, no topic names",
+  "q": "Question text — pure business scenario in GFM markdown. Use bullet lists for ≥3 parallel conditions, tables for multi-item × multi-attribute data. No standard numbers, no topic names.",
   "opts": ["Option A", "Option B", "Option C", "Option D"],
   "ans": 0,
   "exp": "Korean explanation — calculation_steps를 그대로 인용하여 작성. 새로 계산하지 않음. WHY correct answer is right AND why each wrong option is wrong. MAY cite ASC/GAAP here.",
@@ -384,6 +427,15 @@ router.post('/concept-card', async (req: Request, res: Response) => {
 - timeline   → sections.timeline.events(필수) + traps(선택)
 - formula    → sections.calculation(필수) + traps(선택)
 - plain      → sections.markdown(필수, 200자 이하) + traps(선택)
+
+⚠ 엄수 — 타입 ≠ 구조 섞기 금지 (위반 시 UI에 raw JSON이 그대로 노출됨):
+- StatementRow 구조({ label, amount, indent, highlight, highlight_color, is_total, is_subtraction, note_tag })는
+  ONLY income_statement / balance_sheet / scf / multi_statement 의 statement 하위에만 사용.
+- comparison.compare.left.rows / .right.rows → **string 배열** (짧은 평문 bullet). 객체 넣지 말 것.
+- gap.rows → **string 배열**.
+- formula.calculation.steps → **string 배열** (각 step을 한 문장으로).
+- plain.markdown → **string 1개** (GFM markdown 허용, 200자 이하). 배열/객체 금지.
+- timeline.events → { "label": string, "detail"?: string } 형태만 허용, StatementRow 금지.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 3) Row 기본 구조 (statement 타입에만 적용)

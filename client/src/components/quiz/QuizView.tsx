@@ -38,10 +38,25 @@ export function elapsedTone(sec: number): { color: string; bold: boolean } {
 }
 
 // ── Safe string render — prevents React Error #31 ────────────
+// LLM이 가끔 StatementRow({label, amount, indent, ...}) 같은 객체를 텍스트
+// 섹션(sections.markdown, compare.rows 등)에 잘못 넣어 반환할 때가 있다.
+// 그대로 JSON.stringify하면 화면에 raw JSON이 노출되므로, 객체는 먼저
+// label/text 필드를 읽어 사람이 읽을 수 있는 문자열로 복구한다.
 function safeStr(v: unknown): string {
   if (typeof v === 'string') return v;
   if (typeof v === 'number' || typeof v === 'boolean') return String(v);
   if (v == null) return '';
+  if (typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    if (typeof o.label === 'string') {
+      const amount =
+        typeof o.amount === 'number'
+          ? ` — $${Math.abs(o.amount).toLocaleString()}`
+          : '';
+      return o.label + amount;
+    }
+    if (typeof o.text === 'string') return o.text;
+  }
   return JSON.stringify(v);
 }
 
@@ -367,10 +382,19 @@ function TimelineView({ timeline }: { timeline: TimelineBlock }) {
 }
 
 function PlainView({ markdown }: { markdown: unknown }) {
+  // LLM이 markdown 자리에 배열/객체를 넣어 반환하는 경우가 있음. 배열이면
+  // 각 원소를 safeStr로 복구해 bullet list markdown으로 재조립하고, 객체면
+  // 그대로 safeStr 1회. 문자열이면 손대지 않고 통과.
+  const text =
+    typeof markdown === 'string'
+      ? markdown
+      : Array.isArray(markdown)
+        ? markdown.map((item) => `- ${safeStr(item)}`).join('\n')
+        : safeStr(markdown);
   return (
     <div className="p-3 rounded-lg bg-white/70 border border-[#fcd34d] text-xs leading-snug text-[#451a03]">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
-        {safeStr(markdown)}
+        {text}
       </ReactMarkdown>
     </div>
   );
@@ -1062,7 +1086,11 @@ export default function QuizView({
         })()}
 
         <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-medium text-[#0f172a] leading-relaxed flex-1">{current.q}</p>
+          <div className="text-sm font-medium text-[#0f172a] leading-relaxed flex-1 min-w-0">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
+              {current.q}
+            </ReactMarkdown>
+          </div>
           <button
             onClick={() => setCalcOpen(true)}
             className="shrink-0 text-xs px-2 py-1 rounded-lg hover:bg-gray-100"
