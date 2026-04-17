@@ -618,6 +618,59 @@ export interface ConceptExtractionRow {
   topicTags: string[]
   trapPattern: string | null
   wasWrong: boolean | null
+  /** SHA-256 of trimmed question text — exact-duplicate detection. */
+  questionHash?: string | null
+}
+
+// ── 문제 원문 해시 ────────────────────────────────────────────
+// Jaccard overlap은 개념 추출 결과 기준이라 서로 다른 분석 LLM 응답으로
+// 같은 문제가 재추출되면 miss할 수 있다. question_hash는 문자 그대로 같은
+// 문제를 두 번 분석하는 것을 값싸게 차단하기 위한 보조 수단.
+export async function hashText(text: string): Promise<string> {
+  const encoded = new TextEncoder().encode(text.trim())
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoded)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * 같은 user_id + question_hash row가 있는지 확인.
+ * 존재하면 해당 row의 created_at ISO 문자열, 없으면 null.
+ * 테이블/컬럼 미배포 상태 또는 조회 실패 시에도 null (차단하지 않음).
+ */
+export async function checkQuestionHash(
+  userId: string,
+  hash: string,
+): Promise<string | null> {
+  if (!hasAuth(userId) || !hash) return null
+  try {
+    const { data, error } = await supabase
+      .from('concept_extractions')
+      .select('created_at')
+      .eq('user_id', userId)
+      .eq('question_hash', hash)
+      .order('created_at', { ascending: false })
+      .limit(1)
+    if (error) {
+      const code = (error as { code?: string }).code ?? ''
+      const msg = (error.message ?? '').toLowerCase()
+      // 컬럼 미배포 — migration 007 아직 안 돌린 환경에서는 조용히 통과.
+      if (
+        code === 'PGRST204' ||
+        code === '42703' ||
+        msg.includes('question_hash') ||
+        msg.includes('schema cache')
+      ) {
+        return null
+      }
+      logError('checkQuestionHash', error)
+      return null
+    }
+    const row = data?.[0] as { created_at?: string } | undefined
+    return row?.created_at ?? null
+  } catch {
+    return null
+  }
 }
 
 // ── 중복 감지 ───────────────────────────────────────────────
@@ -716,7 +769,7 @@ export async function saveConceptExtraction(
     logSkip('saveConceptExtraction')
     return null
   }
-  const payload = {
+  const basePayload: Record<string, unknown> = {
     user_id: row.userId,
     topic_id: row.topicId,
     concepts: row.concepts,
@@ -725,11 +778,40 @@ export async function saveConceptExtraction(
     trap_pattern: row.trapPattern,
     was_wrong: row.wasWrong,
   }
-  const { data, error } = await supabase
+  const payload = row.questionHash
+    ? { ...basePayload, question_hash: row.questionHash }
+    : basePayload
+
+  let { data, error } = await supabase
     .from('concept_extractions')
     .insert(payload)
     .select('id')
     .single()
+
+  // Migration 007 미적용 환경에서는 question_hash 컬럼이 없어 PGRST204가
+  // 난다. 이 경우 question_hash만 빼고 재시도 — 기존 저장 플로우는 유지.
+  if (error && row.questionHash) {
+    const code = (error as { code?: string }).code ?? ''
+    const msg = (error.message ?? '').toLowerCase()
+    if (
+      code === 'PGRST204' ||
+      code === '42703' ||
+      msg.includes('question_hash') ||
+      msg.includes('schema cache')
+    ) {
+      console.warn(
+        '[db] concept_extractions.question_hash missing — ' +
+          '007 migration not applied. Retrying without hash.',
+      )
+      const retry = await supabase
+        .from('concept_extractions')
+        .insert(basePayload)
+        .select('id')
+        .single()
+      data = retry.data
+      error = retry.error
+    }
+  }
   if (error) {
     // Dump the whole error object so code / details / hint / message all
     // show up in DevTools — makes "table missing" vs "RLS violation" vs

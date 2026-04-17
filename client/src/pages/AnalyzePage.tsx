@@ -15,6 +15,8 @@ import {
   saveConceptExtraction,
   deleteConceptExtraction,
   checkConceptDuplication,
+  checkQuestionHash,
+  hashText,
   DupCheckResult,
   DupMatchedRow,
   ConceptExtractionRow,
@@ -55,6 +57,8 @@ export default function AnalyzePage() {
   const [learned, setLearned] = useState<LearnedConcepts | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 같은 문제 텍스트가 이미 분석된 경우 — 이전 분석의 created_at ISO.
+  const [alreadyAnalyzedAt, setAlreadyAnalyzedAt] = useState<string | null>(null);
   const [extractedOpen, setExtractedOpen] = useState(true);  // 추출된 개념: 기본 펼침
   const [cardOpen, setCardOpen] = useState(false);           // AI 해설: 기본 접힘
   const [learnedOpen, setLearnedOpen] = useState(false);     // 학습된 개념: 기본 접힘
@@ -79,8 +83,8 @@ export default function AnalyzePage() {
       setError('문제 원문을 입력하세요.');
       return;
     }
-    setLoading(true);
     setError(null);
+    setAlreadyAnalyzedAt(null);
     setCard(null);
     setExtracted(null);
     setTopicCorrection(null);
@@ -94,6 +98,24 @@ export default function AnalyzePage() {
     const ua = userAnswer.trim() || null;
     const ca = correctAnswer.trim() || null;
 
+    // ── 1차 차단: 같은 문제 원문 해시가 이미 저장돼 있으면 분석 진행 X ──
+    // LLM 왕복이 비싸기 때문에 API 호출 전에 끊는다. migration 007 미적용
+    // 환경에서는 checkQuestionHash가 null을 반환해 그대로 진행된다.
+    let questionHash: string | null = null;
+    if (userId) {
+      try {
+        questionHash = await hashText(trimmed);
+        const existedAt = await checkQuestionHash(userId, questionHash);
+        if (existedAt) {
+          setAlreadyAnalyzedAt(existedAt);
+          return;
+        }
+      } catch (e) {
+        console.warn('[AnalyzePage] hash check failed:', e);
+      }
+    }
+
+    setLoading(true);
     try {
       // Run in parallel — concept card for the user, extraction for the store.
       const [cardRes, extractRes] = await Promise.allSettled([
@@ -139,6 +161,7 @@ export default function AnalyzePage() {
           topicTags: ext.topic_tags,
           trapPattern: ext.trap_pattern,
           wasWrong: ua && ca ? ua !== ca : null,
+          questionHash,
         };
 
         // 자동 저장 없음 — 사용자가 배너에서 "저장" / "저장 안 함"으로 결정.
@@ -169,6 +192,7 @@ export default function AnalyzePage() {
     setCard(null);
     setExtracted(null);
     setError(null);
+    setAlreadyAnalyzedAt(null);
     setExtractedOpen(true);
     setCardOpen(false);
     setLearnedOpen(false);
@@ -322,6 +346,37 @@ export default function AnalyzePage() {
             </div>
           )}
         </div>
+
+        {/* 이미 분석한 문제 알림 — 해시 완전 일치, LLM 호출 전 차단 */}
+        {alreadyAnalyzedAt && (
+          <div
+            className="p-3 rounded-lg text-xs flex items-start gap-2"
+            style={{ background: '#eef2ff', border: '1px solid #c7d2fe', color: '#3730a3' }}
+          >
+            <span className="text-base leading-none">🔁</span>
+            <div className="flex-1">
+              <p className="font-semibold">이미 분석한 문제입니다.</p>
+              <p className="mt-0.5 opacity-80">
+                이전 분석:{' '}
+                {(() => {
+                  try {
+                    return new Date(alreadyAnalyzedAt).toLocaleString('ko-KR', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    });
+                  } catch {
+                    return alreadyAnalyzedAt.slice(0, 10);
+                  }
+                })()}
+                {' · '}
+                다른 문제로 바꾸거나 "다음 문제 분석하기"를 눌러주세요.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* topic_id 보정 알림 */}
         {topicCorrection && (
