@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useStudyStore from '../store/studyStore';
 import { allTopics } from '../data/far-topics';
@@ -68,6 +68,15 @@ export default function AnalyzePage() {
   const [cardOpen, setCardOpen] = useState(false);           // AI 해설: 기본 접힘
   const [learnedOpen, setLearnedOpen] = useState(false);     // 학습된 개념: 기본 접힘
   const [tagToast, setTagToast] = useState(false);           // Error Pattern 저장 토스트
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // text 변경 시 textarea 높이를 내용에 맞게 자동 조절.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [text]);
 
   // 우선순위: 텍스트 자동 감지 > 수동 드롭다운 > 사이드바 선택 모듈
   const detectedTopicId = detectTopicId(text);
@@ -310,12 +319,12 @@ export default function AnalyzePage() {
           <div>
             <label className="text-xs font-semibold text-[#0f172a] mb-1 block">문제 원문</label>
             <textarea
+              ref={textareaRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              rows={8}
               placeholder="FAR 문제 원문을 붙여넣으세요. 선택지가 포함되어 있어도 OK."
-              className="w-full text-sm rounded-lg p-3 border border-border bg-white text-[#0f172a] resize-y"
-              style={{ outline: 'none', fontFamily: 'inherit' }}
+              className="w-full text-sm rounded-lg p-3 border border-border bg-white text-[#0f172a]"
+              style={{ outline: 'none', fontFamily: 'inherit', minHeight: 200, resize: 'none', overflow: 'hidden' }}
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
