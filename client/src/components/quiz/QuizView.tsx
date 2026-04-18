@@ -102,6 +102,15 @@ export function ConceptCardView({ card }: { card: ConceptCard }) {
       {card.type === 'plain' && s.markdown && <PlainView markdown={s.markdown} />}
       {s.gap && <GapView gap={s.gap} />}
       {s.traps && s.traps.length > 0 && <TrapsView traps={s.traps} />}
+      {card.correct_approach && (
+        <div
+          className="rounded-lg px-3 py-2 text-xs leading-snug"
+          style={{ background: '#f0fdf4', border: '1px solid #86efac', color: '#166534' }}
+        >
+          <span className="font-semibold">✅ 정답 접근법: </span>
+          {card.correct_approach}
+        </div>
+      )}
     </div>
   );
 }

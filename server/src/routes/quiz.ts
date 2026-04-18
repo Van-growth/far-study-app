@@ -583,6 +583,7 @@ Notes:
   "type": "income_statement" | "balance_sheet" | "scf" | "multi_statement" |
           "comparison" | "timeline" | "formula" | "plain",
   "headline": "...",
+  "correct_approach": "traps가 있을 때, 그 함정을 피하는 올바른 접근법을 한 문장으로. traps 없으면 null.",
   "sections": { ... },
   "statement": { ... },
   "notes": [ ... ]
@@ -654,6 +655,7 @@ ${options!.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
     const card = parsed as {
       type?: string;
       headline?: string;
+      correct_approach?: unknown;
       sections?: unknown;
       statement?: unknown;
       notes?: unknown;
@@ -662,6 +664,7 @@ ${options!.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
     return res.json({
       type,
       headline: typeof card.headline === 'string' ? card.headline : '',
+      correct_approach: typeof card.correct_approach === 'string' ? card.correct_approach : null,
       sections: card.sections && typeof card.sections === 'object' ? card.sections : {},
       statement: card.statement && typeof card.statement === 'object' ? card.statement : undefined,
       notes: Array.isArray(card.notes) ? card.notes : undefined,

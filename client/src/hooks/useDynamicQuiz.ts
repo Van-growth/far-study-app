@@ -137,6 +137,7 @@ export type ConceptCardType =
 export interface ConceptCard {
   type: ConceptCardType;
   headline: string;
+  correct_approach?: string | null;
   sections: {
     compare?: CompareBlock;
     gap?: GapBlock;
@@ -353,6 +354,7 @@ export async function fetchConceptCardFromText(input: {
   return {
     type,
     headline: typeof data.headline === 'string' ? data.headline : '',
+    correct_approach: typeof data.correct_approach === 'string' ? data.correct_approach : null,
     sections: (data.sections ?? {}) as ConceptCard['sections'],
     statement: (data as ConceptCard).statement,
     notes: (data as ConceptCard).notes,
@@ -399,6 +401,7 @@ export async function fetchConceptCard(input: {
   return {
     type,
     headline: typeof data.headline === 'string' ? data.headline : '',
+    correct_approach: typeof data.correct_approach === 'string' ? data.correct_approach : null,
     sections: (data.sections ?? {}) as ConceptCard['sections'],
     statement: (data as ConceptCard).statement,
     notes: (data as ConceptCard).notes,
