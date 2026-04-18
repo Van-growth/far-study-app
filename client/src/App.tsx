@@ -14,6 +14,7 @@ import CoachPage from './pages/CoachPage';
 import AuthPage from './pages/AuthPage';
 import AdminPage from './pages/AdminPage';
 import ValuationPage from './pages/ValuationPage';
+import HomePage from './pages/HomePage';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 import useClaudeStore from './store/claudeStore';
@@ -24,10 +25,12 @@ const PANEL_MAX = 600;
 const PANEL_DEFAULT = 340;
 
 // ── Bottom Tab Bar (mobile only) ──────────────────────────────
+// New 3-tab structure: Home (AI tutor briefing) / Analyze / More.
+// Coach, Wrong, Science, Valuation still resolve as URLs but are not
+// reachable through the nav (intentional per the 2026-04 repositioning).
 const MOBILE_TABS = [
-  { label: '퀴즈', icon: '✏️', path: '/quiz?mode=interleave' },
-  { label: '코치', icon: '🤖', path: '/coach' },
-  { label: '현황', icon: '📊', path: '/dashboard' },
+  { label: '홈', icon: '🏠', path: '/' },
+  { label: '분석', icon: '📝', path: '/analyze' },
   { label: '더보기', icon: '···', path: '/more' },
 ];
 
@@ -43,7 +46,7 @@ function BottomTabBar({ email }: { email: string }) {
     return location.pathname.startsWith(path);
   };
 
-  const morePaths = ['/analyze', '/wrong', '/science', '/valuation', '/admin'];
+  const morePaths = ['/dashboard', '/quiz', '/admin'];
   const moreActive = morePaths.some((p) => location.pathname.startsWith(p));
 
   return (
@@ -56,10 +59,8 @@ function BottomTabBar({ email }: { email: string }) {
             onClick={(e) => e.stopPropagation()}
           >
             {[
-              { label: '📝 문제 분석', path: '/analyze' },
-              { label: '📕 오답노트', path: '/wrong' },
-              { label: '🧬 학습 과학', path: '/science' },
-              { label: '💰 Valuation', path: '/valuation' },
+              { label: '📊 대시보드', path: '/dashboard' },
+              { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
               ...(isAdmin ? [{ label: '🛠️ Admin', path: '/admin' }] : []),
             ].map((item) => (
               <button
@@ -182,8 +183,8 @@ function AppLayout({ email }: { email: string }) {
           style={{ background: '#f0f4f8' }}
         >
           <Routes>
-            <Route path="/" element={<Navigate to="/coach" replace />} />
-            <Route path="/flashcard" element={<Navigate to="/coach" replace />} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/flashcard" element={<Navigate to="/" replace />} />
             <Route path="/quiz" element={<QuizPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/wrong" element={<WrongPage />} />
@@ -195,7 +196,7 @@ function AppLayout({ email }: { email: string }) {
             {email.toLowerCase() === ADMIN_EMAIL && (
               <Route path="/admin" element={<AdminPage email={email} />} />
             )}
-            <Route path="*" element={<Navigate to="/coach" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
 

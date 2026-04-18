@@ -5,17 +5,17 @@ import useClaudeStore from '../../store/claudeStore';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 
+// Main desktop nav: 2 primary entries only.
+// AI 튜터 중심으로 포지셔닝 전환. 퀴즈/대시보드/어드민은 더보기 드롭다운으로.
+// Coach/오답노트/학습 과학/Valuation 은 URL 은 유지하되 네비에서 제거.
 const mainTabs = [
-  { label: '퀴즈', path: '/quiz?mode=interleave' },
-  { label: '🤖 AI 코치', path: '/coach' },
-  { label: '현황', path: '/dashboard' },
+  { label: '홈', path: '/' },
+  { label: '📝 분석', path: '/analyze' },
 ];
 
 const moreTabs = [
-  { label: '📝 문제 분석', path: '/analyze' },
-  { label: '📕 오답노트', path: '/wrong' },
-  { label: '🧬 학습 과학', path: '/science' },
-  { label: '💰 Valuation', path: '/valuation' },
+  { label: '📊 대시보드', path: '/dashboard' },
+  { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
 ];
 const adminTab = { label: '🛠️ Admin', path: '/admin' };
 

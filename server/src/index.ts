@@ -10,6 +10,7 @@ import sessionRouter from './routes/session';
 import feedbackRouter from './routes/feedback';
 import adminRouter from './routes/admin';
 import errorPatternsRouter from './routes/errorPatterns';
+import tutorRouter from './routes/tutor';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -50,6 +51,9 @@ app.use('/api/admin', adminRouter);
 
 // ── Error Pattern Library (Claude 진단 + 브리핑) ──────────────
 app.use('/api/error-patterns', errorPatternsRouter);
+
+// ── AI Tutor briefing (HomePage 랜딩) ─────────────────────────
+app.use('/api/tutor', tutorRouter);
 
 // ── 404 ───────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

@@ -244,6 +244,12 @@ export default function AnalyzePage() {
   return (
     <div className="p-4 sm:p-6">
       <div className="max-w-3xl mx-auto flex flex-col gap-4">
+        <div
+          className="rounded-xl px-4 py-2.5 text-[12px] sm:text-[13px] leading-relaxed"
+          style={{ background: '#eef2ff', color: '#3730a3', border: '1px solid #c7d2fe' }}
+        >
+          💡 Becker 문제를 붙여넣으면 한국어 최적화 해설 + 도식화 + 핵심 트리거를 바로 확인할 수 있습니다.
+        </div>
         <div>
           <h1 className="text-xl font-bold text-[#0f172a]">문제 분석</h1>
           <p className="text-xs text-muted mt-0.5">

@@ -1033,3 +1033,142 @@ export async function deleteConceptExtraction(id: string): Promise<void> {
     throw error
   }
 }
+
+// ── Home tutor briefing aggregations ─────────────────────────
+// These helpers feed the HomePage (`/`) briefing. They stay cheap
+// (one query each, no joins) and degrade silently on missing tables.
+
+function mondayOfThisWeek(): Date {
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  // getDay(): 0=Sun, 1=Mon … convert so Monday=0, Sunday=6.
+  const offset = (now.getDay() + 6) % 7
+  now.setDate(now.getDate() - offset)
+  return now
+}
+
+function mondayOfLastWeek(): Date {
+  const m = mondayOfThisWeek()
+  m.setDate(m.getDate() - 7)
+  return m
+}
+
+/** Count of concept_extractions rows created since this week's Monday. */
+export async function getWeekAnalyzeCount(userId: string): Promise<number> {
+  if (!hasAuth(userId)) return 0
+  const sinceIso = mondayOfThisWeek().toISOString()
+  const { count, error } = await supabase
+    .from('concept_extractions')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', sinceIso)
+  if (error) {
+    if (isMissingRelation(error)) return 0
+    logError('getWeekAnalyzeCount', error)
+    return 0
+  }
+  return count ?? 0
+}
+
+/** Distinct topic_ids that have at least one concept_extractions row. */
+export async function getAnalyzedModuleIds(userId: string): Promise<string[]> {
+  if (!hasAuth(userId)) return []
+  const { data, error } = await supabase
+    .from('concept_extractions')
+    .select('topic_id')
+    .eq('user_id', userId)
+    .not('topic_id', 'is', null)
+  if (error) {
+    if (isMissingRelation(error)) return []
+    logError('getAnalyzedModuleIds', error)
+    return []
+  }
+  const seen = new Set<string>()
+  for (const row of (data ?? []) as { topic_id: string | null }[]) {
+    if (row.topic_id) seen.add(row.topic_id)
+  }
+  return [...seen]
+}
+
+/** Per-module quiz_logs accuracy for this-week vs last-week. Used to
+ *  surface the "improving module" (largest positive delta) and
+ *  "weakest module" (lowest this-week accuracy). */
+export interface ModuleWeekAccuracy {
+  topicId: string
+  thisWeekTotal: number
+  thisWeekCorrect: number
+  thisWeekAccuracy: number | null
+  lastWeekTotal: number
+  lastWeekCorrect: number
+  lastWeekAccuracy: number | null
+  delta: number | null // thisWeek - lastWeek; null if either side empty
+}
+
+export async function getModuleWeekAccuracy(
+  userId: string,
+): Promise<ModuleWeekAccuracy[]> {
+  if (!hasAuth(userId)) return []
+  const sinceIso = mondayOfLastWeek().toISOString()
+  const { data, error } = await supabase
+    .from('quiz_logs')
+    .select('topic_id, correct, created_at')
+    .eq('user_id', userId)
+    .gte('created_at', sinceIso)
+  if (error) {
+    logError('getModuleWeekAccuracy', error)
+    return []
+  }
+  const thisMonday = mondayOfThisWeek().getTime()
+  const acc = new Map<
+    string,
+    { tT: number; tC: number; lT: number; lC: number }
+  >()
+  for (const row of (data ?? []) as {
+    topic_id: string
+    correct: boolean
+    created_at: string
+  }[]) {
+    const id = row.topic_id
+    if (!id) continue
+    const t = new Date(row.created_at).getTime()
+    const isThisWeek = t >= thisMonday
+    const cur = acc.get(id) ?? { tT: 0, tC: 0, lT: 0, lC: 0 }
+    if (isThisWeek) {
+      cur.tT++
+      if (row.correct) cur.tC++
+    } else {
+      cur.lT++
+      if (row.correct) cur.lC++
+    }
+    acc.set(id, cur)
+  }
+  const out: ModuleWeekAccuracy[] = []
+  for (const [topicId, v] of acc.entries()) {
+    const thisAcc = v.tT > 0 ? v.tC / v.tT : null
+    const lastAcc = v.lT > 0 ? v.lC / v.lT : null
+    const delta =
+      thisAcc !== null && lastAcc !== null ? thisAcc - lastAcc : null
+    out.push({
+      topicId,
+      thisWeekTotal: v.tT,
+      thisWeekCorrect: v.tC,
+      thisWeekAccuracy: thisAcc,
+      lastWeekTotal: v.lT,
+      lastWeekCorrect: v.lC,
+      lastWeekAccuracy: lastAcc,
+      delta,
+    })
+  }
+  return out
+}
+
+/** Lowest-accuracy concept_stats tag with at least 3 attempts. Used
+ *  to suggest the weakest concept/calculation in the briefing. */
+export async function getWeakestConceptTag(
+  userId: string,
+): Promise<ConceptStat | null> {
+  const rows = await getConceptStats(userId, undefined, 3)
+  if (rows.length === 0) return null
+  return rows.slice().sort((a, b) => a.accuracy - b.accuracy)[0]
+}
+
