@@ -99,7 +99,7 @@ export default function AnalyzePage() {
     return () => window.clearTimeout(id);
   }, [tagToast]);
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (force = false) => {
     const trimmed = text.trim();
     if (!trimmed) {
       setError('문제 원문을 입력하세요.');
@@ -123,17 +123,18 @@ export default function AnalyzePage() {
     const ca = correctAnswer.trim() || null;
 
     // ── 1차 차단: 같은 문제 원문 해시가 이미 저장돼 있으면 분석 진행 X ──
-    // LLM 왕복이 비싸기 때문에 API 호출 전에 끊는다. migration 007 미적용
-    // 환경에서는 checkQuestionHash가 null을 반환해 그대로 진행된다.
+    // force=true(재분석 버튼)일 때는 이 블록을 건너뜀.
     let questionHash: string | null = null;
     if (userId) {
       try {
         questionHash = await hashText(trimmed);
-        const existedAt = await checkQuestionHash(userId, questionHash);
-        if (existedAt) {
-          setAlreadyAnalyzedAt(existedAt);
-          setCurrentHash(questionHash);
-          return;
+        if (!force) {
+          const existedAt = await checkQuestionHash(userId, questionHash);
+          if (existedAt) {
+            setAlreadyAnalyzedAt(existedAt);
+            setCurrentHash(questionHash);
+            return;
+          }
         }
       } catch (e) {
         console.warn('[AnalyzePage] hash check failed:', e);
@@ -385,7 +386,7 @@ export default function AnalyzePage() {
           </div>
 
           <button
-            onClick={handleAnalyze}
+            onClick={() => handleAnalyze()}
             disabled={loading || !text.trim()}
             className="w-full py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
             style={{ background: '#4f6ef7' }}
@@ -427,14 +428,22 @@ export default function AnalyzePage() {
                   }
                 })()}
               </p>
-              <div className="mt-2">
+              <div className="mt-2 flex gap-2 flex-wrap">
                 <button
                   onClick={handleShowExisting}
-                  disabled={loadingExisting}
+                  disabled={loadingExisting || loading}
                   className="text-xs font-semibold px-3 py-1.5 rounded-md text-white hover:opacity-90 disabled:opacity-50"
                   style={{ background: '#4f6ef7' }}
                 >
                   {loadingExisting ? '불러오는 중...' : '📖 해설 보기'}
+                </button>
+                <button
+                  onClick={() => handleAnalyze(true)}
+                  disabled={loading || loadingExisting}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-md hover:opacity-90 disabled:opacity-50"
+                  style={{ background: 'white', border: '1px solid #c7d2fe', color: '#3730a3' }}
+                >
+                  {loading ? '분석 중...' : '🔄 다시 분석하기'}
                 </button>
               </div>
             </div>
