@@ -21,6 +21,7 @@ router.post('/diagnose', async (req: Request, res: Response) => {
     patternName,
     patternDescription,
     topic,
+    userNote,
   } = req.body as {
     question?: string;
     userAnswer?: string;
@@ -28,11 +29,14 @@ router.post('/diagnose', async (req: Request, res: Response) => {
     patternName?: string;
     patternDescription?: string;
     topic?: string;
+    userNote?: string | null;
   };
 
   if (!question || !patternName) {
     return res.status(400).json({ error: 'question and patternName required' });
   }
+
+  const hasNote = typeof userNote === 'string' && userNote.trim().length > 0;
 
   const system =
     'You are a USCPA FAR exam tutor. Diagnose why the student got a question wrong, ' +
@@ -47,7 +51,13 @@ router.post('/diagnose', async (req: Request, res: Response) => {
     `[학생이 선택한 오류 패턴] ${patternName}` +
     (patternDescription ? ` — ${patternDescription}` : '') +
     (topic ? `\n[토픽] ${topic}` : '') +
-    '\n\n이 학생이 왜 틀렸는지 진단하고, 다음에 같은 유형을 풀 때 먼저 확인해야 할 체크포인트 1줄을 덧붙여줘.';
+    (hasNote
+      ? `\n\n[학생이 직접 기록한 실수 내용]\n${userNote!.trim()}\n\n` +
+        '⚠️ 위 학생 기록이 최우선이다. 반드시 이 내용을 중심으로 진단하고, ' +
+        'AI가 임의로 다른 원인을 추측하지 말 것. ' +
+        '진단은 학생이 기록한 실수를 구체적으로 짚어주는 방향으로 작성.'
+      : '\n\n학생이 따로 기록한 내용은 없다. 문제와 오류 패턴만으로 왜 틀렸는지 추측 진단하고, ' +
+        '다음에 같은 유형을 풀 때 먼저 확인해야 할 체크포인트 1줄을 덧붙여줘.');
 
   try {
     const message = await anthropic.messages.create({

@@ -67,6 +67,7 @@ export default function ErrorTagSection(props: Props) {
           patternName: pattern.name,
           patternDescription: pattern.description,
           topic: props.topicLabel,
+          userNote: userNote || null,
         }),
       })
       if (res.ok) {
