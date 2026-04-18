@@ -17,6 +17,7 @@ import {
   deleteConceptExtraction,
   checkConceptDuplication,
   checkQuestionHash,
+  fetchExtractionByHash,
   hashText,
   DupCheckResult,
   DupMatchedRow,
@@ -60,6 +61,9 @@ export default function AnalyzePage() {
   const [error, setError] = useState<string | null>(null);
   // 같은 문제 텍스트가 이미 분석된 경우 — 이전 분석의 created_at ISO.
   const [alreadyAnalyzedAt, setAlreadyAnalyzedAt] = useState<string | null>(null);
+  const [currentHash, setCurrentHash] = useState<string | null>(null);
+  const [showExisting, setShowExisting] = useState(false);
+  const [loadingExisting, setLoadingExisting] = useState(false);
   const [extractedOpen, setExtractedOpen] = useState(true);  // 추출된 개념: 기본 펼침
   const [cardOpen, setCardOpen] = useState(false);           // AI 해설: 기본 접힘
   const [learnedOpen, setLearnedOpen] = useState(false);     // 학습된 개념: 기본 접힘
@@ -94,6 +98,8 @@ export default function AnalyzePage() {
     }
     setError(null);
     setAlreadyAnalyzedAt(null);
+    setCurrentHash(null);
+    setShowExisting(false);
     setCard(null);
     setExtracted(null);
     setTopicCorrection(null);
@@ -117,6 +123,7 @@ export default function AnalyzePage() {
         const existedAt = await checkQuestionHash(userId, questionHash);
         if (existedAt) {
           setAlreadyAnalyzedAt(existedAt);
+          setCurrentHash(questionHash);
           return;
         }
       } catch (e) {
@@ -202,10 +209,36 @@ export default function AnalyzePage() {
     setExtracted(null);
     setError(null);
     setAlreadyAnalyzedAt(null);
+    setCurrentHash(null);
+    setShowExisting(false);
     setExtractedOpen(true);
     setCardOpen(false);
     setLearnedOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleShowExisting = async () => {
+    if (!userId || !currentHash || loadingExisting) return;
+    setLoadingExisting(true);
+    try {
+      const data = await fetchExtractionByHash(userId, currentHash);
+      if (data) {
+        setExtracted({
+          concepts: data.concepts,
+          asc_references: data.ascReferences,
+          topic_tags: data.topicTags,
+          trap_pattern: data.trapPattern,
+        });
+        setExtractedOpen(true);
+        setShowExisting(true);
+      } else {
+        setError('저장된 해설 데이터를 불러오지 못했습니다.');
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '데이터 불러오기 실패');
+    } finally {
+      setLoadingExisting(false);
+    }
   };
 
   // 배너에서 "저장" 선택 → concept_extractions INSERT.
@@ -364,7 +397,7 @@ export default function AnalyzePage() {
         </div>
 
         {/* 이미 분석한 문제 알림 — 해시 완전 일치, LLM 호출 전 차단 */}
-        {alreadyAnalyzedAt && (
+        {alreadyAnalyzedAt && !extracted && (
           <div
             className="p-3 rounded-lg text-xs flex items-start gap-2"
             style={{ background: '#eef2ff', border: '1px solid #c7d2fe', color: '#3730a3' }}
@@ -387,9 +420,17 @@ export default function AnalyzePage() {
                     return alreadyAnalyzedAt.slice(0, 10);
                   }
                 })()}
-                {' · '}
-                다른 문제로 바꾸거나 "다음 문제 분석하기"를 눌러주세요.
               </p>
+              <div className="mt-2">
+                <button
+                  onClick={handleShowExisting}
+                  disabled={loadingExisting}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-md text-white hover:opacity-90 disabled:opacity-50"
+                  style={{ background: '#4f6ef7' }}
+                >
+                  {loadingExisting ? '불러오는 중...' : '📖 해설 보기'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -648,8 +689,8 @@ export default function AnalyzePage() {
           )}
         </div>
 
-        {/* 다음 문제 분석하기 — 분석 결과가 있을 때만 노출 */}
-        {(card || extracted) && (
+        {/* 다음 문제 분석하기 — 분석 결과가 있거나 기존 해설을 불러온 경우 노출 */}
+        {(card || extracted || showExisting) && (
           <button
             onClick={handleAnalyzeNext}
             className="w-full py-3 rounded-xl text-sm font-semibold text-white hover:opacity-90"

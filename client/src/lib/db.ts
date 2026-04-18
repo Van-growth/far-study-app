@@ -633,6 +633,54 @@ export async function hashText(text: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+export interface StoredExtractionData {
+  createdAt: string
+  topicId: string | null
+  concepts: string[]
+  ascReferences: string[]
+  topicTags: string[]
+  trapPattern: string | null
+}
+
+/**
+ * question_hash로 저장된 concept_extractions row 전체를 가져온다.
+ * 미배포/조회 실패 시 null (차단하지 않음).
+ */
+export async function fetchExtractionByHash(
+  userId: string,
+  hash: string,
+): Promise<StoredExtractionData | null> {
+  if (!hasAuth(userId) || !hash) return null
+  try {
+    const { data, error } = await supabase
+      .from('concept_extractions')
+      .select('created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern')
+      .eq('user_id', userId)
+      .eq('question_hash', hash)
+      .order('created_at', { ascending: false })
+      .limit(1)
+    if (error || !data || data.length === 0) return null
+    const row = data[0] as {
+      created_at: string
+      topic_id: string | null
+      concepts: unknown[]
+      asc_references: unknown[]
+      topic_tags: unknown[]
+      trap_pattern: unknown
+    }
+    return {
+      createdAt: row.created_at,
+      topicId: row.topic_id,
+      concepts: (row.concepts ?? []).filter((c): c is string => typeof c === 'string'),
+      ascReferences: (row.asc_references ?? []).filter((c): c is string => typeof c === 'string'),
+      topicTags: (row.topic_tags ?? []).filter((c): c is string => typeof c === 'string'),
+      trapPattern: typeof row.trap_pattern === 'string' ? row.trap_pattern : null,
+    }
+  } catch {
+    return null
+  }
+}
+
 /**
  * 같은 user_id + question_hash row가 있는지 확인.
  * 존재하면 해당 row의 created_at ISO 문자열, 없으면 null.
