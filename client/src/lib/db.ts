@@ -610,6 +610,14 @@ export const getCalendar = async (userId: string) => {
 // Never contains the original question text. Fire-and-forget: if the
 // migration hasn't been applied yet, we swallow the error so the UI flow
 // is not blocked.
+export interface ConceptTrigger {
+  keyword: string
+  auto_rule: string
+  trap: string
+  comparison: string
+  irrelevant: string
+}
+
 export interface ConceptExtractionRow {
   userId: string | null
   topicId: string | null
@@ -618,6 +626,7 @@ export interface ConceptExtractionRow {
   topicTags: string[]
   trapPattern: string | null
   wasWrong: boolean | null
+  triggers?: ConceptTrigger[] | null
   /** SHA-256 of trimmed question text — exact-duplicate detection. */
   questionHash?: string | null
 }
@@ -825,6 +834,7 @@ export async function saveConceptExtraction(
     topic_tags: row.topicTags,
     trap_pattern: row.trapPattern,
     was_wrong: row.wasWrong,
+    triggers: row.triggers ?? [],
   }
   const payload = row.questionHash
     ? { ...basePayload, question_hash: row.questionHash }

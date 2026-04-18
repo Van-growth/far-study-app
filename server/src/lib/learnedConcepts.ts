@@ -10,11 +10,20 @@ export interface LearnedConcepts {
   updated_at: string;
 }
 
+export interface ConceptTrigger {
+  keyword: string;
+  auto_rule: string;
+  trap: string;
+  comparison: string;
+  irrelevant: string;
+}
+
 export interface ExtractedConcepts {
   concepts: string[];
   asc_references: string[];
   topic_tags: string[];
   trap_pattern: string | null;
+  triggers: ConceptTrigger[];
 }
 
 // ── Storage ───────────────────────────────────────────────────

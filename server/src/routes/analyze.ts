@@ -4,6 +4,7 @@ import {
   applyExtraction,
   read as readLearned,
   ExtractedConcepts,
+  ConceptTrigger,
 } from '../lib/learnedConcepts';
 import { inferTopicId } from '../lib/topicInference';
 
@@ -46,6 +47,13 @@ ${questionText}${answerLine}
 - asc_references: 관련 ASC/ASU/GASB 코드 (예: "ASC 740", "ASC 360"). 불분명하면 빈 배열
 - topic_tags: 영문 snake_case 태그 (예: "deferred_tax", "impairment", "balance_sheet")
 - trap_pattern: 오답일 때만 — 사용자가 흔히 빠지는 개념적 함정 한 문장 (예: "DTA와 DTL 방향 혼동"). 정답이거나 판단 불가면 null
+- triggers: 문제에서 핵심 키워드를 감지하고 각 키워드에 대해 자동 반응 규칙을 정의. 문제당 1~3개. 없으면 빈 배열 [].
+  각 trigger 필드:
+  - keyword: 문제에서 감지한 핵심 단어/구문 (예: "cumulative preferred")
+  - auto_rule: 이 키워드 보면 자동으로 취해야 할 행동 (예: "무조건 EPS 분자에서 차감 (선언 여부 무관)")
+  - trap: 가장 많이 틀리는 오해/함정 (예: "not declared여도 차감 — 선언 여부는 무관")
+  - comparison: 헷갈리는 유사 개념과 비교 (예: "noncumulative는 선언된 것만 차감")
+  - irrelevant: 문제에서 무시해도 되는 데이터 (예: "배당 선언 여부")
 
 절대 문제 원문의 숫자/인물명/회사명/구체적 시나리오를 복사하지 마세요. 개념 키워드와 패턴만.
 
@@ -56,7 +64,16 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
   "concepts": ["..."],
   "asc_references": ["..."],
   "topic_tags": ["..."],
-  "trap_pattern": "..." 또는 null
+  "trap_pattern": "..." 또는 null,
+  "triggers": [
+    {
+      "keyword": "...",
+      "auto_rule": "...",
+      "trap": "...",
+      "comparison": "...",
+      "irrelevant": "..."
+    }
+  ]
 }`;
 
   try {
@@ -84,7 +101,21 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
     if (!parsed || typeof parsed !== 'object') {
       return res.status(502).json({ error: 'invalid extraction shape' });
     }
-    const obj = parsed as Partial<ExtractedConcepts>;
+    const obj = parsed as Partial<ExtractedConcepts> & { triggers?: unknown };
+    const rawTriggers = Array.isArray((obj as { triggers?: unknown }).triggers)
+      ? (obj as { triggers: unknown[] }).triggers
+      : [];
+    const triggers: ConceptTrigger[] = rawTriggers
+      .filter((t): t is Record<string, unknown> => !!t && typeof t === 'object')
+      .map((t) => ({
+        keyword: typeof t.keyword === 'string' ? t.keyword : '',
+        auto_rule: typeof t.auto_rule === 'string' ? t.auto_rule : '',
+        trap: typeof t.trap === 'string' ? t.trap : '',
+        comparison: typeof t.comparison === 'string' ? t.comparison : '',
+        irrelevant: typeof t.irrelevant === 'string' ? t.irrelevant : '',
+      }))
+      .filter((t) => t.keyword);
+
     const extracted: ExtractedConcepts = {
       concepts: Array.isArray(obj.concepts) ? obj.concepts.filter((x): x is string => typeof x === 'string') : [],
       asc_references: Array.isArray(obj.asc_references)
@@ -94,6 +125,7 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
         ? obj.topic_tags.filter((x): x is string => typeof x === 'string')
         : [],
       trap_pattern: typeof obj.trap_pattern === 'string' ? obj.trap_pattern : null,
+      triggers,
     };
 
     // topic_id 추론/보정

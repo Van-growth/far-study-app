@@ -10,6 +10,7 @@ import {
   ConceptCard,
   LearnedConcepts,
   ExtractedConcepts,
+  ConceptTrigger,
 } from '../hooks/useDynamicQuiz';
 import { ConceptCardView } from '../components/quiz/QuizView';
 import ErrorTagSection from '../components/quiz/ErrorTagSection';
@@ -25,6 +26,7 @@ import {
   DupMatchedRow,
   ConceptExtractionRow,
 } from '../lib/db';
+
 
 // ── Becker 텍스트에서 topic_id 자동 감지 ─────────────────────
 // "F6 · M4 · Partnerships", "F5 M3", "F5-M3", "F5.M3" 등
@@ -256,6 +258,7 @@ export default function AnalyzePage() {
           topicTags: ext.topic_tags,
           trapPattern: ext.trap_pattern,
           wasWrong: ua && ca ? ua !== ca : null,
+          triggers: ext.triggers ?? [],
           questionHash,
         };
 
@@ -319,6 +322,7 @@ export default function AnalyzePage() {
           asc_references: data.ascReferences,
           topic_tags: data.topicTags,
           trap_pattern: data.trapPattern,
+          triggers: [],
         });
         setExtractedOpen(true);
         setShowExisting(true);
@@ -619,6 +623,7 @@ export default function AnalyzePage() {
                     </div>
                   </div>
                 )}
+                <TriggerSection triggers={extracted.triggers ?? []} />
                 {(savedRowId || isDeleted) && (
                   <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-end gap-2">
                     {isDeleted ? (
@@ -847,6 +852,48 @@ export default function AnalyzePage() {
       </div>
     )}
     </>
+  );
+}
+
+function TriggerSection({ triggers }: { triggers: ConceptTrigger[] }) {
+  if (!triggers || triggers.length === 0) return null;
+  return (
+    <div className="mt-3">
+      <p className="text-[10px] font-semibold text-muted mb-1.5">🔥 핵심 트리거</p>
+      <div className="flex flex-col gap-2">
+        {triggers.map((t, i) => (
+          <div
+            key={i}
+            className="rounded-lg p-2.5 text-xs flex flex-col gap-1"
+            style={{ background: '#fff7ed', border: '1px solid #fed7aa' }}
+          >
+            <p className="font-bold" style={{ color: '#9a3412' }}>
+              🔥 &quot;{t.keyword}&quot; 감지
+            </p>
+            {t.auto_rule && (
+              <p style={{ color: '#15803d' }}>
+                <span className="font-semibold">→ 자동 반응:</span> {t.auto_rule}
+              </p>
+            )}
+            {t.trap && (
+              <p style={{ color: '#dc2626' }}>
+                <span className="font-semibold">→ 함정:</span> {t.trap}
+              </p>
+            )}
+            {t.comparison && (
+              <p style={{ color: '#1d4ed8' }}>
+                <span className="font-semibold">→ 비교:</span> {t.comparison}
+              </p>
+            )}
+            {t.irrelevant && (
+              <p style={{ color: '#6b7280' }}>
+                <span className="font-semibold">→ 무시할 데이터:</span> {t.irrelevant}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
