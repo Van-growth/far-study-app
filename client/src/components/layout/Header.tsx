@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useStudyStore from '../../store/studyStore';
 import useClaudeStore from '../../store/claudeStore';
+import Sidebar from './Sidebar';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 
@@ -36,6 +37,7 @@ export default function Header({ email, onSignOut }: HeaderProps) {
   const togglePanel = useClaudeStore((s) => s.togglePanel);
 
   const [moreOpen, setMoreOpen] = useState(false);
+  const [tocOpen, setTocOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!moreOpen) return;
@@ -45,6 +47,13 @@ export default function Header({ email, onSignOut }: HeaderProps) {
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
   }, [moreOpen]);
+
+  useEffect(() => {
+    if (!tocOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setTocOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [tocOpen]);
 
   const isActive = (path: string) => {
     const base = path.split('?')[0];
@@ -59,6 +68,7 @@ export default function Header({ email, onSignOut }: HeaderProps) {
   const moreMenuItems = [...moreTabs, ...(isAdmin ? [adminTab] : [])];
 
   return (
+    <>
     <header
       className="fixed top-0 left-0 right-0 z-50 flex items-center px-3 md:px-5 bg-white border-b border-border"
       style={{ height: 54 }}
@@ -116,6 +126,13 @@ export default function Header({ email, onSignOut }: HeaderProps) {
                   {item.label}
                 </button>
               ))}
+              <div className="border-t border-border my-1" />
+              <button
+                onClick={() => { setTocOpen(true); setMoreOpen(false); }}
+                className="w-full text-left px-4 py-2 text-[13px] hover:bg-gray-50 transition-colors text-[#0f172a]"
+              >
+                📚 Becker 목차
+              </button>
             </div>
           )}
         </div>
@@ -189,5 +206,31 @@ export default function Header({ email, onSignOut }: HeaderProps) {
         </button>
       </div>
     </header>
+
+    {/* Becker 목차 드로어 */}
+    {tocOpen && (
+      <div className="fixed inset-0 z-50 flex" onClick={() => setTocOpen(false)}>
+        <div className="absolute inset-0 bg-black/30" />
+        <div
+          className="relative flex flex-col bg-white shadow-xl overflow-hidden"
+          style={{ width: 280, marginTop: 54, maxHeight: 'calc(100dvh - 54px)' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
+            <span className="text-xs font-semibold text-muted uppercase tracking-wider">📚 Becker 목차</span>
+            <button
+              onClick={() => setTocOpen(false)}
+              className="text-muted hover:text-[#0f172a] text-lg leading-none px-1"
+            >
+              ×
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <Sidebar onItemClick={() => setTocOpen(false)} />
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

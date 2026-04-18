@@ -39,6 +39,7 @@ function BottomTabBar({ email }: { email: string }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [showMore, setShowMore] = useState(false);
+  const [tocOpen, setTocOpen] = useState(false);
   const isAdmin = email.toLowerCase() === ADMIN_EMAIL;
 
   const isActive = (path: string) => {
@@ -71,6 +72,33 @@ function BottomTabBar({ email }: { email: string }) {
                 {item.label}
               </button>
             ))}
+            <div className="border-t border-border my-1" />
+            <button
+              onClick={() => { setTocOpen(true); setShowMore(false); }}
+              className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors"
+            >
+              📚 Becker 목차
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Becker 목차 모달 — 모바일 */}
+      {tocOpen && (
+        <div className="fixed inset-0 z-50 flex" onClick={() => setTocOpen(false)}>
+          <div className="absolute inset-0 bg-black/30" />
+          <div
+            className="relative flex flex-col bg-white shadow-xl overflow-hidden"
+            style={{ width: '85vw', maxWidth: 320, marginTop: 54, maxHeight: 'calc(100dvh - 54px - 56px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
+              <span className="text-xs font-semibold text-muted uppercase tracking-wider">📚 Becker 목차</span>
+              <button onClick={() => setTocOpen(false)} className="text-muted hover:text-[#0f172a] text-lg leading-none px-1">×</button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <Sidebar onItemClick={() => setTocOpen(false)} />
+            </div>
           </div>
         </div>
       )}
@@ -133,6 +161,7 @@ function ClaudeModal() {
 function AppLayout({ email }: { email: string }) {
   const location = useLocation();
   const isScience = location.pathname === '/science';
+  const isAnalyze = location.pathname === '/analyze';
   const isPanelOpen = useClaudeStore((s) => s.isOpen);
 
   const [panelWidth, setPanelWidth] = useState(PANEL_DEFAULT);
@@ -170,8 +199,8 @@ function AppLayout({ email }: { email: string }) {
       }} />
 
       <div className="flex flex-1 min-h-0 overflow-hidden" style={{ paddingTop: 54 }}>
-        {/* Sidebar — desktop only */}
-        {!isScience && (
+        {/* Sidebar — desktop only, not on /analyze (목차는 더보기 드롭다운으로) */}
+        {!isScience && !isAnalyze && (
           <div className="hidden md:block">
             <Sidebar />
           </div>
