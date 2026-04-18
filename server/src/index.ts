@@ -9,6 +9,7 @@ import coachRouter from './routes/coach';
 import sessionRouter from './routes/session';
 import feedbackRouter from './routes/feedback';
 import adminRouter from './routes/admin';
+import errorPatternsRouter from './routes/errorPatterns';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -46,6 +47,9 @@ app.use('/api', feedbackRouter);
 
 // ── Admin dashboard ───────────────────────────────────────────
 app.use('/api/admin', adminRouter);
+
+// ── Error Pattern Library (Claude 진단 + 브리핑) ──────────────
+app.use('/api/error-patterns', errorPatternsRouter);
 
 // ── 404 ───────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

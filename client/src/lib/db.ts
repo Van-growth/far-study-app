@@ -841,6 +841,176 @@ export async function saveConceptExtraction(
   return data?.id ? { id: data.id as string } : null
 }
 
+// ── Error Pattern Library (migration 008) ───────────────────
+// 마스터 패턴 14개, 개인 태깅(attempt_errors), 개인 집계(pattern_stats),
+// 전체 집계 뷰(global_pattern_stats). 아래 헬퍼들은 migration 008 이
+// 적용되기 전 환경에서도 조용히 degrade 한다 — 기능 없어도 퀴즈/대시보드
+// 흐름은 안 막힌다.
+export type ErrorPatternLayer = 'root' | 'exec' | 'outcome'
+
+export interface ErrorPattern {
+  patternId: string
+  layer: ErrorPatternLayer
+  name: string
+  description: string | null
+  linkedTopics: string[]
+}
+
+export interface MyPatternStat {
+  patternId: string
+  occurrence: number
+  recentRate: number
+  improvement: number
+  lastSeen: string | null
+}
+
+export interface GlobalPatternStat {
+  patternId: string
+  userCount: number
+  totalOccurrence: number
+  recentShare: number
+}
+
+let errorPatternsCache: ErrorPattern[] | null = null
+let errorPatternsSupported: boolean | null = null
+
+function isMissingRelation(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false
+  const code = error.code ?? ''
+  const msg = (error.message ?? '').toLowerCase()
+  return (
+    code === '42P01' ||
+    code === 'PGRST205' ||
+    code === 'PGRST202' ||
+    msg.includes('does not exist') ||
+    msg.includes('schema cache')
+  )
+}
+
+export async function getErrorPatterns(): Promise<ErrorPattern[]> {
+  if (errorPatternsCache) return errorPatternsCache
+  if (errorPatternsSupported === false) return []
+  const { data, error } = await supabase
+    .from('error_patterns')
+    .select('pattern_id, layer, name, description, linked_topics')
+    .order('pattern_id', { ascending: true })
+  if (error) {
+    if (isMissingRelation(error)) {
+      errorPatternsSupported = false
+      console.warn(
+        '[db] error_patterns table missing — run supabase/migrations/008_error_patterns.sql.',
+      )
+      return []
+    }
+    logError('getErrorPatterns', error)
+    return []
+  }
+  const rows = (data ?? []) as unknown as {
+    pattern_id: string
+    layer: ErrorPatternLayer
+    name: string
+    description: string | null
+    linked_topics: string[] | null
+  }[]
+  errorPatternsCache = rows.map((r) => ({
+    patternId: r.pattern_id,
+    layer: r.layer,
+    name: r.name,
+    description: r.description,
+    linkedTopics: r.linked_topics ?? [],
+  }))
+  errorPatternsSupported = true
+  return errorPatternsCache
+}
+
+/**
+ * tag_attempt_error RPC. 성공 시 attempt_errors.id 반환, 실패 시 null.
+ * quiz_log_id 는 null 허용 — 저장 파이프라인이 fire-and-forget 이라
+ * 정확한 id 를 잡기 어려운 케이스에서도 본인 에러 집계는 유지된다.
+ */
+export async function tagAttemptError(
+  args: {
+    quizLogId: string | null
+    patternId: string
+    topic: string | null
+    userNote: string | null
+    aiDiagnosis: string | null
+  },
+): Promise<string | null> {
+  const { data, error } = await supabase.rpc('tag_attempt_error', {
+    p_quiz_log_id: args.quizLogId,
+    p_pattern_id: args.patternId,
+    p_topic: args.topic,
+    p_user_note: args.userNote,
+    p_ai_diagnosis: args.aiDiagnosis,
+  })
+  if (error) {
+    if (isMissingRelation(error)) {
+      console.warn('[db] tag_attempt_error RPC missing — migration 008 not applied.')
+      return null
+    }
+    logError('tagAttemptError', error)
+    return null
+  }
+  return (data as string | null) ?? null
+}
+
+export async function refreshPatternStats(): Promise<void> {
+  const { error } = await supabase.rpc('refresh_pattern_stats')
+  if (error && !isMissingRelation(error)) {
+    logError('refreshPatternStats', error)
+  }
+}
+
+export async function getMyPatternStats(userId: string): Promise<MyPatternStat[]> {
+  if (!hasAuth(userId)) return []
+  const { data, error } = await supabase
+    .from('pattern_stats')
+    .select('pattern_id, occurrence, recent_rate, improvement, last_seen')
+    .eq('user_id', userId)
+    .order('occurrence', { ascending: false })
+  if (error) {
+    if (isMissingRelation(error)) return []
+    logError('getMyPatternStats', error)
+    return []
+  }
+  return ((data ?? []) as unknown as {
+    pattern_id: string
+    occurrence: number
+    recent_rate: number
+    improvement: number
+    last_seen: string | null
+  }[]).map((r) => ({
+    patternId: r.pattern_id,
+    occurrence: r.occurrence,
+    recentRate: r.recent_rate,
+    improvement: r.improvement,
+    lastSeen: r.last_seen,
+  }))
+}
+
+export async function getGlobalPatternStats(): Promise<GlobalPatternStat[]> {
+  const { data, error } = await supabase
+    .from('global_pattern_stats')
+    .select('pattern_id, user_count, total_occurrence, recent_share')
+  if (error) {
+    if (isMissingRelation(error)) return []
+    logError('getGlobalPatternStats', error)
+    return []
+  }
+  return ((data ?? []) as unknown as {
+    pattern_id: string
+    user_count: number
+    total_occurrence: number
+    recent_share: number | null
+  }[]).map((r) => ({
+    patternId: r.pattern_id,
+    userCount: r.user_count,
+    totalOccurrence: r.total_occurrence,
+    recentShare: r.recent_share ?? 0,
+  }))
+}
+
 // ── concept_extractions 삭제 ─────────────────────────────────
 // 사용자가 방금 저장한 row를 되돌리고 싶을 때 호출. RLS의
 // `concept_extractions_own_delete` 정책(migration 005)에 의존하므로

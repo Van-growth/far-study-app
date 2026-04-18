@@ -6,6 +6,7 @@ import { useClaudeChat, QuizContext } from '../../hooks/useClaudeChat';
 import PVFVTable, { questionNeedsPVFVTable } from './PVFVTable';
 import QuizCalculator from './QuizCalculator';
 import FeedbackButtons from '../feedback/FeedbackButtons';
+import ErrorTagSection from './ErrorTagSection';
 import {
   fetchConceptCard,
   ConceptCard,
@@ -1211,6 +1212,18 @@ export default function QuizView({
                 </div>
               )}
             </div>
+
+            {selected !== current.ans && (
+              <ErrorTagSection
+                key={`${current.topicId}-${currentIdx}`}
+                question={current.q}
+                userAnswer={current.opts[selected] ?? ''}
+                correctAnswer={current.opts[current.ans] ?? ''}
+                topicId={current.topicId}
+                topicLabel={current.topicLabel}
+                quizLogId={null}
+              />
+            )}
 
             <button
               onClick={handleClaudeExplain}
