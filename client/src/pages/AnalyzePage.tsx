@@ -513,15 +513,48 @@ export default function AnalyzePage() {
           </div>
         )}
 
-        {/* Error Pattern 태깅 — 내 답 ≠ 정답 이고 분석 결과가 있을 때만.
-            quiz_log_id 는 분석 플로우에서 생성 안 되므로 null. topic 은 감지된 모듈 id. */}
+        {/* 정답 여부 피드백 — 내 답 · 정답 모두 입력됐고 분석이 끝났을 때만.
+            - 다르면 Error Pattern 태깅 섹션
+            - 같으면 간단한 성공 배너
+            - 한쪽이라도 비어있거나 분석 전이면 아무것도 안 띄운다. */}
         {(() => {
           const ua = userAnswer.trim();
           const ca = correctAnswer.trim();
+
+          // Guard 1: 두 입력 모두 실제 문자가 있어야 한다.
+          if (ua.length === 0 || ca.length === 0) return null;
+
+          // Guard 2: 분석 결과(card 또는 extracted)가 나와야 한다.
           const analysisDone = !!(card || extracted);
-          const hasBoth = ua.length > 0 && ca.length > 0;
-          const isWrong = hasBoth && ua.toLowerCase() !== ca.toLowerCase();
-          if (!analysisDone || !isWrong || !resolvedTopicId) return null;
+          if (!analysisDone) return null;
+
+          // Case-insensitive 비교. "A" vs "a" 같은 MCQ 표기 차이 허용.
+          const matched = ua.toLowerCase() === ca.toLowerCase();
+
+          if (matched) {
+            // 정답 — 작은 초록 배너만.
+            return (
+              <div
+                className="rounded-xl px-4 py-3 flex items-center gap-2"
+                style={{
+                  background: '#f0fdf4',
+                  border: '1px solid #86efac',
+                  color: '#166534',
+                }}
+              >
+                <span className="text-lg">✅</span>
+                <div>
+                  <p className="text-sm font-semibold">정답입니다!</p>
+                  <p className="text-[11px] opacity-80">
+                    같은 유형을 반복해서 확실히 굳혀보세요.
+                  </p>
+                </div>
+              </div>
+            );
+          }
+
+          // 오답 — Error Pattern 태깅. topic 이 특정되어야 RPC 호출이 의미 있음.
+          if (!resolvedTopicId) return null;
           return (
             <ErrorTagSection
               key={`${resolvedTopicId}-${ua}-${ca}`}
