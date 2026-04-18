@@ -303,9 +303,6 @@ export default function AnalyzePage() {
               </span>
             )}
           </p>
-          <p className="text-[10px] text-muted mt-0.5">
-            ⚠ 문제 원문은 서버에 저장되지 않습니다 — 키워드/패턴만 추출해 누적.
-          </p>
         </div>
 
         {/* Input */}
