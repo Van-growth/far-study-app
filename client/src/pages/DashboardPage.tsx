@@ -56,7 +56,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Tab content */}
-        {tab === 'briefing' && <BriefingTab />}
+        {tab === 'briefing' && <BriefingTab onSwitchTab={setTab} />}
         {tab === 'board' && <ErrorPatternBoard />}
         {tab === 'health' && (
           <div className="flex flex-col gap-6">

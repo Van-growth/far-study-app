@@ -119,4 +119,48 @@ router.post('/briefing', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/error-patterns/weak-analysis
+ * Top-3 패턴을 받아 2-3문장 취약 패턴 분석 반환.
+ * body: { patterns: [{name, occurrence, patternId}] }
+ */
+router.post('/weak-analysis', async (req: Request, res: Response) => {
+  const { patterns } = req.body as {
+    patterns?: { name: string; occurrence: number; patternId: string }[];
+  };
+
+  if (!patterns || patterns.length === 0) {
+    return res.json({ analysis: '' });
+  }
+
+  const system =
+    'You are a USCPA FAR exam coach. Analyze the student\'s top error patterns and give ' +
+    'a 2-3 sentence actionable insight in Korean. Be specific about which patterns repeat ' +
+    'and give one concrete study recommendation. No greetings, no filler. ' +
+    'Use natural conversational Korean, not formal report style.';
+
+  const user =
+    '학생의 최다 오답 패턴 Top ' +
+    patterns.length +
+    ':\n' +
+    patterns.map((p, i) => `${i + 1}. ${p.name}(${p.patternId}) — ${p.occurrence}회`).join('\n') +
+    '\n\n이 패턴들을 분석해서 2-3문장으로 핵심 인사이트와 학습 추천을 알려줘.';
+
+  try {
+    const message = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 300,
+      system,
+      messages: [{ role: 'user', content: user }],
+    });
+    const analysis =
+      message.content[0]?.type === 'text' ? message.content[0].text : '';
+    return res.json({ analysis });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'unknown';
+    console.warn('[error-patterns] weak-analysis failed:', msg);
+    return res.json({ analysis: '', error: msg });
+  }
+});
+
 export default router;

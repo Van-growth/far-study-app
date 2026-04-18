@@ -15,7 +15,16 @@ import { allTopics } from '../../data/far-topics'
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001'
 
-export default function BriefingTab() {
+const KST_DATE = () => {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }))
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+interface Props {
+  onSwitchTab?: (tab: 'board') => void
+}
+
+export default function BriefingTab({ onSwitchTab }: Props) {
   const navigate = useNavigate()
   const userId = useStudyStore((s) => s.userId)
   const srsCards = useStudyStore((s) => s.srsCards)
@@ -25,6 +34,9 @@ export default function BriefingTab() {
   const [globalStats, setGlobalStats] = useState<GlobalPatternStat[]>([])
   const [briefing, setBriefing] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [weakAnalysis, setWeakAnalysis] = useState<string>('')
+  const [weakLoading, setWeakLoading] = useState(false)
+  const [showWeak, setShowWeak] = useState(false)
 
   // 약점 토픽 (60% 미만) — briefing 프롬프트에 같이 넣는다.
   const weakTopics = useMemo(() => {
@@ -102,6 +114,37 @@ export default function BriefingTab() {
 
   const top3 = myStats.slice(0, 3)
 
+  const handleWeakPatternClick = async () => {
+    if (showWeak) { setShowWeak(false); return }
+    setShowWeak(true)
+    if (weakAnalysis) return
+
+    const cacheKey = `far_weak_pattern_${userId}_${KST_DATE()}`
+    const cached = localStorage.getItem(cacheKey)
+    if (cached) { setWeakAnalysis(cached); return }
+
+    setWeakLoading(true)
+    const top = myStats.slice(0, 3).map((s) => ({
+      name: nameMap.get(s.patternId) ?? s.patternId,
+      occurrence: s.occurrence,
+      patternId: s.patternId,
+    }))
+    try {
+      const res = await fetch(`${API_URL}/api/error-patterns/weak-analysis`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patterns: top }),
+      })
+      if (res.ok) {
+        const body = (await res.json()) as { analysis?: string }
+        const text = body.analysis ?? ''
+        setWeakAnalysis(text)
+        if (text) localStorage.setItem(cacheKey, text)
+      }
+    } catch { /* 실패 시 빈 텍스트 */ }
+    setWeakLoading(false)
+  }
+
   return (
     <div className="flex flex-col gap-5">
       {/* Briefing gradient card */}
@@ -139,18 +182,50 @@ export default function BriefingTab() {
             오늘 추천 문제 시작
           </button>
           <button
-            onClick={() =>
-              document
-                .getElementById('tab-error-pattern-board')
-                ?.scrollIntoView({ behavior: 'smooth' })
-            }
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+            onClick={handleWeakPatternClick}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5"
             style={{ background: 'rgba(255,255,255,0.18)', color: 'white' }}
           >
             취약 패턴 보기
+            <span className="text-[10px] opacity-70">{showWeak ? '▲' : '▼'}</span>
           </button>
         </div>
       </div>
+
+      {/* 취약 패턴 AI 분석 인라인 */}
+      {showWeak && (
+        <div
+          className="rounded-2xl p-5"
+          style={{ background: '#f0f4ff', border: '1.5px solid #c7d2fe' }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs font-semibold text-[#4338ca]">🔍 취약 패턴 AI 분석</span>
+            {weakLoading && (
+              <div className="w-3 h-3 border-2 border-[#4f6ef7] border-t-transparent rounded-full animate-spin" />
+            )}
+          </div>
+          {weakLoading ? (
+            <p className="text-sm text-[#4338ca] opacity-70">분석 중…</p>
+          ) : weakAnalysis ? (
+            <>
+              <p className="text-sm leading-relaxed text-[#1e1b4b] whitespace-pre-wrap">{weakAnalysis}</p>
+              <button
+                onClick={() => onSwitchTab?.('board')}
+                className="mt-4 text-xs font-semibold px-3 py-1.5 rounded-lg"
+                style={{ background: '#4f6ef7', color: 'white' }}
+              >
+                📊 Error Pattern Board에서 자세히 보기 →
+              </button>
+            </>
+          ) : (
+            <p className="text-sm text-[#4338ca] opacity-70">
+              {myStats.length === 0
+                ? '아직 태깅된 패턴이 없어요.'
+                : '분석을 불러오지 못했어요. 잠시 후 다시 시도해주세요.'}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* 상위 3패턴 미리보기 */}
       <div className="card p-5">
