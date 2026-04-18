@@ -1296,6 +1296,22 @@ export async function getStudyActivityStats(userId: string): Promise<StudyActivi
   }
 }
 
+/** 오늘 concept_extractions 건수 (로컬 자정 기준) */
+export async function getTodayAnalyzeCount(userId: string): Promise<number> {
+  if (!hasAuth(userId)) return 0
+  try {
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const { count, error } = await supabase
+      .from('concept_extractions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('created_at', todayStart.toISOString())
+    if (error) { if (isMissingRelation(error)) return 0; return 0 }
+    return count ?? 0
+  } catch { return 0 }
+}
+
 /** concept_extractions 분석 건수를 topicId 별로 반환 */
 export async function getAnalyzeCountByTopic(userId: string): Promise<Record<string, number>> {
   if (!hasAuth(userId)) return {}

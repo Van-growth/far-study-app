@@ -20,6 +20,7 @@ import {
   checkQuestionHash,
   fetchExtractionByHash,
   hashText,
+  getAnalyzeCountByTopic,
   DupCheckResult,
   DupMatchedRow,
   ConceptExtractionRow,
@@ -37,10 +38,23 @@ function detectTopicId(rawText: string): string | null {
   return allTopics.some((t) => t.id === candidate) ? candidate : null;
 }
 
+// ── 뱃지 레벨 계산 ──────────────────────────────────────────
+function computeBadge(
+  count: number,
+  accuracy: number,
+): { emoji: string; label: string; level: number } | null {
+  if (count <= 0) return null;
+  if (count >= 10 && accuracy >= 70) return { emoji: '🏆', label: '마스터', level: 4 };
+  if (count >= 10) return { emoji: '⭐', label: '숙련', level: 3 };
+  if (count >= 5) return { emoji: '📖', label: '학습 중', level: 2 };
+  return { emoji: '🌱', label: '입문', level: 1 };
+}
+
 export default function AnalyzePage() {
   const navigate = useNavigate();
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
   const userId = useStudyStore((s) => s.userId);
+  const srsCards = useStudyStore((s) => s.srsCards);
   const setAnalyzeContext = useClaudeStore((s) => s.setAnalyzeContext);
 
   const [text, setText] = useState('');
@@ -69,7 +83,12 @@ export default function AnalyzePage() {
   const [extractedOpen, setExtractedOpen] = useState(true);  // 추출된 개념: 기본 펼침
   const [cardOpen, setCardOpen] = useState(false);           // AI 해설: 기본 접힘
   const [learnedOpen, setLearnedOpen] = useState(false);     // 학습된 개념: 기본 접힘
-  const [tagToast, setTagToast] = useState(false);           // Error Pattern 저장 토스트
+  const [tagToast, setTagToast] = useState(false);
+  const [badgeToast, setBadgeToast] = useState<string | null>(null);
+  const [badgeCount, setBadgeCount] = useState<number>(-1);
+  const [consecutiveCorrect, setConsecutiveCorrect] = useState<number>(() => {
+    try { return parseInt(localStorage.getItem('far_consecutive_correct_analyze') ?? '0', 10); } catch { return 0; }
+  });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // text 변경 시 textarea 높이를 내용에 맞게 자동 조절.
@@ -86,6 +105,27 @@ export default function AnalyzePage() {
   const topicLabel = resolvedTopicId
     ? allTopics.find((t) => t.id === resolvedTopicId)?.label
     : null;
+
+  // 현재 토픽의 퀴즈 정확도 (마스터 뱃지 판정용)
+  const topicSrsCard = resolvedTopicId ? srsCards[resolvedTopicId] : null;
+  const quizAccuracy =
+    topicSrsCard && topicSrsCard.attempts >= 3
+      ? Math.round((topicSrsCard.correct / topicSrsCard.attempts) * 100)
+      : 0;
+  const badge = badgeCount >= 0 ? computeBadge(badgeCount, quizAccuracy) : null;
+
+  // 토픽 변경 시 뱃지 카운트 갱신
+  useEffect(() => {
+    if (!userId || !resolvedTopicId) { setBadgeCount(-1); return; }
+    getAnalyzeCountByTopic(userId).then((map) => setBadgeCount(map[resolvedTopicId] ?? 0));
+  }, [userId, resolvedTopicId]);
+
+  // badgeToast 자동 사라짐
+  useEffect(() => {
+    if (!badgeToast) return;
+    const id = window.setTimeout(() => setBadgeToast(null), 3000);
+    return () => window.clearTimeout(id);
+  }, [badgeToast]);
 
   useEffect(() => {
     // Prime the learned section on mount.
@@ -167,6 +207,8 @@ export default function AnalyzePage() {
     }
 
     setLoading(true);
+    let cardSuccess = false;
+    let extractedLocal: ExtractedConcepts | null = null;
     try {
       // Run in parallel — concept card for the user, extraction for the store.
       const [cardRes, extractRes] = await Promise.allSettled([
@@ -175,12 +217,14 @@ export default function AnalyzePage() {
       ]);
 
       if (cardRes.status === 'fulfilled') {
+        cardSuccess = true;
         setCard(cardRes.value);
       } else {
         setError((prev) => prev ?? `해설 생성 실패: ${cardRes.reason?.message ?? 'unknown'}`);
       }
       if (extractRes.status === 'fulfilled') {
-        setExtracted(extractRes.value.extracted);
+        extractedLocal = extractRes.value.extracted;
+        setExtracted(extractedLocal);
         setLearned(extractRes.value.learned);
         console.log('[AnalyzePage] extract-concepts OK, calling saveConceptExtraction', {
           userId: userId ? `${userId.slice(0, 8)}...` : null,
@@ -219,6 +263,17 @@ export default function AnalyzePage() {
         setPendingExtraction(payload);
       } else {
         setError((prev) => prev ?? `개념 추출 실패: ${extractRes.reason?.message ?? 'unknown'}`);
+      }
+
+      // ── C: 연속 정답 카운터 ──────────────────────────────────
+      const analysisDone = cardSuccess || !!extractedLocal;
+      if (analysisDone && ua !== null && ca !== null) {
+        const isMatched = ua.toLowerCase() === ca.toLowerCase();
+        const key = 'far_consecutive_correct_analyze';
+        const prev = parseInt(localStorage.getItem(key) ?? '0', 10);
+        const next = isMatched ? prev + 1 : 0;
+        localStorage.setItem(key, String(next));
+        setConsecutiveCorrect(next);
       }
     } finally {
       setLoading(false);
@@ -283,7 +338,19 @@ export default function AnalyzePage() {
     setIsSaving(true);
     try {
       const result = await saveConceptExtraction(pendingExtraction);
-      if (result) setSavedRowId(result.id);
+      if (result) {
+        setSavedRowId(result.id);
+        // ── B: 뱃지 업그레이드 체크 ──────────────────────────
+        if (badgeCount >= 0 && resolvedTopicId) {
+          const newCount = badgeCount + 1;
+          const prevBadge = computeBadge(badgeCount, quizAccuracy);
+          const nextBadge = computeBadge(newCount, quizAccuracy);
+          setBadgeCount(newCount);
+          if ((nextBadge?.level ?? 0) > (prevBadge?.level ?? 0)) {
+            setBadgeToast(`🎉 ${resolvedTopicId} ${nextBadge!.label} 달성!`);
+          }
+        }
+      }
       setPendingExtraction(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : '저장 실패');
@@ -336,6 +403,14 @@ export default function AnalyzePage() {
             {resolvedTopicId && (
               <span className="ml-2 text-[#4f6ef7]">
                 모듈: {resolvedTopicId} · {topicLabel}
+                {badge && (
+                  <span
+                    className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                    style={{ background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe' }}
+                  >
+                    {badge.emoji} {badge.label}
+                  </span>
+                )}
               </span>
             )}
           </p>
@@ -614,22 +689,29 @@ export default function AnalyzePage() {
           const matched = ua.length > 0 && ua.toLowerCase() === ca.toLowerCase();
 
           if (matched) {
-            // 정답 — 작은 초록 배너만.
+            const streakMsg =
+              consecutiveCorrect >= 5
+                ? '🏆 5연속 정답! 이 모듈 완벽 이해 중!'
+                : consecutiveCorrect >= 3
+                ? `🔥🔥 ${consecutiveCorrect}연속 정답! 집중력 최고!`
+                : consecutiveCorrect >= 2
+                ? `🔥 ${consecutiveCorrect}연속 정답!`
+                : null;
             return (
               <div
-                className="rounded-xl px-4 py-3 flex items-center gap-2"
-                style={{
-                  background: '#f0fdf4',
-                  border: '1px solid #86efac',
-                  color: '#166534',
-                }}
+                className="rounded-xl px-4 py-3 flex items-center gap-3 animate-correctBounce"
+                style={{ background: '#f0fdf4', border: '1px solid #86efac', color: '#166534' }}
               >
-                <span className="text-lg">✅</span>
+                <span className="text-2xl shrink-0">✅</span>
                 <div>
                   <p className="text-sm font-semibold">정답입니다!</p>
-                  <p className="text-[11px] opacity-80">
-                    같은 유형을 반복해서 확실히 굳혀보세요.
-                  </p>
+                  {streakMsg ? (
+                    <p className="text-xs font-semibold mt-0.5" style={{ color: '#f97316' }}>
+                      {streakMsg}
+                    </p>
+                  ) : (
+                    <p className="text-[11px] opacity-80">같은 유형을 반복해서 확실히 굳혀보세요.</p>
+                  )}
                 </div>
               </div>
             );
@@ -743,7 +825,7 @@ export default function AnalyzePage() {
       </div>
     </div>
 
-    {/* Error Pattern 저장 완료 토스트 — 우측 상단, 2.6s 후 자동 사라짐 */}
+    {/* Error Pattern 저장 완료 토스트 */}
     {tagToast && (
       <div
         className="fixed z-50 top-20 right-4 px-4 py-2.5 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-slideUp"
@@ -752,6 +834,16 @@ export default function AnalyzePage() {
       >
         <span>✅</span>
         <span>오류 패턴이 기록되었습니다</span>
+      </div>
+    )}
+    {/* B: 뱃지 업그레이드 토스트 */}
+    {badgeToast && (
+      <div
+        className="fixed z-50 top-32 right-4 px-4 py-2.5 rounded-xl shadow-lg text-sm font-semibold flex items-center gap-2 animate-slideUp"
+        style={{ background: '#4f6ef7', color: 'white' }}
+        role="status"
+      >
+        {badgeToast}
       </div>
     )}
     </>
