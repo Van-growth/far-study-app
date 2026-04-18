@@ -329,17 +329,6 @@ export default function ExamCountdown({
   const coveragePct =
     totalModules > 0 ? Math.round((coveredModules / totalModules) * 100) : 0
 
-  const remaining = Math.max(0, totalModules - coveredModules)
-  let paceLine = '데이터가 더 쌓이면 완료 예상 시점을 알려드릴게요.'
-  if (coveredModules >= 3) {
-    const weeklyVelocity = Math.max(1, Math.round(coveredModules / 4))
-    const weeksLeft = Math.ceil(remaining / weeklyVelocity)
-    paceLine =
-      remaining === 0
-        ? '전 모듈 커버리지 달성! 약점 보강 단계로 들어가세요.'
-        : `현재 속도 기준 남은 ${remaining}개 모듈 커버리지에 약 ${weeksLeft}주 예상.`
-  }
-
   return (
     <>
       <div className="card p-5 flex flex-col gap-3">
@@ -403,7 +392,6 @@ export default function ExamCountdown({
           </span>
         </div>
 
-        <p className="text-xs text-muted">{paceLine}</p>
       </div>
 
       {modalOpen && (
