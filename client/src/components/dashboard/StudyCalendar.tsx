@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import useStudyStore from '../../store/studyStore';
-import { getCalendar } from '../../lib/db';
+import { getCalendarWithAnalysis } from '../../lib/db';
 import { localDateStr } from '../../lib/date';
 
 interface DayData {
   date: string;
   quiz_count: number;
   correct_count: number;
+  analyze_count: number;
 }
 
 const CELL_SIZE = 13;
@@ -14,10 +15,10 @@ const GAP = 3;
 const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 const DAYS_LABEL = ['', '월', '', '수', '', '금', ''];
 
-function getColor(count: number): string {
-  if (count === 0) return '#f1f5f9';
-  if (count <= 5) return '#bfdbfe';
-  if (count <= 15) return '#60a5fa';
+function getColor(total: number): string {
+  if (total === 0) return '#f1f5f9';
+  if (total <= 3) return '#bfdbfe';
+  if (total <= 10) return '#60a5fa';
   return '#1d4ed8';
 }
 
@@ -27,20 +28,18 @@ export default function StudyCalendar() {
 
   useEffect(() => {
     if (!userId) return;
-    getCalendar(userId).then((d) => setData(d as DayData[]));
+    let cancelled = false;
+    getCalendarWithAnalysis(userId).then((d) => {
+      if (!cancelled) setData(d as DayData[]);
+    });
+    return () => { cancelled = true; };
   }, [userId]);
 
   // Build 52-week grid (364 days)
-  // Normalize today and cursor to LOCAL midnight so iteration is
-  // deterministic and the `cursor <= today` comparison always includes
-  // the today cell regardless of the current wall-clock time or any
-  // DST transition during the year-long range.
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const grid: { date: Date; count: number; correct: number }[][] = [];
-  // Normalize keys to YYYY-MM-DD — defensive against any stray ISO
-  // timestamp format returned by PostgREST.
+  const grid: { date: Date; quizCount: number; analyzeCount: number; correct: number }[][] = [];
   const dayMap = new Map(
     data.map((d) => [
       typeof d.date === 'string' ? d.date.slice(0, 10) : String(d.date),
@@ -48,24 +47,20 @@ export default function StudyCalendar() {
     ]),
   );
 
-  // Go back 363 days to start on a Monday
   const start = new Date(today);
   start.setDate(start.getDate() - 363);
-  // Adjust to Monday
   while (start.getDay() !== 1) start.setDate(start.getDate() - 1);
 
   const cursor = new Date(start);
-  let currentWeek: { date: Date; count: number; correct: number }[] = [];
+  let currentWeek: { date: Date; quizCount: number; analyzeCount: number; correct: number }[] = [];
 
   while (cursor <= today) {
-    // Local date — must match the format used when session rows were
-    // written (db.ts updateTodaySession), otherwise the heatmap cell
-    // lookup misses by 1 day.
     const dateStr = localDateStr(cursor);
     const entry = dayMap.get(dateStr);
     currentWeek.push({
       date: new Date(cursor),
-      count: entry?.quiz_count ?? 0,
+      quizCount: entry?.quiz_count ?? 0,
+      analyzeCount: entry?.analyze_count ?? 0,
       correct: entry?.correct_count ?? 0,
     });
     if (currentWeek.length === 7) {
@@ -124,27 +119,34 @@ export default function StudyCalendar() {
           <div className="flex" style={{ gap: GAP }}>
             {grid.map((week, wi) => (
               <div key={wi} className="flex flex-col" style={{ gap: GAP }}>
-                {week.map((day, di) => (
-                  <div
-                    key={di}
-                    className="rounded-sm cursor-pointer transition-all hover:ring-1 hover:ring-[#4f6ef7]"
-                    style={{
-                      width: CELL_SIZE,
-                      height: CELL_SIZE,
-                      background: getColor(day.count),
-                    }}
-                    onMouseEnter={(e) => {
-                      const r = e.currentTarget.getBoundingClientRect();
-                      const dateStr = `${day.date.getMonth() + 1}/${day.date.getDate()}`;
-                      setTooltip({
-                        x: r.left + r.width / 2,
-                        y: r.top - 8,
-                        text: `${dateStr} — ${day.count}문제, ${day.correct}정답`,
-                      });
-                    }}
-                    onMouseLeave={() => setTooltip(null)}
-                  />
-                ))}
+                {week.map((day, di) => {
+                  const total = day.quizCount + day.analyzeCount;
+                  return (
+                    <div
+                      key={di}
+                      className="rounded-sm cursor-pointer transition-all hover:ring-1 hover:ring-[#4f6ef7]"
+                      style={{
+                        width: CELL_SIZE,
+                        height: CELL_SIZE,
+                        background: getColor(total),
+                      }}
+                      onMouseEnter={(e) => {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        const dateStr = `${day.date.getMonth() + 1}/${day.date.getDate()}`;
+                        const parts: string[] = [];
+                        if (day.quizCount > 0) parts.push(`퀴즈 ${day.quizCount}`);
+                        if (day.analyzeCount > 0) parts.push(`분석 ${day.analyzeCount}`);
+                        if (day.correct > 0) parts.push(`정답 ${day.correct}`);
+                        setTooltip({
+                          x: r.left + r.width / 2,
+                          y: r.top - 8,
+                          text: `${dateStr} — ${parts.length > 0 ? parts.join(', ') : '활동 없음'}`,
+                        });
+                      }}
+                      onMouseLeave={() => setTooltip(null)}
+                    />
+                  );
+                })}
               </div>
             ))}
           </div>
@@ -153,7 +155,7 @@ export default function StudyCalendar() {
         {/* Legend */}
         <div className="flex items-center gap-2 mt-3 justify-end">
           <span className="text-[10px] text-muted">적음</span>
-          {[0, 3, 10, 20].map((n) => (
+          {[0, 2, 6, 15].map((n) => (
             <div key={n} className="rounded-sm" style={{ width: 10, height: 10, background: getColor(n) }} />
           ))}
           <span className="text-[10px] text-muted">많음</span>

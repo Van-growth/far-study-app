@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { localDateStr } from './date'
+import { localDateStr, parseLocalDate } from './date'
 
 // ── Auth guard ────────────────────────────────────────────────
 // All write helpers below check this first. If userId is missing, we
@@ -1218,5 +1218,158 @@ export async function getWeakestConceptTag(
   const rows = await getConceptStats(userId, undefined, 3)
   if (rows.length === 0) return null
   return rows.slice().sort((a, b) => a.accuracy - b.accuracy)[0]
+}
+
+// ── 통합 학습 활동 집계 ───────────────────────────────────────
+// quiz_logs + concept_extractions 를 합산하는 새 헬퍼들.
+// study_sessions 에 의존하지 않으므로 새로고침 카운팅 버그가 없다.
+
+export interface StudyActivityStats {
+  totalDays: number   // quiz OR analysis 가 있는 unique 날짜 수 (최근 1년)
+  weekCount: number   // 이번 주 quiz 수 + analysis 수
+  quizTotal: number   // 전체 누적 quiz 횟수 (all-time)
+  quizCorrect: number // 전체 누적 정답 횟수 (all-time)
+  streak: number      // 연속 학습일 (quiz OR analysis 기준)
+}
+
+export async function getStudyActivityStats(userId: string): Promise<StudyActivityStats> {
+  const empty: StudyActivityStats = { totalDays: 0, weekCount: 0, quizTotal: 0, quizCorrect: 0, streak: 0 }
+  if (!hasAuth(userId)) return empty
+
+  const oneYearAgo = new Date()
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+  const sinceIso = oneYearAgo.toISOString()
+  const weekStart = mondayOfThisWeek().toISOString()
+
+  const [quizDates, analyzeDates, quizWeek, analyzeWeek, quizAll, quizCorrectAll] =
+    await Promise.all([
+      supabase.from('quiz_logs').select('created_at').eq('user_id', userId).gte('created_at', sinceIso),
+      (async () => {
+        try {
+          const r = await supabase.from('concept_extractions').select('created_at').eq('user_id', userId).gte('created_at', sinceIso)
+          if (r.error && isMissingRelation(r.error)) return { data: [], error: null }
+          return r
+        } catch { return { data: [], error: null } }
+      })(),
+      supabase.from('quiz_logs').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', weekStart),
+      (async () => {
+        try {
+          const r = await supabase.from('concept_extractions').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', weekStart)
+          if (r.error && isMissingRelation(r.error)) return { count: 0, error: null }
+          return r
+        } catch { return { count: 0, error: null } }
+      })(),
+      supabase.from('quiz_logs').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+      supabase.from('quiz_logs').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('correct', true),
+    ])
+
+  // Unique local-date set (quiz OR analysis)
+  const daySet = new Set<string>()
+  for (const r of (quizDates.data ?? []) as { created_at: string }[]) {
+    daySet.add(localDateStr(new Date(r.created_at)))
+  }
+  for (const r of (analyzeDates.data ?? []) as { created_at: string }[]) {
+    if (r.created_at) daySet.add(localDateStr(new Date(r.created_at)))
+  }
+
+  // Streak — walk backward from today through the union of dates
+  const sortedDates = [...daySet].sort().reverse()
+  let streak = 0
+  let cursor = localDateStr(new Date())
+  for (const d of sortedDates) {
+    if (d === cursor) {
+      streak++
+      const prev = parseLocalDate(cursor)
+      prev.setDate(prev.getDate() - 1)
+      cursor = localDateStr(prev)
+    } else if (d < cursor) {
+      break
+    }
+  }
+
+  return {
+    totalDays: daySet.size,
+    weekCount: (quizWeek.count ?? 0) + ((analyzeWeek as { count?: number }).count ?? 0),
+    quizTotal: quizAll.count ?? 0,
+    quizCorrect: quizCorrectAll.count ?? 0,
+    streak,
+  }
+}
+
+/** concept_extractions 분석 건수를 topicId 별로 반환 */
+export async function getAnalyzeCountByTopic(userId: string): Promise<Record<string, number>> {
+  if (!hasAuth(userId)) return {}
+  try {
+    const { data, error } = await supabase
+      .from('concept_extractions')
+      .select('topic_id')
+      .eq('user_id', userId)
+      .not('topic_id', 'is', null)
+    if (error) {
+      if (isMissingRelation(error)) return {}
+      logError('getAnalyzeCountByTopic', error)
+      return {}
+    }
+    const acc: Record<string, number> = {}
+    for (const row of (data ?? []) as { topic_id: string | null }[]) {
+      if (row.topic_id) acc[row.topic_id] = (acc[row.topic_id] ?? 0) + 1
+    }
+    return acc
+  } catch { return {} }
+}
+
+/** study_sessions (quiz) + concept_extractions (analysis) 날짜를 합산한 캘린더 데이터 */
+export async function getCalendarWithAnalysis(userId: string): Promise<{
+  date: string
+  quiz_count: number
+  correct_count: number
+  analyze_count: number
+}[]> {
+  const oneYearAgo = new Date()
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+
+  const [calRows, analyzeRows] = await Promise.all([
+    getCalendar(userId),
+    (async () => {
+      if (!hasAuth(userId)) return []
+      try {
+        const { data, error } = await supabase
+          .from('concept_extractions')
+          .select('created_at')
+          .eq('user_id', userId)
+          .gte('created_at', oneYearAgo.toISOString())
+        if (error) return []
+        return (data ?? []) as { created_at: string }[]
+      } catch { return [] }
+    })(),
+  ])
+
+  // Count analysis per local date
+  const analyzeByDate = new Map<string, number>()
+  for (const r of analyzeRows) {
+    if (r.created_at) {
+      const d = localDateStr(new Date(r.created_at))
+      analyzeByDate.set(d, (analyzeByDate.get(d) ?? 0) + 1)
+    }
+  }
+
+  // Merge quiz calendar rows + analysis-only dates
+  const merged = new Map<string, { quiz_count: number; correct_count: number; analyze_count: number }>()
+  for (const row of calRows as { date: string; quiz_count: number; correct_count: number }[]) {
+    merged.set(row.date, {
+      quiz_count: row.quiz_count,
+      correct_count: row.correct_count,
+      analyze_count: analyzeByDate.get(row.date) ?? 0,
+    })
+  }
+  for (const [date, count] of analyzeByDate.entries()) {
+    if (!merged.has(date)) {
+      merged.set(date, { quiz_count: 0, correct_count: 0, analyze_count: count })
+    }
+  }
+
+  return [...merged.entries()]
+    .map(([date, v]) => ({ date, ...v }))
+    .sort((a, b) => a.date.localeCompare(b.date))
 }
 

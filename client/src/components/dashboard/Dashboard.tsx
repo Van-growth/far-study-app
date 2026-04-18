@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { allTopics, areas } from '../../data/far-topics';
 import useStudyStore from '../../store/studyStore';
 import { getAccuracy, getStatusColor, getDaysUntilReview, isDue, SR_INTERVALS } from '../../lib/srs';
-import { getCalendar } from '../../lib/db';
-import { localDateStr, parseLocalDate } from '../../lib/date';
+import { getStudyActivityStats, getAnalyzeCountByTopic, StudyActivityStats } from '../../lib/db';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -12,37 +11,23 @@ export default function Dashboard() {
   const userId = useStudyStore((s) => s.userId);
   const setCurrentTopic = useStudyStore((s) => s.setCurrentTopic);
 
-  const [sessionStats, setSessionStats] = useState({ totalDays: 0, weekCount: 0, streak: 0 });
+  const [activityStats, setActivityStats] = useState<StudyActivityStats>({
+    totalDays: 0, weekCount: 0, quizTotal: 0, quizCorrect: 0, streak: 0,
+  });
+  const [analyzeByTopic, setAnalyzeByTopic] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!userId) return;
-    getCalendar(userId).then((rows) => {
-      const data = rows as { date: string; quiz_count: number }[];
-      const totalDays = data.filter((d) => d.quiz_count > 0).length;
-      // This week — Monday as the first day, all in local time
-      const today = new Date();
-      const monday = new Date(today);
-      monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-      const weekStr = localDateStr(monday);
-      const weekCount = data
-        .filter((d) => d.date >= weekStr && d.quiz_count > 0)
-        .reduce((s, d) => s + d.quiz_count, 0);
-      // Streak — walk backwards from today's local date one day at a time
-      let streak = 0;
-      const sorted = [...data].filter((d) => d.quiz_count > 0).sort((a, b) => b.date.localeCompare(a.date));
-      let cursor = localDateStr(today);
-      for (const row of sorted) {
-        if (row.date === cursor) {
-          streak++;
-          const d = parseLocalDate(cursor);
-          d.setDate(d.getDate() - 1);
-          cursor = localDateStr(d);
-        } else if (row.date < cursor) {
-          break;
-        }
-      }
-      setSessionStats({ totalDays, weekCount, streak });
+    let cancelled = false;
+    Promise.all([
+      getStudyActivityStats(userId),
+      getAnalyzeCountByTopic(userId),
+    ]).then(([stats, analyzeMap]) => {
+      if (cancelled) return;
+      setActivityStats(stats);
+      setAnalyzeByTopic(analyzeMap);
     });
+    return () => { cancelled = true; };
   }, [userId]);
 
   const topicsWithStats = allTopics.map((topic) => {
@@ -75,19 +60,27 @@ export default function Dashboard() {
     return { area, mods, acc, attempted, totalAtt };
   });
 
-  const overallAccuracy = started.length > 0 ? Math.round(started.reduce((s, t) => s + t.accuracy, 0) / started.length) : 0;
-  const totalAttempts = Object.values(srsCards).reduce((s, c) => s + c.attempts, 0);
-  const totalCorrect = Object.values(srsCards).reduce((s, c) => s + c.correct, 0);
+  const overallAccuracy =
+    activityStats.quizTotal > 0
+      ? Math.round((activityStats.quizCorrect / activityStats.quizTotal) * 100)
+      : started.length > 0
+      ? Math.round(started.reduce((s, t) => s + t.accuracy, 0) / started.length)
+      : 0;
 
   return (
     <div className="flex flex-col gap-6">
       {/* Stat cards */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: '총 학습일', value: sessionStats.totalDays, color: '#4f6ef7', sub: '일' },
-          { label: '이번 주 풀이', value: sessionStats.weekCount, color: '#0ea5e9', sub: '문제' },
-          { label: '전체 정답률', value: started.length > 0 ? `${overallAccuracy}%` : '-', color: getStatusColor(overallAccuracy), sub: `${totalCorrect}/${totalAttempts}` },
-          { label: '연속 학습', value: sessionStats.streak, color: '#f59e0b', sub: '일 연속' },
+          { label: '총 학습일', value: activityStats.totalDays, color: '#4f6ef7', sub: '퀴즈+분석 합산' },
+          { label: '이번 주 학습', value: activityStats.weekCount, color: '#0ea5e9', sub: '학습 활동' },
+          {
+            label: '전체 정답률',
+            value: activityStats.quizTotal > 0 ? `${overallAccuracy}%` : '-',
+            color: getStatusColor(overallAccuracy),
+            sub: `(퀴즈 기준) ${activityStats.quizCorrect}/${activityStats.quizTotal}`,
+          },
+          { label: '연속 학습', value: activityStats.streak, color: '#f59e0b', sub: '일 연속' },
         ].map((s) => (
           <div key={s.label} className="card p-4" style={{ borderTop: `3px solid ${s.color}` }}>
             <p className="text-xs text-muted mb-1">{s.label}</p>
@@ -183,7 +176,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* All topics */}
+      {/* All topics — 토픽 Health (정답률 + 분석 건수) */}
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-[#0f172a]">전체 모듈 진도</h3>
@@ -196,12 +189,16 @@ export default function Dashboard() {
         <div className="flex flex-col gap-2">
           {topicsWithStats.map((t) => {
             const color = getStatusColor(t.accuracy);
+            const analyzeCount = analyzeByTopic[t.id] ?? 0;
             return (
               <button key={t.id} onClick={() => { setCurrentTopic(t.id); navigate(`/quiz?topicId=${t.id}`); }}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 text-left">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
                 <span className="text-sm flex-1">{t.label}</span>
                 <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded" style={{ background: t.areaColor + '15', color: t.areaColor }}>{t.areaLabel}</span>
+                {analyzeCount > 0 && (
+                  <span className="text-[10px] text-muted shrink-0">분석 {analyzeCount}건</span>
+                )}
                 {t.due && <span className="text-[9px] font-bold px-1 py-0.5 rounded" style={{ background: '#ef4444', color: 'white' }}>DUE</span>}
                 {!t.due && t.daysUntil >= 0 && <span className="text-[10px] text-muted">+{t.daysUntil}일</span>}
                 <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -226,6 +223,9 @@ export default function Dashboard() {
               <button key={t.id} onClick={() => navigate(`/quiz?topicId=${t.id}`)} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 text-left">
                 <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0" />
                 <span className="text-sm flex-1">{t.label}</span>
+                {(analyzeByTopic[t.id] ?? 0) > 0 && (
+                  <span className="text-[10px] text-muted">분석 {analyzeByTopic[t.id]}건</span>
+                )}
                 <span className="text-sm font-bold" style={{ color: '#ef4444' }}>{t.accuracy}%</span>
               </button>
             ))}
