@@ -31,6 +31,7 @@ const PANEL_DEFAULT = 340;
 const MOBILE_TABS = [
   { label: '홈', icon: '🏠', path: '/' },
   { label: '분석', icon: '📝', path: '/analyze' },
+  { label: '대시보드', icon: '📊', path: '/dashboard' },
   { label: '더보기', icon: '···', path: '/more' },
 ];
 
@@ -46,7 +47,7 @@ function BottomTabBar({ email }: { email: string }) {
     return location.pathname.startsWith(path);
   };
 
-  const morePaths = ['/dashboard', '/quiz', '/admin'];
+  const morePaths = ['/quiz', '/admin'];
   const moreActive = morePaths.some((p) => location.pathname.startsWith(p));
 
   return (
@@ -59,7 +60,6 @@ function BottomTabBar({ email }: { email: string }) {
             onClick={(e) => e.stopPropagation()}
           >
             {[
-              { label: '📊 대시보드', path: '/dashboard' },
               { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
               ...(isAdmin ? [{ label: '🛠️ Admin', path: '/admin' }] : []),
             ].map((item) => (

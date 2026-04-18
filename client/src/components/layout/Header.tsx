@@ -11,10 +11,10 @@ const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 const mainTabs = [
   { label: '홈', path: '/' },
   { label: '📝 분석', path: '/analyze' },
+  { label: '📊 대시보드', path: '/dashboard' },
 ];
 
 const moreTabs = [
-  { label: '📊 대시보드', path: '/dashboard' },
   { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
 ];
 const adminTab = { label: '🛠️ Admin', path: '/admin' };
