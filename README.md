@@ -2,6 +2,10 @@
 
 Ivy League 검증 학습법(Active Recall · Spaced Repetition · Feynman Technique · Interleaving)으로 FAR 시험을 준비하는 웹앱.
 
+## 온톨로지
+
+데이터 간 관계와 자동화 규칙은 `client/src/lib/ontology.ts`에 Object / Link / Action 형태로 명시되어 있습니다. 새 기능 개발 시 이 파일을 먼저 참조하세요.
+
 ## 아키텍처
 
 ```
