@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import {
   getErrorPatterns,
   tagAttemptError,
@@ -240,10 +242,10 @@ export default function ErrorTagSection(props: Props) {
             </div>
             {diagnosis && (
               <div
-                className="text-xs text-[#0f172a] leading-relaxed p-3 rounded"
-                style={{ background: 'white', border: '1px solid #fecaca', whiteSpace: 'pre-wrap' }}
+                className="text-xs text-[#0f172a] leading-relaxed p-3 rounded prose prose-xs max-w-none"
+                style={{ background: 'white', border: '1px solid #fecaca' }}
               >
-                {diagnosis}
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{diagnosis}</ReactMarkdown>
               </div>
             )}
           </div>
