@@ -15,6 +15,8 @@ interface Props {
   topicLabel: string
   /** 저장된 quiz_logs row id — saveQuizLog 가 fire-and-forget 이라 null 허용. */
   quizLogId: string | null
+  /** RPC 저장이 성공했을 때 한 번 호출. 부모가 토스트/스낵바 등을 띄우는 용도. */
+  onSaved?: (attemptErrorId: string) => void
 }
 
 type Stage = 'root' | 'exec' | 'saving' | 'done' | 'error'
@@ -90,6 +92,7 @@ export default function ErrorTagSection(props: Props) {
 
     setDiagnosis(aiDiagnosis)
     setStage('done')
+    props.onSaved?.(id)
   }
 
   if (loadingPatterns) {

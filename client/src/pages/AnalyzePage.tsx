@@ -11,6 +11,7 @@ import {
   ExtractedConcepts,
 } from '../hooks/useDynamicQuiz';
 import { ConceptCardView } from '../components/quiz/QuizView';
+import ErrorTagSection from '../components/quiz/ErrorTagSection';
 import {
   saveConceptExtraction,
   deleteConceptExtraction,
@@ -62,6 +63,7 @@ export default function AnalyzePage() {
   const [extractedOpen, setExtractedOpen] = useState(true);  // 추출된 개념: 기본 펼침
   const [cardOpen, setCardOpen] = useState(false);           // AI 해설: 기본 접힘
   const [learnedOpen, setLearnedOpen] = useState(false);     // 학습된 개념: 기본 접힘
+  const [tagToast, setTagToast] = useState(false);           // Error Pattern 저장 토스트
 
   // 우선순위: 텍스트 자동 감지 > 수동 드롭다운 > 사이드바 선택 모듈
   const detectedTopicId = detectTopicId(text);
@@ -76,6 +78,13 @@ export default function AnalyzePage() {
       .then(setLearned)
       .catch(() => setLearned(null));
   }, []);
+
+  // Auto-dismiss the Error Pattern save toast after ~2.6s.
+  useEffect(() => {
+    if (!tagToast) return;
+    const id = window.setTimeout(() => setTagToast(false), 2600);
+    return () => window.clearTimeout(id);
+  }, [tagToast]);
 
   const handleAnalyze = async () => {
     const trimmed = text.trim();
@@ -242,6 +251,7 @@ export default function AnalyzePage() {
     : [];
 
   return (
+    <>
     <div className="p-4 sm:p-6">
       <div className="max-w-3xl mx-auto flex flex-col gap-4">
         <div
@@ -503,6 +513,29 @@ export default function AnalyzePage() {
           </div>
         )}
 
+        {/* Error Pattern 태깅 — 내 답 ≠ 정답 이고 분석 결과가 있을 때만.
+            quiz_log_id 는 분석 플로우에서 생성 안 되므로 null. topic 은 감지된 모듈 id. */}
+        {(() => {
+          const ua = userAnswer.trim();
+          const ca = correctAnswer.trim();
+          const analysisDone = !!(card || extracted);
+          const hasBoth = ua.length > 0 && ca.length > 0;
+          const isWrong = hasBoth && ua.toLowerCase() !== ca.toLowerCase();
+          if (!analysisDone || !isWrong || !resolvedTopicId) return null;
+          return (
+            <ErrorTagSection
+              key={`${resolvedTopicId}-${ua}-${ca}`}
+              question={text}
+              userAnswer={ua}
+              correctAnswer={ca}
+              topicId={resolvedTopicId}
+              topicLabel={topicLabel ?? resolvedTopicId}
+              quizLogId={null}
+              onSaved={() => setTagToast(true)}
+            />
+          );
+        })()}
+
         {/* 학습된 개념 accordion */}
         <div className="card rounded-xl overflow-hidden">
           <button
@@ -594,6 +627,19 @@ export default function AnalyzePage() {
         )}
       </div>
     </div>
+
+    {/* Error Pattern 저장 완료 토스트 — 우측 상단, 2.6s 후 자동 사라짐 */}
+    {tagToast && (
+      <div
+        className="fixed z-50 top-20 right-4 px-4 py-2.5 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-slideUp"
+        style={{ background: '#0f172a', color: 'white' }}
+        role="status"
+      >
+        <span>✅</span>
+        <span>오류 패턴이 기록되었습니다</span>
+      </div>
+    )}
+    </>
   );
 }
 
