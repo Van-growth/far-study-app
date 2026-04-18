@@ -163,7 +163,6 @@ function ClaudeModal() {
 function AppLayout({ email }: { email: string }) {
   const location = useLocation();
   const isScience = location.pathname === '/science';
-  const isAnalyze = location.pathname === '/analyze';
   const isPanelOpen = useClaudeStore((s) => s.isOpen);
 
   const [panelWidth, setPanelWidth] = useState(PANEL_DEFAULT);
@@ -201,12 +200,6 @@ function AppLayout({ email }: { email: string }) {
       }} />
 
       <div className="flex flex-1 min-h-0 overflow-hidden" style={{ paddingTop: 54 }}>
-        {/* Sidebar — desktop only, not on /analyze (목차는 더보기 드롭다운으로) */}
-        {!isScience && !isAnalyze && (
-          <div className="hidden md:block">
-            <Sidebar />
-          </div>
-        )}
 
         {/* Main content — extra bottom padding on mobile for tab bar */}
         <main
