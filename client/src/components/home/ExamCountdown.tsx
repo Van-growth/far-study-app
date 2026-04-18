@@ -269,12 +269,12 @@ export default function ExamCountdown({
   const [modalOpen, setModalOpen] = useState(false)
   const [pickerValue, setPickerValue] = useState<string | null>(info.examDate)
 
-  // Auto-open on first visit ever, only when no date is saved. After
-  // the first auto-open we set PROMPT_SEEN_KEY so returning visits with
-  // still no date set don't nag. Editing is always available through
-  // the explicit button.
+  // Auto-open on first visit ever, only when no date is saved. Read
+  // localStorage directly (not from closure) so we always see the latest
+  // value even if the component re-mounts after a navigation.
   useEffect(() => {
-    if (info.examDate) return
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored && /^\d{4}-\d{2}-\d{2}$/.test(stored)) return
     const seen = localStorage.getItem(PROMPT_SEEN_KEY)
     if (!seen) {
       setModalOpen(true)
@@ -284,8 +284,6 @@ export default function ExamCountdown({
         /* ignore */
       }
     }
-    // We only need this check once, on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Schedule a re-render at the next KST midnight so D-day ticks down
@@ -307,6 +305,7 @@ export default function ExamCountdown({
     if (!newVal) return
     try {
       localStorage.setItem(STORAGE_KEY, newVal)
+      localStorage.setItem(PROMPT_SEEN_KEY, '1')
     } catch {
       /* ignore */
     }
