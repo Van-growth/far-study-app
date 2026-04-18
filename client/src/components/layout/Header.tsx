@@ -17,6 +17,7 @@ const mainTabs = [
 
 const moreTabs = [
   { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
+  { label: '📈 학습 효과', path: '/learning' },
 ];
 const adminTab = { label: '🛠️ Admin', path: '/admin' };
 
