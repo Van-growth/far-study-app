@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useNavigate } from 'react-router-dom'
 import useStudyStore from '../../store/studyStore'
 import {
@@ -208,7 +210,9 @@ export default function BriefingTab({ onSwitchTab }: Props) {
             <p className="text-sm text-[#4338ca] opacity-70">분석 중…</p>
           ) : weakAnalysis ? (
             <>
-              <p className="text-sm leading-relaxed text-[#1e1b4b] whitespace-pre-wrap">{weakAnalysis}</p>
+              <div className="text-sm leading-relaxed text-[#1e1b4b] prose prose-sm max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{weakAnalysis}</ReactMarkdown>
+              </div>
               <button
                 onClick={() => onSwitchTab?.('board')}
                 className="mt-4 text-xs font-semibold px-3 py-1.5 rounded-lg"

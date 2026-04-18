@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import Dashboard from '../components/dashboard/Dashboard';
 import StudyCalendar from '../components/dashboard/StudyCalendar';
-import HistoryView from '../components/dashboard/HistoryView';
 import BriefingTab from '../components/dashboard/BriefingTab';
 import ErrorPatternBoard from '../components/dashboard/ErrorPatternBoard';
 import ErrorChainTab from '../components/dashboard/ErrorChainTab';
@@ -66,8 +65,6 @@ export default function DashboardPage() {
         )}
         {tab === 'chain' && <ErrorChainTab />}
 
-        {/* History — tab 과 독립적으로 항상 아래 표시 */}
-        <HistoryView />
       </div>
     </div>
   );
