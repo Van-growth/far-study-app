@@ -568,15 +568,15 @@ export default function AnalyzePage() {
           const ua = userAnswer.trim();
           const ca = correctAnswer.trim();
 
-          // Guard 1: 두 입력 모두 실제 문자가 있어야 한다.
-          if (ua.length === 0 || ca.length === 0) return null;
+          // Guard 1: 정답은 반드시 있어야 한다.
+          if (ca.length === 0) return null;
 
           // Guard 2: 분석 결과(card 또는 extracted)가 나와야 한다.
           const analysisDone = !!(card || extracted);
           if (!analysisDone) return null;
 
-          // Case-insensitive 비교. "A" vs "a" 같은 MCQ 표기 차이 허용.
-          const matched = ua.toLowerCase() === ca.toLowerCase();
+          // 내 답이 있고 정답과 일치하면 정답 배너만.
+          const matched = ua.length > 0 && ua.toLowerCase() === ca.toLowerCase();
 
           if (matched) {
             // 정답 — 작은 초록 배너만.
