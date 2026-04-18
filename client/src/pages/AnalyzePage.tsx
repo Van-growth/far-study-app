@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useStudyStore from '../store/studyStore';
+import useClaudeStore from '../store/claudeStore';
 import { allTopics } from '../data/far-topics';
 import {
   fetchConceptCardFromText,
@@ -40,6 +41,7 @@ export default function AnalyzePage() {
   const navigate = useNavigate();
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
   const userId = useStudyStore((s) => s.userId);
+  const setAnalyzeContext = useClaudeStore((s) => s.setAnalyzeContext);
 
   const [text, setText] = useState('');
   const [userAnswer, setUserAnswer] = useState('');
@@ -91,6 +93,29 @@ export default function AnalyzePage() {
       .then(setLearned)
       .catch(() => setLearned(null));
   }, []);
+
+  // 분석 탭 컨텍스트를 Claude 튜터에 실시간 동기화.
+  useEffect(() => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      setAnalyzeContext(null);
+      return;
+    }
+    setAnalyzeContext({
+      questionText: trimmed,
+      userAnswer: userAnswer.trim() || null,
+      correctAnswer: correctAnswer.trim() || null,
+      topicId: resolvedTopicId,
+      topicLabel: topicLabel ?? null,
+      concepts: extracted?.concepts ?? [],
+      trapPattern: extracted?.trap_pattern ?? null,
+    });
+  }, [text, userAnswer, correctAnswer, resolvedTopicId, topicLabel, extracted, setAnalyzeContext]);
+
+  // 페이지 언마운트 시 컨텍스트 해제.
+  useEffect(() => {
+    return () => setAnalyzeContext(null);
+  }, [setAnalyzeContext]);
 
   // Auto-dismiss the Error Pattern save toast after ~2.6s.
   useEffect(() => {
@@ -221,6 +246,7 @@ export default function AnalyzePage() {
     setAlreadyAnalyzedAt(null);
     setCurrentHash(null);
     setShowExisting(false);
+    setAnalyzeContext(null);
     setExtractedOpen(true);
     setCardOpen(false);
     setLearnedOpen(false);

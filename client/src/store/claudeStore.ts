@@ -16,6 +16,16 @@ export interface PendingQuizContext {
   topicLabel: string;
 }
 
+export interface AnalyzeContext {
+  questionText: string;
+  userAnswer: string | null;
+  correctAnswer: string | null;
+  topicId: string | null;
+  topicLabel: string | null;
+  concepts: string[];
+  trapPattern: string | null;
+}
+
 const MAX_MESSAGES = 20;
 
 interface ClaudeStore {
@@ -23,6 +33,7 @@ interface ClaudeStore {
   messages: Message[];
   isLoading: boolean;
   pendingQuiz: PendingQuizContext | null;
+  analyzeContext: AnalyzeContext | null;
 
   togglePanel: () => void;
   openPanel: () => void;
@@ -32,6 +43,7 @@ interface ClaudeStore {
   setLoading: (loading: boolean) => void;
   clearMessages: () => void;
   setPendingQuiz: (ctx: PendingQuizContext | null) => void;
+  setAnalyzeContext: (ctx: AnalyzeContext | null) => void;
   setMessageFeedback: (id: string, fb: 'up' | 'down' | null) => void;
 }
 
@@ -40,11 +52,13 @@ const useClaudeStore = create<ClaudeStore>((set) => ({
   messages: [],
   isLoading: false,
   pendingQuiz: null,
+  analyzeContext: null,
 
   togglePanel: () => set((s) => ({ isOpen: !s.isOpen })),
   openPanel: () => set({ isOpen: true }),
   closePanel: () => set({ isOpen: false }),
   setPendingQuiz: (ctx) => set({ pendingQuiz: ctx }),
+  setAnalyzeContext: (ctx) => set({ analyzeContext: ctx }),
   setMessageFeedback: (id, fb) =>
     set((s) => ({
       messages: s.messages.map((m) => (m.id === id ? { ...m, feedback: fb } : m)),

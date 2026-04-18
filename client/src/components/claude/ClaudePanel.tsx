@@ -17,10 +17,11 @@ interface ClaudePanelProps {
 export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
   const topic = currentTopicId ? getTopicById(currentTopicId) : null;
+  const analyzeContext = useClaudeStore((s) => s.analyzeContext);
+  const pendingQuiz = useClaudeStore((s) => s.pendingQuiz);
 
   const { messages, isLoading, closePanel, sendMessage, sendStarter, clearMessages } =
-    useClaudeChat(topic?.label);
-  const pendingQuiz = useClaudeStore((s) => s.pendingQuiz);
+    useClaudeChat(topic?.label, analyzeContext);
   const setPendingQuiz = useClaudeStore((s) => s.setPendingQuiz);
 
   const [input, setInput] = useState('');
@@ -83,13 +84,24 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
             <button onClick={closePanel} className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-[#0f172a] hover:bg-gray-100 text-base">×</button>
           </div>
         </div>
-        {topic && (
+        {analyzeContext ? (
+          <div className="px-4 pb-2">
+            <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: '#eef2ff', color: '#3730a3' }}>
+              현재 문제:{' '}
+              <span className="font-semibold">
+                {analyzeContext.topicId
+                  ? `${analyzeContext.topicId}${analyzeContext.topicLabel ? ` · ${analyzeContext.topicLabel}` : ''}`
+                  : '분석 중'}
+              </span>
+            </span>
+          </div>
+        ) : topic ? (
           <div className="px-4 pb-2">
             <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: '#f0f4f8', color: '#64748b' }}>
               현재 토픽: <span className="font-semibold text-[#0f172a]">{topic.label}</span>
             </span>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Messages */}

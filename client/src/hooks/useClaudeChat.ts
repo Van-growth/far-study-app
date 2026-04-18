@@ -1,4 +1,4 @@
-import useClaudeStore from '../store/claudeStore';
+import useClaudeStore, { AnalyzeContext } from '../store/claudeStore';
 
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
@@ -96,8 +96,30 @@ async function streamChat(
   }
 }
 
+// Builds a context block for the system prompt from the analyze page state.
+function buildAnalyzeContextBlock(ctx: AnalyzeContext): string {
+  const MAX_Q = 1500;
+  const q = ctx.questionText.length > MAX_Q
+    ? ctx.questionText.slice(0, MAX_Q) + '…(생략)'
+    : ctx.questionText;
+  const lines = [
+    '---',
+    '현재 학생이 분석 중인 문제:',
+    q,
+    '---',
+    `정답: ${ctx.correctAnswer ?? '(미입력)'}`,
+    `학생의 답: ${ctx.userAnswer ?? '(미입력)'}`,
+    `모듈: ${ctx.topicId ?? '(미특정)'}${ctx.topicLabel ? ` · ${ctx.topicLabel}` : ''}`,
+  ];
+  if (ctx.concepts.length > 0) lines.push(`추출된 개념: ${ctx.concepts.slice(0, 6).join(', ')}`);
+  if (ctx.trapPattern) lines.push(`함정 패턴: ${ctx.trapPattern}`);
+  lines.push('---');
+  lines.push('이 문제를 기반으로 학생의 질문에 답해줘. 개념 설명은 한국어로, 핵심 트리거 중심으로. AI가 임의로 다른 문제를 상상하지 말 것.');
+  return lines.join('\n');
+}
+
 // ── Hook ──────────────────────────────────────────────────────
-export function useClaudeChat(currentTopicLabel?: string) {
+export function useClaudeChat(currentTopicLabel?: string, analyzeCtx?: AnalyzeContext | null) {
   const store = useClaudeStore();
 
   const callStreamAPI = (userContent: string) => {
@@ -113,13 +135,18 @@ export function useClaudeChat(currentTopicLabel?: string) {
     // Build API messages (exclude the empty assistant message we just added)
     const apiMsgs = messages.slice(0, -1).map((m) => ({ role: m.role, content: m.content }));
 
+    // Inject analyze context into system prompt when present.
+    const systemPrompt = analyzeCtx
+      ? `${SYSTEM_PROMPT}\n\n${buildAnalyzeContextBlock(analyzeCtx)}`
+      : SYSTEM_PROMPT;
+
     let accumulated = '';
 
     streamChat(
       {
         messages: apiMsgs,
-        systemPrompt: SYSTEM_PROMPT,
-        currentTopic: currentTopicLabel,
+        systemPrompt,
+        currentTopic: analyzeCtx ? undefined : currentTopicLabel,
       },
       (text) => {
         accumulated += text;
