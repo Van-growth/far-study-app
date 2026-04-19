@@ -33,7 +33,7 @@ const PANEL_DEFAULT = 340;
 const MOBILE_TABS = [
   { label: '홈', icon: '🏠', path: '/' },
   { label: '분석', icon: '📝', path: '/analyze' },
-  { label: '기록', icon: '📋', path: '/history' },
+  { label: '복습', icon: '🔁', path: '/history' },
   { label: '더보기', icon: '···', path: '/more' },
 ];
 

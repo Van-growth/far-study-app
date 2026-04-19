@@ -6,16 +6,13 @@ import Sidebar from './Sidebar';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 
-// Main desktop nav: 2 primary entries only.
-// AI 튜터 중심으로 포지셔닝 전환. 퀴즈/대시보드/어드민은 더보기 드롭다운으로.
-// Coach/오답노트/학습 과학/Valuation 은 URL 은 유지하되 네비에서 제거.
 const mainTabs = [
   { label: '홈', path: '/' },
   { label: '📝 분석', path: '/analyze' },
-  { label: '📊 대시보드', path: '/dashboard' },
 ];
 
 const moreTabs = [
+  { label: '📊 대시보드', path: '/dashboard' },
   { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
   { label: '🏆 뱃지 & 성취', path: '/badges' },
   { label: '📈 학습 효과', path: '/learning' },
@@ -98,6 +95,22 @@ export default function Header({ email, onSignOut }: HeaderProps) {
             {tab.label}
           </button>
         ))}
+        {/* 복습 tab — replaces 대시보드 slot */}
+        <button
+          onClick={() => navigate('/history')}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors shrink-0 ${
+            isActive('/history')
+              ? 'bg-[#4f6ef7]/10 text-[#4f6ef7]'
+              : 'text-muted hover:text-[#0f172a] hover:bg-gray-100'
+          }`}
+        >
+          🔁 복습
+          {dueCount > 0 && (
+            <span className="w-4 h-4 rounded-full text-white text-[10px] font-bold inline-flex items-center justify-center" style={{ background: '#ef4444' }}>
+              {dueCount}
+            </span>
+          )}
+        </button>
         <div ref={moreRef} className="relative">
           <button
             onClick={() => setMoreOpen((v) => !v)}
@@ -144,33 +157,6 @@ export default function Header({ email, onSignOut }: HeaderProps) {
 
       {/* Right actions */}
       <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
-        {/* DUE button */}
-        <button
-          onClick={() => navigate('/history')}
-          className="flex items-center gap-1 px-2 md:px-2.5 py-1.5 rounded-lg text-[12px] md:text-[13px] font-medium"
-          style={{
-            background: dueCount > 0 ? '#fff5f5' : '#f8fafc',
-            color: dueCount > 0 ? '#ef4444' : '#64748b',
-            border: `1px solid ${dueCount > 0 ? '#fecaca' : '#e2e8f0'}`,
-          }}
-        >
-          DUE
-          {dueCount > 0 && (
-            <span className="w-4 h-4 md:w-5 md:h-5 rounded-full text-white text-[10px] md:text-[11px] font-bold inline-flex items-center justify-center" style={{ background: '#ef4444' }}>
-              {dueCount}
-            </span>
-          )}
-        </button>
-
-        {/* All quiz — desktop only */}
-        <button
-          onClick={() => navigate('/quiz?mode=interleave')}
-          className="hidden md:block px-2.5 py-1.5 rounded-lg text-[13px] font-medium text-white hover:opacity-90"
-          style={{ background: '#4f6ef7' }}
-        >
-          전체퀴즈
-        </button>
-
         {/* Claude toggle */}
         {!isScience && (
           <button
