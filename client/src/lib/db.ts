@@ -516,6 +516,51 @@ export interface StoredExtractionData {
   trapPattern: string | null
 }
 
+export interface RecentExtractionItem {
+  id: string
+  createdAt: string
+  topicId: string | null
+  concepts: string[]
+  ascReferences: string[]
+  topicTags: string[]
+  trapPattern: string | null
+  triggers: ConceptTrigger[]
+}
+
+export async function fetchRecentExtractions(
+  userId: string,
+  limit = 10,
+): Promise<RecentExtractionItem[]> {
+  if (!hasAuth(userId)) return []
+  try {
+    const { data, error } = await supabase
+      .from('concept_extractions')
+      .select('id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern, triggers')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error || !data) return []
+    return (data as Record<string, unknown>[]).map((row) => ({
+      id: String(row.id ?? ''),
+      createdAt: String(row.created_at ?? ''),
+      topicId: typeof row.topic_id === 'string' ? row.topic_id : null,
+      concepts: (Array.isArray(row.concepts) ? row.concepts : []).filter(
+        (c): c is string => typeof c === 'string',
+      ),
+      ascReferences: (Array.isArray(row.asc_references) ? row.asc_references : []).filter(
+        (c): c is string => typeof c === 'string',
+      ),
+      topicTags: (Array.isArray(row.topic_tags) ? row.topic_tags : []).filter(
+        (c): c is string => typeof c === 'string',
+      ),
+      trapPattern: typeof row.trap_pattern === 'string' ? row.trap_pattern : null,
+      triggers: Array.isArray(row.triggers) ? (row.triggers as ConceptTrigger[]) : [],
+    }))
+  } catch {
+    return []
+  }
+}
+
 /**
  * question_hash로 저장된 concept_extractions row 전체를 가져온다.
  * 미배포/조회 실패 시 null (차단하지 않음).

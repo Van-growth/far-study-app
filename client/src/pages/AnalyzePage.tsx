@@ -20,11 +20,13 @@ import {
   checkConceptDuplication,
   checkQuestionHash,
   fetchExtractionByHash,
+  fetchRecentExtractions,
   hashText,
   getAnalyzeCountByTopic,
   DupCheckResult,
   DupMatchedRow,
   ConceptExtractionRow,
+  RecentExtractionItem,
 } from '../lib/db';
 
 
@@ -88,6 +90,7 @@ export default function AnalyzePage() {
   const [tagToast, setTagToast] = useState(false);
   const [badgeToast, setBadgeToast] = useState<string | null>(null);
   const [badgeCount, setBadgeCount] = useState<number>(-1);
+  const [recentRefreshKey, setRecentRefreshKey] = useState(0);
   const [consecutiveCorrect, setConsecutiveCorrect] = useState<number>(() => {
     try { return parseInt(localStorage.getItem('far_consecutive_correct_analyze') ?? '0', 10); } catch { return 0; }
   });
@@ -356,6 +359,7 @@ export default function AnalyzePage() {
         }
       }
       setPendingExtraction(null);
+      setRecentRefreshKey((k) => k + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : '저장 실패');
     } finally {
@@ -390,10 +394,37 @@ export default function AnalyzePage() {
         .slice(0, 10)
     : [];
 
+  const handleSelectRecent = (item: RecentExtractionItem) => {
+    setExtracted({
+      concepts: item.concepts,
+      asc_references: item.ascReferences,
+      topic_tags: item.topicTags,
+      trap_pattern: item.trapPattern,
+      triggers: item.triggers,
+    });
+    setExtractedOpen(true);
+    setCard(null);
+    setCardOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <>
     <div className="p-4 sm:p-6">
-      <div className="max-w-3xl mx-auto flex flex-col gap-4">
+      <div className="max-w-6xl mx-auto">
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
+
+        {/* ── 최근 분석 기록 사이드바 ── */}
+        <div className="w-full lg:w-56 xl:w-60 shrink-0 order-last lg:order-first lg:sticky lg:top-[62px]">
+          <RecentAnalysesPanel
+            userId={userId ?? null}
+            refreshKey={recentRefreshKey}
+            onSelect={handleSelectRecent}
+          />
+        </div>
+
+        {/* ── 메인 콘텐츠 ── */}
+      <div className="flex-1 min-w-0 flex flex-col gap-4">
         <div
           className="rounded-xl px-4 py-2.5 text-[12px] sm:text-[13px] leading-relaxed"
           style={{ background: '#eef2ff', color: '#3730a3', border: '1px solid #c7d2fe' }}
@@ -820,7 +851,9 @@ export default function AnalyzePage() {
             ➕ 다음 문제 분석하기
           </button>
         )}
-      </div>
+      </div>{/* 메인 콘텐츠 끝 */}
+      </div>{/* flex row 끝 */}
+      </div>{/* max-w-6xl 끝 */}
     </div>
 
     {/* Error Pattern 저장 완료 토스트 */}
@@ -1160,6 +1193,108 @@ function DupBanner({
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── 최근 분석 기록 패널 ───────────────────────────────────────
+function RecentAnalysesPanel({
+  userId,
+  refreshKey,
+  onSelect,
+}: {
+  userId: string | null;
+  refreshKey: number;
+  onSelect: (item: RecentExtractionItem) => void;
+}) {
+  const [items, setItems] = useState<RecentExtractionItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    setLoading(true);
+    fetchRecentExtractions(userId, 10)
+      .then(setItems)
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, [userId, refreshKey]);
+
+  const formatDate = (iso: string) => {
+    try {
+      const d = new Date(iso);
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterdayStart = new Date(todayStart.getTime() - 86400000);
+      const hhmm = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+      if (d >= todayStart) return `오늘 ${hhmm}`;
+      if (d >= yesterdayStart) return `어제 ${hhmm}`;
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    } catch {
+      return iso.slice(0, 10);
+    }
+  };
+
+  return (
+    <div className="card rounded-xl overflow-hidden">
+      <div className="px-3 py-2.5 border-b border-border flex items-center justify-between">
+        <span className="text-xs font-semibold text-[#0f172a]">🕐 최근 분석 기록</span>
+        {loading && (
+          <div className="w-3 h-3 border-2 border-[#4f6ef7] border-t-transparent rounded-full animate-spin" />
+        )}
+      </div>
+      {!userId ? (
+        <p className="text-[11px] text-muted px-3 py-3">로그인 후 이용 가능합니다.</p>
+      ) : !loading && items.length === 0 ? (
+        <p className="text-[11px] text-muted px-3 py-3">아직 분석 기록이 없습니다.</p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-border">
+          {items.map((item) => {
+            const isSelected = item.id === selectedId;
+            return (
+              <li key={item.id}>
+                <button
+                  onClick={() => {
+                    setSelectedId(item.id);
+                    onSelect(item);
+                  }}
+                  className="w-full text-left px-3 py-2.5 transition-colors hover:bg-[#f8fafc]"
+                  style={{ background: isSelected ? '#eef2ff' : undefined }}
+                >
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    {item.topicId && (
+                      <span
+                        className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                        style={{ background: '#e0f2fe', color: '#0369a1' }}
+                      >
+                        {item.topicId}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-muted ml-auto">{formatDate(item.createdAt)}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {item.concepts.slice(0, 3).map((c, i) => (
+                      <span
+                        key={i}
+                        className="text-[10px] px-1.5 py-0.5 rounded-full"
+                        style={{ background: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0' }}
+                      >
+                        {c}
+                      </span>
+                    ))}
+                    {item.concepts.length > 3 && (
+                      <span className="text-[10px] text-muted">+{item.concepts.length - 3}</span>
+                    )}
+                  </div>
+                  {item.trapPattern && (
+                    <p className="text-[10px] text-[#991b1b] mt-1 truncate">⚠ {item.trapPattern}</p>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }
