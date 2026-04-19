@@ -12,11 +12,19 @@ const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 const MODEL = 'claude-sonnet-4-6';
 
+const EMPTY_EXTRACTED: ExtractedConcepts = {
+  concepts: [],
+  asc_references: [],
+  topic_tags: [],
+  trap_pattern: null,
+  triggers: [],
+};
+
 // ─────────────────────────────────────────────
 // POST /api/extract-concepts
 // body: { questionText, userAnswer?, correctAnswer?, topicId? }
-// NOTE: questionText is used only to call Claude. We DO NOT persist the
-//       original text — only the extracted concept metadata.
+// 202 를 즉시 반환하고 Anthropic 처리는 백그라운드에서.
+// Render 30s 타임아웃 회피용.
 // ─────────────────────────────────────────────
 router.post('/extract-concepts', async (req: Request, res: Response) => {
   console.log('[analyze] extract-concepts 요청 받음');
@@ -40,14 +48,20 @@ router.post('/extract-concepts', async (req: Request, res: Response) => {
     return;
   }
 
-  const wasWrong = userAnswer && correctAnswer && userAnswer !== correctAnswer;
-  const answerLine =
-    userAnswer != null && correctAnswer != null
-      ? `\n사용자 답: ${userAnswer}\n정답: ${correctAnswer}\n${wasWrong ? '→ 오답' : '→ 정답'}`
-      : '';
-  const topicLine = topicId ? `\n현재 모듈: ${topicId}` : '';
+  // 즉시 202 반환 — Render 타임아웃 전에 응답 완료
+  finish(202, { extracted: EMPTY_EXTRACTED, learned: null, correctedTopicId: null });
+  console.log('[analyze] 202 응답 완료, 백그라운드 처리 시작');
 
-  const prompt = `아래 FAR 문제 원문에서 학습 데이터로 재사용할 개념 메타데이터만 추출하세요.
+  // ── 백그라운드 처리 (fire-and-forget) ────────────────────────
+  void (async () => {
+    const wasWrong = userAnswer && correctAnswer && userAnswer !== correctAnswer;
+    const answerLine =
+      userAnswer != null && correctAnswer != null
+        ? `\n사용자 답: ${userAnswer}\n정답: ${correctAnswer}\n${wasWrong ? '→ 오답' : '→ 정답'}`
+        : '';
+    const topicLine = topicId ? `\n현재 모듈: ${topicId}` : '';
+
+    const prompt = `아래 FAR 문제 원문에서 학습 데이터로 재사용할 개념 메타데이터만 추출하세요.
 ${topicLine}
 
 문제 원문:
@@ -87,117 +101,97 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
   ]
 }`;
 
-  let msg: Awaited<ReturnType<typeof anthropic.messages.create>>;
-  try {
-    console.log('[analyze] Anthropic 호출 직전');
-    msg = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 600,
-      messages: [{ role: 'user', content: prompt }],
-    });
-    console.log('[analyze] Anthropic 호출 완료');
-    console.log('응답 content 타입:', typeof msg, JSON.stringify(msg).slice(0, 200));
-  } catch (apiErr) {
-    console.error('[analyze] Anthropic API 호출 실패:', {
-      message: apiErr instanceof Error ? apiErr.message : String(apiErr),
-      status: (apiErr as { status?: number }).status,
-      error: apiErr,
-    });
-    finish(502, { error: 'Anthropic API 호출 실패', detail: apiErr instanceof Error ? apiErr.message : String(apiErr) });
-    return;
-  }
-
-  try {
-    const block = msg.content.find((b) => b.type === 'text');
-    if (!block || block.type !== 'text') {
-      finish(502, { error: 'no text in response' });
-      return;
-    }
-    const text = block.text.trim();
-    console.log('[analyze] Anthropic raw 응답:', text);
-    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    let rawBody: string;
-    if (fenced) {
-      rawBody = fenced[1].trim();
-    } else {
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      rawBody = jsonMatch ? jsonMatch[0] : text;
-    }
-    let parsed: unknown;
     try {
-      parsed = JSON.parse(rawBody);
-    } catch (e) {
-      finish(502, {
-        error: 'extraction JSON parse failed',
-        detail: e instanceof Error ? e.message : 'unknown',
+      console.log('[analyze] Anthropic 호출 직전');
+      const msg = await anthropic.messages.create({
+        model: MODEL,
+        max_tokens: 600,
+        messages: [{ role: 'user', content: prompt }],
       });
-      return;
-    }
-    if (!parsed || typeof parsed !== 'object') {
-      finish(502, { error: 'invalid extraction shape' });
-      return;
-    }
-    const obj = parsed as Partial<ExtractedConcepts> & { triggers?: unknown };
-    const rawTriggers = Array.isArray((obj as { triggers?: unknown }).triggers)
-      ? (obj as { triggers: unknown[] }).triggers
-      : [];
-    const triggers: ConceptTrigger[] = rawTriggers
-      .filter((t): t is Record<string, unknown> => !!t && typeof t === 'object')
-      .map((t) => ({
-        keyword: typeof t.keyword === 'string' ? t.keyword : '',
-        auto_rule: typeof t.auto_rule === 'string' ? t.auto_rule : '',
-        trap: typeof t.trap === 'string' ? t.trap : '',
-        comparison: typeof t.comparison === 'string' ? t.comparison : '',
-        irrelevant: typeof t.irrelevant === 'string' ? t.irrelevant : '',
-      }))
-      .filter((t) => t.keyword);
+      console.log('[analyze] Anthropic 호출 완료');
+      console.log('응답 content 타입:', typeof msg, JSON.stringify(msg).slice(0, 200));
 
-    const extracted: ExtractedConcepts = {
-      concepts: Array.isArray(obj.concepts) ? obj.concepts.filter((x): x is string => typeof x === 'string') : [],
-      asc_references: Array.isArray(obj.asc_references)
-        ? obj.asc_references.filter((x): x is string => typeof x === 'string')
-        : [],
-      topic_tags: Array.isArray(obj.topic_tags)
-        ? obj.topic_tags.filter((x): x is string => typeof x === 'string')
-        : [],
-      trap_pattern: typeof obj.trap_pattern === 'string' ? obj.trap_pattern : null,
-      triggers,
-    };
-
-    // topic_id 추론/보정
-    let correctedTopicId: string | null = null;
-    if (topicId) {
-      const inference = inferTopicId(
-        extracted.concepts,
-        extracted.topic_tags,
-        extracted.asc_references,
-        topicId,
-      );
-      if (inference.corrected) {
-        correctedTopicId = inference.topicId;
-        console.log(`[analyze] topic_id corrected: ${topicId} → ${correctedTopicId}`);
+      const block = msg.content.find((b) => b.type === 'text');
+      if (!block || block.type !== 'text') {
+        console.error('[analyze] 백그라운드: no text in response');
+        return;
       }
+      const text = block.text.trim();
+      console.log('[analyze] Anthropic raw 응답:', text);
+
+      const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      let rawBody: string;
+      if (fenced) {
+        rawBody = fenced[1].trim();
+      } else {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        rawBody = jsonMatch ? jsonMatch[0] : text;
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(rawBody);
+      } catch (e) {
+        console.error('[analyze] 백그라운드: JSON 파싱 실패:', e instanceof Error ? e.message : e, '\nraw:', rawBody.slice(0, 300));
+        return;
+      }
+      if (!parsed || typeof parsed !== 'object') {
+        console.error('[analyze] 백그라운드: invalid extraction shape');
+        return;
+      }
+
+      const obj = parsed as Partial<ExtractedConcepts> & { triggers?: unknown };
+      const rawTriggers = Array.isArray((obj as { triggers?: unknown }).triggers)
+        ? (obj as { triggers: unknown[] }).triggers
+        : [];
+      const triggers: ConceptTrigger[] = rawTriggers
+        .filter((t): t is Record<string, unknown> => !!t && typeof t === 'object')
+        .map((t) => ({
+          keyword: typeof t.keyword === 'string' ? t.keyword : '',
+          auto_rule: typeof t.auto_rule === 'string' ? t.auto_rule : '',
+          trap: typeof t.trap === 'string' ? t.trap : '',
+          comparison: typeof t.comparison === 'string' ? t.comparison : '',
+          irrelevant: typeof t.irrelevant === 'string' ? t.irrelevant : '',
+        }))
+        .filter((t) => t.keyword);
+
+      const extracted: ExtractedConcepts = {
+        concepts: Array.isArray(obj.concepts) ? obj.concepts.filter((x): x is string => typeof x === 'string') : [],
+        asc_references: Array.isArray(obj.asc_references)
+          ? obj.asc_references.filter((x): x is string => typeof x === 'string')
+          : [],
+        topic_tags: Array.isArray(obj.topic_tags)
+          ? obj.topic_tags.filter((x): x is string => typeof x === 'string')
+          : [],
+        trap_pattern: typeof obj.trap_pattern === 'string' ? obj.trap_pattern : null,
+        triggers,
+      };
+
+      if (topicId) {
+        const inference = inferTopicId(
+          extracted.concepts,
+          extracted.topic_tags,
+          extracted.asc_references,
+          topicId,
+        );
+        if (inference.corrected) {
+          console.log(`[analyze] 백그라운드: topic_id corrected: ${topicId} → ${inference.topicId}`);
+        }
+      }
+
+      applyExtraction(extracted).catch((saveErr) => {
+        console.error('[analyze] 백그라운드 저장 실패:', saveErr instanceof Error ? saveErr.message : saveErr);
+      });
+
+      console.log('[analyze] 백그라운드 처리 완료');
+    } catch (err) {
+      console.error('[analyze] 백그라운드 처리 에러:', err instanceof Error ? err.message : err);
     }
-
-    console.log('[analyze] res.json 호출 직전');
-    console.log('[analyze] finish 호출');
-    finish(200, { extracted, learned: null, correctedTopicId });
-    console.log('[analyze] res.json 완료');
-
-    // fire-and-forget: 응답 후 백그라운드 저장
-    applyExtraction(extracted).catch((saveErr) => {
-      console.error('[analyze] 백그라운드 저장 실패:', saveErr instanceof Error ? saveErr.message : saveErr);
-    });
-  } catch (err) {
-    console.error('[analyze] outer catch 에러:', err);
-    const m = err instanceof Error ? err.message : 'unknown';
-    finish(500, { error: m });
-  }
+  })();
 });
 
 // ─────────────────────────────────────────────
 // GET /api/learned-concepts
-// Returns the current accumulated state for UI display.
 // ─────────────────────────────────────────────
 router.get('/learned-concepts', async (_req: Request, res: Response) => {
   try {

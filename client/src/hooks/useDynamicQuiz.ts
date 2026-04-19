@@ -290,6 +290,10 @@ export async function extractConcepts(input: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
+  // 202: 서버가 즉시 수락, 처리는 백그라운드 — 빈 extracted로 정상 처리
+  if (res.status === 202) {
+    return (await res.json()) as { extracted: ExtractedConcepts; learned: LearnedConcepts; correctedTopicId?: string | null };
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
     throw new Error(err.error ?? `HTTP ${res.status}`);
