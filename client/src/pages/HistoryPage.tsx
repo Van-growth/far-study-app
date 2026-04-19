@@ -26,14 +26,29 @@ async function fetchCardHint(
 type Stage = 'loading' | 'empty' | 'review' | 'done'
 
 // ── Progress bar ──────────────────────────────────────────────
-function ProgressBar({ current, total }: { current: number; total: number }) {
+function ProgressBar({
+  current,
+  total,
+  topicId,
+  topicLabel,
+}: {
+  current: number
+  total: number
+  topicId?: string | null
+  topicLabel?: string
+}) {
   const pct = total > 0 ? (current / total) * 100 : 0
   return (
     <div className="px-4 pt-4 pb-2">
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="flex items-center justify-between mb-1">
         <span className="text-xs font-semibold text-[#4f6ef7]">오늘 복습</span>
         <span className="text-xs font-bold text-[#0f172a]">{current} / {total}</span>
       </div>
+      {(topicId || topicLabel) && (
+        <p className="text-[11px] text-[#64748b] mb-1.5 truncate">
+          {[topicId, topicLabel].filter(Boolean).join(' · ')}
+        </p>
+      )}
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
@@ -72,7 +87,6 @@ function FlashCard({ card, visible }: { card: RecentExtractionItem; visible: boo
         transition: 'opacity 0.2s ease, transform 0.2s ease',
         opacity: visible ? 1 : 0,
         transform: visible ? 'translateY(0)' : 'translateY(12px)',
-        minHeight: 320,
       }}
     >
       {/* Module badge */}
@@ -213,7 +227,8 @@ export default function HistoryPage() {
   const [cards, setCards] = useState<RecentExtractionItem[]>([])
   const [idx, setIdx] = useState(0)
   const [stage, setStage] = useState<Stage>('loading')
-  const [completedCount, setCompletedCount] = useState(0)
+  const [knewCount, setKnewCount] = useState(0)
+  const [confusedCount, setConfusedCount] = useState(0)
   const [visible, setVisible] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
@@ -240,7 +255,8 @@ export default function HistoryPage() {
     // 3. After fade-out, advance
     setTimeout(() => {
       const next = idx + 1
-      setCompletedCount((c) => c + 1)
+      if (knew) setKnewCount((c) => c + 1)
+      else setConfusedCount((c) => c + 1)
       if (next >= cards.length) {
         setStage('done')
         if (userId) getConceptDueCount(userId).then(setConceptDueCount)
@@ -262,14 +278,19 @@ export default function HistoryPage() {
   }
 
   if (stage === 'empty') return <EmptyView />
-  if (stage === 'done') return <DoneView count={completedCount} />
+  if (stage === 'done') return <DoneView count={knewCount + confusedCount} />
 
   const current = cards[idx]
   const total = cards.length
 
   return (
     <div className="max-w-lg mx-auto flex flex-col gap-4 pb-8">
-      <ProgressBar current={idx + 1} total={total} />
+      <ProgressBar
+        current={idx + 1}
+        total={total}
+        topicId={current.topicId}
+        topicLabel={current.topicTags[0]}
+      />
 
       <FlashCard key={idx} card={current} visible={visible} />
 
@@ -293,8 +314,9 @@ export default function HistoryPage() {
         </button>
       </div>
 
-      <p className="text-center text-[10px] text-[#94a3b8]">
-        알았다 → 다음 복습 간격 증가 &nbsp;·&nbsp; 헷갈려 → 내일 다시
+      <p className="text-center text-[11px] text-[#64748b]">
+        오늘 완료: <span className="font-semibold text-[#166534]">{knewCount}개 ✅</span>
+        &nbsp;&nbsp;헷갈려: <span className="font-semibold text-[#92400e]">{confusedCount}개 🔄</span>
       </p>
     </div>
   )
