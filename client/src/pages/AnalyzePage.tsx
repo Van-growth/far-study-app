@@ -404,20 +404,20 @@ export default function AnalyzePage() {
           <h1 className="text-xl font-bold text-[#0f172a]">문제 분석</h1>
           <p className="text-xs text-muted mt-0.5">
             문제 원문을 붙여넣으면 AI가 구조화 해설을 생성하고, 개념 메타데이터만 학습 데이터에 누적합니다.
-            {resolvedTopicId && (
-              <span className="ml-2 text-[#4f6ef7]">
-                모듈: {resolvedTopicId} · {topicLabel}
-                {badge && (
-                  <span
-                    className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold"
-                    style={{ background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe' }}
-                  >
-                    {badge.emoji} {badge.label}
-                  </span>
-                )}
-              </span>
-            )}
           </p>
+          {resolvedTopicId && (
+            <p className="text-xs text-[#4f6ef7] mt-0.5">
+              모듈: {resolvedTopicId} · {topicLabel}
+              {badge && (
+                <span
+                  className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                  style={{ background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe' }}
+                >
+                  {badge.emoji} {badge.label}
+                </span>
+              )}
+            </p>
+          )}
         </div>
 
         {/* Input */}
@@ -744,14 +744,7 @@ export default function AnalyzePage() {
             onClick={() => setLearnedOpen((v) => !v)}
             className="w-full flex items-center justify-between px-4 py-3 text-left"
           >
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-[#0f172a]">📚 학습된 개념</span>
-              {learned?.updated_at && (
-                <span className="text-[10px] text-muted">
-                  {new Date(learned.updated_at).toLocaleString('ko-KR')}
-                </span>
-              )}
-            </div>
+            <span className="text-sm font-semibold text-[#0f172a]">📚 학습된 개념</span>
             <span className="text-xs text-muted">{learnedOpen ? '▲' : '▼'}</span>
           </button>
           {learnedOpen && (
