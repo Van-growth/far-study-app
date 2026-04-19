@@ -86,6 +86,7 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
       messages: [{ role: 'user', content: prompt }],
     });
     console.log('[analyze] Anthropic 호출 완료');
+    console.log('응답 content 타입:', typeof msg, JSON.stringify(msg).slice(0, 200));
   } catch (apiErr) {
     console.error('[analyze] Anthropic API 호출 실패:', {
       message: apiErr instanceof Error ? apiErr.message : String(apiErr),
