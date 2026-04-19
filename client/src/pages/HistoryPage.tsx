@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import useStudyStore from '../store/studyStore'
-import { fetchExtractionsPage, RecentExtractionItem } from '../lib/db'
+import { fetchExtractionsPage, updateConceptReview, RecentExtractionItem } from '../lib/db'
+import { getConceptDueCount } from '../lib/db'
 
 const PAGE_SIZE = 10
 
@@ -10,18 +11,59 @@ function fmt(iso: string) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-function ExtractionCard({ item }: { item: RecentExtractionItem }) {
+function isDue(item: RecentExtractionItem): boolean {
+  if (!item.nextReviewAt) return false
+  return new Date(item.nextReviewAt) <= new Date()
+}
+
+function nextReviewLabel(item: RecentExtractionItem): string {
+  if (!item.nextReviewAt) return ''
+  const d = new Date(item.nextReviewAt)
+  const now = new Date()
+  if (d <= now) return 'DUE'
+  const diffDays = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  return `${diffDays}일 후`
+}
+
+interface CardProps {
+  item: RecentExtractionItem
+  onReviewed: (id: string, knew: boolean) => void
+}
+
+function ExtractionCard({ item, onReviewed }: CardProps) {
   const [open, setOpen] = useState(false)
+  const [reviewing, setReviewing] = useState(false)
+  const due = isDue(item)
+
+  async function handleReview(knew: boolean) {
+    if (reviewing) return
+    setReviewing(true)
+    await updateConceptReview(item.id, knew)
+    onReviewed(item.id, knew)
+  }
 
   return (
     <div
-      className="rounded-xl overflow-hidden cursor-pointer"
-      style={{ border: '1px solid #e2e8f0', background: 'white' }}
-      onClick={() => setOpen((v) => !v)}
+      className="rounded-xl overflow-hidden"
+      style={{
+        border: due ? '1.5px solid #fca5a5' : '1px solid #e2e8f0',
+        background: due ? '#fff7f7' : 'white',
+      }}
     >
-      {/* Card header */}
-      <div className="px-4 py-3 flex items-center justify-between gap-3">
+      {/* Card header — clickable to expand */}
+      <div
+        className="px-4 py-3 flex items-center justify-between gap-3 cursor-pointer"
+        onClick={() => setOpen((v) => !v)}
+      >
         <div className="flex items-center gap-2 min-w-0">
+          {due && (
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0"
+              style={{ background: '#ef4444', color: 'white' }}
+            >
+              DUE
+            </span>
+          )}
           <span className="text-xs font-semibold text-[#4f6ef7] shrink-0">
             {item.topicId ?? '—'}
           </span>
@@ -35,10 +77,36 @@ function ExtractionCard({ item }: { item: RecentExtractionItem }) {
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {!due && item.nextReviewAt && (
+            <span className="text-[10px] text-[#94a3b8]">{nextReviewLabel(item)}</span>
+          )}
           <span className="text-[10px] text-[#94a3b8]">{fmt(item.createdAt)}</span>
           <span className="text-[#94a3b8] text-sm">{open ? '▲' : '▼'}</span>
         </div>
       </div>
+
+      {/* DUE — review buttons always visible when due */}
+      {due && !reviewing && (
+        <div className="px-4 pb-3 flex gap-2">
+          <button
+            onClick={() => void handleReview(true)}
+            className="flex-1 text-xs font-semibold py-2 rounded-lg"
+            style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }}
+          >
+            ✅ 알았다
+          </button>
+          <button
+            onClick={() => void handleReview(false)}
+            className="flex-1 text-xs font-semibold py-2 rounded-lg"
+            style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde68a' }}
+          >
+            🤔 헷갈려
+          </button>
+        </div>
+      )}
+      {reviewing && (
+        <div className="px-4 pb-3 text-xs text-[#64748b]">저장 중…</div>
+      )}
 
       {/* Collapsed preview */}
       {!open && item.concepts.length > 0 && (
@@ -122,6 +190,31 @@ function ExtractionCard({ item }: { item: RecentExtractionItem }) {
               <p className="text-xs text-[#0f172a] leading-relaxed">{item.trapPattern}</p>
             </div>
           )}
+
+          {/* Review buttons in expanded view for non-due items */}
+          {!due && !reviewing && (
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => void handleReview(true)}
+                className="flex-1 text-xs font-semibold py-2 rounded-lg"
+                style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}
+              >
+                ✅ 알았다
+              </button>
+              <button
+                onClick={() => void handleReview(false)}
+                className="flex-1 text-xs font-semibold py-2 rounded-lg"
+                style={{ background: '#fefce8', color: '#854d0e', border: '1px solid #fde68a' }}
+              >
+                🤔 헷갈려
+              </button>
+            </div>
+          )}
+          {item.reviewCount > 0 && (
+            <p className="text-[10px] text-[#94a3b8]">
+              복습 {item.reviewCount}회 · 간격 {item.reviewInterval}일
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -130,6 +223,7 @@ function ExtractionCard({ item }: { item: RecentExtractionItem }) {
 
 export default function HistoryPage() {
   const userId = useStudyStore((s) => s.userId)
+  const setConceptDueCount = useStudyStore((s) => s.setConceptDueCount)
   const [items, setItems] = useState<RecentExtractionItem[]>([])
   const [total, setTotal] = useState<number | null>(null)
   const [page, setPage] = useState(0)
@@ -139,21 +233,55 @@ export default function HistoryPage() {
     if (!userId) return
     setLoading(true)
     fetchExtractionsPage(userId, page, PAGE_SIZE).then(({ items: rows, total: cnt }) => {
-      setItems(rows)
+      // Sort: due items first within the page
+      const sorted = [...rows].sort((a, b) => {
+        const aDue = isDue(a) ? 0 : 1
+        const bDue = isDue(b) ? 0 : 1
+        return aDue - bDue
+      })
+      setItems(sorted)
       setTotal(cnt)
       setLoading(false)
     })
   }, [userId, page])
 
+  function handleReviewed(id: string, _knew: boolean) {
+    // Optimistically update item's nextReviewAt so it stops showing as DUE
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item
+        const nextDate = new Date()
+        nextDate.setDate(nextDate.getDate() + 1)
+        return { ...item, nextReviewAt: nextDate.toISOString(), reviewCount: item.reviewCount + 1 }
+      }),
+    )
+    // Refresh DUE count in header
+    if (userId) {
+      getConceptDueCount(userId).then(setConceptDueCount)
+    }
+  }
+
+  const dueCount = items.filter(isDue).length
   const totalPages = total !== null ? Math.ceil(total / PAGE_SIZE) : null
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       {/* Header */}
       <div className="mb-5">
-        <h1 className="text-lg font-bold text-[#0f172a]">분석 기록</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-bold text-[#0f172a]">분석 기록</h1>
+          {dueCount > 0 && (
+            <span
+              className="text-xs font-bold px-2.5 py-1 rounded-full"
+              style={{ background: '#ef4444', color: 'white' }}
+            >
+              DUE {dueCount}
+            </span>
+          )}
+        </div>
         <p className="text-xs text-[#64748b] mt-0.5">
           {total !== null ? `총 ${total}개` : ''}
+          {dueCount > 0 ? ` · 오늘 복습 ${dueCount}개` : ''}
         </p>
       </div>
 
@@ -170,7 +298,7 @@ export default function HistoryPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {items.map((item) => (
-            <ExtractionCard key={item.id} item={item} />
+            <ExtractionCard key={item.id} item={item} onReviewed={handleReviewed} />
           ))}
         </div>
       )}

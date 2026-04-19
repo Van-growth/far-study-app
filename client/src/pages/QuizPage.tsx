@@ -46,7 +46,7 @@ function saveLastSessionKey(key: string) {
   try { localStorage.setItem(LAST_KEY_PERSIST_KEY, key); } catch {}
 }
 
-type QuizMode = 'interleave' | 'due' | 'weak' | 'single';
+type QuizMode = 'interleave' | 'weak' | 'single';
 
 // ── Shape of one rendered question ────────────────────────────
 interface Question {
@@ -523,7 +523,7 @@ export default function QuizPage() {
     if (!prevSessionKey) return null;
     if (prevSessionKey.startsWith('__mode:')) {
       const m = prevSessionKey.slice('__mode:'.length).replace(/__$/, '');
-      return m === 'interleave' ? '전체' : m === 'due' ? 'DUE' : m === 'weak' ? '약점' : m;
+      return m === 'interleave' ? '전체' : m === 'weak' ? '약점' : m;
     }
     return prevSessionKey; // e.g. "F1-M2"
   })();
@@ -557,7 +557,6 @@ export default function QuizPage() {
 
   const modeLabel: Record<string, string> = {
     interleave: '전체 퀴즈 (Interleaving)',
-    due: '복습 DUE 퀴즈',
     weak: '약점 집중 퀴즈',
   };
   const label = topicId
@@ -628,7 +627,7 @@ export default function QuizPage() {
             </p>
           </div>
           <div className="flex gap-1.5 sm:gap-2 shrink-0">
-            {(['interleave', 'due', 'weak'] as QuizMode[]).map((m) => (
+            {(['interleave', 'weak'] as QuizMode[]).map((m) => (
               <button
                 key={m}
                 onClick={() => navigate(`/quiz?mode=${m}`)}
@@ -638,7 +637,7 @@ export default function QuizPage() {
                   color: mode === m && !topicId ? 'white' : '#64748b',
                 }}
               >
-                {m === 'interleave' ? '전체' : m === 'due' ? 'DUE' : '약점'}
+                {m === 'interleave' ? '전체' : '약점'}
               </button>
             ))}
           </div>

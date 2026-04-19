@@ -525,6 +525,9 @@ export interface RecentExtractionItem {
   topicTags: string[]
   trapPattern: string | null
   triggers: ConceptTrigger[]
+  nextReviewAt: string | null
+  reviewInterval: number
+  reviewCount: number
 }
 
 export async function fetchRecentExtractions(
@@ -576,7 +579,7 @@ export async function fetchExtractionsPage(
   try {
     const { data, error, count } = await supabase
       .from('concept_extractions')
-      .select('id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern', { count: 'exact' })
+      .select('id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern, next_review_at, review_interval, review_count', { count: 'exact' })
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range(from, to)
@@ -596,6 +599,9 @@ export async function fetchExtractionsPage(
       ),
       trapPattern: typeof row.trap_pattern === 'string' ? row.trap_pattern : null,
       triggers: [],
+      nextReviewAt: typeof row.next_review_at === 'string' ? row.next_review_at : null,
+      reviewInterval: typeof row.review_interval === 'number' ? row.review_interval : 0,
+      reviewCount: typeof row.review_count === 'number' ? row.review_count : 0,
     }))
     return { items, total: count ?? null }
   } catch {
@@ -778,6 +784,10 @@ export async function saveConceptExtraction(
     logSkip('saveConceptExtraction')
     return null
   }
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  tomorrow.setHours(0, 0, 0, 0)
+
   const basePayload: Record<string, unknown> = {
     user_id: row.userId,
     topic_id: row.topicId,
@@ -787,6 +797,7 @@ export async function saveConceptExtraction(
     trap_pattern: row.trapPattern,
     was_wrong: row.wasWrong,
     triggers: row.triggers ?? [],
+    next_review_at: tomorrow.toISOString(),
   }
   const payload = row.questionHash
     ? { ...basePayload, question_hash: row.questionHash }
@@ -1349,6 +1360,70 @@ export async function getCalendarWithAnalysis(userId: string): Promise<{
   return [...merged.entries()]
     .map(([date, v]) => ({ date, ...v }))
     .sort((a, b) => a.date.localeCompare(b.date))
+}
+
+// ── concept_extractions SRS (migration 011) ───────────────────
+const REVIEW_INTERVALS = [1, 3, 7, 14, 30] // days
+
+export async function getConceptDueCount(userId: string): Promise<number> {
+  if (!hasAuth(userId)) return 0
+  try {
+    const now = new Date().toISOString()
+    const { count, error } = await supabase
+      .from('concept_extractions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .not('next_review_at', 'is', null)
+      .lte('next_review_at', now)
+    if (error) {
+      const code = (error as { code?: string }).code ?? ''
+      const msg = (error.message ?? '').toLowerCase()
+      if (code === 'PGRST204' || code === '42703' || msg.includes('next_review_at')) return 0
+      return 0
+    }
+    return count ?? 0
+  } catch { return 0 }
+}
+
+export async function updateConceptReview(id: string, knew: boolean): Promise<void> {
+  try {
+    const { data } = await supabase
+      .from('concept_extractions')
+      .select('review_interval, review_count')
+      .eq('id', id)
+      .single()
+
+    const row = data as { review_interval: number; review_count: number } | null
+    const currentInterval = row?.review_interval ?? 0
+    const currentCount = row?.review_count ?? 0
+
+    let nextDays: number
+    if (!knew) {
+      nextDays = 1
+    } else if (currentInterval === 0) {
+      nextDays = REVIEW_INTERVALS[0]
+    } else {
+      const idx = REVIEW_INTERVALS.indexOf(currentInterval)
+      nextDays = idx === -1
+        ? REVIEW_INTERVALS[0]
+        : REVIEW_INTERVALS[Math.min(idx + 1, REVIEW_INTERVALS.length - 1)]
+    }
+
+    const nextDate = new Date()
+    nextDate.setDate(nextDate.getDate() + nextDays)
+    nextDate.setHours(0, 0, 0, 0)
+
+    await supabase
+      .from('concept_extractions')
+      .update({
+        next_review_at: nextDate.toISOString(),
+        review_interval: nextDays,
+        review_count: currentCount + 1,
+      })
+      .eq('id', id)
+  } catch (e) {
+    console.warn('[db] updateConceptReview failed:', e)
+  }
 }
 
 // ── Briefing cache ────────────────────────────────────────────

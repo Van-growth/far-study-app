@@ -39,7 +39,6 @@ export default function Dashboard() {
   });
 
   const started = topicsWithStats.filter((t) => t.card && t.card.attempts > 0);
-  const dueTopics = topicsWithStats.filter((t) => t.due);
   const weakTopics = topicsWithStats.filter((t) => t.accuracy >= 0 && t.accuracy < 60).sort((a, b) => a.accuracy - b.accuracy);
 
   // Section-level (F1-F6) aggregates
@@ -90,49 +89,31 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
-        {/* DUE */}
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-[#0f172a]">오늘 복습 DUE</h3>
-            {dueTopics.length > 0 && (
-              <button onClick={() => navigate('/quiz?mode=due')} className="text-xs px-3 py-1.5 rounded-lg text-white font-medium" style={{ background: '#ef4444' }}>
-                전체 복습
-              </button>
-            )}
-          </div>
-          {dueTopics.length === 0 ? (
-            <div className="text-center py-6"><p className="text-3xl mb-2">✅</p><p className="text-sm text-muted">DUE 없음</p></div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {dueTopics.map((t) => (
-                <button key={t.id} onClick={() => { setCurrentTopic(t.id); navigate(`/quiz?topicId=${t.id}`); }} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 text-left">
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getStatusColor(t.accuracy) }} />
-                  <span className="text-sm flex-1">{t.label}</span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#ef4444', color: 'white' }}>DUE</span>
-                </button>
-              ))}
-            </div>
-          )}
+      {/* SRS Schedule */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-[#0f172a]">퀴즈 간격 복습 스케줄</h3>
+          <button
+            onClick={() => navigate('/history')}
+            className="text-xs px-3 py-1.5 rounded-lg font-medium"
+            style={{ background: '#eef2ff', color: '#4338ca' }}
+          >
+            분석 기록 복습 →
+          </button>
         </div>
-
-        {/* SRS Schedule */}
-        <div className="card p-5">
-          <h3 className="font-semibold text-[#0f172a] mb-4">간격 복습 스케줄</h3>
-          <div className="flex flex-col gap-2">
-            {SR_INTERVALS.map((days, idx) => {
-              const count = topicsWithStats.filter((t) => t.card && t.card.attempts > 0 && t.card.interval === idx && !t.due).length;
-              return (
-                <div key={days} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style={{ background: '#4f6ef7', opacity: 0.4 + idx * 0.1 }}>{days}d</div>
-                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${(count / Math.max(allTopics.length, 1)) * 100}%`, background: '#4f6ef7' }} />
-                  </div>
-                  <span className="text-xs text-muted w-16 text-right">{count}개</span>
+        <div className="flex flex-col gap-2">
+          {SR_INTERVALS.map((days, idx) => {
+            const count = topicsWithStats.filter((t) => t.card && t.card.attempts > 0 && t.card.interval === idx).length;
+            return (
+              <div key={days} className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style={{ background: '#4f6ef7', opacity: 0.4 + idx * 0.1 }}>{days}d</div>
+                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${(count / Math.max(allTopics.length, 1)) * 100}%`, background: '#4f6ef7' }} />
                 </div>
-              );
-            })}
-          </div>
+                <span className="text-xs text-muted w-16 text-right">{count}개</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { SRCard, DEFAULT_SR_CARD, updateCard, isDue, getAccuracy } from '../lib/srs';
-import { getProgress, upsertProgress, saveQuizLog, updateTodaySession } from '../lib/db';
+import { SRCard, DEFAULT_SR_CARD, updateCard, getAccuracy } from '../lib/srs';
+import { getProgress, upsertProgress, saveQuizLog, updateTodaySession, getConceptDueCount } from '../lib/db';
 
 // ── Types ─────────────────────────────────────────────────────
 interface ServerRow {
@@ -36,14 +36,14 @@ interface StudyStore {
   // ── runtime state (not persisted) ──
   userId: string | null;
   syncStatus: 'idle' | 'syncing' | 'ready' | 'offline';
+  conceptDueCount: number;
 
   // ── actions ──
   setCurrentTopic: (id: string | null) => void;
   toggleArea: (areaId: string) => void;
   setAreaExpanded: (areaId: string, expanded: boolean) => void;
   getCard: (topicId: string) => SRCard;
-  getDueTopics: () => string[];
-  getDueCount: () => number;
+  setConceptDueCount: (n: number) => void;
   getWeakTopics: (threshold?: number) => string[];
 
   // SRS update (local + server sync)
@@ -105,6 +105,7 @@ const useStudyStore = create<StudyStore>()(
       expandedAreas: {},
       userId: null,
       syncStatus: 'idle' as const,
+      conceptDueCount: 0,
 
       setCurrentTopic: (id) => set({ currentTopicId: id }),
 
@@ -118,12 +119,7 @@ const useStudyStore = create<StudyStore>()(
 
       getCard: (topicId) => get().srsCards[topicId] ?? DEFAULT_SR_CARD,
 
-      getDueTopics: () =>
-        Object.entries(get().srsCards)
-          .filter(([, c]) => isDue(c))
-          .map(([id]) => id),
-
-      getDueCount: () => get().getDueTopics().length,
+      setConceptDueCount: (n) => set({ conceptDueCount: n }),
 
       getWeakTopics: (threshold = 60) =>
         Object.entries(get().srsCards)
@@ -171,10 +167,13 @@ const useStudyStore = create<StudyStore>()(
       initStore: async (uid) => {
         set({ userId: uid, syncStatus: 'syncing' });
         try {
-          const rows = await getProgress(uid);
+          const [rows, dueCount] = await Promise.all([
+            getProgress(uid),
+            getConceptDueCount(uid),
+          ]);
           const local = get().srsCards;
           const merged = mergeCards(local, rows as ServerRow[]);
-          set({ srsCards: merged, syncStatus: 'ready' });
+          set({ srsCards: merged, syncStatus: 'ready', conceptDueCount: dueCount });
 
           // Sync local-only cards to server
           const serverIds = new Set((rows as ServerRow[]).map((r) => r.topic_id));

@@ -32,8 +32,7 @@ interface HeaderProps {
 export default function Header({ email, onSignOut }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const getDueCount = useStudyStore((s) => s.getDueCount);
-  const dueCount = getDueCount();
+  const dueCount = useStudyStore((s) => s.conceptDueCount);
   const isScience = location.pathname === '/science';
   const isPanelOpen = useClaudeStore((s) => s.isOpen);
   const togglePanel = useClaudeStore((s) => s.togglePanel);
@@ -147,7 +146,7 @@ export default function Header({ email, onSignOut }: HeaderProps) {
       <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
         {/* DUE button */}
         <button
-          onClick={() => navigate('/quiz?mode=due')}
+          onClick={() => navigate('/history')}
           className="flex items-center gap-1 px-2 md:px-2.5 py-1.5 rounded-lg text-[12px] md:text-[13px] font-medium"
           style={{
             background: dueCount > 0 ? '#fff5f5' : '#f8fafc',
