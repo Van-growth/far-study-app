@@ -102,6 +102,13 @@ router.post('/analyze', async (req: Request, res: Response) => {
   // waiting for a large buffer before emitting.
   res.write(': ping\n\n');
 
+  const finish = (errorMsg?: string) => {
+    if (res.writableEnded) return;
+    if (errorMsg) res.write(`data: ${JSON.stringify({ error: errorMsg })}\n\n`);
+    res.write('data: [DONE]\n\n');
+    res.end();
+  };
+
   try {
     const stream = anthropic.messages.stream({
       model: MODEL,
@@ -110,21 +117,13 @@ router.post('/analyze', async (req: Request, res: Response) => {
       messages: conv,
     });
     stream.on('text', (text: string) => {
-      res.write(`data: ${JSON.stringify({ text })}\n\n`);
+      if (!res.writableEnded) res.write(`data: ${JSON.stringify({ text })}\n\n`);
     });
-    stream.on('error', (err: Error) => {
-      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
-      res.write('data: [DONE]\n\n');
-      res.end();
-    });
+    stream.on('error', (err: Error) => finish(err.message));
     await stream.finalMessage();
-    res.write('data: [DONE]\n\n');
-    res.end();
+    finish();
   } catch (err) {
-    const m = err instanceof Error ? err.message : 'unknown';
-    res.write(`data: ${JSON.stringify({ error: m })}\n\n`);
-    res.write('data: [DONE]\n\n');
-    res.end();
+    finish(err instanceof Error ? err.message : 'unknown');
   }
 });
 
