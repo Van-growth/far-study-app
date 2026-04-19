@@ -79,11 +79,13 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
 
   let msg: Awaited<ReturnType<typeof anthropic.messages.create>>;
   try {
+    console.log('[analyze] Anthropic 호출 직전');
     msg = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 600,
       messages: [{ role: 'user', content: prompt }],
     });
+    console.log('[analyze] Anthropic 호출 완료');
   } catch (apiErr) {
     console.error('[analyze] Anthropic API 호출 실패:', {
       message: apiErr instanceof Error ? apiErr.message : String(apiErr),
