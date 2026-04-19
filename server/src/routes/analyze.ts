@@ -40,6 +40,10 @@ router.post('/extract-concepts', async (req: Request, res: Response) => {
     return;
   }
 
+  const cleanedText = questionText
+    .trim()
+    .replace(/\n{3,}/g, '\n\n');
+
   const wasWrong = userAnswer && correctAnswer && userAnswer !== correctAnswer;
   const answerLine =
     userAnswer != null && correctAnswer != null
@@ -51,7 +55,7 @@ router.post('/extract-concepts', async (req: Request, res: Response) => {
 ${topicLine}
 
 문제 원문:
-${questionText}${answerLine}
+${cleanedText}${answerLine}
 
 반환 규칙:
 - concepts: 이 문제의 핵심 회계 개념/키워드 (한국어 또는 영문 그대로). 예: "DTA", "DTL", "손상차손", "일시적 차이"
