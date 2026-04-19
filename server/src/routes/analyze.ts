@@ -10,7 +10,7 @@ import { inferTopicId } from '../lib/topicInference';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const MODEL = 'claude-sonnet-4-5-20250929';
+const MODEL = 'claude-sonnet-4-6';
 
 // ─────────────────────────────────────────────
 // POST /api/extract-concepts
@@ -87,8 +87,14 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
       return res.status(502).json({ error: 'no text in response' });
     }
     const text = block.text.trim();
-    const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
-    const body = fenced ? fenced[1] : text;
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    let body: string;
+    if (fenced) {
+      body = fenced[1].trim();
+    } else {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      body = jsonMatch ? jsonMatch[0] : text;
+    }
     let parsed: unknown;
     try {
       parsed = JSON.parse(body);

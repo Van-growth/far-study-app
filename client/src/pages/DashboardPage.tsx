@@ -1,21 +1,19 @@
 import { useState } from 'react';
 import Dashboard from '../components/dashboard/Dashboard';
 import StudyCalendar from '../components/dashboard/StudyCalendar';
-import BriefingTab from '../components/dashboard/BriefingTab';
 import ErrorPatternBoard from '../components/dashboard/ErrorPatternBoard';
 import ErrorChainTab from '../components/dashboard/ErrorChainTab';
 
-type TabId = 'briefing' | 'board' | 'health' | 'chain';
+type TabId = 'board' | 'health' | 'chain';
 
 const TABS: { id: TabId; label: string; sub: string }[] = [
-  { id: 'briefing', label: '오늘 브리핑', sub: 'Claude AI' },
   { id: 'board',    label: 'Error Pattern Board', sub: '나 vs 전체' },
   { id: 'health',   label: '토픽 Health', sub: '모듈별 정확도' },
   { id: 'chain',    label: 'Error Chain', sub: '원인→결과 탐색' },
 ];
 
 export default function DashboardPage() {
-  const [tab, setTab] = useState<TabId>('briefing');
+  const [tab, setTab] = useState<TabId>('board');
 
   return (
     <div className="p-6">
@@ -55,7 +53,6 @@ export default function DashboardPage() {
         </div>
 
         {/* Tab content */}
-        {tab === 'briefing' && <BriefingTab onSwitchTab={setTab} />}
         {tab === 'board' && <ErrorPatternBoard />}
         {tab === 'health' && (
           <div className="flex flex-col gap-6">

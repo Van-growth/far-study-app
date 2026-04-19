@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const MODEL = 'claude-sonnet-4-5-20250929';
+const MODEL = 'claude-haiku-4-5-20251001';
 
 interface ModuleStat {
   moduleId: string;
