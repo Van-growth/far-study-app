@@ -101,6 +101,7 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
       return res.status(502).json({ error: 'no text in response' });
     }
     const text = block.text.trim();
+    console.log('[analyze] Anthropic raw 응답:', text);
     const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
     let body: string;
     if (fenced) {
