@@ -227,6 +227,23 @@ export default function ErrorTagSection(props: Props) {
                     hr: () => (
                       <hr style={{ border: 'none', borderTop: '1px solid #fecaca', margin: '8px 0' }} />
                     ),
+                    table: ({ children }) => (
+                      <div style={{ overflowX: 'auto', margin: '6px 0' }}>
+                        <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: 10 }}>
+                          {children}
+                        </table>
+                      </div>
+                    ),
+                    th: ({ children }) => (
+                      <th style={{ border: '1px solid #fecaca', padding: '3px 6px', background: '#fee2e2', color: '#991b1b', fontWeight: 600, textAlign: 'left', wordBreak: 'break-word' }}>
+                        {children}
+                      </th>
+                    ),
+                    td: ({ children }) => (
+                      <td style={{ border: '1px solid #fecaca', padding: '3px 6px', color: '#0f172a', wordBreak: 'break-word', verticalAlign: 'top' }}>
+                        {children}
+                      </td>
+                    ),
                   }}
                 >
                   {diagnosis

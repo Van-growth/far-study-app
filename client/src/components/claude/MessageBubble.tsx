@@ -1,5 +1,6 @@
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import { Message } from '../../store/claudeStore';
 import useClaudeStore from '../../store/claudeStore';
 import FeedbackButtons from '../feedback/FeedbackButtons';
@@ -105,7 +106,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         className="max-w-[90%] px-4 py-3 rounded-2xl rounded-tl-sm"
         style={{ background: 'white', border: '1.5px solid #e2e8f0' }}
       >
-        <Markdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
+        <Markdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MD_COMPONENTS as never}>
           {message.content}
         </Markdown>
         {isStreaming && (
