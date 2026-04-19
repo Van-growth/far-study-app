@@ -187,6 +187,7 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
     }
 
     console.log('[analyze] res.json 호출 직전');
+    console.log('[analyze] finish 호출');
     finish(200, { extracted, learned, correctedTopicId });
     console.log('[analyze] res.json 완료');
   } catch (err) {
