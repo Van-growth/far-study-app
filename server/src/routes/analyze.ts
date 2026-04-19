@@ -77,12 +77,23 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
   ]
 }`;
 
+  let msg: Awaited<ReturnType<typeof anthropic.messages.create>>;
   try {
-    const msg = await anthropic.messages.create({
+    msg = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 600,
       messages: [{ role: 'user', content: prompt }],
     });
+  } catch (apiErr) {
+    console.error('[analyze] Anthropic API 호출 실패:', {
+      message: apiErr instanceof Error ? apiErr.message : String(apiErr),
+      status: (apiErr as { status?: number }).status,
+      error: apiErr,
+    });
+    return res.status(502).json({ error: 'Anthropic API 호출 실패', detail: apiErr instanceof Error ? apiErr.message : String(apiErr) });
+  }
+
+  try {
     const block = msg.content.find((b) => b.type === 'text');
     if (!block || block.type !== 'text') {
       return res.status(502).json({ error: 'no text in response' });
