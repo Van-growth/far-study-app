@@ -32,10 +32,20 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isLoading]);
   useEffect(() => { if (isOpen) setTimeout(() => taRef.current?.focus(), 300); }, [isOpen]);
 
+  const SLASH_COMMANDS: Record<string, string> = {
+    '/go': `현재 문제를 아래 순서로 설명해줘:
+1. 문제 한 줄씩 해석 - 형식: [영어 원문] → [한국어 해석]
+2. 핵심 질문 해석 (what is asked) - 형식: [영어 원문] → [한국어 해석]
+3. 핵심 트리거 키워드 설명
+4. 함정(trap) 포인트 설명
+5. 실전 단축 풀이법 (30초 안에 푸는 방법)`,
+  };
+
   const handleSend = () => {
     const t = input.trim();
     if (!t || isLoading) return;
-    sendMessage(t);
+    const message = SLASH_COMMANDS[t] ?? t;
+    sendMessage(message);
     setInput('');
     if (taRef.current) taRef.current.style.height = 'auto';
   };
