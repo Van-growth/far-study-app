@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import useStudyStore from '../store/studyStore'
 import {
   fetchDueExtractions,
@@ -7,6 +7,21 @@ import {
   RecentExtractionItem,
   ConceptTrigger,
 } from '../lib/db'
+
+async function fetchCardHint(
+  concepts: string[],
+  auto_rules: string[],
+  trap_pattern?: string
+): Promise<string> {
+  const res = await fetch('/api/claude/card-hint', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ concepts, auto_rules, trap_pattern }),
+  })
+  if (!res.ok) return ''
+  const data = (await res.json()) as { hint?: string }
+  return data.hint ?? ''
+}
 
 type Stage = 'loading' | 'empty' | 'review' | 'done'
 
@@ -32,6 +47,20 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 // ── Flashcard body ────────────────────────────────────────────
 function FlashCard({ card, visible }: { card: RecentExtractionItem; visible: boolean }) {
   const triggers = (card.triggers ?? []) as ConceptTrigger[]
+  const [hint, setHint] = useState<string>('')
+  const [hintLoading, setHintLoading] = useState(false)
+  const fetchedId = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (fetchedId.current === card.id) return
+    fetchedId.current = card.id
+    const auto_rules = triggers.map((t) => t.auto_rule).filter(Boolean)
+    if (!auto_rules.length && !card.concepts.length) return
+    setHintLoading(true)
+    fetchCardHint(card.concepts, auto_rules, card.trapPattern ?? undefined)
+      .then((h) => setHint(h))
+      .finally(() => setHintLoading(false))
+  }, [card.id])
 
   return (
     <div
@@ -95,6 +124,24 @@ function FlashCard({ card, visible }: { card: RecentExtractionItem; visible: boo
         >
           <p className="text-[10px] font-semibold text-[#991b1b] mb-1">⚠️ 함정 패턴</p>
           <p className="text-xs text-[#7f1d1d] leading-relaxed">{card.trapPattern}</p>
+        </div>
+      )}
+
+      {/* Formula / numeric example hint */}
+      {(hintLoading || hint) && (
+        <div
+          className="rounded-xl px-3 py-2.5"
+          style={{ background: '#f0fdf4', border: '1px solid #86efac' }}
+        >
+          <p className="text-[10px] font-semibold text-[#166534] mb-1">💡 핵심 공식 / 예시</p>
+          {hintLoading ? (
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 border-2 border-[#166534] border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-[#166534]">생성 중…</span>
+            </div>
+          ) : (
+            <p className="text-xs text-[#14532d] leading-relaxed whitespace-pre-line">{hint}</p>
+          )}
         </div>
       )}
 

@@ -107,4 +107,51 @@ Be concise and exam-focused. Respond only in Korean.`;
   }
 });
 
+/**
+ * POST /api/claude/card-hint — formula or numeric example for flashcard
+ * body: { concepts, auto_rules, trap_pattern }
+ */
+router.post('/card-hint', async (req: Request, res: Response) => {
+  const { concepts, auto_rules, trap_pattern } = req.body as {
+    concepts: string[];
+    auto_rules: string[];
+    trap_pattern?: string;
+  };
+
+  if (!auto_rules?.length && !concepts?.length) {
+    return res.status(400).json({ error: 'auto_rules or concepts required' });
+  }
+
+  const system = `You are a USCPA FAR exam tutor generating a compact memory aid for a flashcard.
+
+Rules:
+1. Look at the auto_rules. If ANY auto_rule contains a mathematical formula (has "=", "×", "÷", "+/-" with variables), extract the clearest formula and output EXACTLY:
+   公式: <formula text>
+   예시: <one numeric example showing the formula, e.g. "초과이익 $100, Rate 10% → Bonus = $9.09">
+2. If NO auto_rule has a formula, generate ONE short numeric example applying the main concept:
+   예시: <one numeric example, concrete numbers, max 20 words>
+3. Output ONLY the 1-2 lines above. No explanation. No intro. Korean OK.`;
+
+  const userMsg = [
+    concepts.length ? `개념: ${concepts.join(', ')}` : '',
+    auto_rules.length ? `auto_rules:\n${auto_rules.map((r, i) => `${i + 1}. ${r}`).join('\n')}` : '',
+    trap_pattern ? `함정 패턴: ${trap_pattern}` : '',
+  ].filter(Boolean).join('\n\n');
+
+  try {
+    const message = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 150,
+      system,
+      messages: [{ role: 'user', content: userMsg }],
+    });
+
+    const hint = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
+    return res.json({ hint });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    return res.status(500).json({ error: msg });
+  }
+});
+
 export default router;
