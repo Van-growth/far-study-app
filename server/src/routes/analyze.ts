@@ -20,6 +20,15 @@ const MODEL = 'claude-sonnet-4-6';
 // ─────────────────────────────────────────────
 router.post('/extract-concepts', async (req: Request, res: Response) => {
   console.log('[analyze] extract-concepts 요청 받음');
+
+  const finish = (status: number, body: object) => {
+    if (res.headersSent) {
+      console.warn('[analyze] finish() 무시 — 헤더 이미 전송됨', body);
+      return;
+    }
+    res.status(status).json(body);
+  };
+
   const { questionText, userAnswer, correctAnswer, topicId } = req.body as {
     questionText?: string;
     userAnswer?: string | null;
@@ -27,7 +36,8 @@ router.post('/extract-concepts', async (req: Request, res: Response) => {
     topicId?: string | null;
   };
   if (!questionText || typeof questionText !== 'string') {
-    return res.status(400).json({ error: 'questionText required' });
+    finish(400, { error: 'questionText required' });
+    return;
   }
 
   const wasWrong = userAnswer && correctAnswer && userAnswer !== correctAnswer;
@@ -93,35 +103,39 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
       status: (apiErr as { status?: number }).status,
       error: apiErr,
     });
-    return res.status(502).json({ error: 'Anthropic API 호출 실패', detail: apiErr instanceof Error ? apiErr.message : String(apiErr) });
+    finish(502, { error: 'Anthropic API 호출 실패', detail: apiErr instanceof Error ? apiErr.message : String(apiErr) });
+    return;
   }
 
   try {
     const block = msg.content.find((b) => b.type === 'text');
     if (!block || block.type !== 'text') {
-      return res.status(502).json({ error: 'no text in response' });
+      finish(502, { error: 'no text in response' });
+      return;
     }
     const text = block.text.trim();
     console.log('[analyze] Anthropic raw 응답:', text);
     const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    let body: string;
+    let rawBody: string;
     if (fenced) {
-      body = fenced[1].trim();
+      rawBody = fenced[1].trim();
     } else {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
-      body = jsonMatch ? jsonMatch[0] : text;
+      rawBody = jsonMatch ? jsonMatch[0] : text;
     }
     let parsed: unknown;
     try {
-      parsed = JSON.parse(body);
+      parsed = JSON.parse(rawBody);
     } catch (e) {
-      return res.status(502).json({
+      finish(502, {
         error: 'extraction JSON parse failed',
         detail: e instanceof Error ? e.message : 'unknown',
       });
+      return;
     }
     if (!parsed || typeof parsed !== 'object') {
-      return res.status(502).json({ error: 'invalid extraction shape' });
+      finish(502, { error: 'invalid extraction shape' });
+      return;
     }
     const obj = parsed as Partial<ExtractedConcepts> & { triggers?: unknown };
     const rawTriggers = Array.isArray((obj as { triggers?: unknown }).triggers)
@@ -166,10 +180,10 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
     }
 
     const learned = await applyExtraction(extracted);
-    return res.json({ extracted, learned, correctedTopicId });
+    finish(200, { extracted, learned, correctedTopicId });
   } catch (err) {
     const m = err instanceof Error ? err.message : 'unknown';
-    return res.status(500).json({ error: m });
+    finish(500, { error: m });
   }
 });
 
