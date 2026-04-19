@@ -1368,6 +1368,34 @@ export async function getCalendarWithAnalysis(userId: string): Promise<{
 // ── concept_extractions SRS (migration 011) ───────────────────
 const REVIEW_INTERVALS = [1, 3, 7, 14, 30] // days
 
+export async function fetchDueExtractions(userId: string): Promise<RecentExtractionItem[]> {
+  if (!hasAuth(userId)) return []
+  try {
+    const now = new Date().toISOString()
+    const { data, error } = await supabase
+      .from('concept_extractions')
+      .select('id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern, triggers, next_review_at, review_interval, review_count')
+      .eq('user_id', userId)
+      .not('next_review_at', 'is', null)
+      .lte('next_review_at', now)
+      .order('next_review_at', { ascending: true })
+    if (error || !data) return []
+    return (data as Record<string, unknown>[]).map((row) => ({
+      id: String(row.id ?? ''),
+      createdAt: String(row.created_at ?? ''),
+      topicId: typeof row.topic_id === 'string' ? row.topic_id : null,
+      concepts: (Array.isArray(row.concepts) ? row.concepts : []).filter((c): c is string => typeof c === 'string'),
+      ascReferences: (Array.isArray(row.asc_references) ? row.asc_references : []).filter((c): c is string => typeof c === 'string'),
+      topicTags: (Array.isArray(row.topic_tags) ? row.topic_tags : []).filter((c): c is string => typeof c === 'string'),
+      trapPattern: typeof row.trap_pattern === 'string' ? row.trap_pattern : null,
+      triggers: Array.isArray(row.triggers) ? (row.triggers as ConceptTrigger[]) : [],
+      nextReviewAt: typeof row.next_review_at === 'string' ? row.next_review_at : null,
+      reviewInterval: typeof row.review_interval === 'number' ? row.review_interval : 0,
+      reviewCount: typeof row.review_count === 'number' ? row.review_count : 0,
+    }))
+  } catch { return [] }
+}
+
 export async function getConceptDueCount(userId: string): Promise<number> {
   if (!hasAuth(userId)) return 0
   try {
