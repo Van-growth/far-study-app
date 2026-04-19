@@ -31,6 +31,10 @@ server/data/
 # Misc
 *.tsbuildinfo
 
+# Supabase CLI temp/cache
+supabase/.temp/
+client/supabase/
+
 # Legacy root-level files (moved to client/)
 /src/
 /index.html
