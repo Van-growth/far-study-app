@@ -554,32 +554,12 @@ export async function fetchRecentExtractions(
   try {
     const { data, error } = await supabase
       .from('concept_extractions')
-      .select('id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern, triggers')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(limit)
-
-    if (!error && data) return parseRows(data as Record<string, unknown>[])
-
-    // triggers 컬럼이 스키마 캐시에 없는 환경(마이그레이션 미적용)에서
-    // PGRST204 / 42703 으로 400이 난다. triggers 제외하고 재시도.
-    const code = (error as { code?: string } | null)?.code ?? ''
-    const msg = (error?.message ?? '').toLowerCase()
-    const isColumnMissing =
-      code === 'PGRST204' || code === '42703' ||
-      msg.includes('triggers') || msg.includes('schema cache')
-
-    if (!isColumnMissing) return []
-
-    const retry = await supabase
-      .from('concept_extractions')
       .select('id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit)
-
-    if (retry.error || !retry.data) return []
-    return parseRows(retry.data as Record<string, unknown>[])
+    if (error || !data) return []
+    return parseRows(data as Record<string, unknown>[])
   } catch {
     return []
   }
