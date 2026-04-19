@@ -25,28 +25,9 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const setPendingQuiz = useClaudeStore((s) => s.setPendingQuiz);
 
   const [input, setInput] = useState('');
-  const endRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
-  const isUserScrolled = useRef(false);
   const isOpen = useClaudeStore((s) => s.isOpen);
 
-  const handleScroll = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distFromBottom <= 50) {
-      isUserScrolled.current = false;
-    } else {
-      isUserScrolled.current = true;
-    }
-  };
-
-  useEffect(() => {
-    if (!isUserScrolled.current) {
-      endRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages, isLoading]);
   useEffect(() => { if (isOpen) setTimeout(() => taRef.current?.focus(), 300); }, [isOpen]);
 
   const SLASH_COMMANDS: Record<string, string> = {
@@ -132,7 +113,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-3 py-4">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-4">
         {isEmpty && !isLoading ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4 gap-3">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl" style={{ background: '#eef2ff' }}>👋</div>
@@ -155,7 +136,6 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
               ),
             )}
             {showTyping && <TypingBubble />}
-            <div ref={endRef} />
           </div>
         )}
       </div>
