@@ -179,17 +179,15 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
       }
     }
 
-    let learned: Awaited<ReturnType<typeof applyExtraction>> | null = null;
-    try {
-      learned = await applyExtraction(extracted);
-    } catch (saveErr) {
-      console.error('[analyze] Supabase 저장 실패 (응답은 계속):', saveErr instanceof Error ? saveErr.message : saveErr);
-    }
-
     console.log('[analyze] res.json 호출 직전');
     console.log('[analyze] finish 호출');
-    finish(200, { extracted, learned, correctedTopicId });
+    finish(200, { extracted, learned: null, correctedTopicId });
     console.log('[analyze] res.json 완료');
+
+    // fire-and-forget: 응답 후 백그라운드 저장
+    applyExtraction(extracted).catch((saveErr) => {
+      console.error('[analyze] 백그라운드 저장 실패:', saveErr instanceof Error ? saveErr.message : saveErr);
+    });
   } catch (err) {
     console.error('[analyze] outer catch 에러:', err);
     const m = err instanceof Error ? err.message : 'unknown';
