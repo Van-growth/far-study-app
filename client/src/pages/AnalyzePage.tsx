@@ -411,20 +411,7 @@ export default function AnalyzePage() {
   return (
     <>
     <div className="p-4 sm:p-6">
-      <div className="max-w-6xl mx-auto">
-      <div className="flex flex-col lg:flex-row gap-4 items-start">
-
-        {/* ── 최근 분석 기록 사이드바 ── */}
-        <div className="w-full lg:w-56 xl:w-60 shrink-0 order-last lg:order-first lg:sticky lg:top-[62px]">
-          <RecentAnalysesPanel
-            userId={userId ?? null}
-            refreshKey={recentRefreshKey}
-            onSelect={handleSelectRecent}
-          />
-        </div>
-
-        {/* ── 메인 콘텐츠 ── */}
-      <div className="flex-1 min-w-0 flex flex-col gap-4">
+      <div className="max-w-3xl mx-auto flex flex-col gap-4">
         <div
           className="rounded-xl px-4 py-2.5 text-[12px] sm:text-[13px] leading-relaxed"
           style={{ background: '#eef2ff', color: '#3730a3', border: '1px solid #c7d2fe' }}
@@ -851,9 +838,14 @@ export default function AnalyzePage() {
             ➕ 다음 문제 분석하기
           </button>
         )}
-      </div>{/* 메인 콘텐츠 끝 */}
-      </div>{/* flex row 끝 */}
-      </div>{/* max-w-6xl 끝 */}
+
+        {/* ── 최근 분석 기록 아코디언 ── */}
+        <RecentAnalysesPanel
+          userId={userId ?? null}
+          refreshKey={recentRefreshKey}
+          onSelect={handleSelectRecent}
+        />
+      </div>
     </div>
 
     {/* Error Pattern 저장 완료 토스트 */}
@@ -1209,16 +1201,17 @@ function RecentAnalysesPanel({
 }) {
   const [items, setItems] = useState<RecentExtractionItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !open) return;
     setLoading(true);
     fetchRecentExtractions(userId, 10)
       .then(setItems)
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
-  }, [userId, refreshKey]);
+  }, [userId, refreshKey, open]);
 
   const formatDate = (iso: string) => {
     try {
@@ -1237,18 +1230,26 @@ function RecentAnalysesPanel({
 
   return (
     <div className="card rounded-xl overflow-hidden">
-      <div className="px-3 py-2.5 border-b border-border flex items-center justify-between">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left"
+      >
         <span className="text-xs font-semibold text-[#0f172a]">🕐 최근 분석 기록</span>
-        {loading && (
-          <div className="w-3 h-3 border-2 border-[#4f6ef7] border-t-transparent rounded-full animate-spin" />
-        )}
-      </div>
+        <div className="flex items-center gap-2">
+          {loading && open && (
+            <div className="w-3 h-3 border-2 border-[#4f6ef7] border-t-transparent rounded-full animate-spin" />
+          )}
+          <span className="text-xs text-muted">{open ? '▲' : '▼'}</span>
+        </div>
+      </button>
+      {open && (
+        <>
       {!userId ? (
-        <p className="text-[11px] text-muted px-3 py-3">로그인 후 이용 가능합니다.</p>
+        <p className="text-[11px] text-muted px-4 pb-3">로그인 후 이용 가능합니다.</p>
       ) : !loading && items.length === 0 ? (
-        <p className="text-[11px] text-muted px-3 py-3">아직 분석 기록이 없습니다.</p>
+        <p className="text-[11px] text-muted px-4 pb-3">아직 분석 기록이 없습니다.</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-border">
+        <ul className="flex flex-col divide-y divide-border border-t border-border">
           {items.map((item) => {
             const isSelected = item.id === selectedId;
             return (
@@ -1258,7 +1259,7 @@ function RecentAnalysesPanel({
                     setSelectedId(item.id);
                     onSelect(item);
                   }}
-                  className="w-full text-left px-3 py-2.5 transition-colors hover:bg-[#f8fafc]"
+                  className="w-full text-left px-4 py-2.5 transition-colors hover:bg-[#f8fafc]"
                   style={{ background: isSelected ? '#eef2ff' : undefined }}
                 >
                   <div className="flex items-center justify-between gap-1 mb-1">
@@ -1294,6 +1295,8 @@ function RecentAnalysesPanel({
             );
           })}
         </ul>
+      )}
+        </>
       )}
     </div>
   );
