@@ -230,7 +230,7 @@ export default function ErrorTagSection(props: Props) {
         )}
 
         {stage === 'done' && chosen && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-[#166534]">✅ 저장됨</span>
               <span
@@ -243,10 +243,34 @@ export default function ErrorTagSection(props: Props) {
             </div>
             {diagnosis && (
               <div
-                className="text-xs text-[#0f172a] leading-relaxed p-3 rounded prose prose-xs max-w-none"
+                className="rounded-lg"
                 style={{ background: 'white', border: '1px solid #fecaca' }}
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{diagnosis}</ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    p: ({ children }) => (
+                      <p className="text-xs text-[#0f172a] leading-relaxed mb-2 last:mb-0 px-3 pt-2 last:pb-3">
+                        {children}
+                      </p>
+                    ),
+                    strong: ({ children }) => (
+                      <strong className="font-semibold text-[#0f172a]">{children}</strong>
+                    ),
+                    em: ({ children }) => (
+                      <em className="italic text-[#475569]">{children}</em>
+                    ),
+                    hr: () => (
+                      <hr className="mx-3 my-0" style={{ borderColor: '#fecaca' }} />
+                    ),
+                  }}
+                >
+                  {/* (1) (2) (3) 항목과 "다음 체크포인트:" 앞에 빈 줄 삽입해 문단 분리 */}
+                  {diagnosis
+                    .replace(/\n?(\(\d+\))/g, '\n\n$1')
+                    .replace(/\n?(다음 체크포인트)/g, '\n\n---\n\n**$1**')
+                    .trim()}
+                </ReactMarkdown>
               </div>
             )}
           </div>
