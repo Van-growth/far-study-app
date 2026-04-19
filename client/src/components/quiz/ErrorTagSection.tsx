@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 import {
   getErrorPatterns,
   tagAttemptError,
@@ -200,7 +201,7 @@ export default function ErrorTagSection(props: Props) {
                 style={{ background: 'white', border: '1px solid #fecaca' }}
               >
                 <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
+                  remarkPlugins={[remarkGfm, remarkBreaks]}
                   components={{
                     p: ({ children }) => (
                       <p style={{ fontSize: 11, lineHeight: 1.65, color: '#0f172a', margin: '0 0 6px 0' }}>

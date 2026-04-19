@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 import useStudyStore from '../../store/studyStore'
 import { allTopics } from '../../data/far-topics'
 import {
@@ -165,8 +168,24 @@ export default function TutorBriefing({ onCoverage }: Props) {
             <span>오늘자 브리핑 생성 중…</span>
           </div>
         ) : (
-          <div className="text-sm leading-relaxed whitespace-pre-wrap">
-            {ai?.summary || '분석한 문제가 아직 적어 브리핑을 생성할 수 없어요. 먼저 몇 문제를 분석해보세요.'}
+          <div className="text-sm leading-relaxed">
+            {ai?.summary ? (
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkBreaks]}
+                components={{
+                  p: ({ children }) => <p className="text-sm leading-relaxed mb-1.5 last:mb-0 text-white">{children}</p>,
+                  strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+                  em: ({ children }) => <em className="italic opacity-90">{children}</em>,
+                  ul: ({ children }) => <ul className="list-disc ml-4 my-1 flex flex-col gap-0.5">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal ml-4 my-1 flex flex-col gap-0.5">{children}</ol>,
+                  li: ({ children }) => <li className="text-sm text-white leading-relaxed">{children}</li>,
+                }}
+              >
+                {ai.summary}
+              </ReactMarkdown>
+            ) : (
+              <p className="text-sm text-white opacity-80">분석한 문제가 아직 적어 브리핑을 생성할 수 없어요. 먼저 몇 문제를 분석해보세요.</p>
+            )}
           </div>
         )}
       </div>

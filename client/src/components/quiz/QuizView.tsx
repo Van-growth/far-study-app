@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import useClaudeStore from '../../store/claudeStore';
 import { useClaudeChat, QuizContext } from '../../hooks/useClaudeChat';
 import PVFVTable, { questionNeedsPVFVTable } from './PVFVTable';
@@ -104,11 +105,13 @@ export function ConceptCardView({ card }: { card: ConceptCard }) {
       {s.traps && s.traps.length > 0 && <TrapsView traps={s.traps} />}
       {card.correct_approach && (
         <div
-          className="rounded-lg px-3 py-2 text-xs leading-snug"
+          className="rounded-lg px-3 py-2"
           style={{ background: '#f0fdf4', border: '1px solid #86efac', color: '#166534' }}
         >
-          <span className="font-semibold">✅ 정답 접근법: </span>
-          {card.correct_approach}
+          <p className="text-xs font-semibold mb-1">✅ 정답 접근법</p>
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MD_COMPONENTS as never}>
+            {card.correct_approach}
+          </ReactMarkdown>
         </div>
       )}
     </div>
@@ -403,7 +406,7 @@ function PlainView({ markdown }: { markdown: unknown }) {
         : safeStr(markdown);
   return (
     <div className="p-3 rounded-lg bg-white/70 border border-[#fcd34d] text-xs leading-snug text-[#451a03]">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MD_COMPONENTS as never}>
         {text}
       </ReactMarkdown>
     </div>
@@ -1104,7 +1107,7 @@ export default function QuizView({
 
         <div className="flex items-start justify-between gap-2">
           <div className="text-sm font-medium text-[#0f172a] leading-relaxed flex-1 min-w-0">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MD_COMPONENTS as never}>
               {current.q}
             </ReactMarkdown>
           </div>
@@ -1173,7 +1176,7 @@ export default function QuizView({
               {expOpen && (
                 <div className="px-4 pb-4 pt-1" style={{ background: '#f8faff' }}>
                   <div className="text-sm text-[#0f172a] leading-relaxed">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS as never}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MD_COMPONENTS as never}>
                       {current.exp}
                     </ReactMarkdown>
                   </div>

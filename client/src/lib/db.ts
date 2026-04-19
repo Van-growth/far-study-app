@@ -552,6 +552,9 @@ export async function fetchRecentExtractions(
       ),
       trapPattern: typeof row.trap_pattern === 'string' ? row.trap_pattern : null,
       triggers: Array.isArray(row.triggers) ? (row.triggers as ConceptTrigger[]) : [],
+      nextReviewAt: typeof row.next_review_at === 'string' ? row.next_review_at : null,
+      reviewInterval: typeof row.review_interval === 'number' ? row.review_interval : 0,
+      reviewCount: typeof row.review_count === 'number' ? row.review_count : 0,
     }))
 
   try {
