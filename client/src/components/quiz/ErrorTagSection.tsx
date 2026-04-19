@@ -9,6 +9,13 @@ import {
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001'
 
+const CATEGORIES = [
+  { label: '개념 미이해', emoji: '📚' },
+  { label: '계산 실수', emoji: '🔢' },
+  { label: '문제 해석 오류', emoji: '📖' },
+  { label: '기타', emoji: '💭' },
+]
+
 interface Props {
   question: string
   userAnswer: string
@@ -19,11 +26,12 @@ interface Props {
   onSaved?: (attemptErrorId: string) => void
 }
 
-type Stage = 'input' | 'saving' | 'done' | 'error'
+type Stage = 'category' | 'detail' | 'saving' | 'done' | 'error'
 
 export default function ErrorTagSection(props: Props) {
   const [patterns, setPatterns] = useState<ErrorPattern[]>([])
-  const [stage, setStage] = useState<Stage>('input')
+  const [stage, setStage] = useState<Stage>('category')
+  const [category, setCategory] = useState('')
   const [note, setNote] = useState('')
   const [submittedNote, setSubmittedNote] = useState('')
   const [diagnosis, setDiagnosis] = useState<string>('')
@@ -37,15 +45,20 @@ export default function ErrorTagSection(props: Props) {
     return () => { cancelled = true }
   }, [])
 
+  function selectCategory(label: string) {
+    setCategory(label)
+    setNote('')
+    setStage('detail')
+  }
+
   async function commit() {
     const trimmed = note.trim()
-    if (!trimmed) return
+    const patternName = trimmed ? `${category} — ${trimmed}` : category
 
     setStage('saving')
-    setSubmittedNote(trimmed)
+    setSubmittedNote(patternName)
     setErrMsg(null)
 
-    // Claude 진단 (실패해도 저장 계속)
     let aiDiagnosis = ''
     try {
       const res = await fetch(`${API_URL}/api/error-patterns/diagnose`, {
@@ -55,9 +68,9 @@ export default function ErrorTagSection(props: Props) {
           question: props.question,
           userAnswer: props.userAnswer,
           correctAnswer: props.correctAnswer,
-          patternName: trimmed,
+          patternName,
           topic: props.topicLabel,
-          userNote: trimmed,
+          userNote: trimmed || null,
         }),
       })
       if (res.ok) {
@@ -68,14 +81,13 @@ export default function ErrorTagSection(props: Props) {
       // 진단 실패는 조용히 무시
     }
 
-    // DB 저장 — 패턴 목록이 있는 환경에서만 (migration 008 적용 여부)
     const pattern = patterns[0] ?? null
     if (pattern) {
       const id = await tagAttemptError({
         quizLogId: props.quizLogId,
         patternId: pattern.patternId,
         topic: props.topicId,
-        userNote: trimmed,
+        userNote: patternName,
         aiDiagnosis: aiDiagnosis || null,
       })
       if (id === null) {
@@ -101,8 +113,40 @@ export default function ErrorTagSection(props: Props) {
       </div>
 
       <div className="px-4 py-3 flex flex-col gap-3">
-        {stage === 'input' && (
+
+        {/* 1단계: 카테고리 선택 */}
+        {stage === 'category' && (
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c.label}
+                onClick={() => selectCategory(c.label)}
+                className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                style={{ background: 'white', border: '1.5px solid #fecaca', color: '#991b1b' }}
+              >
+                {c.emoji} {c.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* 2단계: 자유 텍스트 입력 */}
+        {stage === 'detail' && (
           <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span
+                className="text-xs px-2.5 py-1 rounded-full font-medium"
+                style={{ background: '#fee2e2', color: '#991b1b' }}
+              >
+                {category}
+              </span>
+              <button
+                onClick={() => setStage('category')}
+                className="text-[10px] text-[#94a3b8] hover:text-[#64748b]"
+              >
+                변경
+              </button>
+            </div>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -112,25 +156,28 @@ export default function ErrorTagSection(props: Props) {
                   void commit()
                 }
               }}
-              placeholder="예) 개념 미이해, 계산 실수, 문제 해석 오류 등"
+              placeholder="구체적으로 어떤 부분을 몰랐나요?"
+              autoFocus
               className="w-full text-xs p-3 rounded-lg"
               style={{
                 border: '1px solid #fecaca',
-                minHeight: 72,
+                minHeight: 68,
                 resize: 'none',
                 outline: 'none',
                 background: 'white',
                 lineHeight: 1.6,
               }}
             />
-            <button
-              onClick={() => void commit()}
-              disabled={!note.trim()}
-              className="self-end text-xs font-semibold px-4 py-1.5 rounded-lg text-white disabled:opacity-40"
-              style={{ background: '#ef4444' }}
-            >
-              진단받기
-            </button>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-[#94a3b8]">비워도 저장됩니다</span>
+              <button
+                onClick={() => void commit()}
+                className="text-xs font-semibold px-4 py-1.5 rounded-lg text-white"
+                style={{ background: '#ef4444' }}
+              >
+                진단받기
+              </button>
+            </div>
           </div>
         )}
 
@@ -194,7 +241,7 @@ export default function ErrorTagSection(props: Props) {
             <p className="text-xs text-[#991b1b]">⚠️ {errMsg}</p>
             <button
               onClick={() => {
-                setStage('input')
+                setStage('category')
                 setErrMsg(null)
               }}
               className="self-start text-[10px] px-2 py-1 rounded text-[#64748b]"
