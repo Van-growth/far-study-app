@@ -32,7 +32,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
 
   const SLASH_COMMANDS: Record<string, string> = {
     '/go': `현재 문제를 아래 순서로 설명해줘:
-1. 문제 한 줄씩 해석 - 형식: [영어 원문] → [한국어 해석]
+1. 문제 한 줄씩 해석 - 형식: [영어 원문 전체] → [한국어 해석]. 반드시 영어 원문 전체를 한 글자도 생략하지 말고 그대로 표시할 것. 요약·축약·"..." 처리 절대 금지.
 2. 핵심 질문 해석 (what is asked) - 형식: [영어 원문] → [한국어 해석]
 3. 정답 간략 설명
 4. 핵심 트리거 키워드 설명
