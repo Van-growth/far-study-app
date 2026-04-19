@@ -16,6 +16,7 @@ import ValuationPage from './pages/ValuationPage';
 import HomePage from './pages/HomePage';
 import LearningEffectPage from './pages/LearningEffectPage';
 import BadgesPage from './pages/BadgesPage';
+import HistoryPage from './pages/HistoryPage';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 import useClaudeStore from './store/claudeStore';
@@ -32,7 +33,7 @@ const PANEL_DEFAULT = 340;
 const MOBILE_TABS = [
   { label: '홈', icon: '🏠', path: '/' },
   { label: '분석', icon: '📝', path: '/analyze' },
-  { label: '대시보드', icon: '📊', path: '/dashboard' },
+  { label: '기록', icon: '📋', path: '/history' },
   { label: '더보기', icon: '···', path: '/more' },
 ];
 
@@ -49,7 +50,7 @@ function BottomTabBar({ email }: { email: string }) {
     return location.pathname.startsWith(path);
   };
 
-  const morePaths = ['/quiz', '/admin'];
+  const morePaths = ['/quiz', '/admin', '/dashboard'];
   const moreActive = morePaths.some((p) => location.pathname.startsWith(p));
 
   return (
@@ -62,6 +63,7 @@ function BottomTabBar({ email }: { email: string }) {
             onClick={(e) => e.stopPropagation()}
           >
             {[
+              { label: '📊 대시보드', path: '/dashboard' },
               { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
               { label: '🏆 뱃지 & 성취', path: '/badges' },
               { label: '📈 학습 효과', path: '/learning' },
@@ -218,6 +220,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/science" element={<SciencePage />} />
             <Route path="/learning" element={<LearningEffectPage />} />
             <Route path="/valuation" element={<ValuationPage />} />
+            <Route path="/history" element={<HistoryPage />} />
             <Route path="/badges" element={<BadgesPage />} />
             {email.toLowerCase() === ADMIN_EMAIL && (
               <Route path="/admin" element={<AdminPage email={email} />} />

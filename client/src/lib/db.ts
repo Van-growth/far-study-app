@@ -565,6 +565,44 @@ export async function fetchRecentExtractions(
   }
 }
 
+export async function fetchExtractionsPage(
+  userId: string,
+  page: number,
+  pageSize = 10,
+): Promise<{ items: RecentExtractionItem[]; total: number | null }> {
+  if (!hasAuth(userId)) return { items: [], total: null }
+  const from = page * pageSize
+  const to = from + pageSize - 1
+  try {
+    const { data, error, count } = await supabase
+      .from('concept_extractions')
+      .select('id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern', { count: 'exact' })
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(from, to)
+    if (error || !data) return { items: [], total: null }
+    const items = (data as Record<string, unknown>[]).map((row) => ({
+      id: String(row.id ?? ''),
+      createdAt: String(row.created_at ?? ''),
+      topicId: typeof row.topic_id === 'string' ? row.topic_id : null,
+      concepts: (Array.isArray(row.concepts) ? row.concepts : []).filter(
+        (c): c is string => typeof c === 'string',
+      ),
+      ascReferences: (Array.isArray(row.asc_references) ? row.asc_references : []).filter(
+        (c): c is string => typeof c === 'string',
+      ),
+      topicTags: (Array.isArray(row.topic_tags) ? row.topic_tags : []).filter(
+        (c): c is string => typeof c === 'string',
+      ),
+      trapPattern: typeof row.trap_pattern === 'string' ? row.trap_pattern : null,
+      triggers: [],
+    }))
+    return { items, total: count ?? null }
+  } catch {
+    return { items: [], total: null }
+  }
+}
+
 /**
  * question_hash로 저장된 concept_extractions row 전체를 가져온다.
  * 미배포/조회 실패 시 null (차단하지 않음).
