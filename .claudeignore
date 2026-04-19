@@ -1,0 +1,9 @@
+node_modules/
+client/node_modules/
+client/dist/
+client/public/
+client/package-lock.json
+server/node_modules/
+.git/
+.github/
+*.log

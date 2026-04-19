@@ -11,7 +11,7 @@ import {
   ConceptCard,
   QuestionConfidence,
 } from '../hooks/useDynamicQuiz';
-import { saveQuizLog, getConceptStats, getCoachBootstrap } from '../lib/db';
+import { saveQuizLog, getConceptStats, getTodayQuizStats } from '../lib/db';
 import MobileSectionDrawer from '../components/layout/MobileSectionDrawer';
 import { drainPrewarmed } from '../hooks/prewarmQuiz';
 
@@ -218,18 +218,11 @@ export default function QuizPage() {
 
   useEffect(() => { wrongIdsRef.current = wrongIds; }, [wrongIds]);
 
-  // 오늘 누적 1회 fetch. user가 로그인돼 있을 때만. 이후는 handleAnswer에서
-  // optimistic 증분 — getCoachBootstrap은 500 row quiz_logs 쿼리라 비싸서
-  // 답변마다 재호출하지 않는다.
   useEffect(() => {
     if (!userIdState) return;
     let cancelled = false;
-    getCoachBootstrap(userIdState)
-      .then((b) => {
-        if (!cancelled) {
-          setTodayStats({ count: b.todayCount, correct: b.todayCorrect });
-        }
-      })
+    getTodayQuizStats(userIdState)
+      .then((s) => { if (!cancelled) setTodayStats(s); })
       .catch(() => { /* 네트워크 실패 시 조용히 — 바는 숨겨짐 */ });
     return () => { cancelled = true; };
   }, [userIdState]);

@@ -5,7 +5,6 @@ import claudeRouter from './routes/claude';
 import quizRouter from './routes/quiz';
 import analyzeRouter from './routes/analyze';
 import historyRouter from './routes/history';
-import coachRouter from './routes/coach';
 import sessionRouter from './routes/session';
 import feedbackRouter from './routes/feedback';
 import adminRouter from './routes/admin';
@@ -36,9 +35,6 @@ app.use('/api', analyzeRouter);
 
 // ── Quiz history (persistent) ─────────────────────────────────
 app.use('/api', historyRouter);
-
-// ── AI Coach (learning-data-driven chat) ──────────────────────
-app.use('/api/coach', coachRouter);
 
 // ── Daily session logs ────────────────────────────────────────
 app.use('/api', sessionRouter);

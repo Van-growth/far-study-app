@@ -10,7 +10,6 @@ import WrongPage from './pages/WrongPage';
 import SciencePage from './pages/SciencePage';
 import AnalyzePage from './pages/AnalyzePage';
 import ReplayPage from './pages/ReplayPage';
-import CoachPage from './pages/CoachPage';
 import AuthPage from './pages/AuthPage';
 import AdminPage from './pages/AdminPage';
 import ValuationPage from './pages/ValuationPage';
@@ -216,7 +215,6 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/wrong" element={<WrongPage />} />
             <Route path="/analyze" element={<AnalyzePage />} />
             <Route path="/replay" element={<ReplayPage />} />
-            <Route path="/coach" element={<CoachPage />} />
             <Route path="/science" element={<SciencePage />} />
             <Route path="/learning" element={<LearningEffectPage />} />
             <Route path="/valuation" element={<ValuationPage />} />

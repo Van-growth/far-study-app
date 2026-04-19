@@ -377,153 +377,18 @@ export const getModulePerformance = async (
   return out
 }
 
-// Used by the AI coach — lightweight quiz meta summary.
-export const getQuizMeta = async (
+export const getTodayQuizStats = async (
   userId: string,
-): Promise<{ totalSolved: number; lastActive: string | null }> => {
-  const [countRes, lastRes] = await Promise.all([
-    supabase.from('quiz_logs').select('*', { count: 'exact', head: true }).eq('user_id', userId),
-    supabase
-      .from('quiz_logs')
-      .select('created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1),
-  ])
-  const lastRow = (lastRes.data && lastRes.data[0]) as { created_at?: string } | undefined
-  return {
-    totalSolved: countRes.count ?? 0,
-    lastActive: lastRow?.created_at ?? null,
-  }
-}
-
-// Consolidated bootstrap for the AI coach: detects which scenario the
-// student is in (first use / first today / continuing / returning) and
-// surfaces the handful of fields the prompt needs.
-export interface CoachBootstrap {
-  totalSolved: number
-  lastActive: string | null
-  daysSinceLastActive: number | null
-  todayCount: number
-  todayCorrect: number
-  todayAvgSeconds: number | null
-  todayBreakdown: { moduleId: string; total: number; correct: number; avgSec: number | null }[]
-  lastSolvedModuleId: string | null
-  lastSolvedModuleCorrectRate: number | null
-}
-
-export const getCoachBootstrap = async (userId: string): Promise<CoachBootstrap> => {
-  const hasCol = await hasElapsedSecondsColumn()
-  const selectList = hasCol
-    ? 'topic_id, correct, elapsed_seconds, created_at'
-    : 'topic_id, correct, created_at'
-  const [logsRes, countRes] = await Promise.all([
-    supabase
-      .from('quiz_logs')
-      .select(selectList)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(500),
-    supabase.from('quiz_logs').select('*', { count: 'exact', head: true }).eq('user_id', userId),
-  ])
-
-  const logs = (logsRes.data ?? []) as unknown as {
-    topic_id: string
-    correct: boolean
-    elapsed_seconds: number | null
-    created_at: string
-  }[]
-  const totalSolved = countRes.count ?? logs.length
-
-  if (logs.length === 0) {
-    return {
-      totalSolved: 0,
-      lastActive: null,
-      daysSinceLastActive: null,
-      todayCount: 0,
-      todayCorrect: 0,
-      todayAvgSeconds: null,
-      todayBreakdown: [],
-      lastSolvedModuleId: null,
-      lastSolvedModuleCorrectRate: null,
-    }
-  }
-
-  const lastActive = logs[0].created_at
-  const daysSinceLastActive = Math.floor(
-    (Date.now() - new Date(lastActive).getTime()) / (24 * 60 * 60 * 1000),
-  )
-
-  // Local-day boundary
+): Promise<{ count: number; correct: number }> => {
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
-  const todayLogs = logs.filter((l) => new Date(l.created_at) >= todayStart)
-
-  const byModule: Record<
-    string,
-    { total: number; correct: number; secSum: number; secCount: number }
-  > = {}
-  for (const l of todayLogs) {
-    const id = l.topic_id
-    if (!id) continue
-    if (!byModule[id]) byModule[id] = { total: 0, correct: 0, secSum: 0, secCount: 0 }
-    byModule[id].total++
-    if (l.correct) byModule[id].correct++
-    if (
-      typeof l.elapsed_seconds === 'number' &&
-      l.elapsed_seconds >= 0 &&
-      l.elapsed_seconds <= 120
-    ) {
-      byModule[id].secSum += l.elapsed_seconds
-      byModule[id].secCount++
-    }
-  }
-  const todayBreakdown = Object.entries(byModule)
-    .map(([moduleId, v]) => ({
-      moduleId,
-      total: v.total,
-      correct: v.correct,
-      avgSec: v.secCount > 0 ? Math.round(v.secSum / v.secCount) : null,
-    }))
-    .sort((a, b) => b.total - a.total)
-
-  const todayCount = todayLogs.length
-  const todayCorrect = todayLogs.filter((l) => l.correct).length
-  const todaySecVals = todayLogs
-    .map((l) => l.elapsed_seconds)
-    .filter((s): s is number => typeof s === 'number' && s >= 0 && s <= 120)
-  const todayAvgSeconds =
-    todaySecVals.length > 0
-      ? Math.round(todaySecVals.reduce((a, b) => a + b, 0) / todaySecVals.length)
-      : null
-
-  const lastSolvedModuleId = logs[0].topic_id ?? null
-  let lastSolvedModuleCorrectRate: number | null = null
-  if (lastSolvedModuleId) {
-    const todayStat = byModule[lastSolvedModuleId]
-    if (todayStat) {
-      lastSolvedModuleCorrectRate = Math.round((todayStat.correct / todayStat.total) * 100)
-    } else {
-      // Fall back to all fetched logs for that module (up to 500 recent)
-      const modLogs = logs.filter((l) => l.topic_id === lastSolvedModuleId)
-      if (modLogs.length > 0) {
-        const c = modLogs.filter((l) => l.correct).length
-        lastSolvedModuleCorrectRate = Math.round((c / modLogs.length) * 100)
-      }
-    }
-  }
-
-  return {
-    totalSolved,
-    lastActive,
-    daysSinceLastActive,
-    todayCount,
-    todayCorrect,
-    todayAvgSeconds,
-    todayBreakdown,
-    lastSolvedModuleId,
-    lastSolvedModuleCorrectRate,
-  }
+  const { data } = await supabase
+    .from('quiz_logs')
+    .select('correct')
+    .eq('user_id', userId)
+    .gte('created_at', todayStart.toISOString())
+  const rows = (data ?? []) as { correct: boolean }[]
+  return { count: rows.length, correct: rows.filter((r) => r.correct).length }
 }
 
 // Distinct moduleIds from the most recent wrong answers.
@@ -1399,3 +1264,38 @@ export async function getCalendarWithAnalysis(userId: string): Promise<{
     .sort((a, b) => a.date.localeCompare(b.date))
 }
 
+// ── Briefing cache ────────────────────────────────────────────
+
+export interface BriefingResponse {
+  summary: string
+  actions: string[]
+  dayEstimate: string
+}
+
+/**
+ * Returns today's server-generated briefing from briefing_cache, or null
+ * if the cached row is missing or stale (not from today KST).
+ * The client falls back to calling /api/tutor/briefing directly when null.
+ */
+export async function getBriefingCache(userId: string): Promise<BriefingResponse | null> {
+  if (!hasAuth(userId)) return null
+  try {
+    const { data, error } = await supabase
+      .from('briefing_cache')
+      .select('content, generated_at')
+      .eq('user_id', userId)
+      .single()
+
+    if (error || !data) return null
+
+    const todayKST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' })
+    const generatedKST = new Date(data.generated_at as string).toLocaleDateString('en-CA', {
+      timeZone: 'Asia/Seoul',
+    })
+    if (generatedKST !== todayKST) return null
+
+    return JSON.parse(data.content as string) as BriefingResponse
+  } catch {
+    return null
+  }
+}

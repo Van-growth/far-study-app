@@ -11,6 +11,8 @@ import {
   refreshPatternStats,
   getStudyActivityStats,
   getTodayAnalyzeCount,
+  getBriefingCache,
+  BriefingResponse,
   ConceptStat,
   ModuleWeekAccuracy,
 } from '../../lib/db'
@@ -18,12 +20,6 @@ import { readExamInfo } from './ExamCountdown'
 
 const API_URL =
   (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001'
-
-interface BriefingResponse {
-  summary: string
-  actions: string[]
-  dayEstimate: string
-}
 
 interface Aggregated {
   weekAnalyzeCount: number
@@ -53,33 +49,6 @@ function todayKey(): string {
   return d.toISOString().slice(0, 10)
 }
 
-function cacheKey(userId: string): string {
-  return `far_briefing_${userId.slice(0, 8)}_${todayKey()}`
-}
-
-interface CachedBriefing {
-  agg: Aggregated
-  ai: BriefingResponse
-  streak?: number
-  totalDays?: number
-}
-
-function readCache(userId: string): CachedBriefing | null {
-  try {
-    const raw = localStorage.getItem(cacheKey(userId))
-    if (!raw) return null
-    return JSON.parse(raw) as CachedBriefing
-  } catch {
-    return null
-  }
-}
-
-function writeCache(userId: string, value: CachedBriefing) {
-  try {
-    localStorage.setItem(cacheKey(userId), JSON.stringify(value))
-  } catch { /* quota / private mode */ }
-}
-
 const DAILY_GOAL = 3
 
 export default function TutorBriefing({ onCoverage }: Props) {
@@ -93,8 +62,12 @@ export default function TutorBriefing({ onCoverage }: Props) {
   const [todayCount, setTodayCount] = useState(0)
   const [todayCountLoading, setTodayCountLoading] = useState(true)
 
-  async function loadFresh(userIdArg: string) {
+  // forceRefresh=true: bypass DB cache and call the server API directly
+  // (used by the "다시 생성" button).
+  async function loadData(userIdArg: string, forceRefresh = false) {
     setLoading(true)
+
+    // Snapshot cards and streak are always loaded fresh from DB.
     const [weekCount, analyzedIds, weekAcc, weakConcept, patterns, patternStats, actStats] =
       await Promise.all([
         getWeekAnalyzeCount(userIdArg),
@@ -112,10 +85,20 @@ export default function TutorBriefing({ onCoverage }: Props) {
     setTotalDays(actStats.totalDays)
     onCoverage?.(computed.coveredModules, computed.totalModules)
 
-    // today count — always fresh, not cached
     setTodayCountLoading(true)
     getTodayAnalyzeCount(userIdArg).then((c) => { setTodayCount(c); setTodayCountLoading(false) })
 
+    // AI text: use today's server-generated cache unless forceRefresh.
+    if (!forceRefresh) {
+      const cached = await getBriefingCache(userIdArg)
+      if (cached) {
+        setAi(cached)
+        setLoading(false)
+        return
+      }
+    }
+
+    // Fallback: call server API in real time.
     let aiResp: BriefingResponse = { summary: '', actions: [], dayEstimate: '' }
     try {
       const res = await fetch(`${API_URL}/api/tutor/briefing`, {
@@ -126,34 +109,19 @@ export default function TutorBriefing({ onCoverage }: Props) {
       if (res.ok) aiResp = (await res.json()) as BriefingResponse
     } catch { /* network failure */ }
     setAi(aiResp)
-    writeCache(userIdArg, { agg: computed, ai: aiResp, streak: actStats.streak, totalDays: actStats.totalDays })
     setLoading(false)
   }
 
   useEffect(() => {
     if (!userId) { setLoading(false); return }
-    const cached = readCache(userId)
-    if (cached) {
-      setAgg(cached.agg)
-      setAi(cached.ai)
-      setStreak(cached.streak ?? 0)
-      setTotalDays(cached.totalDays ?? 0)
-      onCoverage?.(cached.agg.coveredModules, cached.agg.totalModules)
-      setLoading(false)
-      // today count always fresh even when using cache
-      setTodayCountLoading(true)
-      getTodayAnalyzeCount(userId).then((c) => { setTodayCount(c); setTodayCountLoading(false) })
-      return
-    }
-    void loadFresh(userId)
+    void loadData(userId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
   async function handleRegenerate() {
     if (!userId || regenerating) return
     setRegenerating(true)
-    try { localStorage.removeItem(cacheKey(userId)) } catch { /* ignore */ }
-    await loadFresh(userId)
+    await loadData(userId, true)
     setRegenerating(false)
   }
 
