@@ -1,67 +1,71 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import TutorBriefing from '../components/home/TutorBriefing'
-import ExamCountdown from '../components/home/ExamCountdown'
-import { allTopics } from '../data/far-topics'
+import useStudyStore from '../store/studyStore'
+import { readExamInfo } from '../components/home/ExamCountdown'
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const [coverage, setCoverage] = useState<{ covered: number; total: number }>({
-    covered: 0,
-    total: allTopics.length,
-  })
+  const dueCount = useStudyStore((s) => s.conceptDueCount)
+  const { daysLeft, examDate } = readExamInfo()
 
   return (
-    <div className="p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto flex flex-col gap-6">
-        <div>
-          <h1 className="text-xl font-bold text-[#0f172a]">
-            <span className="text-[#4f6ef7]">AI 튜터</span> 브리핑
-          </h1>
-          <p className="text-sm text-muted mt-0.5">
-            Becker 학습 보조 — 오늘 집중할 것, 지금 약한 것, 시험까지의 페이스를 한 눈에.
-          </p>
-        </div>
+    <div className="flex flex-col items-center justify-center min-h-[70vh] gap-8 px-6">
 
-        <TutorBriefing
-          onCoverage={(covered, total) => setCoverage({ covered, total })}
-        />
-
-        <ExamCountdown
-          coveredModules={coverage.covered}
-          totalModules={coverage.total}
-        />
-
-        {/* Quick actions to primary flow */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => navigate('/analyze')}
-            className="card p-4 text-left hover:shadow-md transition-shadow"
-            style={{ borderLeft: '4px solid #4f6ef7' }}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <span>📝</span>
-              <span className="text-sm font-semibold text-[#0f172a]">문제 분석 열기</span>
+      {/* D-day */}
+      <div className="text-center">
+        {daysLeft !== null ? (
+          <>
+            <span className="text-sm text-[#64748b]">FAR 시험까지</span>
+            <div className="flex items-baseline gap-1 justify-center mt-0.5">
+              <span className="text-4xl font-extrabold text-[#4f6ef7]">D-{daysLeft}</span>
             </div>
-            <p className="text-xs text-muted">
-              Becker 문제를 붙여넣고 한국어 최적화 해설 + 도식화 + 핵심 트리거를 즉시 확인.
-            </p>
-          </button>
+            {examDate && (
+              <p className="text-xs text-[#94a3b8] mt-0.5">{examDate}</p>
+            )}
+          </>
+        ) : (
           <button
             onClick={() => navigate('/dashboard')}
-            className="card p-4 text-left hover:shadow-md transition-shadow"
-            style={{ borderLeft: '4px solid #0ea5e9' }}
+            className="text-sm text-[#94a3b8] underline underline-offset-2"
           >
-            <div className="flex items-center gap-2 mb-1">
-              <span>📊</span>
-              <span className="text-sm font-semibold text-[#0f172a]">대시보드 보기</span>
-            </div>
-            <p className="text-xs text-muted">
-              Error Pattern Board · 토픽 Health · Error Chain 탐색.
-            </p>
+            시험일 설정하기
           </button>
-        </div>
+        )}
       </div>
+
+      {/* 복습하기 */}
+      <button
+        onClick={() => navigate('/history')}
+        className="w-full max-w-xs py-5 rounded-2xl flex flex-col items-center gap-1 font-bold text-white transition-opacity hover:opacity-90 active:opacity-80"
+        style={{
+          background: dueCount > 0 ? '#ef4444' : '#4f6ef7',
+          boxShadow: dueCount > 0
+            ? '0 8px 24px rgba(239,68,68,0.3)'
+            : '0 8px 24px rgba(79,110,247,0.25)',
+        }}
+      >
+        <span className="text-xl">🔁 복습하기</span>
+        {dueCount > 0 ? (
+          <span className="text-sm font-medium opacity-90">{dueCount}개 대기 중</span>
+        ) : (
+          <span className="text-sm font-medium opacity-75">복습 카드 보기</span>
+        )}
+      </button>
+
+      {/* 분석하기 */}
+      <button
+        onClick={() => navigate('/analyze')}
+        className="w-full max-w-xs py-4 rounded-2xl flex items-center justify-center gap-2 font-semibold transition-opacity hover:opacity-90 active:opacity-80"
+        style={{
+          background: 'white',
+          border: '1.5px solid #e2e8f0',
+          color: '#0f172a',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        }}
+      >
+        <span className="text-lg">📝</span>
+        <span>분석하기</span>
+      </button>
+
     </div>
   )
 }
