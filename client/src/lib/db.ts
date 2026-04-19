@@ -1457,6 +1457,66 @@ export async function updateConceptReview(id: string, knew: boolean): Promise<vo
   }
 }
 
+// ── Daily review log (migration 012) ─────────────────────────
+
+/** Increment today's knew/confused counts for the user (upsert by user+date). */
+export async function upsertDailyReviewLog(
+  userId: string,
+  delta: { knew: number; confused: number }
+): Promise<void> {
+  if (!hasAuth(userId)) return
+  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD local
+  try {
+    const { data: existing } = await supabase
+      .from('daily_review_log')
+      .select('id, knew_count, confused_count')
+      .eq('user_id', userId)
+      .eq('log_date', today)
+      .maybeSingle()
+
+    if (existing) {
+      await supabase
+        .from('daily_review_log')
+        .update({
+          knew_count: (existing as { knew_count: number }).knew_count + delta.knew,
+          confused_count: (existing as { confused_count: number }).confused_count + delta.confused,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', (existing as { id: string }).id)
+    } else {
+      await supabase.from('daily_review_log').insert({
+        user_id: userId,
+        log_date: today,
+        knew_count: delta.knew,
+        confused_count: delta.confused,
+      })
+    }
+  } catch (e) {
+    console.warn('[db] upsertDailyReviewLog failed:', e)
+  }
+}
+
+/** Fetch today's review counts. Returns {0, 0} if none yet. */
+export async function getTodayReviewLog(
+  userId: string
+): Promise<{ knewCount: number; confusedCount: number }> {
+  if (!hasAuth(userId)) return { knewCount: 0, confusedCount: 0 }
+  const today = new Date().toISOString().slice(0, 10)
+  try {
+    const { data } = await supabase
+      .from('daily_review_log')
+      .select('knew_count, confused_count')
+      .eq('user_id', userId)
+      .eq('log_date', today)
+      .maybeSingle()
+    if (!data) return { knewCount: 0, confusedCount: 0 }
+    const row = data as { knew_count: number; confused_count: number }
+    return { knewCount: row.knew_count, confusedCount: row.confused_count }
+  } catch {
+    return { knewCount: 0, confusedCount: 0 }
+  }
+}
+
 // ── Briefing cache ────────────────────────────────────────────
 
 export interface BriefingResponse {

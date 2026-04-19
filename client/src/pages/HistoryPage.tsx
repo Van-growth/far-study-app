@@ -4,6 +4,8 @@ import {
   fetchDueExtractions,
   updateConceptReview,
   getConceptDueCount,
+  getTodayReviewLog,
+  upsertDailyReviewLog,
   RecentExtractionItem,
   ConceptTrigger,
 } from '../lib/db'
@@ -26,29 +28,14 @@ async function fetchCardHint(
 type Stage = 'loading' | 'empty' | 'review' | 'done'
 
 // ── Progress bar ──────────────────────────────────────────────
-function ProgressBar({
-  current,
-  total,
-  topicId,
-  topicLabel,
-}: {
-  current: number
-  total: number
-  topicId?: string | null
-  topicLabel?: string
-}) {
+function ProgressBar({ current, total }: { current: number; total: number }) {
   const pct = total > 0 ? (current / total) * 100 : 0
   return (
     <div className="px-4 pt-4 pb-2">
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-1.5">
         <span className="text-xs font-semibold text-[#4f6ef7]">오늘 복습</span>
         <span className="text-xs font-bold text-[#0f172a]">{current} / {total}</span>
       </div>
-      {(topicId || topicLabel) && (
-        <p className="text-[11px] text-[#64748b] mb-1.5 truncate">
-          {[topicId, topicLabel].filter(Boolean).join(' · ')}
-        </p>
-      )}
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
@@ -234,8 +221,13 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (!userId) return
-    fetchDueExtractions(userId).then((items) => {
+    Promise.all([
+      fetchDueExtractions(userId),
+      getTodayReviewLog(userId),
+    ]).then(([items, log]) => {
       setCards(items)
+      setKnewCount(log.knewCount)
+      setConfusedCount(log.confusedCount)
       setStage(items.length === 0 ? 'empty' : 'review')
     })
   }, [userId])
@@ -257,6 +249,7 @@ export default function HistoryPage() {
       const next = idx + 1
       if (knew) setKnewCount((c) => c + 1)
       else setConfusedCount((c) => c + 1)
+      if (userId) void upsertDailyReviewLog(userId, { knew: knew ? 1 : 0, confused: knew ? 0 : 1 })
       if (next >= cards.length) {
         setStage('done')
         if (userId) getConceptDueCount(userId).then(setConceptDueCount)
@@ -285,12 +278,7 @@ export default function HistoryPage() {
 
   return (
     <div className="max-w-lg mx-auto flex flex-col gap-4 pb-8">
-      <ProgressBar
-        current={idx + 1}
-        total={total}
-        topicId={current.topicId}
-        topicLabel={current.topicTags[0]}
-      />
+      <ProgressBar current={idx + 1} total={total} />
 
       <FlashCard key={idx} card={current} visible={visible} />
 
