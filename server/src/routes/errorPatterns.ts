@@ -41,7 +41,9 @@ router.post('/diagnose', async (req: Request, res: Response) => {
   const system =
     'You are a USCPA FAR exam tutor. Diagnose why the student got a question wrong, ' +
     'given the error pattern they self-identified. Respond in Korean only. ' +
-    'Keep it tight: 2~3 lines of diagnosis + exactly one "다음 체크포인트:" line at the end. ' +
+    'Format your response using markdown: use **(1)** **(2)** for numbered points, ' +
+    '**bold** for key accounting terms and concepts. ' +
+    'Keep it tight: 2~3 numbered points of diagnosis + exactly one "**다음 체크포인트:**" line at the end. ' +
     'Use "Book value(장부가액)" style for bilingual terms. No greetings, no filler.';
 
   const user =

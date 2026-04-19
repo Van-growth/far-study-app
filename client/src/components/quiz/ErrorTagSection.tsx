@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import {
   getErrorPatterns,
   tagAttemptError,
@@ -243,35 +241,10 @@ export default function ErrorTagSection(props: Props) {
             </div>
             {diagnosis && (
               <div
-                className="rounded-lg"
+                className="rounded-lg px-3 py-2.5 flex flex-col gap-2"
                 style={{ background: 'white', border: '1px solid #fecaca' }}
-              >
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    p: ({ children }) => (
-                      <p className="text-xs text-[#0f172a] leading-relaxed mb-2 last:mb-0 px-3 pt-2 last:pb-3">
-                        {children}
-                      </p>
-                    ),
-                    strong: ({ children }) => (
-                      <strong className="font-semibold text-[#0f172a]">{children}</strong>
-                    ),
-                    em: ({ children }) => (
-                      <em className="italic text-[#475569]">{children}</em>
-                    ),
-                    hr: () => (
-                      <hr className="mx-3 my-0" style={{ borderColor: '#fecaca' }} />
-                    ),
-                  }}
-                >
-                  {/* (1) (2) (3) 항목과 "다음 체크포인트:" 앞에 빈 줄 삽입해 문단 분리 */}
-                  {diagnosis
-                    .replace(/\n?(\(\d+\))/g, '\n\n$1')
-                    .replace(/\n?(다음 체크포인트)/g, '\n\n---\n\n**$1**')
-                    .trim()}
-                </ReactMarkdown>
-              </div>
+                dangerouslySetInnerHTML={{ __html: parseDiagnosis(diagnosis) }}
+              />
             )}
           </div>
         )}
@@ -295,4 +268,39 @@ export default function ErrorTagSection(props: Props) {
       </div>
     </div>
   )
+}
+
+function parseDiagnosis(text: string): string {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  const withBreaks = escaped
+    // (1) (2) (3) 앞에 빈 줄
+    .replace(/\n?(\(\d+\)|\*\*\(\d+\)\*\*)/g, '\n\n$1')
+    // 다음 체크포인트 앞에 빈 줄
+    .replace(/\n?(다음 체크포인트)/g, '\n\n다음 체크포인트')
+
+  const paragraphs = withBreaks
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+
+  return paragraphs
+    .map((p) => {
+      // **bold** 변환
+      const html = p
+        .replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight:600;color:#0f172a">$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em style="font-style:italic;color:#475569">$1</em>')
+        // 단일 \n → <br>
+        .replace(/\n/g, '<br/>')
+
+      const isCheckpoint = p.includes('다음 체크포인트')
+      if (isCheckpoint) {
+        return `<p style="font-size:11px;line-height:1.6;color:#991b1b;border-top:1px solid #fecaca;padding-top:8px;margin:0">${html}</p>`
+      }
+      return `<p style="font-size:11px;line-height:1.6;color:#0f172a;margin:0">${html}</p>`
+    })
+    .join('<div style="height:6px"></div>')
 }
