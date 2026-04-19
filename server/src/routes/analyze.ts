@@ -180,7 +180,9 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
     }
 
     const learned = await applyExtraction(extracted);
+    console.log('[analyze] res.json 호출 직전');
     finish(200, { extracted, learned, correctedTopicId });
+    console.log('[analyze] res.json 완료');
   } catch (err) {
     const m = err instanceof Error ? err.message : 'unknown';
     finish(500, { error: m });
