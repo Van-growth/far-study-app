@@ -19,6 +19,7 @@ const MODEL = 'claude-sonnet-4-6';
 //       original text — only the extracted concept metadata.
 // ─────────────────────────────────────────────
 router.post('/extract-concepts', async (req: Request, res: Response) => {
+  console.log('[analyze] extract-concepts 요청 받음');
   const { questionText, userAnswer, correctAnswer, topicId } = req.body as {
     questionText?: string;
     userAnswer?: string | null;
