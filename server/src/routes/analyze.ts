@@ -87,49 +87,95 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
   ]
 }`;
 
-  // ── Anthropic 호출 (동기) ────────────────────────────────────
-  let msg: Awaited<ReturnType<typeof anthropic.messages.create>>;
-  try {
-    console.log('[analyze] Anthropic 호출 직전');
-    msg = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 600,
-      messages: [{ role: 'user', content: prompt }],
-    });
-    console.log('[analyze] Anthropic 호출 완료');
-  } catch (apiErr) {
-    console.error('[analyze] Anthropic API 호출 실패:', apiErr instanceof Error ? apiErr.message : apiErr);
-    finish(502, { error: 'Anthropic API 호출 실패', detail: apiErr instanceof Error ? apiErr.message : String(apiErr) });
-    return;
+  // ── JSON 복구 헬퍼 ──────────────────────────────────────────
+  function repairJson(raw: string): string {
+    let s = raw.trimEnd().replace(/,\s*$/, ''); // 후행 쉼표 제거
+    let braces = 0, brackets = 0;
+    let inString = false, escape = false;
+    for (const ch of s) {
+      if (escape) { escape = false; continue; }
+      if (ch === '\\' && inString) { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{') braces++;
+      else if (ch === '}') braces--;
+      else if (ch === '[') brackets++;
+      else if (ch === ']') brackets--;
+    }
+    if (inString) s += '"';                          // 열린 문자열 닫기
+    for (let i = 0; i < brackets; i++) s += ']';    // 열린 배열 닫기
+    for (let i = 0; i < braces; i++) s += '}';      // 열린 객체 닫기
+    return s;
   }
 
-  // ── 응답 파싱 ────────────────────────────────────────────────
-  try {
+  function extractRawBody(text: string): string {
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (fenced) return fenced[1].trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    return jsonMatch ? jsonMatch[0] : text;
+  }
+
+  // ── Anthropic 호출 + 파싱 (최대 2회 재시도) ─────────────────
+  const MAX_ATTEMPTS = 3;
+  let parsed: unknown = null;
+  let lastApiErr: unknown = null;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let msg: Awaited<ReturnType<typeof anthropic.messages.create>>;
+    try {
+      console.log(`[analyze] Anthropic 호출 (시도 ${attempt}/${MAX_ATTEMPTS})`);
+      msg = await anthropic.messages.create({
+        model: MODEL,
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }],
+      });
+    } catch (apiErr) {
+      lastApiErr = apiErr;
+      console.error(`[analyze] Anthropic 호출 실패 (시도 ${attempt}):`, apiErr instanceof Error ? apiErr.message : apiErr);
+      if (attempt === MAX_ATTEMPTS) {
+        finish(502, { error: 'Anthropic API 호출 실패', detail: apiErr instanceof Error ? apiErr.message : String(apiErr) });
+        return;
+      }
+      continue;
+    }
+
     const block = msg.content.find((b) => b.type === 'text');
     if (!block || block.type !== 'text') {
-      finish(502, { error: 'no text in response' });
-      return;
+      console.error(`[analyze] no text block (시도 ${attempt})`);
+      if (attempt === MAX_ATTEMPTS) { finish(502, { error: 'no text in response' }); return; }
+      continue;
     }
     const text = block.text.trim();
-    console.log('[analyze] Anthropic raw 응답:', text);
+    console.log(`[analyze] raw 응답 (시도 ${attempt}):`, text.slice(0, 400));
 
-    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    let rawBody: string;
-    if (fenced) {
-      rawBody = fenced[1].trim();
-    } else {
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      rawBody = jsonMatch ? jsonMatch[0] : text;
-    }
+    const rawBody = extractRawBody(text);
 
-    let parsed: unknown;
+    // 1차: 그대로 파싱
     try {
       parsed = JSON.parse(rawBody);
-    } catch (e) {
-      console.error('[analyze] JSON 파싱 실패:', e instanceof Error ? e.message : e, '\nraw:', rawBody.slice(0, 300));
-      finish(502, { error: 'extraction JSON parse failed', detail: e instanceof Error ? e.message : 'unknown' });
-      return;
+      console.log(`[analyze] JSON 파싱 성공 (시도 ${attempt})`);
+      break;
+    } catch {
+      // 2차: 잘린 JSON 복구 후 재시도
+      try {
+        const repaired = repairJson(rawBody);
+        parsed = JSON.parse(repaired);
+        console.log(`[analyze] JSON 복구 후 파싱 성공 (시도 ${attempt}), 복구된 길이: ${repaired.length}`);
+        break;
+      } catch (e2) {
+        console.error(`[analyze] JSON 파싱/복구 실패 (시도 ${attempt}):`, e2 instanceof Error ? e2.message : e2, '\nraw tail:', rawBody.slice(-200));
+        if (attempt === MAX_ATTEMPTS) {
+          // 최종 실패 시 빈 구조로 fallback
+          console.warn('[analyze] 모든 시도 실패 — 빈 extracted로 fallback');
+          parsed = { concepts: [], asc_references: [], topic_tags: [], trap_pattern: null, triggers: [] };
+          break;
+        }
+      }
     }
+  }
+
+  // ── 파싱 결과 가공 ───────────────────────────────────────────
+  try {
     if (!parsed || typeof parsed !== 'object') {
       finish(502, { error: 'invalid extraction shape' });
       return;
