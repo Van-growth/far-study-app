@@ -191,6 +191,7 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
     finish(200, { extracted, learned, correctedTopicId });
     console.log('[analyze] res.json 완료');
   } catch (err) {
+    console.error('[analyze] outer catch 에러:', err);
     const m = err instanceof Error ? err.message : 'unknown';
     finish(500, { error: m });
   }
