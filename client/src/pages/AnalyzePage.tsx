@@ -873,42 +873,90 @@ export default function AnalyzePage() {
   );
 }
 
+function TriggerCard({ t }: { t: ConceptTrigger }) {
+  const [open, setOpen] = useState(false);
+
+  const bullets = [
+    t.auto_rule && { icon: '⚡', text: t.auto_rule, color: '#15803d' },
+    t.trap      && { icon: '⚠️', text: t.trap,      color: '#dc2626' },
+    t.comparison && { icon: '🔄', text: t.comparison, color: '#1d4ed8' },
+    t.irrelevant && { icon: '🚫', text: t.irrelevant, color: '#6b7280' },
+  ].filter(Boolean) as { icon: string; text: string; color: string }[];
+
+  return (
+    <div
+      className="rounded-lg overflow-hidden"
+      style={{ border: '1px solid #fed7aa', background: '#fff7ed' }}
+    >
+      {/* 헤더 — 항상 보임 */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full text-left px-3 py-2 flex items-start justify-between gap-2"
+      >
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-xs font-bold" style={{ color: '#9a3412' }}>
+            ⚡ &quot;{t.keyword}&quot;
+          </span>
+          {/* 요약 한 줄씩 — 접힌 상태에서만 표시 */}
+          {!open && (
+            <div className="flex flex-col gap-0.5">
+              {bullets.map((b, i) => (
+                <p key={i} className="text-[11px] leading-snug truncate" style={{ color: b.color }}>
+                  {b.icon} {b.text}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+        <span className="text-[10px] text-[#9a3412] opacity-60 shrink-0 mt-0.5">
+          {open ? '▲' : '▼'}
+        </span>
+      </button>
+
+      {/* 펼쳐진 전문 */}
+      {open && (
+        <div
+          className="px-3 pb-3 flex flex-col gap-2 border-t"
+          style={{ borderColor: '#fed7aa' }}
+        >
+          {t.auto_rule && (
+            <div className="pt-2">
+              <p className="text-[10px] font-semibold mb-0.5" style={{ color: '#15803d' }}>⚡ 자동 반응</p>
+              <p className="text-xs leading-relaxed" style={{ color: '#15803d' }}>{t.auto_rule}</p>
+            </div>
+          )}
+          {t.trap && (
+            <div>
+              <p className="text-[10px] font-semibold mb-0.5" style={{ color: '#dc2626' }}>⚠️ 함정</p>
+              <p className="text-xs leading-relaxed" style={{ color: '#dc2626' }}>{t.trap}</p>
+            </div>
+          )}
+          {t.comparison && (
+            <div>
+              <p className="text-[10px] font-semibold mb-0.5" style={{ color: '#1d4ed8' }}>🔄 비교</p>
+              <p className="text-xs leading-relaxed" style={{ color: '#1d4ed8' }}>{t.comparison}</p>
+            </div>
+          )}
+          {t.irrelevant && (
+            <div>
+              <p className="text-[10px] font-semibold mb-0.5" style={{ color: '#6b7280' }}>🚫 무시할 데이터</p>
+              <p className="text-xs leading-relaxed" style={{ color: '#6b7280' }}>{t.irrelevant}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TriggerSection({ triggers }: { triggers: ConceptTrigger[] }) {
   if (!triggers || triggers.length === 0) return null;
   return (
     <div className="mt-3">
-      <p className="text-[10px] font-semibold text-muted mb-1.5">🔥 핵심 트리거</p>
+      <p className="text-[10px] font-semibold text-muted mb-1.5">⚡ 핵심 트리거</p>
       <div className="flex flex-col gap-2">
         {triggers.map((t, i) => (
-          <div
-            key={i}
-            className="rounded-lg p-2.5 text-xs flex flex-col gap-1"
-            style={{ background: '#fff7ed', border: '1px solid #fed7aa' }}
-          >
-            <p className="font-bold" style={{ color: '#9a3412' }}>
-              🔥 &quot;{t.keyword}&quot; 감지
-            </p>
-            {t.auto_rule && (
-              <p style={{ color: '#15803d' }}>
-                <span className="font-semibold">→ 자동 반응:</span> {t.auto_rule}
-              </p>
-            )}
-            {t.trap && (
-              <p style={{ color: '#dc2626' }}>
-                <span className="font-semibold">→ 함정:</span> {t.trap}
-              </p>
-            )}
-            {t.comparison && (
-              <p style={{ color: '#1d4ed8' }}>
-                <span className="font-semibold">→ 비교:</span> {t.comparison}
-              </p>
-            )}
-            {t.irrelevant && (
-              <p style={{ color: '#6b7280' }}>
-                <span className="font-semibold">→ 무시할 데이터:</span> {t.irrelevant}
-              </p>
-            )}
-          </div>
+          <TriggerCard key={i} t={t} />
         ))}
       </div>
     </div>
