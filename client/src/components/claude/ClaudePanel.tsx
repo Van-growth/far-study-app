@@ -43,10 +43,27 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
 **반드시 6개 항목 모두 빠짐없이 출력할 것. 어떤 항목도 생략하거나 축약하지 말 것.**`,
   };
 
+  const buildReCommand = (): string => {
+    const topicName =
+      reviewCardContext?.topicTags[0] ??
+      reviewCardContext?.topicLabel ??
+      reviewCardContext?.topicId ??
+      '현재 개념';
+    return `현재 복습 중인 개념(${topicName})에 대해 아래 5가지를 순서대로 설명해줘.
+
+1. 복습 주요 토픽 - 이 개념이 무엇인지 한 줄 요약
+2. 경제적 실질 - 이해관계자의 입장과 이런 거래가 발생하는 이유
+3. 핵심 계산 공식 - 있다면 공식과 변수 설명, 없으면 생략
+4. 함정 - 시험에서 틀리기 쉬운 포인트
+5. 회계처리 - 분개 또는 처리 방식 (해당되는 경우)
+
+**반드시 5개 항목 순서대로 빠짐없이 출력할 것.**`;
+  };
+
   const handleSend = () => {
     const t = input.trim();
     if (!t || isLoading) return;
-    const message = SLASH_COMMANDS[t] ?? t;
+    const message = t === '/re' ? buildReCommand() : (SLASH_COMMANDS[t] ?? t);
     sendMessage(message);
     setInput('');
     if (taRef.current) taRef.current.style.height = 'auto';
