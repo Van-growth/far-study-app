@@ -46,3 +46,4 @@ client/supabase/
 /tsconfig.node.json
 /vite.config.ts
 /.env.example
+scripts/.env.script
