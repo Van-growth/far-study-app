@@ -822,24 +822,16 @@ export async function saveConceptExtraction(
     .select('id')
     .single()
 
-  // Migration 007 미적용 환경에서는 question_hash 컬럼이 없어 PGRST204가
-  // 난다. 이 경우 question_hash만 빼고 재시도 — 기존 저장 플로우는 유지.
-  if (error && row.questionHash) {
+  // Migration 007 (question_hash) or 015 (triggers) not applied yet — retry without optional columns.
+  if (error) {
     const code = (error as { code?: string }).code ?? ''
-    const msg = (error.message ?? '').toLowerCase()
-    if (
-      code === 'PGRST204' ||
-      code === '42703' ||
-      msg.includes('question_hash') ||
-      msg.includes('schema cache')
-    ) {
-      console.warn(
-        '[db] concept_extractions.question_hash missing — ' +
-          '007 migration not applied. Retrying without hash.',
-      )
+    if (code === 'PGRST204' || code === '42703' || code === '400' || (error as { status?: number }).status === 400) {
+      console.warn('[db] saveConceptExtraction schema error — retrying without optional columns', { code })
+      const { triggers: _t, ...withoutTriggers } = basePayload as Record<string, unknown> & { triggers?: unknown }
+      const corePayload = withoutTriggers
       const retry = await supabase
         .from('concept_extractions')
-        .insert(basePayload)
+        .insert(corePayload)
         .select('id')
         .single()
       data = retry.data
@@ -1445,7 +1437,8 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
   if (!hasAuth(userId)) return []
   try {
     const now = new Date().toISOString()
-    const baseSelect = 'id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern, triggers, next_review_at, review_interval, review_count'
+    // Columns added by later migrations — fetched opportunistically, absent = []
+    const coreSelect = 'id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern, next_review_at, review_interval, review_count'
 
     const runQuery = (select: string) =>
       supabase
@@ -1456,16 +1449,15 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
         .lte('next_review_at', now)
         .order('next_review_at', { ascending: true })
 
-    let result = await runQuery(`${baseSelect}, example_question`)
+    // Try full select (triggers + example_question), fall back to core on any schema error
+    let result = await runQuery(`${coreSelect}, triggers, example_question`)
+    let hasTriggers = true
     let hasEq = true
-    // Graceful fallback if example_question column not in schema cache yet
     if (result.error) {
-      const code = (result.error as { code?: string }).code ?? ''
-      const msg = (result.error.message ?? '').toLowerCase()
-      if (code === 'PGRST204' || code === '42703' || msg.includes('example_question') || msg.includes('schema cache')) {
-        result = await runQuery(baseSelect)
-        hasEq = false
-      }
+      // Retry with just core columns — handles triggers or example_question missing
+      result = await runQuery(coreSelect)
+      hasTriggers = false
+      hasEq = false
     }
     if (result.error || !result.data) return []
     return (result.data as unknown as Record<string, unknown>[]).map((row) => ({
@@ -1476,7 +1468,7 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
       ascReferences: (Array.isArray(row.asc_references) ? row.asc_references : []).filter((c): c is string => typeof c === 'string'),
       topicTags: (Array.isArray(row.topic_tags) ? row.topic_tags : []).filter((c): c is string => typeof c === 'string'),
       trapPattern: typeof row.trap_pattern === 'string' ? row.trap_pattern : null,
-      triggers: Array.isArray(row.triggers) ? (row.triggers as ConceptTrigger[]) : [],
+      triggers: hasTriggers && Array.isArray(row.triggers) ? (row.triggers as ConceptTrigger[]) : [],
       nextReviewAt: typeof row.next_review_at === 'string' ? row.next_review_at : null,
       reviewInterval: typeof row.review_interval === 'number' ? row.review_interval : 0,
       reviewCount: typeof row.review_count === 'number' ? row.review_count : 0,
@@ -1568,8 +1560,8 @@ export async function getTodayReviewStats(
       const code = (error as { code?: string }).code ?? ''
       const msg = (error.message ?? '').toLowerCase()
       if (code === 'PGRST204' || code === '42703' || msg.includes('reviewed_at') || msg.includes('review_result')) {
-        // migration 014 not applied yet — fall back to daily_review_log
-        return getTodayReviewLog(userId)
+        // migration 014 not applied yet
+        return { knewCount: 0, confusedCount: 0 }
       }
       return { knewCount: 0, confusedCount: 0 }
     }
@@ -1586,62 +1578,19 @@ export async function getTodayReviewStats(
 
 // ── Daily review log (migration 012) ─────────────────────────
 
-/** Increment today's knew/confused counts for the user (upsert by user+date). */
+/** @deprecated daily_review_log table removed — tracking moved to concept_extractions.reviewed_at */
 export async function upsertDailyReviewLog(
-  userId: string,
-  delta: { knew: number; confused: number }
+  _userId: string,
+  _delta: { knew: number; confused: number }
 ): Promise<void> {
-  if (!hasAuth(userId)) return
-  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD local
-  try {
-    const { data: existing } = await supabase
-      .from('daily_review_log')
-      .select('id, knew_count, confused_count')
-      .eq('user_id', userId)
-      .eq('log_date', today)
-      .maybeSingle()
-
-    if (existing) {
-      await supabase
-        .from('daily_review_log')
-        .update({
-          knew_count: (existing as { knew_count: number }).knew_count + delta.knew,
-          confused_count: (existing as { confused_count: number }).confused_count + delta.confused,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', (existing as { id: string }).id)
-    } else {
-      await supabase.from('daily_review_log').insert({
-        user_id: userId,
-        log_date: today,
-        knew_count: delta.knew,
-        confused_count: delta.confused,
-      })
-    }
-  } catch (e) {
-    console.warn('[db] upsertDailyReviewLog failed:', e)
-  }
+  // no-op: daily_review_log table does not exist; review counts are derived from concept_extractions
 }
 
-/** Fetch today's review counts. Returns {0, 0} if none yet. */
+/** @deprecated use getTodayReviewStats instead */
 export async function getTodayReviewLog(
-  userId: string
+  _userId: string
 ): Promise<{ knewCount: number; confusedCount: number }> {
-  if (!hasAuth(userId)) return { knewCount: 0, confusedCount: 0 }
-  const today = new Date().toISOString().slice(0, 10)
-  try {
-    const { data } = await supabase
-      .from('daily_review_log')
-      .select('knew_count, confused_count')
-      .eq('user_id', userId)
-      .eq('log_date', today)
-      .maybeSingle()
-    if (!data) return { knewCount: 0, confusedCount: 0 }
-    const row = data as { knew_count: number; confused_count: number }
-    return { knewCount: row.knew_count, confusedCount: row.confused_count }
-  } catch {
-    return { knewCount: 0, confusedCount: 0 }
-  }
+  return { knewCount: 0, confusedCount: 0 }
 }
 
 // ── Briefing cache ────────────────────────────────────────────
