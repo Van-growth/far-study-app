@@ -28,31 +28,45 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const [input, setInput] = useState('');
   const taRef = useRef<HTMLTextAreaElement>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
-  const isAtBottomRef = useRef(true);
+  const shouldAutoScrollRef = useRef(true);   // user intent: follow bottom?
+  const isProgrammaticRef = useRef(false);    // suppress scroll events from our own scrollTo
   const isOpen = useClaudeStore((s) => s.isOpen);
 
   useEffect(() => { if (isOpen) setTimeout(() => taRef.current?.focus(), 300); }, [isOpen]);
 
-  // Scroll to bottom when user sends (last msg is user role)
+  const scrollToBottom = () => {
+    const el = msgsRef.current;
+    if (!el) return;
+    isProgrammaticRef.current = true;
+    el.scrollTo({ top: el.scrollHeight });
+  };
+
+  // When user sends — always snap to bottom and re-enable auto-scroll
   useEffect(() => {
     const last = messages[messages.length - 1];
     if (last?.role === 'user') {
-      isAtBottomRef.current = true;
-      msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight });
+      shouldAutoScrollRef.current = true;
+      scrollToBottom();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length]);
 
-  // Auto-scroll during streaming only when user is at bottom
+  // During streaming — follow only if user hasn't scrolled up
   useEffect(() => {
-    if (!isLoading || !isAtBottomRef.current) return;
-    msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight });
-  }, [messages, isLoading]);
+    if (!isLoading) return;
+    if (shouldAutoScrollRef.current) scrollToBottom();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
 
   const handleMsgsScroll = () => {
+    // Ignore scroll events caused by our own scrollTo calls
+    if (isProgrammaticRef.current) {
+      isProgrammaticRef.current = false;
+      return;
+    }
     const el = msgsRef.current;
     if (!el) return;
-    isAtBottomRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 50;
+    shouldAutoScrollRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 50;
   };
 
   const SLASH_COMMANDS: Record<string, string> = {
