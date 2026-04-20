@@ -118,7 +118,7 @@ Respond with ONLY valid JSON, no markdown:
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 400,
+      max_tokens: 600,
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -130,8 +130,10 @@ Respond with ONLY valid JSON, no markdown:
 
   const data = await res.json()
   const text = data.content?.[0]?.text ?? ''
-  const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()
-  const parsed = JSON.parse(cleaned)
+  // Extract first {...} block to handle extra text after JSON
+  const match = text.match(/\{[\s\S]*\}/)
+  if (!match) throw new Error('No JSON object found in response')
+  const parsed = JSON.parse(match[0])
 
   if (
     typeof parsed.question !== 'string' ||
