@@ -55,11 +55,11 @@ function BottomTabBar({ email }: { email: string }) {
 
   return (
     <>
-      {/* More menu popup */}
+      {/* More menu popup — drops down from tab bar */}
       {showMore && (
         <div className="fixed inset-0 z-50" onClick={() => setShowMore(false)}>
           <div
-            className="absolute bottom-16 right-3 bg-white rounded-xl shadow-lg border border-border py-1 min-w-[160px]"
+            className="absolute top-[100px] right-3 bg-white rounded-xl shadow-lg border border-border py-1 min-w-[160px]"
             onClick={(e) => e.stopPropagation()}
           >
             {[
@@ -94,7 +94,7 @@ function BottomTabBar({ email }: { email: string }) {
           <div className="absolute inset-0 bg-black/30" />
           <div
             className="relative flex flex-col bg-white shadow-xl overflow-hidden"
-            style={{ width: '85vw', maxWidth: 320, marginTop: 54, maxHeight: 'calc(100dvh - 54px - 56px)' }}
+            style={{ width: '85vw', maxWidth: 320, marginTop: 98, maxHeight: 'calc(100dvh - 98px)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
@@ -108,10 +108,10 @@ function BottomTabBar({ email }: { email: string }) {
         </div>
       )}
 
-      {/* Tab bar */}
+      {/* Tab bar — fixed below header */}
       <div
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-border flex items-center justify-around"
-        style={{ height: 56, paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        className="md:hidden fixed top-[54px] left-0 right-0 z-40 bg-white border-b border-border flex items-center justify-around"
+        style={{ height: 44 }}
       >
         {MOBILE_TABS.map((tab) => {
           const active = tab.path === '/more' ? moreActive : isActive(tab.path);
@@ -123,11 +123,12 @@ function BottomTabBar({ email }: { email: string }) {
                 navigate(tab.path);
                 setShowMore(false);
               }}
-              className="flex flex-col items-center gap-0.5 flex-1 py-1"
+              className="flex items-center justify-center gap-1 flex-1 h-full"
+              style={{ borderBottom: active ? '2px solid #4f6ef7' : '2px solid transparent' }}
             >
-              <span className="text-lg leading-none">{tab.icon}</span>
+              <span className="text-base leading-none">{tab.icon}</span>
               <span
-                className="text-[10px] font-medium"
+                className="hidden min-[480px]:inline text-[11px] font-medium"
                 style={{ color: active ? '#4f6ef7' : '#94a3b8' }}
               >
                 {tab.label}
@@ -206,7 +207,7 @@ function AppLayout({ email }: { email: string }) {
 
         {/* Main content — extra bottom padding on mobile for tab bar */}
         <main
-          className="flex-1 overflow-auto min-w-0 pb-16 md:pb-0"
+          className="flex-1 overflow-auto min-w-0 pt-[44px] md:pt-0"
           style={{ background: '#f0f4f8' }}
         >
           <Routes>

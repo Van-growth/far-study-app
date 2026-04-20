@@ -10,7 +10,7 @@ export default function Dashboard() {
   const dueCount = useStudyStore((s) => s.conceptDueCount);
 
   const [activityStats, setActivityStats] = useState<StudyActivityStats>({
-    totalDays: 0, weekCount: 0, quizTotal: 0, quizCorrect: 0, streak: 0,
+    totalDays: 0, weekCount: 0, analyzeTotal: 0, quizTotal: 0, quizCorrect: 0, streak: 0,
   });
   const [analyzeByTopic, setAnalyzeByTopic] = useState<Record<string, number>>({});
 
@@ -57,7 +57,7 @@ export default function Dashboard() {
       {/* Stat cards */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: '총 학습일', value: activityStats.totalDays, color: '#4f6ef7', sub: '퀴즈+분석 합산' },
+          { label: '총 학습일', value: activityStats.totalDays, color: '#4f6ef7', sub: '분석+복습 합산' },
           { label: '이번 주 학습', value: activityStats.weekCount, color: '#0ea5e9', sub: '학습 활동' },
           { label: '총 분석 건수', value: totalAnalyzeCount, color: '#10b981', sub: 'concept 추출 누적' },
           { label: '연속 학습', value: activityStats.streak, color: '#f59e0b', sub: '일 연속' },

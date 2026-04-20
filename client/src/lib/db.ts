@@ -1207,19 +1207,22 @@ export async function getWeakestConceptTag(
 }
 
 // ── 통합 학습 활동 집계 ───────────────────────────────────────
-// quiz_logs + concept_extractions 를 합산하는 새 헬퍼들.
-// study_sessions 에 의존하지 않으므로 새로고침 카운팅 버그가 없다.
+// concept_extractions(분석) + reviewed_at(복습) 기준으로 집계.
+// 퀴즈 기능이 제거됐으므로 quiz_logs 참조 없음.
 
 export interface StudyActivityStats {
-  totalDays: number   // quiz OR analysis 가 있는 unique 날짜 수 (최근 1년)
-  weekCount: number   // 이번 주 quiz 수 + analysis 수
-  quizTotal: number   // 전체 누적 quiz 횟수 (all-time)
-  quizCorrect: number // 전체 누적 정답 횟수 (all-time)
-  streak: number      // 연속 학습일 (quiz OR analysis 기준)
+  totalDays: number   // 분석 또는 복습 있는 unique 날짜 수 (최근 1년)
+  weekCount: number   // 이번 주 분석 수 + 복습 수
+  analyzeTotal: number // 전체 누적 분석(concept_extractions) 건수
+  streak: number      // 연속 학습일 (분석 또는 복습 기준)
+  /** @deprecated use analyzeTotal */
+  quizTotal: number
+  /** @deprecated always 0 */
+  quizCorrect: number
 }
 
 export async function getStudyActivityStats(userId: string): Promise<StudyActivityStats> {
-  const empty: StudyActivityStats = { totalDays: 0, weekCount: 0, quizTotal: 0, quizCorrect: 0, streak: 0 }
+  const empty: StudyActivityStats = { totalDays: 0, weekCount: 0, analyzeTotal: 0, quizTotal: 0, quizCorrect: 0, streak: 0 }
   if (!hasAuth(userId)) return empty
 
   const oneYearAgo = new Date()
@@ -1227,35 +1230,54 @@ export async function getStudyActivityStats(userId: string): Promise<StudyActivi
   const sinceIso = oneYearAgo.toISOString()
   const weekStart = mondayOfThisWeek().toISOString()
 
-  const [quizDates, analyzeDates, quizWeek, analyzeWeek, quizAll, quizCorrectAll] =
+  const safeQuery = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+    try {
+      const r = await fn()
+      return r
+    } catch { return fallback }
+  }
+
+  const [analyzeDates, reviewDates, analyzeWeek, reviewWeek, analyzeAll] =
     await Promise.all([
-      supabase.from('quiz_logs').select('created_at').eq('user_id', userId).gte('created_at', sinceIso),
-      (async () => {
-        try {
-          const r = await supabase.from('concept_extractions').select('created_at').eq('user_id', userId).gte('created_at', sinceIso)
-          if (r.error && isMissingRelation(r.error)) return { data: [], error: null }
-          return r
-        } catch { return { data: [], error: null } }
-      })(),
-      supabase.from('quiz_logs').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', weekStart),
-      (async () => {
-        try {
-          const r = await supabase.from('concept_extractions').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', weekStart)
-          if (r.error && isMissingRelation(r.error)) return { count: 0, error: null }
-          return r
-        } catch { return { count: 0, error: null } }
-      })(),
-      supabase.from('quiz_logs').select('*', { count: 'exact', head: true }).eq('user_id', userId),
-      supabase.from('quiz_logs').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('correct', true),
+      // 분석 날짜 (created_at)
+      safeQuery(async () => {
+        const r = await supabase.from('concept_extractions').select('created_at').eq('user_id', userId).gte('created_at', sinceIso)
+        if (r.error && isMissingRelation(r.error)) return { data: [] }
+        return r
+      }, { data: [] }),
+      // 복습 날짜 (reviewed_at, migration 014 이상)
+      safeQuery(async () => {
+        const r = await supabase.from('concept_extractions').select('reviewed_at').eq('user_id', userId).gte('reviewed_at', sinceIso).not('reviewed_at', 'is', null)
+        if (r.error) return { data: [] }
+        return r
+      }, { data: [] }),
+      // 이번 주 분석 수
+      safeQuery(async () => {
+        const r = await supabase.from('concept_extractions').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', weekStart)
+        if (r.error && isMissingRelation(r.error)) return { count: 0 }
+        return r
+      }, { count: 0 }),
+      // 이번 주 복습 수
+      safeQuery(async () => {
+        const r = await supabase.from('concept_extractions').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('reviewed_at', weekStart).not('reviewed_at', 'is', null)
+        if (r.error) return { count: 0 }
+        return r
+      }, { count: 0 }),
+      // 전체 분석 건수
+      safeQuery(async () => {
+        const r = await supabase.from('concept_extractions').select('*', { count: 'exact', head: true }).eq('user_id', userId)
+        if (r.error && isMissingRelation(r.error)) return { count: 0 }
+        return r
+      }, { count: 0 }),
     ])
 
-  // Unique local-date set (quiz OR analysis)
+  // Unique local-date set (분석 OR 복습)
   const daySet = new Set<string>()
-  for (const r of (quizDates.data ?? []) as { created_at: string }[]) {
-    daySet.add(localDateStr(new Date(r.created_at)))
-  }
   for (const r of (analyzeDates.data ?? []) as { created_at: string }[]) {
     if (r.created_at) daySet.add(localDateStr(new Date(r.created_at)))
+  }
+  for (const r of (reviewDates.data ?? []) as { reviewed_at: string }[]) {
+    if (r.reviewed_at) daySet.add(localDateStr(new Date(r.reviewed_at)))
   }
 
   // Streak — walk backward from today through the union of dates
@@ -1273,11 +1295,13 @@ export async function getStudyActivityStats(userId: string): Promise<StudyActivi
     }
   }
 
+  const analyzeTotal = (analyzeAll as { count?: number | null }).count ?? 0
   return {
     totalDays: daySet.size,
-    weekCount: (quizWeek.count ?? 0) + ((analyzeWeek as { count?: number }).count ?? 0),
-    quizTotal: quizAll.count ?? 0,
-    quizCorrect: quizCorrectAll.count ?? 0,
+    weekCount: ((analyzeWeek as { count?: number | null }).count ?? 0) + ((reviewWeek as { count?: number | null }).count ?? 0),
+    analyzeTotal,
+    quizTotal: analyzeTotal,
+    quizCorrect: 0,
     streak,
   }
 }
