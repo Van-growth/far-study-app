@@ -87,15 +87,15 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
       reviewCardContext?.topicLabel ??
       reviewCardContext?.topicId ??
       '현재 개념';
-    return `현재 복습 중인 개념(${topicName})에 대해 아래 5가지를 순서대로 설명해줘.
+    return `[STRUCTURED OUTPUT REQUIRED]
+[${topicName}] 개념에 대해 반드시 아래 5개 항목을 번호 순서대로 모두 출력해줘.
+항목을 생략하거나 자유 형식으로 바꾸지 말 것.
 
-1. 복습 주요 토픽 - 이 개념이 무엇인지 한 줄 요약
-2. 경제적 실질 - 이해관계자의 입장과 이런 거래가 발생하는 이유
-3. 핵심 계산 공식 - 있다면 공식과 변수 설명, 없으면 생략
-4. 함정 - 시험에서 틀리기 쉬운 포인트
-5. 회계처리 - 분개 또는 처리 방식 (해당되는 경우)
-
-**반드시 5개 항목 순서대로 빠짐없이 출력할 것.**`;
+1. 복습 주요 토픽
+2. 경제적 실질
+3. 핵심 계산 공식 (없으면 "해당 없음" 출력)
+4. 함정
+5. 회계처리 (해당 없으면 "해당 없음" 출력)`;
   };
 
   const handleSend = () => {
