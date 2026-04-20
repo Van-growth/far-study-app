@@ -6,7 +6,7 @@ import {
   fetchDueExtractions,
   updateConceptReview,
   getConceptDueCount,
-  getTodayReviewLog,
+  getTodayReviewStats,
   upsertDailyReviewLog,
   generateOnDemandReviewCards,
   RecentExtractionItem,
@@ -302,7 +302,7 @@ export default function HistoryPage() {
     if (!userId) return
     Promise.all([
       fetchDueExtractions(userId),
-      getTodayReviewLog(userId),
+      getTodayReviewStats(userId),
     ]).then(([items, log]) => {
       setCards(items)
       setKnewCount(log.knewCount)
@@ -375,7 +375,7 @@ export default function HistoryPage() {
       }
       const [items, log] = await Promise.all([
         fetchDueExtractions(userId),
-        getTodayReviewLog(userId),
+        getTodayReviewStats(userId),
       ])
       setCards(items)
       setIdx(0)

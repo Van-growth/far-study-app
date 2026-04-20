@@ -1511,16 +1511,52 @@ export async function updateConceptReview(id: string, knew: boolean): Promise<vo
     nextDate.setDate(nextDate.getDate() + nextDays)
     nextDate.setHours(0, 0, 0, 0)
 
-    await supabase
-      .from('concept_extractions')
-      .update({
-        next_review_at: nextDate.toISOString(),
-        review_interval: nextDays,
-        review_count: currentCount + 1,
-      })
-      .eq('id', id)
+    const updatePayload: Record<string, unknown> = {
+      next_review_at: nextDate.toISOString(),
+      review_interval: nextDays,
+      review_count: currentCount + 1,
+      reviewed_at: new Date().toISOString(),
+      review_result: knew ? 'known' : 'confused',
+    }
+
+    await supabase.from('concept_extractions').update(updatePayload).eq('id', id)
   } catch (e) {
     console.warn('[db] updateConceptReview failed:', e)
+  }
+}
+
+/** Count today's known/confused reviews from concept_extractions.reviewed_at. */
+export async function getTodayReviewStats(
+  userId: string,
+): Promise<{ knewCount: number; confusedCount: number }> {
+  if (!hasAuth(userId)) return { knewCount: 0, confusedCount: 0 }
+  try {
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const { data, error } = await supabase
+      .from('concept_extractions')
+      .select('review_result')
+      .eq('user_id', userId)
+      .gte('reviewed_at', todayStart.toISOString())
+      .not('review_result', 'is', null)
+
+    if (error) {
+      const code = (error as { code?: string }).code ?? ''
+      const msg = (error.message ?? '').toLowerCase()
+      if (code === 'PGRST204' || code === '42703' || msg.includes('reviewed_at') || msg.includes('review_result')) {
+        // migration 014 not applied yet — fall back to daily_review_log
+        return getTodayReviewLog(userId)
+      }
+      return { knewCount: 0, confusedCount: 0 }
+    }
+
+    const rows = (data ?? []) as { review_result: string }[]
+    return {
+      knewCount: rows.filter((r) => r.review_result === 'known').length,
+      confusedCount: rows.filter((r) => r.review_result === 'confused').length,
+    }
+  } catch {
+    return { knewCount: 0, confusedCount: 0 }
   }
 }
 
