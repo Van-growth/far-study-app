@@ -19,14 +19,20 @@ async function fetchCardHint(
   auto_rules: string[],
   trap_pattern?: string
 ): Promise<string> {
-  const res = await fetch('/api/claude/card-hint', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ concepts, auto_rules, trap_pattern }),
-  })
-  if (!res.ok) return ''
-  const data = (await res.json()) as { hint?: string }
-  return data.hint ?? ''
+  try {
+    const res = await fetch('/api/claude/card-hint', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ concepts, auto_rules, trap_pattern }),
+    })
+    if (!res.ok) return ''
+    const text = await res.text()
+    if (!text) return ''
+    const data = JSON.parse(text) as { hint?: string }
+    return data.hint ?? ''
+  } catch {
+    return ''
+  }
 }
 
 type Stage = 'loading' | 'empty' | 'review' | 'done'
@@ -103,6 +109,7 @@ function FlashCard({ card, visible }: { card: RecentExtractionItem; visible: boo
     setHintLoading(true)
     fetchCardHint(card.concepts, auto_rules, card.trapPattern ?? undefined)
       .then((h) => setHint(h))
+      .catch(() => {})
       .finally(() => setHintLoading(false))
   }, [card.id])
 
@@ -308,7 +315,7 @@ export default function HistoryPage() {
       setKnewCount(log.knewCount)
       setConfusedCount(log.confusedCount)
       setStage(items.length === 0 ? 'empty' : 'review')
-    })
+    }).catch(() => setStage('empty'))
   }, [userId])
 
   // Must be before any early returns — Rules of Hooks
@@ -355,7 +362,7 @@ export default function HistoryPage() {
       if (userId) void upsertDailyReviewLog(userId, { knew: knew ? 1 : 0, confused: knew ? 0 : 1 })
       if (next >= cards.length) {
         setStage('done')
-        if (userId) getConceptDueCount(userId).then(setConceptDueCount)
+        if (userId) getConceptDueCount(userId).then(setConceptDueCount).catch(() => {})
       } else {
         setIdx(next)
         setVisible(true)
