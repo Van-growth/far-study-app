@@ -8,6 +8,7 @@ import {
   getConceptDueCount,
   getTodayReviewLog,
   upsertDailyReviewLog,
+  generateOnDemandReviewCards,
   RecentExtractionItem,
   ConceptTrigger,
   ExampleQuestion,
@@ -221,7 +222,15 @@ function FlashCard({ card, visible }: { card: RecentExtractionItem; visible: boo
 }
 
 // ── Empty state ───────────────────────────────────────────────
-function EmptyView() {
+function EmptyView({
+  onGenerate,
+  generating,
+  noData,
+}: {
+  onGenerate: () => void
+  generating: boolean
+  noData: boolean
+}) {
   return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-3 px-6 text-center">
       <div className="text-5xl">✅</div>
@@ -229,6 +238,27 @@ function EmptyView() {
       <p className="text-sm text-[#64748b] leading-relaxed">
         문제를 더 분석하면 다음날 자동으로 복습 카드가 생성돼요.
       </p>
+      {noData ? (
+        <p className="text-sm text-[#f59e0b] font-medium mt-1">
+          분석한 문제가 없어요. 먼저 문제를 풀어보세요!
+        </p>
+      ) : (
+        <button
+          onClick={onGenerate}
+          disabled={generating}
+          className="mt-2 flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+          style={{ background: '#4f6ef7' }}
+        >
+          {generating ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              생성 중…
+            </>
+          ) : (
+            '지금 바로 생성하기'
+          )}
+        </button>
+      )}
     </div>
   )
 }
@@ -263,6 +293,8 @@ export default function HistoryPage() {
   const [confusedCount, setConfusedCount] = useState(0)
   const [visible, setVisible] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [noOnDemandData, setNoOnDemandData] = useState(false)
 
   useEffect(() => {
     if (!userId) return
@@ -306,6 +338,29 @@ export default function HistoryPage() {
     }, 200)
   }
 
+  async function handleGenerate() {
+    if (!userId || generating) return
+    setGenerating(true)
+    try {
+      const count = await generateOnDemandReviewCards(userId)
+      if (count === 0) {
+        setNoOnDemandData(true)
+        return
+      }
+      const [items, log] = await Promise.all([
+        fetchDueExtractions(userId),
+        getTodayReviewLog(userId),
+      ])
+      setCards(items)
+      setIdx(0)
+      setKnewCount(log.knewCount)
+      setConfusedCount(log.confusedCount)
+      setStage(items.length === 0 ? 'empty' : 'review')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   if (stage === 'loading') {
     return (
       <div className="flex items-center justify-center h-[60vh] gap-2 text-sm text-[#64748b]">
@@ -315,7 +370,7 @@ export default function HistoryPage() {
     )
   }
 
-  if (stage === 'empty') return <EmptyView />
+  if (stage === 'empty') return <EmptyView onGenerate={handleGenerate} generating={generating} noData={noOnDemandData} />
   if (stage === 'done') return <DoneView count={knewCount + confusedCount} />
 
   const current = cards[idx]

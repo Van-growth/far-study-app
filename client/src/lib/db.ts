@@ -1378,6 +1378,46 @@ export async function getCalendarWithAnalysis(userId: string): Promise<{
 // ── concept_extractions SRS (migration 011) ───────────────────
 const REVIEW_INTERVALS = [1, 3, 7, 14, 30] // days
 
+/**
+ * On-demand: find un-reviewed concepts (review_count = 0, not yet due)
+ * and set next_review_at = now so they appear as due immediately.
+ * Returns the number of cards made available.
+ */
+export async function generateOnDemandReviewCards(
+  userId: string,
+  limit = 10,
+): Promise<number> {
+  if (!hasAuth(userId)) return 0
+  try {
+    const now = new Date().toISOString()
+    const { data, error } = await supabase
+      .from('concept_extractions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('review_count', 0)
+      .or(`next_review_at.is.null,next_review_at.gt.${now}`)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error || !data || data.length === 0) return 0
+
+    const ids = (data as { id: string }[]).map((r) => r.id)
+
+    const { error: updateErr } = await supabase
+      .from('concept_extractions')
+      .update({ next_review_at: now })
+      .in('id', ids)
+
+    if (updateErr) {
+      logError('generateOnDemandReviewCards', updateErr)
+      return 0
+    }
+    return ids.length
+  } catch {
+    return 0
+  }
+}
+
 export async function fetchDueExtractions(userId: string): Promise<RecentExtractionItem[]> {
   if (!hasAuth(userId)) return []
   try {
