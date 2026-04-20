@@ -27,9 +27,33 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
 
   const [input, setInput] = useState('');
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const msgsRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
   const isOpen = useClaudeStore((s) => s.isOpen);
 
   useEffect(() => { if (isOpen) setTimeout(() => taRef.current?.focus(), 300); }, [isOpen]);
+
+  // Scroll to bottom when user sends (last msg is user role)
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (last?.role === 'user') {
+      isAtBottomRef.current = true;
+      msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length]);
+
+  // Auto-scroll during streaming only when user is at bottom
+  useEffect(() => {
+    if (!isLoading || !isAtBottomRef.current) return;
+    msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight });
+  }, [messages, isLoading]);
+
+  const handleMsgsScroll = () => {
+    const el = msgsRef.current;
+    if (!el) return;
+    isAtBottomRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 50;
+  };
 
   const SLASH_COMMANDS: Record<string, string> = {
     '/go': `현재 문제를 아래 순서로 설명해줘:
@@ -143,7 +167,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-4">
+      <div ref={msgsRef} onScroll={handleMsgsScroll} className="flex-1 min-h-0 overflow-y-auto px-3 py-4">
         {isEmpty && !isLoading ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4 gap-3">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl" style={{ background: '#eef2ff' }}>👋</div>
