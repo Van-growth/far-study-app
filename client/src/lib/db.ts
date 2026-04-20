@@ -1395,7 +1395,6 @@ export async function generateOnDemandReviewCards(
       .select('id')
       .eq('user_id', userId)
       .eq('review_count', 0)
-      .or(`next_review_at.is.null,next_review_at.gt.${now}`)
       .order('created_at', { ascending: false })
       .limit(limit)
 
@@ -1422,15 +1421,30 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
   if (!hasAuth(userId)) return []
   try {
     const now = new Date().toISOString()
-    const { data, error } = await supabase
-      .from('concept_extractions')
-      .select('id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern, triggers, next_review_at, review_interval, review_count, example_question')
-      .eq('user_id', userId)
-      .not('next_review_at', 'is', null)
-      .lte('next_review_at', now)
-      .order('next_review_at', { ascending: true })
-    if (error || !data) return []
-    return (data as Record<string, unknown>[]).map((row) => ({
+    const baseSelect = 'id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern, triggers, next_review_at, review_interval, review_count'
+
+    const runQuery = (select: string) =>
+      supabase
+        .from('concept_extractions')
+        .select(select)
+        .eq('user_id', userId)
+        .not('next_review_at', 'is', null)
+        .lte('next_review_at', now)
+        .order('next_review_at', { ascending: true })
+
+    let result = await runQuery(`${baseSelect}, example_question`)
+    let hasEq = true
+    // Graceful fallback if example_question column not in schema cache yet
+    if (result.error) {
+      const code = (result.error as { code?: string }).code ?? ''
+      const msg = (result.error.message ?? '').toLowerCase()
+      if (code === 'PGRST204' || code === '42703' || msg.includes('example_question') || msg.includes('schema cache')) {
+        result = await runQuery(baseSelect)
+        hasEq = false
+      }
+    }
+    if (result.error || !result.data) return []
+    return (result.data as unknown as Record<string, unknown>[]).map((row) => ({
       id: String(row.id ?? ''),
       createdAt: String(row.created_at ?? ''),
       topicId: typeof row.topic_id === 'string' ? row.topic_id : null,
@@ -1442,7 +1456,7 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
       nextReviewAt: typeof row.next_review_at === 'string' ? row.next_review_at : null,
       reviewInterval: typeof row.review_interval === 'number' ? row.review_interval : 0,
       reviewCount: typeof row.review_count === 'number' ? row.review_count : 0,
-      exampleQuestion: row.example_question && typeof row.example_question === 'object'
+      exampleQuestion: hasEq && row.example_question && typeof row.example_question === 'object' && !Array.isArray(row.example_question)
         ? (row.example_question as ExampleQuestion)
         : null,
     }))

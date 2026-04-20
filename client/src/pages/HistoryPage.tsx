@@ -53,16 +53,18 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 // ── Example Question ──────────────────────────────────────────
 function ExampleQuestionBlock({ eq }: { eq: ExampleQuestion }) {
   const [revealed, setRevealed] = useState(false)
+  // Guard: skip render if data is malformed
+  if (!eq?.question || !Array.isArray(eq.options) || eq.options.length === 0) return null
   return (
     <div
       className="rounded-xl px-3 py-2.5"
       style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}
     >
       <p className="text-[10px] font-semibold text-[#3730a3] mb-2">📝 예시 문제</p>
-      <p className="text-xs text-[#1e1b4b] leading-relaxed mb-2">{eq.question}</p>
+      <p className="text-xs text-[#1e1b4b] leading-relaxed mb-2">{String(eq.question)}</p>
       <div className="flex flex-col gap-1 mb-3">
         {eq.options.map((opt, i) => (
-          <p key={i} className="text-xs text-[#374151]">{opt}</p>
+          <p key={i} className="text-xs text-[#374151]">{typeof opt === 'string' ? opt : String(opt)}</p>
         ))}
       </div>
       {revealed ? (
@@ -70,8 +72,8 @@ function ExampleQuestionBlock({ eq }: { eq: ExampleQuestion }) {
           className="rounded-lg px-2.5 py-2"
           style={{ background: '#f0fdf4', border: '1px solid #86efac' }}
         >
-          <p className="text-xs font-bold text-[#166534]">정답: {eq.answer}</p>
-          <p className="text-xs text-[#14532d] mt-0.5 leading-relaxed">{eq.explanation}</p>
+          <p className="text-xs font-bold text-[#166534]">정답: {String(eq.answer ?? '')}</p>
+          <p className="text-xs text-[#14532d] mt-0.5 leading-relaxed">{String(eq.explanation ?? '')}</p>
         </div>
       ) : (
         <button
@@ -309,6 +311,30 @@ export default function HistoryPage() {
     })
   }, [userId])
 
+  // Must be before any early returns — Rules of Hooks
+  useEffect(() => {
+    if (stage !== 'review') {
+      setReviewCardContext(null)
+      return
+    }
+    const card = cards[idx]
+    if (!card) {
+      setReviewCardContext(null)
+      return
+    }
+    const topicLabel = card.topicId
+      ? (allTopics.find((t) => t.id === card.topicId)?.label ?? null)
+      : null
+    setReviewCardContext({
+      topicId: card.topicId,
+      topicLabel,
+      topicTags: card.topicTags,
+      concepts: card.concepts,
+      trapPattern: card.trapPattern,
+    })
+    return () => setReviewCardContext(null)
+  }, [cards, idx, stage, setReviewCardContext])
+
   async function handleAnswer(knew: boolean) {
     if (submitting || !visible) return
     const card = cards[idx]
@@ -375,25 +401,6 @@ export default function HistoryPage() {
 
   const current = cards[idx]
   const total = cards.length
-
-  // Sync current review card to Claude tutor context
-  useEffect(() => {
-    if (stage !== 'review' || !current) {
-      setReviewCardContext(null)
-      return
-    }
-    const topicLabel = current.topicId
-      ? (allTopics.find((t) => t.id === current.topicId)?.label ?? null)
-      : null
-    setReviewCardContext({
-      topicId: current.topicId,
-      topicLabel,
-      topicTags: current.topicTags,
-      concepts: current.concepts,
-      trapPattern: current.trapPattern,
-    })
-    return () => setReviewCardContext(null)
-  }, [current, stage, setReviewCardContext])
 
   return (
     <div className="max-w-lg mx-auto flex flex-col gap-4 pb-8">
