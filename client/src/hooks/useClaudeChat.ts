@@ -1,4 +1,4 @@
-import useClaudeStore, { AnalyzeContext } from '../store/claudeStore';
+import useClaudeStore, { AnalyzeContext, ReviewCardContext } from '../store/claudeStore';
 
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
@@ -125,8 +125,22 @@ function buildAnalyzeContextBlock(ctx: AnalyzeContext): string {
   return lines.join('\n');
 }
 
+function buildReviewCardContextBlock(ctx: ReviewCardContext): string {
+  const lines = [
+    '---',
+    '학생이 현재 복습 중인 개념 카드:',
+    `모듈: ${ctx.topicId ?? '(미특정)'}${ctx.topicLabel ? ` · ${ctx.topicLabel}` : ''}`,
+  ];
+  if (ctx.topicTags.length > 0) lines.push(`토픽: ${ctx.topicTags.join(', ')}`);
+  if (ctx.concepts.length > 0) lines.push(`핵심 개념: ${ctx.concepts.slice(0, 8).join(', ')}`);
+  if (ctx.trapPattern) lines.push(`함정 패턴: ${ctx.trapPattern}`);
+  lines.push('---');
+  lines.push('이 개념 카드를 기반으로 학생의 질문에 답해줘. 한국어로, 핵심 트리거 중심으로. AI가 임의로 다른 내용을 상상하지 말 것.');
+  return lines.join('\n');
+}
+
 // ── Hook ──────────────────────────────────────────────────────
-export function useClaudeChat(currentTopicLabel?: string, analyzeCtx?: AnalyzeContext | null) {
+export function useClaudeChat(currentTopicLabel?: string, analyzeCtx?: AnalyzeContext | null, reviewCardCtx?: ReviewCardContext | null) {
   const store = useClaudeStore();
 
   const callStreamAPI = (userContent: string) => {
@@ -142,9 +156,11 @@ export function useClaudeChat(currentTopicLabel?: string, analyzeCtx?: AnalyzeCo
     // Build API messages (exclude the empty assistant message we just added)
     const apiMsgs = messages.slice(0, -1).map((m) => ({ role: m.role, content: m.content }));
 
-    // Inject analyze context into system prompt when present.
+    // Inject context into system prompt — analyze takes priority over review card.
     const systemPrompt = analyzeCtx
       ? `${SYSTEM_PROMPT}\n\n${buildAnalyzeContextBlock(analyzeCtx)}`
+      : reviewCardCtx
+      ? `${SYSTEM_PROMPT}\n\n${buildReviewCardContextBlock(reviewCardCtx)}`
       : SYSTEM_PROMPT;
 
     let accumulated = '';
@@ -153,7 +169,7 @@ export function useClaudeChat(currentTopicLabel?: string, analyzeCtx?: AnalyzeCo
       {
         messages: apiMsgs,
         systemPrompt,
-        currentTopic: analyzeCtx ? undefined : currentTopicLabel,
+        currentTopic: (analyzeCtx || reviewCardCtx) ? undefined : currentTopicLabel,
       },
       (text) => {
         accumulated += text;

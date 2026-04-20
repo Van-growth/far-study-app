@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import useStudyStore from '../store/studyStore'
+import useClaudeStore from '../store/claudeStore'
+import { allTopics } from '../data/far-topics'
 import {
   fetchDueExtractions,
   updateConceptReview,
@@ -8,6 +10,7 @@ import {
   upsertDailyReviewLog,
   RecentExtractionItem,
   ConceptTrigger,
+  ExampleQuestion,
 } from '../lib/db'
 
 async function fetchCardHint(
@@ -42,6 +45,42 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
           style={{ width: `${pct}%`, background: '#4f6ef7' }}
         />
       </div>
+    </div>
+  )
+}
+
+// ── Example Question ──────────────────────────────────────────
+function ExampleQuestionBlock({ eq }: { eq: ExampleQuestion }) {
+  const [revealed, setRevealed] = useState(false)
+  return (
+    <div
+      className="rounded-xl px-3 py-2.5"
+      style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}
+    >
+      <p className="text-[10px] font-semibold text-[#3730a3] mb-2">📝 예시 문제</p>
+      <p className="text-xs text-[#1e1b4b] leading-relaxed mb-2">{eq.question}</p>
+      <div className="flex flex-col gap-1 mb-3">
+        {eq.options.map((opt, i) => (
+          <p key={i} className="text-xs text-[#374151]">{opt}</p>
+        ))}
+      </div>
+      {revealed ? (
+        <div
+          className="rounded-lg px-2.5 py-2"
+          style={{ background: '#f0fdf4', border: '1px solid #86efac' }}
+        >
+          <p className="text-xs font-bold text-[#166534]">정답: {eq.answer}</p>
+          <p className="text-xs text-[#14532d] mt-0.5 leading-relaxed">{eq.explanation}</p>
+        </div>
+      ) : (
+        <button
+          onClick={() => setRevealed(true)}
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+          style={{ background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe' }}
+        >
+          정답 보기
+        </button>
+      )}
     </div>
   )
 }
@@ -166,6 +205,11 @@ function FlashCard({ card, visible }: { card: RecentExtractionItem; visible: boo
         </div>
       )}
 
+      {/* Example question */}
+      {card.exampleQuestion && (
+        <ExampleQuestionBlock eq={card.exampleQuestion} />
+      )}
+
       {/* Review count */}
       {card.reviewCount > 0 && (
         <p className="text-[10px] text-[#94a3b8] mt-auto">
@@ -210,6 +254,7 @@ function DoneView({ count }: { count: number }) {
 export default function HistoryPage() {
   const userId = useStudyStore((s) => s.userId)
   const setConceptDueCount = useStudyStore((s) => s.setConceptDueCount)
+  const setReviewCardContext = useClaudeStore((s) => s.setReviewCardContext)
 
   const [cards, setCards] = useState<RecentExtractionItem[]>([])
   const [idx, setIdx] = useState(0)
@@ -275,6 +320,25 @@ export default function HistoryPage() {
 
   const current = cards[idx]
   const total = cards.length
+
+  // Sync current review card to Claude tutor context
+  useEffect(() => {
+    if (stage !== 'review' || !current) {
+      setReviewCardContext(null)
+      return
+    }
+    const topicLabel = current.topicId
+      ? (allTopics.find((t) => t.id === current.topicId)?.label ?? null)
+      : null
+    setReviewCardContext({
+      topicId: current.topicId,
+      topicLabel,
+      topicTags: current.topicTags,
+      concepts: current.concepts,
+      trapPattern: current.trapPattern,
+    })
+    return () => setReviewCardContext(null)
+  }, [current, stage, setReviewCardContext])
 
   return (
     <div className="max-w-lg mx-auto flex flex-col gap-4 pb-8">

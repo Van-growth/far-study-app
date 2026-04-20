@@ -18,10 +18,11 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
   const topic = currentTopicId ? getTopicById(currentTopicId) : null;
   const analyzeContext = useClaudeStore((s) => s.analyzeContext);
+  const reviewCardContext = useClaudeStore((s) => s.reviewCardContext);
   const pendingQuiz = useClaudeStore((s) => s.pendingQuiz);
 
   const { messages, isLoading, closePanel, sendMessage, sendStarter, clearMessages } =
-    useClaudeChat(topic?.label, analyzeContext);
+    useClaudeChat(topic?.label, analyzeContext, reviewCardContext);
   const setPendingQuiz = useClaudeStore((s) => s.setPendingQuiz);
 
   const [input, setInput] = useState('');
@@ -106,6 +107,15 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
               </span>
             </span>
           </div>
+        ) : reviewCardContext ? (
+          <div className="px-4 pb-2">
+            <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: '#f0fdf4', color: '#166534' }}>
+              복습 중:{' '}
+              <span className="font-semibold text-[#0f172a]">
+                {reviewCardContext.topicTags[0] ?? reviewCardContext.topicId ?? '개념 카드'}
+              </span>
+            </span>
+          </div>
         ) : topic ? (
           <div className="px-4 pb-2">
             <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: '#f0f4f8', color: '#64748b' }}>
@@ -122,11 +132,17 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl" style={{ background: '#eef2ff' }}>👋</div>
             <div>
               <p className="font-semibold text-sm text-[#0f172a] mb-1">
-                {pendingQuiz ? '이 문제로 무엇을 도와드릴까요?' : '안녕하세요!'}
+                {pendingQuiz
+                  ? '이 문제로 무엇을 도와드릴까요?'
+                  : reviewCardContext?.topicTags[0]
+                  ? `${reviewCardContext.topicTags[0]} 복습 중이시네요.`
+                  : '안녕하세요!'}
               </p>
               <p className="text-xs text-muted leading-relaxed">
                 {pendingQuiz
                   ? '아래에서 선택하거나 직접 질문해주세요.'
+                  : reviewCardContext
+                  ? '궁금한 점을 바로 물어보세요!'
                   : '토픽에 대해 무엇이든 물어보세요.'}
               </p>
             </div>

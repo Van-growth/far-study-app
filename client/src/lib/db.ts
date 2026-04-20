@@ -516,6 +516,13 @@ export interface StoredExtractionData {
   trapPattern: string | null
 }
 
+export interface ExampleQuestion {
+  question: string
+  options: string[]
+  answer: string
+  explanation: string
+}
+
 export interface RecentExtractionItem {
   id: string
   createdAt: string
@@ -528,6 +535,7 @@ export interface RecentExtractionItem {
   nextReviewAt: string | null
   reviewInterval: number
   reviewCount: number
+  exampleQuestion: ExampleQuestion | null
 }
 
 export async function fetchRecentExtractions(
@@ -555,6 +563,7 @@ export async function fetchRecentExtractions(
       nextReviewAt: typeof row.next_review_at === 'string' ? row.next_review_at : null,
       reviewInterval: typeof row.review_interval === 'number' ? row.review_interval : 0,
       reviewCount: typeof row.review_count === 'number' ? row.review_count : 0,
+      exampleQuestion: null,
     }))
 
   try {
@@ -605,6 +614,7 @@ export async function fetchExtractionsPage(
       nextReviewAt: typeof row.next_review_at === 'string' ? row.next_review_at : null,
       reviewInterval: typeof row.review_interval === 'number' ? row.review_interval : 0,
       reviewCount: typeof row.review_count === 'number' ? row.review_count : 0,
+      exampleQuestion: null,
     }))
     return { items, total: count ?? null }
   } catch {
@@ -1374,7 +1384,7 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
     const now = new Date().toISOString()
     const { data, error } = await supabase
       .from('concept_extractions')
-      .select('id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern, triggers, next_review_at, review_interval, review_count')
+      .select('id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern, triggers, next_review_at, review_interval, review_count, example_question')
       .eq('user_id', userId)
       .not('next_review_at', 'is', null)
       .lte('next_review_at', now)
@@ -1392,6 +1402,9 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
       nextReviewAt: typeof row.next_review_at === 'string' ? row.next_review_at : null,
       reviewInterval: typeof row.review_interval === 'number' ? row.review_interval : 0,
       reviewCount: typeof row.review_count === 'number' ? row.review_count : 0,
+      exampleQuestion: row.example_question && typeof row.example_question === 'object'
+        ? (row.example_question as ExampleQuestion)
+        : null,
     }))
   } catch { return [] }
 }

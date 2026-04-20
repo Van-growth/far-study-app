@@ -1,13 +1,81 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // Triggered by: concept_extractions INSERT (Supabase Dashboard webhook)
-// Upserts concept_stats for each concept tag and trap_pattern in the new row.
-// Uses concept_stats_increment_for_user RPC (service-role variant) because
-// concept_stats_increment uses auth.uid() which is null in service-role context.
+// 1. Upserts concept_stats for each concept tag and trap_pattern in the new row.
+// 2. Calls Claude Haiku to generate an example question and saves it back to the row.
+
+interface ExampleQuestion {
+  question: string
+  options: string[]
+  answer: string
+  explanation: string
+}
+
+async function generateExampleQuestion(
+  concepts: string[],
+  trapPattern: string | null,
+  anthropicKey: string,
+): Promise<ExampleQuestion | null> {
+  const conceptList = concepts.slice(0, 6).join(', ')
+  const trapLine = trapPattern ? `\nTrap pattern to include as a wrong option: ${trapPattern}` : ''
+
+  const prompt = `Generate 1 FAR CPA exam multiple-choice question in Korean.
+
+Concepts to test: ${conceptList}${trapLine}
+
+Rules:
+- Test conceptual judgment, NOT complex calculation
+- Someone who knows the concept should answer in 3 seconds
+- Include exactly 1 trap option that looks plausible
+- Keep the question stem under 2 sentences
+- Options must be A/B/C/D format
+
+Respond with ONLY valid JSON, no markdown:
+{"question":"...","options":["A. ...","B. ...","C. ...","D. ..."],"answer":"B","explanation":"한 줄 해설"}`
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 400,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
+
+    if (!res.ok) return null
+
+    const data = await res.json() as { content?: { type: string; text: string }[] }
+    const text = data.content?.[0]?.text ?? ''
+
+    // Strip markdown code fences if present
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()
+    const parsed = JSON.parse(cleaned) as ExampleQuestion
+
+    if (
+      typeof parsed.question === 'string' &&
+      Array.isArray(parsed.options) &&
+      parsed.options.length === 4 &&
+      typeof parsed.answer === 'string' &&
+      typeof parsed.explanation === 'string'
+    ) {
+      return parsed
+    }
+    return null
+  } catch {
+    return null
+  }
+}
 
 Deno.serve(async (req: Request) => {
   const payload = await req.json()
   const record = payload.record as {
+    id: string
     user_id: string
     topic_id: string | null
     concepts: string[]
@@ -15,7 +83,7 @@ Deno.serve(async (req: Request) => {
     was_wrong: boolean | null
   }
 
-  const { user_id, topic_id, concepts, trap_pattern, was_wrong } = record
+  const { id, user_id, topic_id, concepts, trap_pattern, was_wrong } = record
 
   if (!user_id) {
     return new Response(JSON.stringify({ ok: false, error: 'missing user_id' }), {
@@ -40,34 +108,52 @@ Deno.serve(async (req: Request) => {
     ...(trap_pattern ? [{ tag: trap_pattern, tag_type: 'trap' as const }] : []),
   ]
 
-  if (tags.length === 0) {
-    return new Response(JSON.stringify({ ok: true, upserted: 0 }), {
-      headers: { 'Content-Type': 'application/json' },
-    })
+  // 1. Upsert concept_stats (existing logic)
+  let upserted = 0
+  let statErrors = 0
+
+  if (tags.length > 0) {
+    const results = await Promise.allSettled(
+      tags.map(({ tag, tag_type }) =>
+        supabase.rpc('concept_stats_increment_for_user', {
+          p_user_id: user_id,
+          p_tag: tag,
+          p_tag_type: tag_type,
+          p_topic_id: topic_id ?? null,
+          p_is_correct: isCorrect,
+        })
+      )
+    )
+
+    const errors = results
+      .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+      .map((r) => r.reason)
+
+    if (errors.length > 0) {
+      console.error('concept_stats upsert errors:', errors)
+    }
+    upserted = tags.length - errors.length
+    statErrors = errors.length
   }
 
-  const results = await Promise.allSettled(
-    tags.map(({ tag, tag_type }) =>
-      supabase.rpc('concept_stats_increment_for_user', {
-        p_user_id: user_id,
-        p_tag: tag,
-        p_tag_type: tag_type,
-        p_topic_id: topic_id ?? null,
-        p_is_correct: isCorrect,
-      })
-    )
-  )
+  // 2. Generate example question via Claude Haiku
+  const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
+  if (anthropicKey && id && Array.isArray(concepts) && concepts.length > 0) {
+    const eq = await generateExampleQuestion(concepts, trap_pattern ?? null, anthropicKey)
+    if (eq) {
+      const { error: updateErr } = await supabase
+        .from('concept_extractions')
+        .update({ example_question: eq })
+        .eq('id', id)
 
-  const errors = results
-    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-    .map((r) => r.reason)
-
-  if (errors.length > 0) {
-    console.error('concept_stats upsert errors:', errors)
+      if (updateErr) {
+        console.error('example_question update error:', updateErr)
+      }
+    }
   }
 
   return new Response(
-    JSON.stringify({ ok: true, upserted: tags.length - errors.length, errors: errors.length }),
+    JSON.stringify({ ok: true, upserted, errors: statErrors }),
     { headers: { 'Content-Type': 'application/json' } }
   )
 })
