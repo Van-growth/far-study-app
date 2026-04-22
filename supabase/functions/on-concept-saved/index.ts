@@ -19,19 +19,17 @@ async function generateExampleQuestion(
   const conceptList = concepts.slice(0, 6).join(', ')
   const trapLine = trapPattern ? `\nTrap pattern to include as a wrong option: ${trapPattern}` : ''
 
-  const prompt = `Generate 1 FAR CPA exam multiple-choice question in Korean.
+  const prompt = `Generate one FAR MCQ-style practice question in English.
 
 Concepts to test: ${conceptList}${trapLine}
 
-Rules:
-- Test conceptual judgment, NOT complex calculation
-- Someone who knows the concept should answer in 3 seconds
-- Include exactly 1 trap option that looks plausible
-- Keep the question stem under 2 sentences
-- Options must be A/B/C/D format
+- Question and options must be in English
+- Keep it concept-based, solvable in 3 seconds if you know the concept
+- Include exactly one trap option
+- Explanation: mix English key terms with Korean description
 
-Respond with ONLY valid JSON, no markdown:
-{"question":"...","options":["A. ...","B. ...","C. ...","D. ..."],"answer":"B","explanation":"한 줄 해설"}`
+Output JSON only:
+{"question":"...(English)...","options":["A. ...","B. ...","C. ...","D. ..."],"answer":"C","explanation":"...(English terms + Korean explanation mixed)..."}`
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -43,7 +41,7 @@ Respond with ONLY valid JSON, no markdown:
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 400,
+        max_tokens: 600,
         messages: [{ role: 'user', content: prompt }],
       }),
     })

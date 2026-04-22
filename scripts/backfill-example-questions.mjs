@@ -60,8 +60,9 @@ Missing required env vars. Create scripts/.env.script with:
 // ── CLI args ──────────────────────────────────────────────────
 const args = process.argv.slice(2)
 const DRY_RUN = args.includes('--dry-run')
+const OVERWRITE = args.includes('--overwrite')   // overwrite existing example_question too
 const limitArg = args.indexOf('--limit')
-const HARD_LIMIT = limitArg !== -1 ? parseInt(args[limitArg + 1], 10) : 200
+const HARD_LIMIT = limitArg !== -1 ? parseInt(args[limitArg + 1], 10) : 300
 const BATCH_SIZE = 10       // API calls per batch
 const DELAY_MS = 300        // ms between Haiku calls
 
@@ -95,19 +96,17 @@ async function generateExampleQuestion(concepts, trapPattern) {
   const conceptList = concepts.slice(0, 6).join(', ')
   const trapLine = trapPattern ? `\nTrap pattern to include as a wrong option: ${trapPattern}` : ''
 
-  const prompt = `Generate 1 FAR CPA exam multiple-choice question in Korean.
+  const prompt = `Generate one FAR MCQ-style practice question in English.
 
 Concepts to test: ${conceptList}${trapLine}
 
-Rules:
-- Test conceptual judgment, NOT complex calculation
-- Someone who knows the concept should answer in 3 seconds
-- Include exactly 1 trap option that looks plausible
-- Keep the question stem under 2 sentences
-- Options must be A/B/C/D format
+- Question and options must be in English
+- Keep it concept-based, solvable in 3 seconds if you know the concept
+- Include exactly one trap option
+- Explanation: mix English key terms with Korean description
 
-Respond with ONLY valid JSON, no markdown:
-{"question":"...","options":["A. ...","B. ...","C. ...","D. ..."],"answer":"B","explanation":"한 줄 해설"}`
+Output JSON only:
+{"question":"...(English)...","options":["A. ...","B. ...","C. ...","D. ..."],"answer":"C","explanation":"...(English terms + Korean explanation mixed)..."}`
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -151,11 +150,14 @@ Respond with ONLY valid JSON, no markdown:
 }
 
 // ── Main ──────────────────────────────────────────────────────
-const rows = await sbGet(
-  `concept_extractions?select=id,concepts,trap_pattern&example_question=is.null&order=created_at.asc&limit=${HARD_LIMIT}`
-)
+const filter = OVERWRITE
+  ? `concept_extractions?select=id,concepts,trap_pattern&order=created_at.asc&limit=${HARD_LIMIT}`
+  : `concept_extractions?select=id,concepts,trap_pattern&example_question=is.null&order=created_at.asc&limit=${HARD_LIMIT}`
 
-console.log(`\n📋 example_question null 카드: ${rows.length}건 (최대 ${HARD_LIMIT}건 처리)`)
+const rows = await sbGet(filter)
+
+const modeLabel = OVERWRITE ? '전체(덮어쓰기)' : 'null만'
+console.log(`\n📋 대상 카드 [${modeLabel}]: ${rows.length}건 (최대 ${HARD_LIMIT}건 처리)`)
 if (DRY_RUN) {
   console.log('\n[DRY-RUN] 실제 API 호출 없이 종료.')
   for (const r of rows) {
