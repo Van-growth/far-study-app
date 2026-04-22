@@ -40,10 +40,10 @@ const MD_COMPONENTS = {
   h2: ({ children }: { children?: React.ReactNode }) => <p className="text-sm font-bold text-[#0f172a] mt-3 mb-1">{children}</p>,
   h3: ({ children }: { children?: React.ReactNode }) => <p className="text-sm font-bold text-[#0f172a] mt-2 mb-0.5">{children}</p>,
   p: ({ children }: { children?: React.ReactNode }) => <p className="text-sm leading-relaxed text-[#0f172a] mb-1.5">{children}</p>,
-  strong: ({ children }: { children?: React.ReactNode }) => <strong className="font-semibold text-[#0f172a]">{children}</strong>,
+  strong: ({ children }: { children?: React.ReactNode }) => <strong className="font-bold text-[#1e1b4b]">{children}</strong>,
   em: ({ children }: { children?: React.ReactNode }) => <em className="italic">{children}</em>,
-  ul: ({ children }: { children?: React.ReactNode }) => <ul className="list-disc ml-5 my-1 flex flex-col gap-0.5">{children}</ul>,
-  ol: ({ children }: { children?: React.ReactNode }) => <ol className="list-decimal ml-5 my-1 flex flex-col gap-0.5">{children}</ol>,
+  ul: ({ children }: { children?: React.ReactNode }) => <ul className="list-disc ml-5 my-1 space-y-0.5">{children}</ul>,
+  ol: ({ children }: { children?: React.ReactNode }) => <ol className="list-decimal ml-5 my-1 space-y-0.5">{children}</ol>,
   li: ({ children }: { children?: React.ReactNode }) => <li className="text-sm leading-relaxed">{children}</li>,
   code: ({ children, className }: { children?: React.ReactNode; className?: string }) => {
     if (className?.includes('language-')) {
