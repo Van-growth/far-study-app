@@ -10,6 +10,26 @@ if (typeof document !== 'undefined' && !document.getElementById('claude-bounce')
   const s = document.createElement('style'); s.id = 'claude-bounce'; s.textContent = BOUNCE_CSS; document.head.appendChild(s);
 }
 
+// ── Korean typo correction (client-side, no API) ───────────────
+const TYPO_RULES: [RegExp, string][] = [
+  [/안되요/g, '안돼요'],
+  [/\b되요\b/g, '돼요'],
+  [/설명해져/g, '설명해줘'],
+  [/알랴줘/g, '알려줘'],
+  [/가르켜/g, '가르쳐'],
+  [/가르키/g, '가르치'],
+  [/왠만하면/g, '웬만하면'],
+  [/뭐에요\b/g, '뭐예요'],
+]
+
+function correctTypos(text: string): { text: string; corrected: boolean } {
+  let result = text;
+  for (const [pattern, replacement] of TYPO_RULES) {
+    result = result.replace(pattern, replacement);
+  }
+  return { text: result, corrected: result !== text };
+}
+
 interface ClaudePanelProps {
   modal?: boolean;
 }
@@ -101,8 +121,10 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const handleSend = () => {
     const t = input.trim();
     if (!t || isLoading) return;
-    const message = t === '/re' ? buildReCommand() : (SLASH_COMMANDS[t] ?? t);
-    sendMessage(message);
+    const isSlash = t === '/re' || t in SLASH_COMMANDS;
+    const { text: correctedText, corrected } = isSlash ? { text: t, corrected: false } : correctTypos(t);
+    const message = t === '/re' ? buildReCommand() : (SLASH_COMMANDS[t] ?? correctedText);
+    sendMessage(message, corrected);
     setInput('');
     if (taRef.current) taRef.current.style.height = 'auto';
   };

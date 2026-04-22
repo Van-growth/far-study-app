@@ -6,6 +6,7 @@ export interface Message {
   content: string;
   timestamp: number;
   feedback?: 'up' | 'down' | null;
+  corrected?: boolean;
 }
 
 export interface PendingQuizContext {
