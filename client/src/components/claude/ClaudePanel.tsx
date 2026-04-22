@@ -170,7 +170,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
             {messages.length > 0 && (
               <button onClick={clearMessages} className="text-[11px] text-muted hover:text-[#0f172a] px-2 py-1 rounded-lg hover:bg-gray-100">초기화</button>
             )}
-            <button onClick={closePanel} className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-[#0f172a] hover:bg-gray-100 text-base">×</button>
+            <button onClick={closePanel} className="w-11 h-11 flex items-center justify-center rounded-lg text-muted hover:text-[#0f172a] hover:bg-gray-100 text-xl">×</button>
           </div>
         </div>
         {analyzeContext ? (
