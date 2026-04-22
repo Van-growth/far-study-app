@@ -12,6 +12,7 @@ import {
   RecentExtractionItem,
   ConceptTrigger,
   ExampleQuestion,
+  ExplanationStructured,
 } from '../lib/db'
 
 async function fetchCardHint(
@@ -57,10 +58,49 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 }
 
 // ── Example Question ──────────────────────────────────────────
+function StructuredExplanation({ exp }: { exp: ExplanationStructured }) {
+  return (
+    <div className="flex flex-col gap-2 mt-1">
+      <div>
+        <p className="text-[10px] font-bold text-[#166534] mb-0.5">💡 핵심 근거</p>
+        <p className="text-xs text-[#14532d] leading-relaxed">{exp.core}</p>
+      </div>
+      {exp.calculation && (
+        <div>
+          <p className="text-[10px] font-bold text-[#166534] mb-0.5">🔢 계산 과정</p>
+          <p className="text-xs text-[#14532d] leading-relaxed whitespace-pre-line">{exp.calculation}</p>
+        </div>
+      )}
+      {Array.isArray(exp.traps) && exp.traps.length > 0 && (
+        <div>
+          <p className="text-[10px] font-bold text-[#166534] mb-0.5">⚠️ 오답 함정</p>
+          <div className="flex flex-col gap-0.5">
+            {exp.traps.map((t, i) => (
+              <p key={i} className="text-xs text-[#14532d] leading-relaxed">{t}</p>
+            ))}
+          </div>
+        </div>
+      )}
+      {exp.memory && (
+        <div
+          className="rounded-lg px-2.5 py-1.5"
+          style={{ background: '#fefce8', border: '1px solid #fde047' }}
+        >
+          <p className="text-[10px] font-bold text-[#713f12] mb-0.5">📌 기억할 것</p>
+          <p className="text-xs text-[#713f12] leading-relaxed">{exp.memory}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ExampleQuestionBlock({ eq }: { eq: ExampleQuestion }) {
   const [revealed, setRevealed] = useState(false)
-  // Guard: skip render if data is malformed
   if (!eq?.question || !Array.isArray(eq.options) || eq.options.length === 0) return null
+
+  const isStructured = (e: unknown): e is ExplanationStructured =>
+    typeof e === 'object' && e !== null && 'core' in e
+
   return (
     <div
       className="rounded-xl px-3 py-2.5"
@@ -78,8 +118,11 @@ function ExampleQuestionBlock({ eq }: { eq: ExampleQuestion }) {
           className="rounded-lg px-2.5 py-2"
           style={{ background: '#f0fdf4', border: '1px solid #86efac' }}
         >
-          <p className="text-xs font-bold text-[#166534]">정답: {String(eq.answer ?? '')}</p>
-          <p className="text-xs text-[#14532d] mt-0.5 leading-relaxed">{String(eq.explanation ?? '')}</p>
+          <p className="text-xs font-bold text-[#166534]">정답: {String(eq.answer ?? '')} ✅</p>
+          {isStructured(eq.explanation)
+            ? <StructuredExplanation exp={eq.explanation} />
+            : <p className="text-xs text-[#14532d] mt-0.5 leading-relaxed">{String(eq.explanation ?? '')}</p>
+          }
         </div>
       ) : (
         <button

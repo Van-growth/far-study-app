@@ -516,11 +516,18 @@ export interface StoredExtractionData {
   trapPattern: string | null
 }
 
+export interface ExplanationStructured {
+  core: string
+  calculation: string | null
+  traps: string[]
+  memory: string
+}
+
 export interface ExampleQuestion {
   question: string
   options: string[]
   answer: string
-  explanation: string
+  explanation: ExplanationStructured | string
 }
 
 export interface RecentExtractionItem {

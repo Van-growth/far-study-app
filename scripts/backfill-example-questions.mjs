@@ -100,13 +100,16 @@ async function generateExampleQuestion(concepts, trapPattern) {
 
 Concepts to test: ${conceptList}${trapLine}
 
-- Question and options must be in English
-- Keep it concept-based, solvable in 3 seconds if you know the concept
+Rules:
+- Question and 4 options must be in English
+- Keep it concept-based, solvable in ≤3 seconds if you know the concept
 - Include exactly one trap option
-- Explanation: mix English key terms with Korean description
+- traps array: one entry per wrong option (e.g. "A: why wrong"), skip correct option
+- calculation: multi-line string if numeric steps needed, otherwise null
+- memory: one Korean sentence summarizing the key takeaway
 
-Output JSON only:
-{"question":"...(English)...","options":["A. ...","B. ...","C. ...","D. ..."],"answer":"C","explanation":"...(English terms + Korean explanation mixed)..."}`
+Output ONLY valid JSON, no markdown fences:
+{"question":"...(English)...","options":["A. ...","B. ...","C. ...","D. ..."],"answer":"C","explanation":{"core":"one-line key reason (English)","calculation":"step-by-step or null","traps":["A: ...","B: ...","D: ..."],"memory":"한 줄 핵심 포인트 (Korean)"}}`
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -117,7 +120,7 @@ Output JSON only:
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 600,
+      max_tokens: 800,
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -134,12 +137,16 @@ Output JSON only:
   if (!match) throw new Error('No JSON object found in response')
   const parsed = JSON.parse(match[0])
 
+  const exp = parsed.explanation
   if (
     typeof parsed.question !== 'string' ||
     !Array.isArray(parsed.options) ||
     parsed.options.length !== 4 ||
     typeof parsed.answer !== 'string' ||
-    typeof parsed.explanation !== 'string'
+    typeof exp !== 'object' || exp === null ||
+    typeof exp.core !== 'string' ||
+    !Array.isArray(exp.traps) ||
+    typeof exp.memory !== 'string'
   ) {
     throw new Error('Invalid response shape')
   }
