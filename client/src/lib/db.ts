@@ -1479,9 +1479,17 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
       nextReviewAt: typeof row.next_review_at === 'string' ? row.next_review_at : null,
       reviewInterval: typeof row.review_interval === 'number' ? row.review_interval : 0,
       reviewCount: typeof row.review_count === 'number' ? row.review_count : 0,
-      exampleQuestion: hasEq && row.example_question && typeof row.example_question === 'object' && !Array.isArray(row.example_question)
-        ? (row.example_question as ExampleQuestion)
-        : null,
+      exampleQuestion: (() => {
+        if (!hasEq || !row.example_question || typeof row.example_question !== 'object' || Array.isArray(row.example_question)) return null;
+        const eq = row.example_question as Record<string, unknown>;
+        if (!eq.question || !Array.isArray(eq.options) || eq.options.length === 0) return null;
+        return {
+          question: String(eq.question),
+          options: (eq.options as unknown[]).map((o) => (typeof o === 'string' ? o : String(o))),
+          answer: eq.answer != null ? String(eq.answer) : '',
+          explanation: eq.explanation ?? '',
+        } as ExampleQuestion;
+      })(),
     }))
   } catch { return [] }
 }

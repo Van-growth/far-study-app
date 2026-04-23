@@ -33,6 +33,8 @@ export interface ReviewCardContext {
   topicTags: string[];
   concepts: string[];
   trapPattern: string | null;
+  questionText: string | null;
+  correctAnswer: string | null;
 }
 
 const MAX_MESSAGES = 20;

@@ -10,6 +10,7 @@ const SYSTEM_PROMPT = `너는 USCPA FAR 시험을 같이 공부하는 친한 선
 - 짧은 질문엔 짧게, 깊은 질문엔 깊게 답해
 - 구조를 임의로 강요하지 말 것 (정형 템플릿 자동 적용 X)
 - 단, 메시지에 [STRUCTURED OUTPUT REQUIRED]가 포함된 경우 지정된 항목을 번호 순서대로 빠짐없이 출력할 것. 이 경우 형식 변경·생략·자유 서술 금지.
+- /re 커맨드: 시스템이 [STRUCTURED OUTPUT REQUIRED] 플래그와 함께 5개 항목을 포함한 메시지를 자동 전송한다. 반드시 해당 항목을 모두 출력할 것. 거부하거나 "구조를 강요하지 않겠다"는 이유로 생략하지 말 것.
 - 배너/스탬프/구분선(━━━) 자동 삽입 금지
 - ⭐ 별점, "~12%" 같은 임의 추정 수치 사용 금지
 
@@ -139,8 +140,14 @@ function buildReviewCardContextBlock(ctx: ReviewCardContext): string {
   if (ctx.topicTags.length > 0) lines.push(`토픽: ${ctx.topicTags.join(', ')}`);
   if (ctx.concepts.length > 0) lines.push(`핵심 개념: ${ctx.concepts.slice(0, 8).join(', ')}`);
   if (ctx.trapPattern) lines.push(`함정 패턴: ${ctx.trapPattern}`);
+  if (ctx.questionText) {
+    lines.push('---');
+    lines.push('예시 문제:');
+    lines.push(ctx.questionText);
+    if (ctx.correctAnswer) lines.push(`정답: ${ctx.correctAnswer}`);
+  }
   lines.push('---');
-  lines.push('이 개념 카드를 기반으로 학생의 질문에 답해줘. 한국어로, 핵심 트리거 중심으로. AI가 임의로 다른 내용을 상상하지 말 것.');
+  lines.push('이 개념 카드와 예시 문제를 기반으로 학생의 질문에 답해줘. 한국어로, 핵심 트리거 중심으로. AI가 임의로 다른 내용을 상상하지 말 것.');
   return lines.join('\n');
 }
 

@@ -107,15 +107,18 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
       reviewCardContext?.topicLabel ??
       reviewCardContext?.topicId ??
       '현재 개념';
+    const qLine = reviewCardContext?.questionText
+      ? `\n문제: ${reviewCardContext.questionText}\n정답: ${reviewCardContext.correctAnswer ?? '(미입력)'}`
+      : '';
     return `[STRUCTURED OUTPUT REQUIRED]
 [${topicName}] 개념에 대해 반드시 아래 5개 항목을 번호 순서대로 모두 출력해줘.
-항목을 생략하거나 자유 형식으로 바꾸지 말 것.
+항목을 생략하거나 자유 형식으로 바꾸지 말 것.${qLine}
 
-1. 복습 주요 토픽
-2. 경제적 실질
-3. 핵심 계산 공식 (없으면 "해당 없음" 출력)
-4. 함정
-5. 회계처리 (해당 없으면 "해당 없음" 출력)`;
+1. 개념 한 줄 요약 (핵심만)
+2. 왜 헷갈리는가 (함정 구조 설명)
+3. 정답 근거 (rule 또는 기준)
+4. 오답 선지 해설 (각 오답이 왜 틀렸는지)
+5. 기억 트리거 (30초 안에 떠올릴 수 있는 키워드/이미지)`;
   };
 
   const handleSend = () => {

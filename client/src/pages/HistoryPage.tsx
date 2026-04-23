@@ -118,7 +118,7 @@ function ExampleQuestionBlock({ eq }: { eq: ExampleQuestion }) {
           className="rounded-lg px-2.5 py-2"
           style={{ background: '#f0fdf4', border: '1px solid #86efac' }}
         >
-          <p className="text-xs font-bold text-[#166534]">정답: {String(eq.answer ?? '')} ✅</p>
+          <p className="text-xs font-bold text-[#166534]">정답: {eq.answer ? String(eq.answer) : '(미입력)'} ✅</p>
           {isStructured(eq.explanation)
             ? <StructuredExplanation exp={eq.explanation} />
             : <p className="text-xs text-[#14532d] mt-0.5 leading-relaxed">{String(eq.explanation ?? '')}</p>
@@ -381,6 +381,8 @@ export default function HistoryPage() {
       topicTags: card.topicTags,
       concepts: card.concepts,
       trapPattern: card.trapPattern,
+      questionText: card.exampleQuestion?.question ?? null,
+      correctAnswer: card.exampleQuestion?.answer ?? null,
     })
     return () => setReviewCardContext(null)
   }, [cards, idx, stage, setReviewCardContext])
