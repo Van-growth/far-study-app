@@ -41,10 +41,29 @@
 - 클라이언트에서 service_role_key 직접 호출 금지 (서버 경유 필수)
 
 ## 7. 배포 원칙
-- Render 배포: 작업 완료 후 git add → commit → push (Render 자동 배포)
+- Render 배포: 작업 완료 후 git add → commit → push → 아래 두 서비스 즉시 배포 트리거
 - 커밋 메시지: `fix:` / `feat:` / `refactor:` prefix 사용
 - 작업 전 변경 파일 목록과 수정 내용 계획 먼저 공유 후 진행
 - 배포 후 Render 로그에서 빌드 성공 확인
+
+| 서비스 | ID |
+|--------|-----|
+| far-study-app (client) | `srv-d7d5g97avr4c73drrtg0` |
+| far-study-app-server (server) | `srv-d7d57k1j2pic73fcbgbg` |
+
+```bash
+# client
+curl -s -X POST \
+  -H "Authorization: Bearer rnd_ulPxarw9izFc7685TpBAxfdWb7mD" \
+  -H "Content-Type: application/json" \
+  "https://api.render.com/v1/services/srv-d7d5g97avr4c73drrtg0/deploys"
+
+# server
+curl -s -X POST \
+  -H "Authorization: Bearer rnd_ulPxarw9izFc7685TpBAxfdWb7mD" \
+  -H "Content-Type: application/json" \
+  "https://api.render.com/v1/services/srv-d7d57k1j2pic73fcbgbg/deploys"
+```
 
 ## 8. 슬래시 커맨드 원칙
 - /go, /re 등 커맨드는 시스템 프롬프트에 명시적으로 정의
