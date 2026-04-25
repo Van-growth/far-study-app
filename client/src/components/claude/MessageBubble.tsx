@@ -77,6 +77,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const isLoading = useClaudeStore((s) => s.isLoading);
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
+  const reviewCardContext = useClaudeStore((s) => s.reviewCardContext);
 
   if (isUser) {
     return (
@@ -122,7 +123,8 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             messageId={message.id}
             messagePreview={message.content}
             source="claude"
-            topicId={currentTopicId ?? null}
+            topicId={reviewCardContext?.topicId ?? currentTopicId ?? null}
+            extractionId={reviewCardContext?.extractionId ?? null}
           />
         )}
       </div>

@@ -1562,15 +1562,146 @@ export async function getConceptDueCount(userId: string): Promise<number> {
   } catch { return 0 }
 }
 
+// ── topic_progress Becker 기반 업데이트 ──────────────────────
+// 분석 저장 완료 시 호출 — attempts/correct 누적.
+export async function updateTopicProgressFromAnalysis(
+  userId: string,
+  topicId: string,
+  wasWrong: boolean | null,
+): Promise<void> {
+  if (!hasAuth(userId) || !topicId) return
+  const areaId = areaIdFromTopic(topicId)
+  if (!areaId) return
+  try {
+    const { data } = await supabase
+      .from('topic_progress')
+      .select('attempts, correct, streak, interval, next_review')
+      .eq('user_id', userId)
+      .eq('topic_id', topicId)
+      .maybeSingle()
+    const row = data as { attempts: number; correct: number; streak: number; interval: number; next_review: string } | null
+    await upsertProgress(userId, {
+      topicId,
+      interval: row?.interval ?? 0,
+      nextReview: row?.next_review ? new Date(row.next_review).getTime() : Date.now(),
+      streak: row?.streak ?? 0,
+      attempts: (row?.attempts ?? 0) + 1,
+      correct: (row?.correct ?? 0) + (wasWrong === false ? 1 : 0),
+    })
+  } catch (e) {
+    console.warn('[db] updateTopicProgressFromAnalysis failed:', e)
+  }
+}
+
+async function updateTopicProgressStreak(
+  userId: string,
+  topicId: string,
+  knew: boolean,
+): Promise<void> {
+  if (!hasAuth(userId) || !topicId) return
+  const areaId = areaIdFromTopic(topicId)
+  if (!areaId) return
+  try {
+    const { data } = await supabase
+      .from('topic_progress')
+      .select('attempts, correct, streak, interval, next_review')
+      .eq('user_id', userId)
+      .eq('topic_id', topicId)
+      .maybeSingle()
+    const row = data as { attempts: number; correct: number; streak: number; interval: number; next_review: string } | null
+    if (!row) return
+    await upsertProgress(userId, {
+      topicId,
+      interval: row.interval,
+      nextReview: new Date(row.next_review).getTime(),
+      streak: knew ? row.streak + 1 : 0,
+      attempts: row.attempts,
+      correct: row.correct,
+    })
+  } catch (e) {
+    console.warn('[db] updateTopicProgressStreak failed:', e)
+  }
+}
+
+export interface TopicProgressRow {
+  topicId: string
+  attempts: number
+  correct: number
+  accuracy: number
+  streak: number
+  updatedAt: string
+}
+
+export async function getTopicProgressList(userId: string): Promise<TopicProgressRow[]> {
+  if (!hasAuth(userId)) return []
+  const { data, error } = await supabase
+    .from('topic_progress')
+    .select('topic_id, attempts, correct, streak, updated_at')
+    .eq('user_id', userId)
+    .gt('attempts', 0)
+    .order('attempts', { ascending: false })
+  if (error) {
+    logError('getTopicProgressList', error)
+    return []
+  }
+  return ((data ?? []) as unknown as {
+    topic_id: string; attempts: number; correct: number; streak: number; updated_at: string
+  }[]).map((r) => ({
+    topicId: r.topic_id,
+    attempts: r.attempts,
+    correct: r.correct,
+    accuracy: r.attempts > 0 ? r.correct / r.attempts : 0,
+    streak: r.streak,
+    updatedAt: r.updated_at,
+  }))
+}
+
+export interface DayReviewCount {
+  date: string
+  count: number
+}
+
+export async function get7DayReviewTrend(userId: string): Promise<DayReviewCount[]> {
+  if (!hasAuth(userId)) return []
+  try {
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
+    sevenDaysAgo.setHours(0, 0, 0, 0)
+    const { data, error } = await supabase
+      .from('concept_extractions')
+      .select('last_reviewed_at')
+      .eq('user_id', userId)
+      .gte('last_reviewed_at', sevenDaysAgo.toISOString())
+      .not('last_reviewed_at', 'is', null)
+    if (error) return []
+    const acc: Record<string, number> = {}
+    for (const row of (data ?? []) as { last_reviewed_at: string }[]) {
+      if (row.last_reviewed_at) {
+        const d = localDateStr(new Date(row.last_reviewed_at))
+        acc[d] = (acc[d] ?? 0) + 1
+      }
+    }
+    const out: DayReviewCount[] = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      out.push({ date: localDateStr(d), count: acc[localDateStr(d)] ?? 0 })
+    }
+    return out
+  } catch {
+    return []
+  }
+}
+
 export async function updateConceptReview(id: string, knew: boolean): Promise<void> {
   try {
     const { data } = await supabase
       .from('concept_extractions')
-      .select('review_interval, review_count')
+      .select('review_interval, review_count, user_id, topic_id')
       .eq('id', id)
       .single()
 
-    const row = data as { review_interval: number; review_count: number } | null
+    const row = data as { review_interval: number; review_count: number; user_id: string | null; topic_id: string | null } | null
     const currentInterval = row?.review_interval ?? 0
     const currentCount = row?.review_count ?? 0
 
@@ -1601,6 +1732,13 @@ export async function updateConceptReview(id: string, knew: boolean): Promise<vo
     }
 
     await supabase.from('concept_extractions').update(updatePayload).eq('id', id)
+
+    // Fire-and-forget: update topic_progress streak
+    const uid = row?.user_id ?? null
+    const tid = row?.topic_id ?? null
+    if (uid && tid) {
+      updateTopicProgressStreak(uid, tid, knew).catch(() => {})
+    }
   } catch (e) {
     console.warn('[db] updateConceptReview failed:', e)
   }

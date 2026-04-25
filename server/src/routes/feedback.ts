@@ -27,6 +27,7 @@ router.post('/feedback', async (req: Request, res: Response) => {
       comment: typeof body.comment === 'string' ? body.comment.slice(0, 2000) : null,
       message_preview: typeof body.messagePreview === 'string' ? body.messagePreview.slice(0, 500) : null,
       topic_id: body.topicId ?? null,
+      extraction_id: body.extractionId ?? null,
     });
 
     if (error) {

@@ -35,6 +35,7 @@ export interface ReviewCardContext {
   trapPattern: string | null;
   questionText: string | null;
   correctAnswer: string | null;
+  extractionId: string | null;
 }
 
 const MAX_MESSAGES = 20;

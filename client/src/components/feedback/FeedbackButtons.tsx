@@ -8,6 +8,7 @@ interface FeedbackButtonsProps {
   messagePreview: string;
   source: 'claude' | 'coach' | 'quiz';
   topicId?: string | null;
+  extractionId?: string | null;
 }
 
 const REASONS = [
@@ -26,6 +27,7 @@ export default function FeedbackButtons({
   messagePreview,
   source,
   topicId,
+  extractionId,
 }: FeedbackButtonsProps) {
   const userId = useStudyStore((s) => s.userId);
   const [rating, setRating] = useState<'up' | 'down' | null>(null);
@@ -47,6 +49,7 @@ export default function FeedbackButtons({
           comment: commentText ?? null,
           messagePreview,
           topicId: topicId ?? null,
+          extractionId: extractionId ?? null,
         }),
       });
     } catch {

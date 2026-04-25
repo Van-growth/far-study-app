@@ -5,6 +5,7 @@ import useStudyStore from '../../store/studyStore';
 import {
   getStudyActivityStats, getAnalyzeCountByTopic, getTodayReviewStats, StudyActivityStats,
   getMyPatternStats, getErrorPatterns, getTopWrongTopics, MyPatternStat, ErrorPattern, TopWrongTopic,
+  getTopicProgressList, get7DayReviewTrend, TopicProgressRow, DayReviewCount,
 } from '../../lib/db';
 
 export default function Dashboard() {
@@ -20,6 +21,8 @@ export default function Dashboard() {
   const [patternStats, setPatternStats] = useState<MyPatternStat[]>([]);
   const [errorPatterns, setErrorPatterns] = useState<ErrorPattern[]>([]);
   const [wrongTopics, setWrongTopics] = useState<TopWrongTopic[]>([]);
+  const [topicProgress, setTopicProgress] = useState<TopicProgressRow[]>([]);
+  const [reviewTrend, setReviewTrend] = useState<DayReviewCount[]>([]);
 
   useEffect(() => {
     if (!userId) return;
@@ -31,7 +34,9 @@ export default function Dashboard() {
       getMyPatternStats(userId),
       getErrorPatterns(),
       getTopWrongTopics(userId, 3),
-    ]).then(([stats, analyzeMap, reviewStats, myPatterns, patterns, topTopics]) => {
+      getTopicProgressList(userId),
+      get7DayReviewTrend(userId),
+    ]).then(([stats, analyzeMap, reviewStats, myPatterns, patterns, topTopics, progress, trend]) => {
       if (cancelled) return;
       setActivityStats(stats);
       setAnalyzeByTopic(analyzeMap);
@@ -39,6 +44,8 @@ export default function Dashboard() {
       setPatternStats(myPatterns);
       setErrorPatterns(patterns);
       setWrongTopics(topTopics);
+      setTopicProgress(progress);
+      setReviewTrend(trend);
     });
     return () => { cancelled = true; };
   }, [userId]);
@@ -284,6 +291,73 @@ export default function Dashboard() {
                   >
                     {wt.count}회
                   </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 토픽별 정답률 */}
+      {topicProgress.length > 0 && (
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-[#0f172a]">토픽별 정답률</h3>
+            <p className="text-xs text-muted">Becker 분석 기반</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            {topicProgress.slice(0, 8).map((tp) => {
+              const topic = allTopics.find((t) => t.id === tp.topicId);
+              const pct = Math.round(tp.accuracy * 100);
+              const color = pct >= 70 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
+              return (
+                <div key={tp.topicId} className="flex items-center gap-3">
+                  <span className="text-xs w-16 shrink-0 truncate font-medium text-[#0f172a]">{tp.topicId}</span>
+                  <span className="text-xs flex-1 truncate text-muted">{topic?.label ?? ''}</span>
+                  <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden shrink-0">
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+                  </div>
+                  <span className="text-xs font-bold shrink-0 w-10 text-right" style={{ color }}>
+                    {pct}%
+                  </span>
+                  <span className="text-[10px] text-muted shrink-0 w-12 text-right">
+                    {tp.correct}/{tp.attempts}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 복습 완료 추이 (최근 7일) */}
+      {reviewTrend.some((d) => d.count > 0) && (
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-[#0f172a]">복습 완료 추이</h3>
+            <p className="text-xs text-muted">최근 7일</p>
+          </div>
+          <div className="flex items-end gap-2 h-20">
+            {reviewTrend.map((d) => {
+              const maxCount = Math.max(...reviewTrend.map((x) => x.count), 1);
+              const heightPct = d.count > 0 ? Math.max((d.count / maxCount) * 100, 8) : 0;
+              const isToday = d.date === reviewTrend[reviewTrend.length - 1]?.date;
+              const label = new Date(d.date + 'T00:00:00').toLocaleDateString('ko-KR', { weekday: 'short' });
+              return (
+                <div key={d.date} className="flex flex-col items-center gap-1 flex-1">
+                  <span className="text-[10px] font-bold" style={{ color: d.count > 0 ? '#4f6ef7' : '#94a3b8' }}>
+                    {d.count > 0 ? d.count : ''}
+                  </span>
+                  <div className="w-full flex items-end" style={{ height: 52 }}>
+                    <div
+                      className="w-full rounded-t-sm transition-all"
+                      style={{
+                        height: d.count > 0 ? `${heightPct}%` : '2px',
+                        background: isToday ? '#4f6ef7' : d.count > 0 ? '#c7d2fe' : '#f1f5f9',
+                      }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-muted">{label}</span>
                 </div>
               );
             })}

@@ -618,6 +618,7 @@ export default function HistoryPage() {
       trapPattern: card.trapPattern,
       questionText: card.exampleQuestion?.question ?? null,
       correctAnswer: card.exampleQuestion?.answer ?? null,
+      extractionId: card.id,
     })
     return () => setReviewCardContext(null)
   }, [cards, idx, stage, setReviewCardContext])

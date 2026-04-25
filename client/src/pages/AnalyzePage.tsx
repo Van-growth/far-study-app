@@ -23,6 +23,7 @@ import {
   fetchRecentExtractions,
   hashText,
   getAnalyzeCountByTopic,
+  updateTopicProgressFromAnalysis,
   DupCheckResult,
   DupMatchedRow,
   ConceptExtractionRow,
@@ -348,6 +349,10 @@ export default function AnalyzePage() {
       const result = await saveConceptExtraction(pendingExtraction);
       if (result) {
         setSavedRowId(result.id);
+        // Update topic_progress (fire-and-forget)
+        if (userId && pendingExtraction.topicId) {
+          updateTopicProgressFromAnalysis(userId, pendingExtraction.topicId, pendingExtraction.wasWrong ?? null).catch(() => {})
+        }
         // ── B: 뱃지 업그레이드 체크 ──────────────────────────
         if (badgeCount >= 0 && resolvedTopicId) {
           const newCount = badgeCount + 1;
