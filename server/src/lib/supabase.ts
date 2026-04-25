@@ -5,14 +5,14 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 // concept_extractions 집계 조회용. 환경변수 없으면 null → fallback.
 // ─────────────────────────────────────────────────────────────
 const url = process.env.SUPABASE_URL;
-const key = process.env.SUPABASE_SERVICE_KEY;
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export const supabase: SupabaseClient | null =
   url && key ? createClient(url, key) : null;
 
 if (!supabase) {
   console.warn(
-    '[supabase] SUPABASE_URL / SUPABASE_SERVICE_KEY not set — concept_extractions 조회 비활성',
+    '[supabase] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set — concept_extractions 조회 비활성',
   );
 }
 
