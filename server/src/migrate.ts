@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { Client } from 'pg';
+import { Client, ClientConfig } from 'pg';
 
 // PostgreSQL error codes that mean "object already exists" — safe to skip
 const ALREADY_EXISTS_CODES = new Set([
@@ -10,6 +10,11 @@ const ALREADY_EXISTS_CODES = new Set([
   '42P16', // invalid_table_definition (e.g. constraint already exists)
 ]);
 
+// pg.ClientConfig doesn't expose `family` in its TS types, but pg passes it
+// through to net.connect() — this forces IPv4-only DNS and fixes ENETUNREACH
+// on Render where Supabase's hostname resolves to IPv6 first.
+type PgClientConfig = ClientConfig & { family?: number };
+
 export async function runMigrations(): Promise<void> {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
@@ -17,10 +22,12 @@ export async function runMigrations(): Promise<void> {
     return;
   }
 
-  const client = new Client({
+  const config: PgClientConfig = {
     connectionString: dbUrl,
     ssl: { rejectUnauthorized: false },
-  });
+    family: 4, // Force IPv4 — avoids ENETUNREACH on Render (Supabase resolves IPv6 first)
+  };
+  const client = new Client(config);
 
   try {
     await client.connect();
