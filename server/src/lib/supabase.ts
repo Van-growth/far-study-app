@@ -10,7 +10,9 @@ const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const supabase: SupabaseClient | null =
   url && key ? createClient(url, key) : null;
 
-if (!supabase) {
+if (supabase) {
+  console.log('[supabase] connected');
+} else {
   console.warn(
     '[supabase] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set — concept_extractions 조회 비활성',
   );
