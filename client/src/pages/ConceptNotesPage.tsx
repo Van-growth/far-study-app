@@ -557,7 +557,7 @@ export default function ConceptNotesPage() {
           <p className="text-xs font-bold text-[#0f172a] uppercase tracking-wider">📑 개념노트</p>
         </div>
         <nav className="flex flex-col gap-1 p-3">
-          {SIDEBAR_TABS.map((tab, i) => (
+          {SIDEBAR_TABS.map((tab) => (
             <button key={tab.key} onClick={() => handleTabChange(tab.key)}
               className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-left text-sm transition-colors"
               style={{
@@ -566,7 +566,7 @@ export default function ConceptNotesPage() {
                 fontWeight: activeTab === tab.key ? 600 : 400,
               }}>
               <span>{tab.icon}</span>
-              <span>[{i + 1}] {tab.label}</span>
+              <span>{tab.label}</span>
             </button>
           ))}
         </nav>
@@ -578,14 +578,14 @@ export default function ConceptNotesPage() {
         {/* Mobile tab toggle */}
         <div className="md:hidden flex gap-2 px-3 pt-3 pb-2 bg-white shrink-0"
           style={{ borderBottom: '1.5px solid #e2e8f0' }}>
-          {SIDEBAR_TABS.map((tab, i) => (
+          {SIDEBAR_TABS.map((tab) => (
             <button key={tab.key} onClick={() => handleTabChange(tab.key)}
               className="flex-1 py-2 rounded-xl text-sm font-medium transition-colors"
               style={{
                 background: activeTab === tab.key ? '#4f6ef7' : '#f1f5f9',
                 color: activeTab === tab.key ? 'white' : '#475569',
               }}>
-              [{i + 1}] {tab.label}
+              {tab.label}
             </button>
           ))}
         </div>
