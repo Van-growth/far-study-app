@@ -977,6 +977,7 @@ export async function tagAttemptError(
     topic: string | null
     userNote: string | null
     aiDiagnosis: string | null
+    extractionId?: string | null
   },
 ): Promise<string | null> {
   const { data, error } = await supabase.rpc('tag_attempt_error', {
@@ -985,6 +986,7 @@ export async function tagAttemptError(
     p_topic: args.topic,
     p_user_note: args.userNote,
     p_ai_diagnosis: args.aiDiagnosis,
+    p_extraction_id: args.extractionId ?? null,
   })
   if (error) {
     if (isMissingRelation(error)) {
@@ -1051,6 +1053,36 @@ export async function getGlobalPatternStats(): Promise<GlobalPatternStat[]> {
     totalOccurrence: r.total_occurrence,
     recentShare: r.recent_share ?? 0,
   }))
+}
+
+export interface TopWrongTopic {
+  topicId: string
+  count: number
+}
+
+export async function getTopWrongTopics(
+  userId: string,
+  limit = 3,
+): Promise<TopWrongTopic[]> {
+  if (!hasAuth(userId)) return []
+  const { data, error } = await supabase
+    .from('attempt_errors')
+    .select('topic')
+    .eq('user_id', userId)
+    .not('topic', 'is', null)
+  if (error) {
+    if (isMissingRelation(error)) return []
+    logError('getTopWrongTopics', error)
+    return []
+  }
+  const acc: Record<string, number> = {}
+  for (const row of (data ?? []) as { topic: string | null }[]) {
+    if (row.topic) acc[row.topic] = (acc[row.topic] ?? 0) + 1
+  }
+  return Object.entries(acc)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([topicId, count]) => ({ topicId, count }))
 }
 
 // ── concept_extractions 삭제 ─────────────────────────────────

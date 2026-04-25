@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { allTopics, areas } from '../../data/far-topics';
 import useStudyStore from '../../store/studyStore';
-import { getStudyActivityStats, getAnalyzeCountByTopic, getTodayReviewStats, StudyActivityStats } from '../../lib/db';
+import {
+  getStudyActivityStats, getAnalyzeCountByTopic, getTodayReviewStats, StudyActivityStats,
+  getMyPatternStats, getErrorPatterns, getTopWrongTopics, MyPatternStat, ErrorPattern, TopWrongTopic,
+} from '../../lib/db';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -14,6 +17,9 @@ export default function Dashboard() {
   });
   const [analyzeByTopic, setAnalyzeByTopic] = useState<Record<string, number>>({});
   const [todayReviewed, setTodayReviewed] = useState(0);
+  const [patternStats, setPatternStats] = useState<MyPatternStat[]>([]);
+  const [errorPatterns, setErrorPatterns] = useState<ErrorPattern[]>([]);
+  const [wrongTopics, setWrongTopics] = useState<TopWrongTopic[]>([]);
 
   useEffect(() => {
     if (!userId) return;
@@ -22,11 +28,17 @@ export default function Dashboard() {
       getStudyActivityStats(userId),
       getAnalyzeCountByTopic(userId),
       getTodayReviewStats(userId),
-    ]).then(([stats, analyzeMap, reviewStats]) => {
+      getMyPatternStats(userId),
+      getErrorPatterns(),
+      getTopWrongTopics(userId, 3),
+    ]).then(([stats, analyzeMap, reviewStats, myPatterns, patterns, topTopics]) => {
       if (cancelled) return;
       setActivityStats(stats);
       setAnalyzeByTopic(analyzeMap);
       setTodayReviewed(reviewStats.knewCount + reviewStats.confusedCount);
+      setPatternStats(myPatterns);
+      setErrorPatterns(patterns);
+      setWrongTopics(topTopics);
     });
     return () => { cancelled = true; };
   }, [userId]);
@@ -210,6 +222,71 @@ export default function Dashboard() {
                 <span className="text-sm font-bold text-[#4f6ef7]">분석 {t.analyzeCount}건</span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* 내 실수 패턴 Top 5 */}
+      {patternStats.length > 0 && (
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-[#0f172a]">내 실수 패턴 Top 5</h3>
+            <p className="text-xs text-muted">누적 오답 기록</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            {patternStats.slice(0, 5).map((stat) => {
+              const pattern = errorPatterns.find((p) => p.patternId === stat.patternId);
+              const maxOcc = Math.max(...patternStats.map((s) => s.occurrence), 1);
+              const pct = Math.round((stat.occurrence / maxOcc) * 100);
+              return (
+                <div key={stat.patternId} className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-xs font-medium text-[#0f172a] truncate">
+                        {pattern?.name ?? stat.patternId}
+                      </span>
+                      <span className="text-xs font-bold text-[#ef4444] shrink-0 ml-2">
+                        {stat.occurrence}회
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${pct}%`, background: '#ef4444' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 토픽별 실수 집중도 Top 3 */}
+      {wrongTopics.length > 0 && (
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-[#0f172a]">토픽별 실수 집중도 Top 3</h3>
+            <p className="text-xs text-muted">오답 태깅 기준</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            {wrongTopics.map((wt, i) => {
+              const topic = allTopics.find((t) => t.id === wt.topicId);
+              return (
+                <div key={wt.topicId} className="flex items-center gap-3 p-2.5 rounded-lg"
+                  style={{ background: i === 0 ? '#fff1f2' : '#fff7f7', border: `1px solid ${i === 0 ? '#fecaca' : '#fee2e2'}` }}>
+                  <span className="text-sm font-bold text-[#ef4444] shrink-0 w-4">{i + 1}</span>
+                  <span className="text-sm flex-1 truncate">{topic?.label ?? wt.topicId}</span>
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
+                    style={{ background: '#fee2e2', color: '#991b1b' }}
+                  >
+                    {wt.count}회
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

@@ -3,6 +3,7 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { Message } from '../../store/claudeStore';
 import useClaudeStore from '../../store/claudeStore';
+import useStudyStore from '../../store/studyStore';
 import FeedbackButtons from '../feedback/FeedbackButtons';
 
 interface MessageBubbleProps {
@@ -75,6 +76,7 @@ const MD_COMPONENTS = {
 export default function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const isLoading = useClaudeStore((s) => s.isLoading);
+  const currentTopicId = useStudyStore((s) => s.currentTopicId);
 
   if (isUser) {
     return (
@@ -120,6 +122,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             messageId={message.id}
             messagePreview={message.content}
             source="claude"
+            topicId={currentTopicId ?? null}
           />
         )}
       </div>

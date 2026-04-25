@@ -752,6 +752,7 @@ export default function AnalyzePage() {
               topicId={resolvedTopicId}
               topicLabel={topicLabel ?? resolvedTopicId}
               quizLogId={null}
+              extractionId={savedRowId}
               onSaved={() => setTagToast(true)}
             />
           );

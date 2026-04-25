@@ -17,6 +17,13 @@ const CATEGORIES = [
   { label: '기타', emoji: '💭' },
 ]
 
+const CATEGORY_PATTERN_MAP: Record<string, string | null> = {
+  '개념 미이해': 'E_ROOT_01',
+  '계산 실수': 'E_ROOT_02',
+  '문제 해석 오류': 'E_ROOT_03',
+  '기타': null,
+}
+
 interface Props {
   question: string
   userAnswer: string
@@ -24,6 +31,7 @@ interface Props {
   topicId: string
   topicLabel: string
   quizLogId: string | null
+  extractionId?: string | null
   onSaved?: (attemptErrorId: string) => void
 }
 
@@ -82,21 +90,28 @@ export default function ErrorTagSection(props: Props) {
       // 진단 실패는 조용히 무시
     }
 
-    const pattern = patterns[0] ?? null
-    if (pattern) {
-      const id = await tagAttemptError({
-        quizLogId: props.quizLogId,
-        patternId: pattern.patternId,
-        topic: props.topicId,
-        userNote: patternName,
-        aiDiagnosis: aiDiagnosis || null,
-      })
-      if (id === null) {
-        setStage('error')
-        setErrMsg('저장 실패 — migration 008 이 적용됐는지 확인하세요.')
-        return
+    const targetPatternId = CATEGORY_PATTERN_MAP[category] ?? null
+    if (targetPatternId === null) {
+      // '기타' — no matching row in error_patterns, skip RPC
+      props.onSaved?.('')
+    } else {
+      const pattern = patterns.find((p) => p.patternId === targetPatternId) ?? patterns[0] ?? null
+      if (pattern) {
+        const id = await tagAttemptError({
+          quizLogId: props.quizLogId,
+          patternId: pattern.patternId,
+          topic: props.topicId,
+          userNote: patternName,
+          aiDiagnosis: aiDiagnosis || null,
+          extractionId: props.extractionId ?? null,
+        })
+        if (id === null) {
+          setStage('error')
+          setErrMsg('저장 실패 — migration 008 이 적용됐는지 확인하세요.')
+          return
+        }
+        props.onSaved?.(id)
       }
-      props.onSaved?.(id)
     }
 
     setDiagnosis(aiDiagnosis)
