@@ -279,12 +279,24 @@ export interface ExtractedConcepts {
   triggers: ConceptTrigger[];
 }
 
+export interface ExampleQuestionResult {
+  question: string;
+  options: string[];
+  answer: string;
+  explanation: string;
+}
+
 export async function extractConcepts(input: {
   questionText: string;
   userAnswer?: string | null;
   correctAnswer?: string | null;
   topicId?: string | null;
-}): Promise<{ extracted: ExtractedConcepts; learned: LearnedConcepts; correctedTopicId?: string | null }> {
+}): Promise<{
+  extracted: ExtractedConcepts;
+  learned: LearnedConcepts;
+  correctedTopicId?: string | null;
+  exampleQuestion?: ExampleQuestionResult | null;
+}> {
   const res = await fetch(`${API_URL}/api/extract-concepts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -294,7 +306,12 @@ export async function extractConcepts(input: {
     const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
     throw new Error(err.error ?? `HTTP ${res.status}`);
   }
-  return (await res.json()) as { extracted: ExtractedConcepts; learned: LearnedConcepts; correctedTopicId?: string | null };
+  return (await res.json()) as {
+    extracted: ExtractedConcepts;
+    learned: LearnedConcepts;
+    correctedTopicId?: string | null;
+    exampleQuestion?: ExampleQuestionResult | null;
+  };
 }
 
 export async function fetchLearnedConcepts(): Promise<LearnedConcepts> {

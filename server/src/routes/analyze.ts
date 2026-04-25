@@ -11,6 +11,60 @@ import { inferTopicId } from '../lib/topicInference';
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 const MODEL = 'claude-sonnet-4-6';
+const MODEL_HAIKU = 'claude-haiku-4-5-20251001';
+
+// ── 복습용 예시 문제 생성 (Haiku, fire-once) ───────────────────
+async function generateExampleQuestion(
+  questionText: string,
+  correctAnswer: string | null | undefined,
+): Promise<{ question: string; options: string[]; answer: string; explanation: string } | null> {
+  const prompt = `아래 Becker 문제를 복습용으로 간단화해라.
+숫자와 핵심 개념은 그대로 유지. 형태만 4지선다로 재구성.
+
+문제:
+${questionText}${correctAnswer ? `\n정답: ${correctAnswer}` : ''}
+
+규칙:
+- 숫자 변경 금지
+- 핵심 개념 변경 금지
+- 오답 보기는 실제 시험에서 자주 나오는 trap으로 구성
+- explanation은 정답 선택지 기준으로만 작성
+
+STRICT JSON ONLY:
+{
+  "question": "간단화된 문제 텍스트",
+  "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+  "answer": "C",
+  "explanation": "정답 근거 한 문장 (US GAAP 기준)"
+}`;
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: MODEL_HAIKU,
+      max_tokens: 800,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    const raw = msg.content[0]?.type === 'text' ? msg.content[0].text.trim() : '';
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    const p = JSON.parse(jsonMatch[0]) as {
+      question?: string;
+      options?: unknown;
+      answer?: string;
+      explanation?: string;
+    };
+    if (!p.question || !Array.isArray(p.options) || !p.answer) return null;
+    return {
+      question: p.question,
+      options: (p.options as unknown[]).map((o) => String(o)),
+      answer: p.answer,
+      explanation: typeof p.explanation === 'string' ? p.explanation : '',
+    };
+  } catch (e) {
+    console.error('[analyze] generateExampleQuestion 실패:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
 
 // ─────────────────────────────────────────────
 // POST /api/extract-concepts
@@ -50,6 +104,9 @@ router.post('/extract-concepts', async (req: Request, res: Response) => {
       ? `\n사용자 답: ${userAnswer}\n정답: ${correctAnswer}\n${wasWrong ? '→ 오답' : '→ 정답'}`
       : '';
   const topicLine = topicId ? `\n현재 모듈: ${topicId}` : '';
+
+  // 개념 추출과 병렬 실행 — 실패해도 응답 차단 안 함
+  const exampleQuestionPromise = generateExampleQuestion(cleanedText, correctAnswer);
 
   const prompt = `아래 FAR 문제 원문에서 학습 데이터로 재사용할 개념 메타데이터만 추출하세요.
 ${topicLine}
@@ -223,7 +280,9 @@ STRICT JSON ONLY. 마크다운 펜스/부연 설명 금지. { 로 시작하고 }
     }
 
     // ── 즉시 응답 (파일 저장 전) ────────────────────────────────
-    finish(200, { extracted, learned: null, correctedTopicId });
+    const exampleQuestion = await exampleQuestionPromise.catch(() => null);
+    console.log('[analyze] exampleQuestion 생성:', exampleQuestion ? '성공' : '실패/null');
+    finish(200, { extracted, learned: null, correctedTopicId, exampleQuestion });
     console.log('[analyze] 200 응답 완료');
 
     // ── 파일 저장만 fire-and-forget ─────────────────────────────

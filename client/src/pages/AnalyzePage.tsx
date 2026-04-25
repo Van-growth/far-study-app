@@ -263,6 +263,7 @@ export default function AnalyzePage() {
           wasWrong: ua && ca ? ua !== ca : null,
           triggers: ext.triggers ?? [],
           questionHash,
+          exampleQuestion: extractRes.value.exampleQuestion ?? null,
         };
 
         // 자동 저장 없음 — 사용자가 배너에서 "저장" / "저장 안 함"으로 결정.

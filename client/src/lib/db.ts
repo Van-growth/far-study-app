@@ -494,6 +494,8 @@ export interface ConceptExtractionRow {
   triggers?: ConceptTrigger[] | null
   /** SHA-256 of trimmed question text — exact-duplicate detection. */
   questionHash?: string | null
+  /** Simplified 4-option review question generated at analysis time. */
+  exampleQuestion?: ExampleQuestion | null
 }
 
 // ── 문제 원문 해시 ────────────────────────────────────────────
@@ -824,6 +826,7 @@ export async function saveConceptExtraction(
     was_wrong: row.wasWrong,
     triggers: row.triggers ?? [],
     next_review_at: tomorrow.toISOString(),
+    example_question: row.exampleQuestion ?? null,
   }
   const payload = row.questionHash
     ? { ...basePayload, question_hash: row.questionHash }
