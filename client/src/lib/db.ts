@@ -1904,3 +1904,29 @@ export async function saveConceptFix(
     console.warn('[db] saveConceptFix failed:', e)
   }
 }
+
+// ── Daily Reflection ──────────────────────────────────────────
+
+export async function saveDailyReflection(
+  userId: string,
+  category: string,
+  content: string,
+): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10);
+  const { error } = await supabase
+    .from(DB.TABLES.DAILY_REFLECTION)
+    .upsert({ user_id: userId, date: today, category, content }, { onConflict: 'user_id,date', ignoreDuplicates: false });
+  if (error) logError('saveDailyReflection', error);
+}
+
+export async function hasTodayReflection(userId: string): Promise<boolean> {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from(DB.TABLES.DAILY_REFLECTION)
+    .select('id')
+    .eq('user_id', userId)
+    .eq('date', today)
+    .maybeSingle();
+  if (error) logError('hasTodayReflection', error);
+  return !!data;
+}
