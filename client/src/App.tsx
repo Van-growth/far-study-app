@@ -54,11 +54,18 @@ function BottomTabBar({ email }: { email: string }) {
   const morePaths = ['/quiz', '/admin', '/dashboard'];
   const moreActive = morePaths.some((p) => location.pathname.startsWith(p));
 
+  // Close more menu when viewport switches to desktop (md = 768px)
+  useEffect(() => {
+    const onResize = () => { if (window.innerWidth >= 768) setShowMore(false); };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   return (
     <>
       {/* More menu popup — drops down from tab bar */}
       {showMore && (
-        <div className="fixed inset-0 z-50" onClick={() => setShowMore(false)}>
+        <div className="fixed inset-0 z-50 md:hidden" onClick={() => setShowMore(false)}>
           <div
             className="absolute top-[100px] right-3 bg-white rounded-xl shadow-lg border border-border py-1 min-w-[160px]"
             onClick={(e) => e.stopPropagation()}
