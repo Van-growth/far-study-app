@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 
 interface ALItem {
   cat: string; item: string; std: string;
@@ -24,7 +24,7 @@ type QuizItem = {
   formula?: string;
   related_concepts?: string[];
 };
-type TabKey = 'asset-liability' | 'valuation';
+type TabKey = 'asset-liability' | 'valuation' | 'misc';
 type ViewMode = 'table' | 'quiz';
 type LangKey = 'ko' | 'en';
 
@@ -349,6 +349,16 @@ const VAL_BS_ORDER: Record<string, number> = {
 
 // ─── Sub-components ───────────────────────────────────────────
 
+function parseJournalEntry(text: string): { dr: string[]; cr: string[] } {
+  const dr: string[] = [], cr: string[] = [];
+  for (const line of text.split('\n')) {
+    const t = line.trim();
+    if (t.startsWith('Dr.')) dr.push(t);
+    else if (t.startsWith('Cr.')) cr.push(t);
+  }
+  return { dr, cr };
+}
+
 function GaapBadge() {
   return (
     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold shrink-0"
@@ -362,11 +372,15 @@ function QuizCard({
   item,
   lang,
   onLangChange,
+  onConceptClick,
 }: {
   item: QuizItem;
   lang: LangKey;
   onLangChange: (l: LangKey) => void;
+  onConceptClick: (concept: string) => void;
 }) {
+  const je = item.journal_entry ? parseJournalEntry(item.journal_entry) : null;
+
   return (
     <div className="bg-white rounded-2xl flex flex-col gap-4 p-5"
       style={{ border: '1.5px solid #e2e8f0' }}>
@@ -430,14 +444,25 @@ function QuizCard({
         </div>
       </div>
 
-      {/* Journal Entry */}
-      {item.journal_entry && (
+      {/* Journal Entry — Dr/Cr 2-column layout */}
+      {je && (
         <div className="rounded-xl p-3" style={{ background:'#f0fdf4', border:'1px solid #bbf7d0' }}>
-          <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:'#15803d' }}>
+          <p className="text-[10px] font-bold uppercase tracking-wider mb-2.5" style={{ color:'#15803d' }}>
             분개 (Journal Entry)
           </p>
-          <div className="font-mono text-sm text-[#15803d] leading-relaxed whitespace-pre-line">
-            {item.journal_entry}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="rounded-lg p-2.5" style={{ background:'#dcfce7', border:'1px solid #86efac' }}>
+              <p className="text-[10px] font-bold text-[#166534] mb-1.5">Dr (차변)</p>
+              {je.dr.map((line, i) => (
+                <p key={i} className="font-mono text-sm text-[#15803d]">{line}</p>
+              ))}
+            </div>
+            <div className="rounded-lg p-2.5" style={{ background:'#dbeafe', border:'1px solid #93c5fd' }}>
+              <p className="text-[10px] font-bold text-[#1e40af] mb-1.5">Cr (대변)</p>
+              {je.cr.map((line, i) => (
+                <p key={i} className="font-mono text-sm text-[#1d4ed8]">{line}</p>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -452,7 +477,7 @@ function QuizCard({
         </div>
       )}
 
-      {/* Related Concepts */}
+      {/* Related Concepts — clickable */}
       {item.related_concepts && item.related_concepts.length > 0 && (
         <div className="rounded-xl p-3" style={{ background:'#f5f3ff', border:'1px solid #ddd6fe' }}>
           <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:'#6d28d9' }}>
@@ -460,11 +485,12 @@ function QuizCard({
           </p>
           <div className="flex flex-wrap gap-1.5">
             {item.related_concepts.map((concept) => (
-              <span key={concept}
-                className="px-2.5 py-1 rounded-full text-xs font-medium"
+              <button key={concept}
+                onClick={() => onConceptClick(concept)}
+                className="px-2.5 py-1 rounded-full text-xs font-medium transition-opacity hover:opacity-70 active:opacity-50"
                 style={{ background:'#ede9fe', color:'#6d28d9' }}>
                 → {concept}
-              </span>
+              </button>
             ))}
           </div>
         </div>
@@ -478,6 +504,7 @@ function QuizCard({
 const SIDEBAR_TABS = [
   { key: 'asset-liability' as TabKey, label: 'Asset vs. Liability', icon: '⚖️' },
   { key: 'valuation' as TabKey, label: 'Valuation', icon: '💰' },
+  { key: 'misc' as TabKey, label: '기타', icon: '📦' },
 ];
 
 export default function ConceptNotesPage() {
@@ -492,7 +519,16 @@ export default function ConceptNotesPage() {
   const [quizIndex, setQuizIndex] = useState(0);
   const [shuffledItems, setShuffledItems] = useState<QuizItem[] | null>(null);
 
-  const cats = activeTab === 'asset-liability' ? AL_CATS : VAL_CATS;
+  // Misc (임시 저장) — persisted to localStorage
+  const [miscConcepts, setMiscConcepts] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('concept-notes-misc') ?? '[]'); }
+    catch { return []; }
+  });
+  useEffect(() => {
+    localStorage.setItem('concept-notes-misc', JSON.stringify(miscConcepts));
+  }, [miscConcepts]);
+
+  const cats = activeTab === 'asset-liability' ? AL_CATS : activeTab === 'valuation' ? VAL_CATS : [];
 
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
@@ -511,10 +547,24 @@ export default function ConceptNotesPage() {
 
   const allItems = useMemo<QuizItem[]>(() => {
     if (activeTab === 'asset-liability') return assetLiabilityData;
-    return [...valuationData].sort(
+    if (activeTab === 'valuation') return [...valuationData].sort(
       (a, b) => (VAL_BS_ORDER[a.item] ?? 99) - (VAL_BS_ORDER[b.item] ?? 99),
     );
+    return [];
   }, [activeTab]);
+
+  const handleConceptClick = useCallback((conceptName: string) => {
+    const idx = allItems.findIndex(it => it.item === conceptName);
+    if (idx !== -1) {
+      setViewMode('quiz');
+      setQuizIndex(idx);
+      setShuffledItems(null);
+      return;
+    }
+    if (window.confirm(`"${conceptName}"은 아직 개념노트에 없어요.\n기타에 임시 저장할까요?`)) {
+      setMiscConcepts(prev => prev.includes(conceptName) ? prev : [...prev, conceptName]);
+    }
+  }, [allItems]);
 
   const filtered = useMemo(() => {
     let items = allItems;
@@ -597,49 +647,75 @@ export default function ConceptNotesPage() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <h1 className="text-lg font-bold text-[#0f172a]">
-                  {activeTab === 'asset-liability' ? '⚖️ Asset vs. Liability' : '💰 Valuation'}
+                  {activeTab === 'asset-liability' ? '⚖️ Asset vs. Liability' : activeTab === 'valuation' ? '💰 Valuation' : '📦 기타 (임시 저장)'}
                 </h1>
-                <p className="text-xs text-muted mt-0.5">{filtered.length}개 항목</p>
+                <p className="text-xs text-muted mt-0.5">
+                  {activeTab === 'misc' ? `${miscConcepts.length}개 저장됨 · 나중에 탭으로 분류 정리` : `${filtered.length}개 항목`}
+                </p>
               </div>
-              <div className="flex rounded-xl overflow-hidden" style={{ border:'1.5px solid #e2e8f0' }}>
-                {(['table','quiz'] as ViewMode[]).map(mode => (
-                  <button key={mode}
-                    onClick={() => { setViewMode(mode); setQuizIndex(0); }}
-                    className="px-4 py-1.5 text-sm font-medium transition-colors"
-                    style={{
-                      background: viewMode === mode ? '#4f6ef7' : 'white',
-                      color: viewMode === mode ? 'white' : '#475569',
-                    }}>
-                    {mode === 'table' ? '📋 테이블' : '🃏 카드퀴즈'}
-                  </button>
+              {activeTab !== 'misc' && (
+                <div className="flex rounded-xl overflow-hidden" style={{ border:'1.5px solid #e2e8f0' }}>
+                  {(['table','quiz'] as ViewMode[]).map(mode => (
+                    <button key={mode}
+                      onClick={() => { setViewMode(mode); setQuizIndex(0); }}
+                      className="px-4 py-1.5 text-sm font-medium transition-colors"
+                      style={{
+                        background: viewMode === mode ? '#4f6ef7' : 'white',
+                        color: viewMode === mode ? 'white' : '#475569',
+                      }}>
+                      {mode === 'table' ? '📋 테이블' : '🃏 카드퀴즈'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Search + Category pills — misc 탭에서는 숨김 */}
+            {activeTab !== 'misc' && (
+              <>
+                <input value={query}
+                  onChange={e => { setQuery(e.target.value); resetFilter(); }}
+                  placeholder="항목명 / 핵심기준 / Trigger / Trap / 실제 상황 검색"
+                  className="w-full text-sm rounded-xl px-4 py-2.5 bg-white"
+                  style={{ border:'1.5px solid #e2e8f0', outline:'none' }} />
+                <div className="flex gap-1.5 flex-wrap">
+                  {cats.map(cat => (
+                    <button key={cat}
+                      onClick={() => { setActiveCat(cat); resetFilter(); }}
+                      className="px-3 py-1 rounded-full text-xs font-medium transition-colors"
+                      style={{
+                        background: activeCat === cat ? '#4f6ef7' : '#f1f5f9',
+                        color: activeCat === cat ? 'white' : '#475569',
+                      }}>
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* ── Misc View ── */}
+            {activeTab === 'misc' && (
+              <div className="flex flex-col gap-2">
+                {miscConcepts.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-[#e2e8f0] p-10 text-center">
+                    <p className="text-sm text-muted">연결 개념 클릭 시 여기에 임시 저장됩니다.</p>
+                  </div>
+                ) : miscConcepts.map((name) => (
+                  <div key={name} className="bg-white rounded-xl border border-[#e2e8f0] px-4 py-3 flex items-center justify-between">
+                    <span className="text-sm font-medium text-[#0f172a]">{name}</span>
+                    <button
+                      onClick={() => setMiscConcepts(prev => prev.filter(c => c !== name))}
+                      className="text-xs text-muted hover:text-red-500 transition-colors">
+                      삭제
+                    </button>
+                  </div>
                 ))}
               </div>
-            </div>
-
-            {/* Search */}
-            <input value={query}
-              onChange={e => { setQuery(e.target.value); resetFilter(); }}
-              placeholder="항목명 / 핵심기준 / Trigger / Trap / 실제 상황 검색"
-              className="w-full text-sm rounded-xl px-4 py-2.5 bg-white"
-              style={{ border:'1.5px solid #e2e8f0', outline:'none' }} />
-
-            {/* Category pills */}
-            <div className="flex gap-1.5 flex-wrap">
-              {cats.map(cat => (
-                <button key={cat}
-                  onClick={() => { setActiveCat(cat); resetFilter(); }}
-                  className="px-3 py-1 rounded-full text-xs font-medium transition-colors"
-                  style={{
-                    background: activeCat === cat ? '#4f6ef7' : '#f1f5f9',
-                    color: activeCat === cat ? 'white' : '#475569',
-                  }}>
-                  {cat}
-                </button>
-              ))}
-            </div>
+            )}
 
             {/* ── Table View ── */}
-            {viewMode === 'table' && (
+            {activeTab !== 'misc' && viewMode === 'table' && (
               <div className="bg-white rounded-2xl overflow-hidden"
                 style={{ border:'1.5px solid #e2e8f0' }}>
                 <div className="overflow-x-auto">
@@ -710,7 +786,7 @@ export default function ConceptNotesPage() {
             )}
 
             {/* ── Quiz View ── */}
-            {viewMode === 'quiz' && (
+            {activeTab !== 'misc' && viewMode === 'quiz' && (
               <div className="flex flex-col gap-4">
                 {quizItems.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-[#e2e8f0] p-8 text-center">
@@ -745,6 +821,7 @@ export default function ConceptNotesPage() {
                         item={currentCard}
                         lang={lang}
                         onLangChange={setLang}
+                        onConceptClick={handleConceptClick}
                       />
                     )}
 
