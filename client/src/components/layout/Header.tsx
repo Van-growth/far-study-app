@@ -15,6 +15,7 @@ const moreTabs = [
   { label: '📊 대시보드', path: '/dashboard' },
   { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
   { label: '🏆 뱃지 & 성취', path: '/badges' },
+  { label: '📑 개념노트', path: '/concept-notes' },
   { label: '📈 학습 효과', path: '/learning' },
 ];
 const adminTab = { label: '🛠️ Admin', path: '/admin' };
