@@ -506,15 +506,37 @@ const SIDEBAR_TABS = [
   { key: 'misc' as TabKey, label: '기타', icon: '📦' },
 ];
 
-// concept 태그와 item 이름 간 fuzzy match
+// concept 태그와 item 이름 간 fuzzy match (3단계 우선순위)
 function findEnrichment(itemName: string, enrichments: JournalEnrichment[]): JournalEnrichment | undefined {
+  // —, –, /, & 등 특수문자를 공백으로 정규화 후 소문자 변환
   const norm = (s: string) =>
-    s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    s.toLowerCase()
+      .replace(/[—–\-/&]/g, ' ')
+      .replace(/[^a-z0-9 ]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
   const normItem = norm(itemName);
-  return enrichments.find((e) =>
+  const itemWords = normItem.split(' ').filter((w) => w.length > 2);
+
+  // 1순위: 완전 일치
+  let match = enrichments.find((e) => e.concepts.some((c) => norm(c) === normItem));
+  if (match) return match;
+
+  // 2순위: 한쪽이 다른 쪽을 완전 포함
+  match = enrichments.find((e) =>
     e.concepts.some((c) => {
       const nc = norm(c);
       return nc.length > 3 && (normItem.includes(nc) || nc.includes(normItem));
+    })
+  );
+  if (match) return match;
+
+  // 3순위: 의미 있는 단어 2개 이상 교집합
+  return enrichments.find((e) =>
+    e.concepts.some((c) => {
+      const cWords = norm(c).split(' ').filter((w) => w.length > 2);
+      return cWords.filter((w) => itemWords.includes(w)).length >= 2;
     })
   );
 }
