@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { Client, ClientConfig } from 'pg';
+import { createClient } from '@supabase/supabase-js';
 
 // PostgreSQL error codes that mean "object already exists" — safe to skip
 const ALREADY_EXISTS_CODES = new Set([
@@ -10,85 +10,77 @@ const ALREADY_EXISTS_CODES = new Set([
   '42P16', // invalid_table_definition (e.g. constraint already exists)
 ]);
 
-// pg.ClientConfig doesn't expose `family` in its TS types, but pg passes it
-// through to net.connect() — this forces IPv4-only DNS and fixes ENETUNREACH
-// on Render where Supabase's hostname resolves to IPv6 first.
-type PgClientConfig = ClientConfig & { family?: number };
-
 export async function runMigrations(): Promise<void> {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
-    console.warn('[migrate] DATABASE_URL not set — skipping migrations');
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceKey) {
+    console.warn('[migrate] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set — skipping migrations');
     return;
   }
 
-  const config: PgClientConfig = {
-    connectionString: dbUrl,
-    ssl: { rejectUnauthorized: false },
-    family: 4, // Force IPv4 — avoids ENETUNREACH on Render (Supabase resolves IPv6 first)
-  };
-  const client = new Client(config);
+  const supabase = createClient(supabaseUrl, serviceKey);
 
-  try {
-    await client.connect();
-    console.log('[migrate] connected');
-
-    // Ensure tracking table exists (always safe — IF NOT EXISTS)
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS migration_history (
-        filename     text PRIMARY KEY,
-        executed_at  timestamptz DEFAULT now()
-      )
-    `);
-
-    const dir = path.resolve(process.cwd(), 'supabase/migrations');
-    if (!fs.existsSync(dir)) {
-      console.log('[migrate] no supabase/migrations dir — skipping');
-      return;
-    }
-
-    const files = fs.readdirSync(dir)
-      .filter((f) => f.endsWith('.sql'))
-      .sort();
-
-    const { rows } = await client.query<{ filename: string }>(
-      'SELECT filename FROM migration_history',
-    );
-    const executed = new Set(rows.map((r) => r.filename));
-
-    for (const file of files) {
-      if (executed.has(file)) {
-        console.log(`[migrate] skip:  ${file}`);
-        continue;
-      }
-
-      const sql = fs.readFileSync(path.join(dir, file), 'utf-8');
-
-      try {
-        await client.query(sql);
-        await client.query(
-          'INSERT INTO migration_history(filename) VALUES($1) ON CONFLICT DO NOTHING',
-          [file],
-        );
-        console.log(`[migrate] done:  ${file}`);
-      } catch (err) {
-        const pgCode = (err as { code?: string }).code ?? '';
-        if (ALREADY_EXISTS_CODES.has(pgCode)) {
-          // Schema is already in the desired state — record and continue
-          console.warn(`[migrate] already applied (pg ${pgCode}): ${file}`);
-          await client.query(
-            'INSERT INTO migration_history(filename) VALUES($1) ON CONFLICT DO NOTHING',
-            [file],
-          );
-        } else {
-          console.error(`[migrate] FAILED: ${file}`, err);
-          throw err;
-        }
-      }
-    }
-
-    console.log('[migrate] all migrations complete');
-  } finally {
-    await client.end().catch(() => {});
+  // Ensure tracking table exists via exec_sql RPC
+  const { error: createErr } = await supabase.rpc('exec_sql', {
+    sql: `CREATE TABLE IF NOT EXISTS migration_history (
+      filename     text PRIMARY KEY,
+      executed_at  timestamptz DEFAULT now()
+    )`,
+  });
+  if (createErr) {
+    console.error('[migrate] Failed to create migration_history:', createErr);
+    throw createErr;
   }
+  console.log('[migrate] connected');
+
+  const dir = path.resolve(process.cwd(), 'supabase/migrations');
+  if (!fs.existsSync(dir)) {
+    console.log('[migrate] no supabase/migrations dir — skipping');
+    return;
+  }
+
+  const files = fs.readdirSync(dir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
+
+  const { data, error: selectErr } = await supabase
+    .from('migration_history')
+    .select('filename');
+  if (selectErr) {
+    console.error('[migrate] Failed to read migration_history:', selectErr);
+    throw selectErr;
+  }
+
+  const executed = new Set((data ?? []).map((r: { filename: string }) => r.filename));
+
+  for (const file of files) {
+    if (executed.has(file)) {
+      console.log(`[migrate] skip:  ${file}`);
+      continue;
+    }
+
+    const sql = fs.readFileSync(path.join(dir, file), 'utf-8');
+
+    const { error: sqlErr } = await supabase.rpc('exec_sql', { sql });
+
+    if (sqlErr) {
+      const pgCode = (sqlErr as { code?: string }).code ?? '';
+      if (ALREADY_EXISTS_CODES.has(pgCode)) {
+        console.warn(`[migrate] already applied (pg ${pgCode}): ${file}`);
+      } else {
+        console.error(`[migrate] FAILED: ${file}`, sqlErr);
+        throw sqlErr;
+      }
+    } else {
+      console.log(`[migrate] done:  ${file}`);
+    }
+
+    // Record as executed regardless of skip reason
+    await supabase
+      .from('migration_history')
+      .upsert({ filename: file }, { onConflict: 'filename', ignoreDuplicates: true });
+  }
+
+  console.log('[migrate] all migrations complete');
 }
