@@ -70,20 +70,11 @@ function BottomTabBar({ email }: { email: string }) {
             className="absolute top-[100px] right-3 bg-white rounded-xl shadow-lg border border-border py-1 min-w-[160px]"
             onClick={(e) => e.stopPropagation()}
           >
-            {(() => { console.log('moreItems:', [
-              { label: '📊 대시보드', path: '/dashboard' },
-              { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
-              { label: '🏆 뱃지 & 성취', path: '/badges' },
-              { label: '📑 개념노트', path: '/concept-notes' },
-              { label: '🧪 테스트', path: '/test-menu' },
-              { label: '📈 학습 효과', path: '/learning' },
-            ]); return null; })()}
             {[
               { label: '📊 대시보드', path: '/dashboard' },
               { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
               { label: '🏆 뱃지 & 성취', path: '/badges' },
               { label: '📑 개념노트', path: '/concept-notes' },
-              { label: '🧪 테스트', path: '/test-menu' },
               { label: '📈 학습 효과', path: '/learning' },
               ...(isAdmin ? [{ label: '🛠️ Admin', path: '/admin' }] : []),
             ].map((item) => (
