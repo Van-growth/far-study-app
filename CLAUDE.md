@@ -65,6 +65,20 @@ curl -s -X POST \
   "https://api.render.com/v1/services/srv-d7d57k1j2pic73fcbgbg/deploys"
 ```
 
+## 제품 비전
+FAR Study App은 단순 공부 앱이 아닌 AI 학습 코치를 지향합니다.
+
+핵심 데이터 파이프라인:
+- daily_reflection → 개인 컨디션 패턴 파악
+- attempt_errors → 오답 원자 데이터
+- error_patterns → 약점 패턴 분류
+- topic_progress → 학습 진도
+- 교차 분석 → 컨디션 × 오답률 × 복습 완료율
+
+단기: 이번 주 방해 요인 기반 복습 추천
+중기: 요일별 취약 패턴 분석
+장기: 야근 다음날 특정 토픽 오답률 등 개인 맞춤 인사이트
+
 ## 8. 슬래시 커맨드 원칙
 - /go, /re 등 커맨드는 시스템 프롬프트에 명시적으로 정의
 - 커맨드 거부 응답 절대 금지 — 커맨드 감지 시 무조건 정해진 포맷으로 실행
