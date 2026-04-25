@@ -13,6 +13,7 @@ import ReplayPage from './pages/ReplayPage';
 import AuthPage from './pages/AuthPage';
 import AdminPage from './pages/AdminPage';
 import ValuationPage from './pages/ValuationPage';
+import ConceptNotesPage from './pages/ConceptNotesPage';
 import HomePage from './pages/HomePage';
 import LearningEffectPage from './pages/LearningEffectPage';
 import BadgesPage from './pages/BadgesPage';
@@ -66,6 +67,7 @@ function BottomTabBar({ email }: { email: string }) {
               { label: '📊 대시보드', path: '/dashboard' },
               { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
               { label: '🏆 뱃지 & 성취', path: '/badges' },
+              { label: '📑 개념노트', path: '/concept-notes' },
               { label: '📈 학습 효과', path: '/learning' },
               ...(isAdmin ? [{ label: '🛠️ Admin', path: '/admin' }] : []),
             ].map((item) => (
@@ -221,6 +223,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/science" element={<SciencePage />} />
             <Route path="/learning" element={<LearningEffectPage />} />
             <Route path="/valuation" element={<ValuationPage />} />
+            <Route path="/concept-notes" element={<ConceptNotesPage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/badges" element={<BadgesPage />} />
             {email.toLowerCase() === ADMIN_EMAIL && (
