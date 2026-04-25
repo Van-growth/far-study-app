@@ -543,6 +543,8 @@ export interface RecentExtractionItem {
   reviewInterval: number
   reviewCount: number
   exampleQuestion: ExampleQuestion | null
+  feedback: string | null
+  isFixed: boolean
 }
 
 export async function fetchRecentExtractions(
@@ -571,6 +573,8 @@ export async function fetchRecentExtractions(
       reviewInterval: typeof row.review_interval === 'number' ? row.review_interval : 0,
       reviewCount: typeof row.review_count === 'number' ? row.review_count : 0,
       exampleQuestion: null,
+      feedback: null,
+      isFixed: false,
     }))
 
   try {
@@ -622,6 +626,8 @@ export async function fetchExtractionsPage(
       reviewInterval: typeof row.review_interval === 'number' ? row.review_interval : 0,
       reviewCount: typeof row.review_count === 'number' ? row.review_count : 0,
       exampleQuestion: null,
+      feedback: null,
+      isFixed: false,
     }))
     return { items, total: count ?? null }
   } catch {
@@ -1456,15 +1462,20 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
         .lte('next_review_at', now)
         .order('next_review_at', { ascending: true })
 
-    // Try full select (triggers + example_question), fall back to core on any schema error
-    let result = await runQuery(`${coreSelect}, triggers, example_question`)
+    // Try full select (with migration 016 feedback cols), fall back on schema error
+    let result = await runQuery(`${coreSelect}, triggers, example_question, feedback, is_fixed`)
     let hasTriggers = true
     let hasEq = true
+    let hasFeedbackCols = true
     if (result.error) {
-      // Retry with just core columns — handles triggers or example_question missing
-      result = await runQuery(coreSelect)
-      hasTriggers = false
-      hasEq = false
+      // Migration 016 may not be applied yet — retry without feedback columns
+      result = await runQuery(`${coreSelect}, triggers, example_question`)
+      hasFeedbackCols = false
+      if (result.error) {
+        result = await runQuery(coreSelect)
+        hasTriggers = false
+        hasEq = false
+      }
     }
     if (result.error || !result.data) return []
     return (result.data as unknown as Record<string, unknown>[]).map((row) => ({
@@ -1490,6 +1501,8 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
           explanation: eq.explanation ?? '',
         } as ExampleQuestion;
       })(),
+      feedback: hasFeedbackCols && typeof row.feedback === 'string' ? row.feedback : null,
+      isFixed: hasFeedbackCols && row.is_fixed === true,
     }))
   } catch { return [] }
 }
@@ -1641,5 +1654,53 @@ export async function getBriefingCache(userId: string): Promise<BriefingResponse
     return JSON.parse(data.content as string) as BriefingResponse
   } catch {
     return null
+  }
+}
+
+// ── Concept feedback (migration 016) ─────────────────────────
+
+export async function saveFeedback(id: string, feedback: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('concept_extractions')
+      .update({ feedback })
+      .eq('id', id)
+    if (error) logError('saveFeedback', error)
+  } catch (e) {
+    console.warn('[db] saveFeedback failed:', e)
+  }
+}
+
+export async function saveConceptFix(
+  id: string,
+  feedback: string,
+  newAnswer: string,
+  newExplanation: string,
+): Promise<void> {
+  try {
+    const { data } = await supabase
+      .from('concept_extractions')
+      .select('example_question')
+      .eq('id', id)
+      .single()
+
+    const currentEq = (data as { example_question?: unknown } | null)?.example_question
+    const mergedEq =
+      typeof currentEq === 'object' && currentEq !== null
+        ? { ...(currentEq as Record<string, unknown>), answer: newAnswer, explanation: newExplanation }
+        : { answer: newAnswer, explanation: newExplanation }
+
+    const { error } = await supabase
+      .from('concept_extractions')
+      .update({
+        example_question: mergedEq,
+        feedback,
+        is_fixed: true,
+        fixed_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+    if (error) logError('saveConceptFix', error)
+  } catch (e) {
+    console.warn('[db] saveConceptFix failed:', e)
   }
 }

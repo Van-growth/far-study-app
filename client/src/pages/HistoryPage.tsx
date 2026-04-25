@@ -9,6 +9,8 @@ import {
   getTodayReviewStats,
   upsertDailyReviewLog,
   generateOnDemandReviewCards,
+  saveFeedback,
+  saveConceptFix,
   RecentExtractionItem,
   ConceptTrigger,
   ExampleQuestion,
@@ -168,7 +170,7 @@ function FlashCard({ card, visible }: { card: RecentExtractionItem; visible: boo
         transform: visible ? 'translateY(0)' : 'translateY(12px)',
       }}
     >
-      {/* Module badge */}
+      {/* Module badge + status badges */}
       <div className="flex items-center gap-2 flex-wrap">
         {card.topicId && (
           <span
@@ -176,6 +178,22 @@ function FlashCard({ card, visible }: { card: RecentExtractionItem; visible: boo
             style={{ background: '#eef2ff', color: '#4338ca' }}
           >
             {card.topicId}
+          </span>
+        )}
+        {card.isFixed && (
+          <span
+            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #86efac' }}
+          >
+            ✅ 수정됨
+          </span>
+        )}
+        {!card.isFixed && card.feedback && (
+          <span
+            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: '#fefce8', color: '#713f12', border: '1px solid #fde047' }}
+          >
+            📝 피드백 있음
           </span>
         )}
         {card.topicTags.slice(0, 2).map((tag, i) => (
@@ -273,6 +291,165 @@ function FlashCard({ card, visible }: { card: RecentExtractionItem; visible: boo
   )
 }
 
+// ── Feedback panel ────────────────────────────────────────────
+interface FeedbackPanelProps {
+  card: RecentExtractionItem
+  feedbackText: string
+  setFeedbackText: (v: string) => void
+  aiFixLoading: boolean
+  aiFixResult: { correct_answer: string; explanation: string } | null
+  savingFix: boolean
+  fixError: string | null
+  onSaveFeedback: () => void
+  onAiFix: () => void
+  onConfirmFix: () => void
+  onCancelFix: () => void
+  onClose: () => void
+}
+
+function FeedbackPanel({
+  card, feedbackText, setFeedbackText,
+  aiFixLoading, aiFixResult, savingFix, fixError,
+  onSaveFeedback, onAiFix, onConfirmFix, onCancelFix, onClose,
+}: FeedbackPanelProps) {
+  const eq = card.exampleQuestion
+  const expStr = eq
+    ? (typeof eq.explanation === 'string' ? eq.explanation : String(eq.explanation ?? ''))
+    : ''
+
+  return (
+    <div
+      className="mx-4 rounded-2xl overflow-hidden"
+      style={{ border: '1.5px solid #e2e8f0', background: 'white' }}
+    >
+      {/* Header */}
+      <div
+        className="flex items-center justify-between px-4 py-2.5"
+        style={{ background: '#f8faff', borderBottom: '1px solid #e2e8f0' }}
+      >
+        <span className="text-xs font-semibold text-[#0f172a]">✏️ 문제 수정</span>
+        <button
+          onClick={onClose}
+          className="text-[#94a3b8] hover:text-[#0f172a] text-lg leading-none px-1"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="p-4 flex flex-col gap-3">
+        {/* Current answer / explanation */}
+        {eq && (
+          <div
+            className="text-xs flex flex-col gap-1.5 rounded-xl px-3 py-2.5"
+            style={{ background: '#f8faff' }}
+          >
+            <p>
+              <span className="font-semibold text-[#3730a3]">현재 정답: </span>
+              <span className="text-[#0f172a]">{eq.answer || '(없음)'}</span>
+            </p>
+            <p>
+              <span className="font-semibold text-[#3730a3]">현재 해설: </span>
+              <span className="text-[#64748b] whitespace-pre-wrap">{expStr}</span>
+            </p>
+          </div>
+        )}
+
+        {/* Diff view after AI fix */}
+        {aiFixResult ? (
+          <>
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold text-[#0f172a]">수정 전 → 수정 후</p>
+              <div
+                className="rounded-xl px-3 py-2.5 flex flex-col gap-2 text-xs"
+                style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}
+              >
+                <p>
+                  <span className="font-semibold text-[#3730a3]">정답: </span>
+                  <span className="line-through text-[#94a3b8]">{eq?.answer || '(없음)'}</span>
+                  <span className="text-[#94a3b8]"> → </span>
+                  <span className="font-bold text-[#166534]">{aiFixResult.correct_answer}</span>
+                </p>
+                <div>
+                  <p className="font-semibold text-[#3730a3] mb-1">해설:</p>
+                  <p className="line-through text-[#94a3b8] leading-relaxed">{expStr}</p>
+                  <p className="text-[#166534] mt-1.5 whitespace-pre-wrap leading-relaxed">
+                    {aiFixResult.explanation}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={onCancelFix}
+                className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                style={{ background: '#f1f5f9', color: '#64748b' }}
+              >
+                ✖ 취소
+              </button>
+              <button
+                onClick={onConfirmFix}
+                disabled={savingFix}
+                className="flex-1 py-2 rounded-xl text-xs font-semibold disabled:opacity-60"
+                style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #86efac' }}
+              >
+                {savingFix ? '저장 중…' : '✅ 확인 저장'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Textarea */}
+            <textarea
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              placeholder={'틀린 부분을 입력하세요.\n예) 정답이 C인데 B로 나와있어요'}
+              rows={3}
+              className="w-full text-xs resize-none rounded-xl px-3 py-2.5"
+              style={{ border: '1.5px solid #e2e8f0', outline: 'none', lineHeight: 1.6 }}
+            />
+
+            {fixError && (
+              <p className="text-xs text-[#ef4444]">{fixError}</p>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={onSaveFeedback}
+                disabled={!feedbackText.trim()}
+                className="flex-1 py-2 rounded-xl text-xs font-semibold disabled:opacity-50"
+                style={{ background: '#f8faff', color: '#4338ca', border: '1px solid #c7d2fe' }}
+              >
+                💬 피드백만 남기기
+              </button>
+              <button
+                onClick={onAiFix}
+                disabled={!feedbackText.trim() || aiFixLoading || !eq}
+                className="flex-1 py-2 rounded-xl text-xs font-semibold disabled:opacity-50"
+                style={{ background: '#eef2ff', color: '#3730a3', border: '1px solid #a5b4fc' }}
+              >
+                {aiFixLoading ? (
+                  <span className="flex items-center justify-center gap-1">
+                    <span className="w-3 h-3 border-2 border-[#3730a3] border-t-transparent rounded-full animate-spin inline-block" />
+                    AI 수정 중…
+                  </span>
+                ) : (
+                  '🔄 AI로 즉시 수정'
+                )}
+              </button>
+            </div>
+            {aiFixLoading && (
+              <p className="text-[10px] text-[#94a3b8] text-center">
+                최대 15초 소요될 수 있어요
+              </p>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Empty state ───────────────────────────────────────────────
 function EmptyView({
   onGenerate,
@@ -348,6 +525,14 @@ export default function HistoryPage() {
   const [generating, setGenerating] = useState(false)
   const [noOnDemandData, setNoOnDemandData] = useState(false)
 
+  // Feedback panel state
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [feedbackText, setFeedbackText] = useState('')
+  const [aiFixLoading, setAiFixLoading] = useState(false)
+  const [aiFixResult, setAiFixResult] = useState<{ correct_answer: string; explanation: string } | null>(null)
+  const [savingFix, setSavingFix] = useState(false)
+  const [fixError, setFixError] = useState<string | null>(null)
+
   useEffect(() => {
     if (!userId) return
     Promise.all([
@@ -387,19 +572,24 @@ export default function HistoryPage() {
     return () => setReviewCardContext(null)
   }, [cards, idx, stage, setReviewCardContext])
 
+  // Reset feedback panel when card changes
+  useEffect(() => {
+    setFeedbackOpen(false)
+    setFeedbackText('')
+    setAiFixResult(null)
+    setFixError(null)
+  }, [idx])
+
   async function handleAnswer(knew: boolean) {
     if (submitting || !visible) return
     const card = cards[idx]
     if (!card) return
 
     setSubmitting(true)
-    // 1. Fade out
     setVisible(false)
 
-    // 2. SRS update (fire in background while animating)
     await updateConceptReview(card.id, knew)
 
-    // 3. After fade-out, advance
     setTimeout(() => {
       const next = idx + 1
       if (knew) setKnewCount((c) => c + 1)
@@ -436,6 +626,86 @@ export default function HistoryPage() {
       setStage(items.length === 0 ? 'empty' : 'review')
     } finally {
       setGenerating(false)
+    }
+  }
+
+  async function handleSaveFeedback() {
+    const card = cards[idx]
+    if (!card || !feedbackText.trim()) return
+    await saveFeedback(card.id, feedbackText)
+    setCards((prev) =>
+      prev.map((c, i) => (i === idx ? { ...c, feedback: feedbackText } : c))
+    )
+    setFeedbackOpen(false)
+    setFeedbackText('')
+  }
+
+  async function handleAiFix() {
+    const card = cards[idx]
+    if (!feedbackText.trim() || !card.exampleQuestion) return
+    setAiFixLoading(true)
+    setFixError(null)
+
+    const timeoutId = window.setTimeout(() => {
+      setAiFixLoading(false)
+      setFixError('다시 시도해주세요 (타임아웃)')
+    }, 20000)
+
+    try {
+      const expStr =
+        typeof card.exampleQuestion.explanation === 'string'
+          ? card.exampleQuestion.explanation
+          : String(card.exampleQuestion.explanation ?? '')
+
+      const res = await fetch('/api/concept/fix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: card.id,
+          feedback: feedbackText,
+          current: {
+            question: card.exampleQuestion.question,
+            correct_answer: card.exampleQuestion.answer,
+            explanation: expStr,
+          },
+        }),
+      })
+      window.clearTimeout(timeoutId)
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string }
+        setFixError(err.error ?? '서버 오류가 발생했어요')
+        return
+      }
+      const data = (await res.json()) as { correct_answer: string; explanation: string }
+      setAiFixResult(data)
+    } catch {
+      window.clearTimeout(timeoutId)
+      setFixError('네트워크 오류가 발생했어요')
+    } finally {
+      setAiFixLoading(false)
+    }
+  }
+
+  async function handleConfirmFix() {
+    if (!aiFixResult) return
+    const card = cards[idx]
+    setSavingFix(true)
+    try {
+      await saveConceptFix(card.id, feedbackText, aiFixResult.correct_answer, aiFixResult.explanation)
+      setCards((prev) =>
+        prev.map((c, i) => {
+          if (i !== idx) return c
+          const newEq = c.exampleQuestion
+            ? { ...c.exampleQuestion, answer: aiFixResult.correct_answer, explanation: aiFixResult.explanation }
+            : null
+          return { ...c, exampleQuestion: newEq, isFixed: true, feedback: feedbackText }
+        })
+      )
+      setFeedbackOpen(false)
+      setFeedbackText('')
+      setAiFixResult(null)
+    } finally {
+      setSavingFix(false)
     }
   }
 
@@ -479,6 +749,37 @@ export default function HistoryPage() {
           알았다 ✅
         </button>
       </div>
+
+      {/* Edit button */}
+      <div className="flex justify-center">
+        <button
+          onClick={() => {
+            setFeedbackOpen((v) => !v)
+            if (feedbackOpen) { setAiFixResult(null); setFixError(null) }
+          }}
+          className="text-xs text-[#94a3b8] hover:text-[#64748b] transition-colors"
+        >
+          ✏️ 문제 수정
+        </button>
+      </div>
+
+      {/* Feedback panel */}
+      {feedbackOpen && (
+        <FeedbackPanel
+          card={current}
+          feedbackText={feedbackText}
+          setFeedbackText={setFeedbackText}
+          aiFixLoading={aiFixLoading}
+          aiFixResult={aiFixResult}
+          savingFix={savingFix}
+          fixError={fixError}
+          onSaveFeedback={() => void handleSaveFeedback()}
+          onAiFix={() => void handleAiFix()}
+          onConfirmFix={() => void handleConfirmFix()}
+          onCancelFix={() => setAiFixResult(null)}
+          onClose={() => { setFeedbackOpen(false); setAiFixResult(null); setFixError(null) }}
+        />
+      )}
 
       <p className="text-center text-[11px] text-[#64748b]">
         오늘 완료: <span className="font-semibold text-[#166534]">{knewCount}개 ✅</span>

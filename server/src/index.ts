@@ -10,6 +10,7 @@ import feedbackRouter from './routes/feedback';
 import adminRouter from './routes/admin';
 import errorPatternsRouter from './routes/errorPatterns';
 import tutorRouter from './routes/tutor';
+import conceptRouter from './routes/concept';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -50,6 +51,9 @@ app.use('/api/error-patterns', errorPatternsRouter);
 
 // ── AI Tutor briefing (HomePage 랜딩) ─────────────────────────
 app.use('/api/tutor', tutorRouter);
+
+// ── Concept feedback & AI fix ─────────────────────────────────
+app.use('/api/concept', conceptRouter);
 
 // ── 404 ───────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {
