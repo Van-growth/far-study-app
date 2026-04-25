@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import useStudyStore from '../../store/studyStore';
 import useClaudeStore from '../../store/claudeStore';
 import Sidebar from './Sidebar';
+import { MORE_MENU_ITEMS, ADMIN_MENU_ITEM } from '../../constants/navigation';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 
@@ -11,16 +12,7 @@ const mainTabs = [
   { label: '📝 분석', path: '/analyze' },
 ];
 
-const moreTabs = [
-  { label: '📊 대시보드', path: '/dashboard' },
-  { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
-  { label: '🏆 뱃지 & 성취', path: '/badges' },
-  { label: '📑 개념노트', path: '/concept-notes' },
-  { label: '📈 학습 효과', path: '/learning' },
-];
-const adminTab = { label: '🛠️ Admin', path: '/admin' };
-
-const MORE_PATHS = new Set([...moreTabs, adminTab].map((t) => t.path));
+const MORE_PATHS = new Set([...MORE_MENU_ITEMS, ADMIN_MENU_ITEM].map((t) => t.path));
 
 interface HeaderProps {
   email: string;
@@ -64,7 +56,7 @@ export default function Header({ email, onSignOut }: HeaderProps) {
     // Match by path prefix, same semantics as isActive.
     [...MORE_PATHS].find((p) => location.pathname.startsWith(p.split('?')[0])) ?? '',
   );
-  const moreMenuItems = [...moreTabs, ...(isAdmin ? [adminTab] : [])];
+  const moreMenuItems = [...MORE_MENU_ITEMS, ...(isAdmin ? [ADMIN_MENU_ITEM] : [])];
 
   return (
     <>

@@ -22,6 +22,7 @@ import HistoryPage from './pages/HistoryPage';
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 import useClaudeStore from './store/claudeStore';
 import useStudyStore from './store/studyStore';
+import { MORE_MENU_ITEMS, ADMIN_MENU_ITEM } from './constants/navigation';
 
 const PANEL_MIN = 280;
 const PANEL_MAX = 600;
@@ -71,12 +72,8 @@ function BottomTabBar({ email }: { email: string }) {
             onClick={(e) => e.stopPropagation()}
           >
             {[
-              { label: '📊 대시보드', path: '/dashboard' },
-              { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
-              { label: '🏆 뱃지 & 성취', path: '/badges' },
-              { label: '📑 개념노트', path: '/concept-notes' },
-              { label: '📈 학습 효과', path: '/learning' },
-              ...(isAdmin ? [{ label: '🛠️ Admin', path: '/admin' }] : []),
+              ...MORE_MENU_ITEMS,
+              ...(isAdmin ? [ADMIN_MENU_ITEM] : []),
             ].map((item) => (
               <button
                 key={item.path}
