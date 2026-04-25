@@ -8,14 +8,7 @@ import {
   MyPatternStat,
   ErrorPatternLayer,
 } from '../../lib/db'
-
-// 고정 매핑 — root 선택 → 연결된 exec → outcome 체인.
-// DB linked_topics 로 동적화할 수도 있지만 지금은 가설 기반이라 static.
-const CHAIN: Record<string, { execs: string[]; outcomes: string[] }> = {
-  E_ROOT_01: { execs: ['E_EXEC_01', 'E_EXEC_03', 'E_EXEC_04', 'E_EXEC_08'], outcomes: ['E_OUT_01', 'E_OUT_02'] },
-  E_ROOT_02: { execs: ['E_EXEC_02', 'E_EXEC_05', 'E_EXEC_06', 'E_EXEC_08'], outcomes: ['E_OUT_02', 'E_OUT_03'] },
-  E_ROOT_03: { execs: ['E_EXEC_01', 'E_EXEC_03', 'E_EXEC_04', 'E_EXEC_07'], outcomes: ['E_OUT_01', 'E_OUT_03'] },
-}
+import { ERROR_CHAIN } from '../../constants/errorPatterns'
 
 const layerColor: Record<ErrorPatternLayer, string> = {
   root: '#ef4444',
@@ -63,7 +56,7 @@ export default function ErrorChainTab() {
   }, [patterns])
 
   const selected = selectedId ? byId.get(selectedId) ?? null : null
-  const chain = selected && selected.layer === 'root' ? CHAIN[selected.patternId] : null
+  const chain = selected && selected.layer === 'root' ? ERROR_CHAIN[selected.patternId] : null
 
   const recommendedTopic = useMemo(() => {
     if (!selected) return null

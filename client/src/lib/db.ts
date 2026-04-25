@@ -1,5 +1,10 @@
 import { supabase } from './supabase'
 import { localDateStr, parseLocalDate } from './date'
+import { DB } from '../constants/db'
+
+// ── concept_extractions 공통 select 상수 ─────────────────────
+const EXTRACTION_BASE_SELECT =
+  'id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern'
 
 // ── Auth guard ────────────────────────────────────────────────
 // All write helpers below check this first. If userId is missing, we
@@ -39,7 +44,7 @@ export async function hasElapsedSecondsColumn(): Promise<boolean> {
   if (elapsedSecondsProbe) return elapsedSecondsProbe
   elapsedSecondsProbe = (async () => {
     const { error } = await supabase
-      .from('quiz_logs')
+      .from(DB.TABLES.QUIZ_LOGS)
       .select('elapsed_seconds')
       .limit(1)
     if (error) {
@@ -84,7 +89,7 @@ function logError(fn: string, error: unknown) {
 // ── 진도 ──────────────────────────────────────────────────────
 export const getProgress = async (userId: string) => {
   const { data } = await supabase
-    .from('topic_progress')
+    .from(DB.TABLES.TOPIC_PROGRESS)
     .select('*')
     .eq('user_id', userId)
   return data ?? []
@@ -132,7 +137,7 @@ export const upsertProgress = async (
     console.warn('[db] upsertProgress skipped — invalid topicId format:', p.topicId)
     return
   }
-  const { error } = await supabase.from('topic_progress').upsert(
+  const { error } = await supabase.from(DB.TABLES.TOPIC_PROGRESS).upsert(
     {
       user_id: userId,
       topic_id: p.topicId,
@@ -197,7 +202,7 @@ export const saveQuizLog = async (
     console.warn('[db] saveQuizLog payload missing area_id — re-injecting from topic_id')
     payload.area_id = areaId
   }
-  const { error } = await supabase.from('quiz_logs').insert(payload)
+  const { error } = await supabase.from(DB.TABLES.QUIZ_LOGS).insert(payload)
   if (error) {
     logError('saveQuizLog', error)
     throw error
@@ -237,7 +242,7 @@ const updateConceptStats = async (
 
   const results = await Promise.allSettled(
     rows.map((r) =>
-      supabase.rpc('concept_stats_increment', {
+      supabase.rpc(DB.RPC.CONCEPT_STATS_INCREMENT, {
         p_tag: r.tag,
         p_tag_type: r.tag_type,
         p_topic_id: topicId,
@@ -290,7 +295,7 @@ export const getConceptStats = async (
 ): Promise<ConceptStat[]> => {
   if (!hasAuth(userId)) return []
   let query = supabase
-    .from('concept_stats')
+    .from(DB.TABLES.CONCEPT_STATS)
     .select('tag, tag_type, topic_id, total_count, correct_count, last_seen_at')
     .eq('user_id', userId)
     .gte('total_count', minTotal)
@@ -342,7 +347,7 @@ export const getModulePerformance = async (
 ): Promise<Record<string, ModulePerf>> => {
   const hasCol = await hasElapsedSecondsColumn()
   const { data, error } = await supabase
-    .from('quiz_logs')
+    .from(DB.TABLES.QUIZ_LOGS)
     .select(hasCol ? 'topic_id, correct, elapsed_seconds' : 'topic_id, correct')
     .eq('user_id', userId)
   if (error || !data) return {}
@@ -383,7 +388,7 @@ export const getTodayQuizStats = async (
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
   const { data } = await supabase
-    .from('quiz_logs')
+    .from(DB.TABLES.QUIZ_LOGS)
     .select('correct')
     .eq('user_id', userId)
     .gte('created_at', todayStart.toISOString())
@@ -397,7 +402,7 @@ export const getRecentWrongModules = async (
   limit = 5,
 ): Promise<string[]> => {
   const { data } = await supabase
-    .from('quiz_logs')
+    .from(DB.TABLES.QUIZ_LOGS)
     .select('topic_id')
     .eq('user_id', userId)
     .eq('correct', false)
@@ -418,7 +423,7 @@ export const getRecentWrongModules = async (
 
 export const getWrongLogs = async (userId: string, limit = 50) => {
   const { data } = await supabase
-    .from('quiz_logs')
+    .from(DB.TABLES.QUIZ_LOGS)
     .select('*')
     .eq('user_id', userId)
     .eq('correct', false)
@@ -452,7 +457,7 @@ export const getCalendar = async (userId: string) => {
   const from = new Date()
   from.setFullYear(from.getFullYear() - 1)
   const { data, error } = await supabase
-    .from('study_sessions')
+    .from(DB.TABLES.STUDY_SESSIONS)
     .select('date, quiz_count, correct_count')
     .eq('user_id', userId)
     .gte('date', localDateStr(from))
@@ -581,8 +586,8 @@ export async function fetchRecentExtractions(
 
   try {
     const { data, error } = await supabase
-      .from('concept_extractions')
-      .select('id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
+      .select(EXTRACTION_BASE_SELECT)
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -603,8 +608,8 @@ export async function fetchExtractionsPage(
   const to = from + pageSize - 1
   try {
     const { data, error, count } = await supabase
-      .from('concept_extractions')
-      .select('id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern, next_review_at, review_interval, review_count', { count: 'exact' })
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
+      .select(`${EXTRACTION_BASE_SELECT}, next_review_at, review_interval, review_count`, { count: 'exact' })
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range(from, to)
@@ -648,14 +653,15 @@ export async function fetchExtractionByHash(
   if (!hasAuth(userId) || !hash) return null
   try {
     const { data, error } = await supabase
-      .from('concept_extractions')
-      .select('created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
+      .select(EXTRACTION_BASE_SELECT)
       .eq('user_id', userId)
       .eq('question_hash', hash)
       .order('created_at', { ascending: false })
       .limit(1)
     if (error || !data || data.length === 0) return null
     const row = data[0] as {
+      id: string
       created_at: string
       topic_id: string | null
       concepts: unknown[]
@@ -688,7 +694,7 @@ export async function checkQuestionHash(
   if (!hasAuth(userId) || !hash) return null
   try {
     const { data, error } = await supabase
-      .from('concept_extractions')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
       .select('created_at')
       .eq('user_id', userId)
       .eq('question_hash', hash)
@@ -743,7 +749,7 @@ export async function checkConceptDuplication(
 
   try {
     const { data, error } = await supabase
-      .from('concept_extractions')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
       .select('concepts, trap_pattern, topic_id, created_at')
       .eq('topic_id', topicId)
       .order('created_at', { ascending: false })
@@ -833,7 +839,7 @@ export async function saveConceptExtraction(
     : basePayload
 
   let { data, error } = await supabase
-    .from('concept_extractions')
+    .from(DB.TABLES.CONCEPT_EXTRACTIONS)
     .insert(payload)
     .select('id')
     .single()
@@ -846,7 +852,7 @@ export async function saveConceptExtraction(
       const { triggers: _t, ...withoutTriggers } = basePayload as Record<string, unknown> & { triggers?: unknown }
       const corePayload = withoutTriggers
       const retry = await supabase
-        .from('concept_extractions')
+        .from(DB.TABLES.CONCEPT_EXTRACTIONS)
         .insert(corePayload)
         .select('id')
         .single()
@@ -933,7 +939,7 @@ export async function getErrorPatterns(): Promise<ErrorPattern[]> {
   if (errorPatternsCache) return errorPatternsCache
   if (errorPatternsSupported === false) return []
   const { data, error } = await supabase
-    .from('error_patterns')
+    .from(DB.TABLES.ERROR_PATTERNS)
     .select('pattern_id, layer, name, description, linked_topics')
     .order('pattern_id', { ascending: true })
   if (error) {
@@ -980,7 +986,7 @@ export async function tagAttemptError(
     extractionId?: string | null
   },
 ): Promise<string | null> {
-  const { data, error } = await supabase.rpc('tag_attempt_error', {
+  const { data, error } = await supabase.rpc(DB.RPC.TAG_ATTEMPT_ERROR, {
     p_quiz_log_id: args.quizLogId,
     p_pattern_id: args.patternId,
     p_topic: args.topic,
@@ -1000,7 +1006,7 @@ export async function tagAttemptError(
 }
 
 export async function refreshPatternStats(): Promise<void> {
-  const { error } = await supabase.rpc('refresh_pattern_stats')
+  const { error } = await supabase.rpc(DB.RPC.REFRESH_PATTERN_STATS)
   if (error && !isMissingRelation(error)) {
     logError('refreshPatternStats', error)
   }
@@ -1066,7 +1072,7 @@ export async function getTopWrongTopics(
 ): Promise<TopWrongTopic[]> {
   if (!hasAuth(userId)) return []
   const { data, error } = await supabase
-    .from('attempt_errors')
+    .from(DB.TABLES.ATTEMPT_ERRORS)
     .select('topic')
     .eq('user_id', userId)
     .not('topic', 'is', null)
@@ -1090,7 +1096,7 @@ export async function getTopWrongTopics(
 // `concept_extractions_own_delete` 정책(migration 005)에 의존하므로
 // 해당 마이그레이션이 적용돼 있어야 동작한다.
 export async function deleteConceptExtraction(id: string): Promise<void> {
-  const { error } = await supabase.from('concept_extractions').delete().eq('id', id)
+  const { error } = await supabase.from(DB.TABLES.CONCEPT_EXTRACTIONS).delete().eq('id', id)
   if (error) {
     console.error('[db] deleteConceptExtraction FAILED', {
       id,
@@ -1132,7 +1138,7 @@ export async function getWeekAnalyzeCount(userId: string): Promise<number> {
   if (!hasAuth(userId)) return 0
   const sinceIso = mondayOfThisWeek().toISOString()
   const { count, error } = await supabase
-    .from('concept_extractions')
+    .from(DB.TABLES.CONCEPT_EXTRACTIONS)
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
     .gte('created_at', sinceIso)
@@ -1148,7 +1154,7 @@ export async function getWeekAnalyzeCount(userId: string): Promise<number> {
 export async function getAnalyzedModuleIds(userId: string): Promise<string[]> {
   if (!hasAuth(userId)) return []
   const { data, error } = await supabase
-    .from('concept_extractions')
+    .from(DB.TABLES.CONCEPT_EXTRACTIONS)
     .select('topic_id')
     .eq('user_id', userId)
     .not('topic_id', 'is', null)
@@ -1184,7 +1190,7 @@ export async function getModuleWeekAccuracy(
   if (!hasAuth(userId)) return []
   const sinceIso = mondayOfLastWeek().toISOString()
   const { data, error } = await supabase
-    .from('quiz_logs')
+    .from(DB.TABLES.QUIZ_LOGS)
     .select('topic_id, correct, created_at')
     .eq('user_id', userId)
     .gte('created_at', sinceIso)
@@ -1281,31 +1287,31 @@ export async function getStudyActivityStats(userId: string): Promise<StudyActivi
     await Promise.all([
       // 분석 날짜 (created_at)
       safeQuery(async () => {
-        const r = await supabase.from('concept_extractions').select('created_at').eq('user_id', userId).gte('created_at', sinceIso)
+        const r = await supabase.from(DB.TABLES.CONCEPT_EXTRACTIONS).select('created_at').eq('user_id', userId).gte('created_at', sinceIso)
         if (r.error && isMissingRelation(r.error)) return { data: [] }
         return r
       }, { data: [] }),
       // 복습 날짜 (last_reviewed_at, migration 017)
       safeQuery(async () => {
-        const r = await supabase.from('concept_extractions').select('last_reviewed_at').eq('user_id', userId).gte('last_reviewed_at', sinceIso).not('last_reviewed_at', 'is', null)
+        const r = await supabase.from(DB.TABLES.CONCEPT_EXTRACTIONS).select('last_reviewed_at').eq('user_id', userId).gte('last_reviewed_at', sinceIso).not('last_reviewed_at', 'is', null)
         if (r.error) return { data: [] }
         return r
       }, { data: [] }),
       // 이번 주 분석 수
       safeQuery(async () => {
-        const r = await supabase.from('concept_extractions').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', weekStart)
+        const r = await supabase.from(DB.TABLES.CONCEPT_EXTRACTIONS).select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', weekStart)
         if (r.error && isMissingRelation(r.error)) return { count: 0 }
         return r
       }, { count: 0 }),
       // 이번 주 복습 완료 수 (last_reviewed_at, migration 017)
       safeQuery(async () => {
-        const r = await supabase.from('concept_extractions').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('last_reviewed_at', weekStart).not('last_reviewed_at', 'is', null)
+        const r = await supabase.from(DB.TABLES.CONCEPT_EXTRACTIONS).select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('last_reviewed_at', weekStart).not('last_reviewed_at', 'is', null)
         if (r.error) return { count: 0 }
         return r
       }, { count: 0 }),
       // 전체 분석 건수
       safeQuery(async () => {
-        const r = await supabase.from('concept_extractions').select('*', { count: 'exact', head: true }).eq('user_id', userId)
+        const r = await supabase.from(DB.TABLES.CONCEPT_EXTRACTIONS).select('*', { count: 'exact', head: true }).eq('user_id', userId)
         if (r.error && isMissingRelation(r.error)) return { count: 0 }
         return r
       }, { count: 0 }),
@@ -1353,7 +1359,7 @@ export async function getTodayAnalyzeCount(userId: string): Promise<number> {
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
     const { count, error } = await supabase
-      .from('concept_extractions')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .gte('created_at', todayStart.toISOString())
@@ -1367,7 +1373,7 @@ export async function getAnalyzeCountByTopic(userId: string): Promise<Record<str
   if (!hasAuth(userId)) return {}
   try {
     const { data, error } = await supabase
-      .from('concept_extractions')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
       .select('topic_id')
       .eq('user_id', userId)
       .not('topic_id', 'is', null)
@@ -1400,7 +1406,7 @@ export async function getCalendarWithAnalysis(userId: string): Promise<{
       if (!hasAuth(userId)) return []
       try {
         const { data, error } = await supabase
-          .from('concept_extractions')
+          .from(DB.TABLES.CONCEPT_EXTRACTIONS)
           .select('created_at')
           .eq('user_id', userId)
           .gte('created_at', oneYearAgo.toISOString())
@@ -1455,7 +1461,7 @@ export async function generateOnDemandReviewCards(
   try {
     const now = new Date().toISOString()
     const { data, error } = await supabase
-      .from('concept_extractions')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
       .select('id')
       .eq('user_id', userId)
       .eq('review_count', 0)
@@ -1467,7 +1473,7 @@ export async function generateOnDemandReviewCards(
     const ids = (data as { id: string }[]).map((r) => r.id)
 
     const { error: updateErr } = await supabase
-      .from('concept_extractions')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
       .update({ next_review_at: now })
       .in('id', ids)
 
@@ -1486,11 +1492,11 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
   try {
     const now = new Date().toISOString()
     // Columns added by later migrations — fetched opportunistically, absent = []
-    const coreSelect = 'id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern, next_review_at, review_interval, review_count'
+    const coreSelect = `${EXTRACTION_BASE_SELECT}, next_review_at, review_interval, review_count`
 
     const runQuery = (select: string) =>
       supabase
-        .from('concept_extractions')
+        .from(DB.TABLES.CONCEPT_EXTRACTIONS)
         .select(select)
         .eq('user_id', userId)
         .not('next_review_at', 'is', null)
@@ -1547,7 +1553,7 @@ export async function getConceptDueCount(userId: string): Promise<number> {
   try {
     const now = new Date().toISOString()
     const { count, error } = await supabase
-      .from('concept_extractions')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .not('next_review_at', 'is', null)
@@ -1574,7 +1580,7 @@ export async function updateTopicProgressFromAnalysis(
   if (!areaId) return
   try {
     const { data } = await supabase
-      .from('topic_progress')
+      .from(DB.TABLES.TOPIC_PROGRESS)
       .select('attempts, correct, streak, interval, next_review')
       .eq('user_id', userId)
       .eq('topic_id', topicId)
@@ -1603,7 +1609,7 @@ async function updateTopicProgressStreak(
   if (!areaId) return
   try {
     const { data } = await supabase
-      .from('topic_progress')
+      .from(DB.TABLES.TOPIC_PROGRESS)
       .select('attempts, correct, streak, interval, next_review')
       .eq('user_id', userId)
       .eq('topic_id', topicId)
@@ -1635,7 +1641,7 @@ export interface TopicProgressRow {
 export async function getTopicProgressList(userId: string): Promise<TopicProgressRow[]> {
   if (!hasAuth(userId)) return []
   const { data, error } = await supabase
-    .from('topic_progress')
+    .from(DB.TABLES.TOPIC_PROGRESS)
     .select('topic_id, attempts, correct, streak, updated_at')
     .eq('user_id', userId)
     .gt('attempts', 0)
@@ -1668,7 +1674,7 @@ export async function get7DayReviewTrend(userId: string): Promise<DayReviewCount
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
     sevenDaysAgo.setHours(0, 0, 0, 0)
     const { data, error } = await supabase
-      .from('concept_extractions')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
       .select('last_reviewed_at')
       .eq('user_id', userId)
       .gte('last_reviewed_at', sevenDaysAgo.toISOString())
@@ -1696,7 +1702,7 @@ export async function get7DayReviewTrend(userId: string): Promise<DayReviewCount
 export async function updateConceptReview(id: string, knew: boolean): Promise<void> {
   try {
     const { data } = await supabase
-      .from('concept_extractions')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
       .select('review_interval, review_count, user_id, topic_id')
       .eq('id', id)
       .single()
@@ -1731,7 +1737,7 @@ export async function updateConceptReview(id: string, knew: boolean): Promise<vo
       review_result: knew ? 'known' : 'confused',
     }
 
-    await supabase.from('concept_extractions').update(updatePayload).eq('id', id)
+    await supabase.from(DB.TABLES.CONCEPT_EXTRACTIONS).update(updatePayload).eq('id', id)
 
     // Fire-and-forget: update topic_progress streak
     const uid = row?.user_id ?? null
@@ -1753,7 +1759,7 @@ export async function getTodayReviewStats(
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
     const { data, error } = await supabase
-      .from('concept_extractions')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
       .select('review_result')
       .eq('user_id', userId)
       .gte('last_reviewed_at', todayStart.toISOString())
@@ -1813,7 +1819,7 @@ export async function getBriefingCache(userId: string): Promise<BriefingResponse
   if (!hasAuth(userId)) return null
   try {
     const { data, error } = await supabase
-      .from('briefing_cache')
+      .from(DB.TABLES.BRIEFING_CACHE)
       .select('content, generated_at')
       .eq('user_id', userId)
       .single()
@@ -1837,7 +1843,7 @@ export async function getBriefingCache(userId: string): Promise<BriefingResponse
 export async function saveFeedback(id: string, feedback: string): Promise<void> {
   try {
     const { error } = await supabase
-      .from('concept_extractions')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
       .update({ feedback })
       .eq('id', id)
     if (error) logError('saveFeedback', error)
@@ -1854,7 +1860,7 @@ export async function saveConceptFix(
 ): Promise<void> {
   try {
     const { data } = await supabase
-      .from('concept_extractions')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
       .select('example_question')
       .eq('id', id)
       .single()
@@ -1866,7 +1872,7 @@ export async function saveConceptFix(
         : { answer: newAnswer, explanation: newExplanation }
 
     const { error } = await supabase
-      .from('concept_extractions')
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
       .update({
         example_question: mergedEq,
         feedback,

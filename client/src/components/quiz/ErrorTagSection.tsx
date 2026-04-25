@@ -7,22 +7,9 @@ import {
   tagAttemptError,
   ErrorPattern,
 } from '../../lib/db'
+import { ERROR_CATEGORIES, CATEGORY_PATTERN_MAP } from '../../constants/errorPatterns'
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001'
-
-const CATEGORIES = [
-  { label: '개념 미이해', emoji: '📚' },
-  { label: '계산 실수', emoji: '🔢' },
-  { label: '문제 해석 오류', emoji: '📖' },
-  { label: '기타', emoji: '💭' },
-]
-
-const CATEGORY_PATTERN_MAP: Record<string, string | null> = {
-  '개념 미이해': 'E_ROOT_01',
-  '계산 실수': 'E_ROOT_02',
-  '문제 해석 오류': 'E_ROOT_03',
-  '기타': null,
-}
 
 interface Props {
   question: string
@@ -133,7 +120,7 @@ export default function ErrorTagSection(props: Props) {
         {/* 1단계: 카테고리 선택 */}
         {stage === 'category' && (
           <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((c) => (
+            {ERROR_CATEGORIES.map((c) => (
               <button
                 key={c.label}
                 onClick={() => selectCategory(c.label)}
