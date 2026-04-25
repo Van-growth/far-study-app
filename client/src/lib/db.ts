@@ -1634,14 +1634,14 @@ async function updateTopicProgressStreak(
       .eq('topic_id', topicId)
       .maybeSingle()
     const row = data as { attempts: number; correct: number; streak: number; interval: number; next_review: string } | null
-    if (!row) return
+    // row 없으면 0 기준으로 신규 생성, 있으면 누적
     await upsertProgress(userId, {
       topicId,
-      interval: row.interval,
-      nextReview: new Date(row.next_review).getTime(),
-      streak: knew ? row.streak + 1 : 0,
-      attempts: row.attempts,
-      correct: row.correct,
+      interval: row?.interval ?? 0,
+      nextReview: row?.next_review ? new Date(row.next_review).getTime() : Date.now(),
+      streak: knew ? (row?.streak ?? 0) + 1 : 0,
+      attempts: (row?.attempts ?? 0) + 1,
+      correct: (row?.correct ?? 0) + (knew ? 1 : 0),
     })
   } catch (e) {
     console.warn('[db] updateTopicProgressStreak failed:', e)
