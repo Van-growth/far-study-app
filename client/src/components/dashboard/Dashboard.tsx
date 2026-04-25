@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { allTopics, areas } from '../../data/far-topics';
 import useStudyStore from '../../store/studyStore';
-import { getStudyActivityStats, getAnalyzeCountByTopic, StudyActivityStats } from '../../lib/db';
+import { getStudyActivityStats, getAnalyzeCountByTopic, getTodayReviewStats, StudyActivityStats } from '../../lib/db';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -13,6 +13,7 @@ export default function Dashboard() {
     totalDays: 0, weekCount: 0, analyzeTotal: 0, quizTotal: 0, quizCorrect: 0, streak: 0,
   });
   const [analyzeByTopic, setAnalyzeByTopic] = useState<Record<string, number>>({});
+  const [todayReviewed, setTodayReviewed] = useState(0);
 
   useEffect(() => {
     if (!userId) return;
@@ -20,10 +21,12 @@ export default function Dashboard() {
     Promise.all([
       getStudyActivityStats(userId),
       getAnalyzeCountByTopic(userId),
-    ]).then(([stats, analyzeMap]) => {
+      getTodayReviewStats(userId),
+    ]).then(([stats, analyzeMap, reviewStats]) => {
       if (cancelled) return;
       setActivityStats(stats);
       setAnalyzeByTopic(analyzeMap);
+      setTodayReviewed(reviewStats.knewCount + reviewStats.confusedCount);
     });
     return () => { cancelled = true; };
   }, [userId]);
@@ -75,7 +78,11 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="font-semibold text-[#0f172a]">복습 카드 현황</h3>
-            <p className="text-xs text-muted mt-0.5">concept_extractions SRS 기반</p>
+            <p className="text-xs text-muted mt-0.5">
+              {dueCount > 0
+                ? `${dueCount}개 대기 / 오늘 ${todayReviewed}개 완료`
+                : todayReviewed > 0 ? `오늘 ${todayReviewed}개 완료` : 'SRS 기반 복습'}
+            </p>
           </div>
           <button
             onClick={() => navigate('/history')}
@@ -90,11 +97,17 @@ export default function Dashboard() {
             <p className="text-3xl font-bold" style={{ color: dueCount > 0 ? '#ef4444' : '#94a3b8' }}>
               {dueCount}
             </p>
-            <p className="text-xs text-muted mt-1">오늘 복습 대기</p>
+            <p className="text-xs text-muted mt-1">오늘 대기</p>
+          </div>
+          <div className="text-center">
+            <p className="text-3xl font-bold" style={{ color: todayReviewed > 0 ? '#10b981' : '#94a3b8' }}>
+              {todayReviewed}
+            </p>
+            <p className="text-xs text-muted mt-1">오늘 완료</p>
           </div>
           <div className="text-center">
             <p className="text-3xl font-bold text-[#4f6ef7]">{totalAnalyzeCount}</p>
-            <p className="text-xs text-muted mt-1">누적 분석 카드</p>
+            <p className="text-xs text-muted mt-1">누적 카드</p>
           </div>
         </div>
       </div>

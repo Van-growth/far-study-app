@@ -1253,9 +1253,9 @@ export async function getStudyActivityStats(userId: string): Promise<StudyActivi
         if (r.error && isMissingRelation(r.error)) return { data: [] }
         return r
       }, { data: [] }),
-      // 복습 날짜 (reviewed_at, migration 014 이상)
+      // 복습 날짜 (last_reviewed_at, migration 017)
       safeQuery(async () => {
-        const r = await supabase.from('concept_extractions').select('reviewed_at').eq('user_id', userId).gte('reviewed_at', sinceIso).not('reviewed_at', 'is', null)
+        const r = await supabase.from('concept_extractions').select('last_reviewed_at').eq('user_id', userId).gte('last_reviewed_at', sinceIso).not('last_reviewed_at', 'is', null)
         if (r.error) return { data: [] }
         return r
       }, { data: [] }),
@@ -1265,9 +1265,9 @@ export async function getStudyActivityStats(userId: string): Promise<StudyActivi
         if (r.error && isMissingRelation(r.error)) return { count: 0 }
         return r
       }, { count: 0 }),
-      // 이번 주 복습 수
+      // 이번 주 복습 완료 수 (last_reviewed_at, migration 017)
       safeQuery(async () => {
-        const r = await supabase.from('concept_extractions').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('reviewed_at', weekStart).not('reviewed_at', 'is', null)
+        const r = await supabase.from('concept_extractions').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('last_reviewed_at', weekStart).not('last_reviewed_at', 'is', null)
         if (r.error) return { count: 0 }
         return r
       }, { count: 0 }),
@@ -1284,8 +1284,8 @@ export async function getStudyActivityStats(userId: string): Promise<StudyActivi
   for (const r of (analyzeDates.data ?? []) as { created_at: string }[]) {
     if (r.created_at) daySet.add(localDateStr(new Date(r.created_at)))
   }
-  for (const r of (reviewDates.data ?? []) as { reviewed_at: string }[]) {
-    if (r.reviewed_at) daySet.add(localDateStr(new Date(r.reviewed_at)))
+  for (const r of (reviewDates.data ?? []) as { last_reviewed_at: string }[]) {
+    if (r.last_reviewed_at) daySet.add(localDateStr(new Date(r.last_reviewed_at)))
   }
 
   // Streak — walk backward from today through the union of dates
@@ -1558,11 +1558,13 @@ export async function updateConceptReview(id: string, knew: boolean): Promise<vo
     nextDate.setDate(nextDate.getDate() + nextDays)
     nextDate.setHours(0, 0, 0, 0)
 
+    const now = new Date().toISOString()
     const updatePayload: Record<string, unknown> = {
       next_review_at: nextDate.toISOString(),
       review_interval: nextDays,
       review_count: currentCount + 1,
-      reviewed_at: new Date().toISOString(),
+      reviewed_at: now,
+      last_reviewed_at: now,
       review_result: knew ? 'known' : 'confused',
     }
 
@@ -1584,14 +1586,14 @@ export async function getTodayReviewStats(
       .from('concept_extractions')
       .select('review_result')
       .eq('user_id', userId)
-      .gte('reviewed_at', todayStart.toISOString())
-      .not('review_result', 'is', null)
+      .gte('last_reviewed_at', todayStart.toISOString())
+      .not('last_reviewed_at', 'is', null)
 
     if (error) {
       const code = (error as { code?: string }).code ?? ''
       const msg = (error.message ?? '').toLowerCase()
-      if (code === 'PGRST204' || code === '42703' || msg.includes('reviewed_at') || msg.includes('review_result')) {
-        // migration 014 not applied yet
+      if (code === 'PGRST204' || code === '42703' || msg.includes('last_reviewed_at') || msg.includes('review_result')) {
+        // migration 017 not applied yet
         return { knewCount: 0, confusedCount: 0 }
       }
       return { knewCount: 0, confusedCount: 0 }
