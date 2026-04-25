@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
+import { runMigrations } from './migrate';
 import cors from 'cors';
 import claudeRouter from './routes/claude';
 import quizRouter from './routes/quiz';
@@ -67,7 +68,15 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`🚀 FAR Study API  →  http://localhost:${PORT}`);
-  console.log(`   CORS origin    →  ${CLIENT_URL}`);
-});
+(async () => {
+  try {
+    await runMigrations();
+  } catch (err) {
+    console.error('[migrate] startup migration failed — aborting:', err);
+    process.exit(1);
+  }
+  app.listen(PORT, () => {
+    console.log(`🚀 FAR Study API  →  http://localhost:${PORT}`);
+    console.log(`   CORS origin    →  ${CLIENT_URL}`);
+  });
+})();
