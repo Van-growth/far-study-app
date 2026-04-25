@@ -585,6 +585,9 @@ export async function fetchRecentExtractions(
       exampleQuestion: null,
       feedback: null,
       isFixed: false,
+      journalEntry: null,
+      formula: null,
+      relatedConcepts: [],
     }))
 
   try {
@@ -638,6 +641,9 @@ export async function fetchExtractionsPage(
       exampleQuestion: null,
       feedback: null,
       isFixed: false,
+      journalEntry: null,
+      formula: null,
+      relatedConcepts: [],
     }))
     return { items, total: count ?? null }
   } catch {

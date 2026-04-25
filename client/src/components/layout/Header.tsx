@@ -12,7 +12,7 @@ const mainTabs = [
   { label: '📝 분석', path: '/analyze' },
 ];
 
-const MORE_PATHS = new Set([...MORE_MENU_ITEMS, ADMIN_MENU_ITEM].map((t) => t.path));
+const MORE_PATHS = new Set<string>([...MORE_MENU_ITEMS, ADMIN_MENU_ITEM].map((t) => t.path));
 
 interface HeaderProps {
   email: string;
