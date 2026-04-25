@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import useStudyStore from '../store/studyStore'
 import useClaudeStore from '../store/claudeStore'
 import { allTopics } from '../data/far-topics'
+const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
+
 import {
   fetchDueExtractions,
   updateConceptReview,
@@ -23,7 +25,7 @@ async function fetchCardHint(
   trap_pattern?: string
 ): Promise<string> {
   try {
-    const res = await fetch('/api/claude/card-hint', {
+    const res = await fetch(`${API_URL}/api/claude/card-hint`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ concepts, auto_rules, trap_pattern }),
@@ -705,7 +707,7 @@ export default function HistoryPage() {
         card.exampleQuestion.answer,
       )
 
-      const res = await fetch('/api/concept/fix', {
+      const res = await fetch(`${API_URL}/api/concept/fix`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
