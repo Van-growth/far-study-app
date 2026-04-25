@@ -317,12 +317,16 @@ function extractExplanationText(
 }
 
 // ── Feedback panel ────────────────────────────────────────────
+type AiFixResult =
+  | { valid: true; correct_answer: string; explanation: string }
+  | { valid: false; reason: string }
+
 interface FeedbackPanelProps {
   card: RecentExtractionItem
   feedbackText: string
   setFeedbackText: (v: string) => void
   aiFixLoading: boolean
-  aiFixResult: { correct_answer: string; explanation: string } | null
+  aiFixResult: AiFixResult | null
   savingFix: boolean
   fixError: string | null
   onSaveFeedback: () => void
@@ -377,48 +381,69 @@ function FeedbackPanel({
           </div>
         )}
 
-        {/* Diff view after AI fix */}
+        {/* AI 결과 뷰 */}
         {aiFixResult ? (
-          <>
-            <div className="flex flex-col gap-2">
-              <p className="text-xs font-semibold text-[#0f172a]">수정 전 → 수정 후</p>
-              <div
-                className="rounded-xl px-3 py-2.5 flex flex-col gap-2 text-xs"
-                style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}
-              >
-                <p>
-                  <span className="font-semibold text-[#3730a3]">정답: </span>
-                  <span className="line-through text-[#94a3b8]">{eq?.answer || '(없음)'}</span>
-                  <span className="text-[#94a3b8]"> → </span>
-                  <span className="font-bold text-[#166534]">{aiFixResult.correct_answer}</span>
-                </p>
-                <div>
-                  <p className="font-semibold text-[#3730a3] mb-1">해설:</p>
-                  <p className="line-through text-[#94a3b8] leading-relaxed">{expStr}</p>
-                  <p className="text-[#166534] mt-1.5 whitespace-pre-wrap leading-relaxed">
-                    {aiFixResult.explanation}
+          aiFixResult.valid ? (
+            <>
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-semibold text-[#0f172a]">수정 전 → 수정 후</p>
+                <div
+                  className="rounded-xl px-3 py-2.5 flex flex-col gap-2 text-xs"
+                  style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}
+                >
+                  <p>
+                    <span className="font-semibold text-[#3730a3]">정답: </span>
+                    <span className="line-through text-[#94a3b8]">{eq?.answer || '(없음)'}</span>
+                    <span className="text-[#94a3b8]"> → </span>
+                    <span className="font-bold text-[#166534]">{aiFixResult.correct_answer}</span>
                   </p>
+                  <div>
+                    <p className="font-semibold text-[#3730a3] mb-1">해설:</p>
+                    <p className="line-through text-[#94a3b8] leading-relaxed">{expStr}</p>
+                    <p className="text-[#166534] mt-1.5 whitespace-pre-wrap leading-relaxed">
+                      {aiFixResult.explanation}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex gap-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={onCancelFix}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                  style={{ background: '#f1f5f9', color: '#64748b' }}
+                >
+                  ✖ 취소
+                </button>
+                <button
+                  onClick={onConfirmFix}
+                  disabled={savingFix}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold disabled:opacity-60"
+                  style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #86efac' }}
+                >
+                  {savingFix ? '저장 중…' : '✅ 확인 저장'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div
+                className="rounded-xl px-3 py-3 flex flex-col gap-2"
+                style={{ background: '#fff7ed', border: '1px solid #fed7aa' }}
+              >
+                <p className="text-xs font-bold text-[#92400e]">⚠️ 기존 정답이 맞습니다</p>
+                <p className="text-xs text-[#78350f] leading-relaxed whitespace-pre-wrap">
+                  {aiFixResult.reason}
+                </p>
+              </div>
               <button
                 onClick={onCancelFix}
-                className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                className="w-full py-2 rounded-xl text-xs font-semibold"
                 style={{ background: '#f1f5f9', color: '#64748b' }}
               >
-                ✖ 취소
+                확인
               </button>
-              <button
-                onClick={onConfirmFix}
-                disabled={savingFix}
-                className="flex-1 py-2 rounded-xl text-xs font-semibold disabled:opacity-60"
-                style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #86efac' }}
-              >
-                {savingFix ? '저장 중…' : '✅ 확인 저장'}
-              </button>
-            </div>
-          </>
+            </>
+          )
         ) : (
           <>
             {/* Textarea */}
@@ -552,7 +577,7 @@ export default function HistoryPage() {
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [feedbackText, setFeedbackText] = useState('')
   const [aiFixLoading, setAiFixLoading] = useState(false)
-  const [aiFixResult, setAiFixResult] = useState<{ correct_answer: string; explanation: string } | null>(null)
+  const [aiFixResult, setAiFixResult] = useState<AiFixResult | null>(null)
   const [savingFix, setSavingFix] = useState(false)
   const [fixError, setFixError] = useState<string | null>(null)
 
@@ -699,7 +724,7 @@ export default function HistoryPage() {
         setFixError(err.error ?? '서버 오류가 발생했어요')
         return
       }
-      const data = (await res.json()) as { correct_answer: string; explanation: string }
+      const data = (await res.json()) as AiFixResult
       setAiFixResult(data)
     } catch {
       window.clearTimeout(timeoutId)
@@ -710,7 +735,7 @@ export default function HistoryPage() {
   }
 
   async function handleConfirmFix() {
-    if (!aiFixResult) return
+    if (!aiFixResult || !aiFixResult.valid) return
     const card = cards[idx]
     setSavingFix(true)
     try {
