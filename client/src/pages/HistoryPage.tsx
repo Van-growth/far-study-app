@@ -291,6 +291,31 @@ function FlashCard({ card, visible }: { card: RecentExtractionItem; visible: boo
   )
 }
 
+// ── Explanation text extractor ────────────────────────────────
+// explanation can be ExplanationStructured | string | unknown object.
+// For the feedback panel we only need one readable string.
+function extractExplanationText(
+  explanation: unknown,
+  answer: string,
+): string {
+  if (typeof explanation === 'string') return explanation
+  if (typeof explanation !== 'object' || explanation === null) return String(explanation)
+
+  const exp = explanation as Record<string, unknown>
+
+  // ExplanationStructured: { core, calculation, traps, memory }
+  if (typeof exp.core === 'string') return exp.core
+
+  // Key matching the correct answer letter (e.g. answer = "C")
+  const key = answer?.trim()
+  if (key && typeof exp[key] === 'string') return exp[key] as string
+
+  // Key 'correct'
+  if (typeof exp.correct === 'string') return exp.correct
+
+  return JSON.stringify(explanation)
+}
+
 // ── Feedback panel ────────────────────────────────────────────
 interface FeedbackPanelProps {
   card: RecentExtractionItem
@@ -313,9 +338,7 @@ function FeedbackPanel({
   onSaveFeedback, onAiFix, onConfirmFix, onCancelFix, onClose,
 }: FeedbackPanelProps) {
   const eq = card.exampleQuestion
-  const expStr = eq
-    ? (typeof eq.explanation === 'string' ? eq.explanation : String(eq.explanation ?? ''))
-    : ''
+  const expStr = eq ? extractExplanationText(eq.explanation, eq.answer) : ''
 
   return (
     <div
@@ -652,10 +675,10 @@ export default function HistoryPage() {
     }, 20000)
 
     try {
-      const expStr =
-        typeof card.exampleQuestion.explanation === 'string'
-          ? card.exampleQuestion.explanation
-          : String(card.exampleQuestion.explanation ?? '')
+      const expStr = extractExplanationText(
+        card.exampleQuestion.explanation,
+        card.exampleQuestion.answer,
+      )
 
       const res = await fetch('/api/concept/fix', {
         method: 'POST',
