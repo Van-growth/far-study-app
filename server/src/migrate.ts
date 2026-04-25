@@ -34,7 +34,7 @@ export async function runMigrations(): Promise<void> {
   }
   console.log('[migrate] connected');
 
-  const dir = path.resolve(process.cwd(), 'supabase/migrations');
+  const dir = path.resolve(process.cwd(), '../supabase/migrations');
   if (!fs.existsSync(dir)) {
     console.log('[migrate] no supabase/migrations dir — skipping');
     return;
