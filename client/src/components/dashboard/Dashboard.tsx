@@ -52,24 +52,33 @@ export default function Dashboard() {
 
   const totalAnalyzeCount = Object.values(analyzeByTopic).reduce((s, n) => s + n, 0);
 
-  const topicsWithAnalyze = allTopics.map((topic) => ({
+  // topic_progress lookup (분석+복습 합산)
+  const progressByTopic = Object.fromEntries(topicProgress.map((p) => [p.topicId, p]));
+
+  const topicsWithProgress = allTopics.map((topic) => ({
     ...topic,
     analyzeCount: analyzeByTopic[topic.id] ?? 0,
+    attempts: progressByTopic[topic.id]?.attempts ?? 0,
+    correct: progressByTopic[topic.id]?.correct ?? 0,
+    accuracy: progressByTopic[topic.id]?.accuracy ?? 0,
   }));
 
-  // Section-level (F1-F6) analysis count aggregates
+  // Section-level (F1-F6) 분석+복습 합산 집계
   const sectionStats = areas.map((area) => {
     const mods = area.topics.map((t) => ({
       id: t.id,
       label: t.label,
       analyzeCount: analyzeByTopic[t.id] ?? 0,
+      attempts: progressByTopic[t.id]?.attempts ?? 0,
     }));
     const totalAnalyze = mods.reduce((s, m) => s + m.analyzeCount, 0);
+    const totalAttempts = mods.reduce((s, m) => s + m.attempts, 0);
     const analyzed = mods.filter((m) => m.analyzeCount > 0).length;
-    return { area, mods, totalAnalyze, analyzed };
+    const studied = mods.filter((m) => m.attempts > 0).length;
+    return { area, mods, totalAnalyze, totalAttempts, analyzed, studied };
   });
 
-  const weakTopics = topicsWithAnalyze
+  const weakTopics = topicsWithProgress
     .filter((t) => t.analyzeCount > 0)
     .sort((a, b) => b.analyzeCount - a.analyzeCount)
     .slice(0, 5);
@@ -131,16 +140,17 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Section-level (F1-F6) 분석 현황 */}
+      {/* Section-level (F1-F6) 분석+복습 합산 진도 */}
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-[#0f172a]">Becker 섹션별 분석 현황</h3>
-          <p className="text-xs text-muted">F1~F6 누적 분석 건수</p>
+          <h3 className="font-semibold text-[#0f172a]">Becker 섹션별 진도</h3>
+          <p className="text-xs text-muted">분석+복습 합산</p>
         </div>
         <div className="flex flex-col gap-2">
-          {sectionStats.map(({ area, mods, totalAnalyze, analyzed }) => {
-            const maxAnalyze = Math.max(...sectionStats.map((s) => s.totalAnalyze), 1);
-            const pct = Math.round((totalAnalyze / maxAnalyze) * 100);
+          {sectionStats.map(({ area, mods, totalAnalyze, totalAttempts, studied }) => {
+            const maxAttempts = Math.max(...sectionStats.map((s) => s.totalAttempts), 1);
+            const pct = Math.round((totalAttempts / maxAttempts) * 100);
+            const reviewCount = totalAttempts - totalAnalyze;
             return (
               <div key={area.id} className="flex items-center gap-3">
                 <span
@@ -151,7 +161,7 @@ export default function Dashboard() {
                 </span>
                 <span className="text-xs flex-1 truncate">{area.label.replace(/^F\d · /, '')}</span>
                 <span className="text-[10px] text-muted shrink-0 w-16 text-right">
-                  {analyzed}/{mods.length} 모듈
+                  {studied}/{mods.length} 모듈
                 </span>
                 <div className="w-28 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
@@ -159,8 +169,8 @@ export default function Dashboard() {
                     style={{ width: `${pct}%`, background: area.color }}
                   />
                 </div>
-                <span className="text-xs font-semibold w-12 text-right" style={{ color: area.color }}>
-                  {totalAnalyze}건
+                <span className="text-xs font-semibold w-20 text-right" style={{ color: area.color }}>
+                  {totalAnalyze}건{reviewCount > 0 ? `+${reviewCount}복` : ''}
                 </span>
               </div>
             );
@@ -168,10 +178,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 전체 모듈 진도 — 분석 건수 기반 */}
+      {/* 전체 모듈 진도 — 분석+복습 합산 */}
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-[#0f172a]">전체 모듈 분석 현황</h3>
+          <h3 className="font-semibold text-[#0f172a]">전체 모듈 진도</h3>
           <button
             onClick={() => navigate('/history')}
             className="text-xs px-3 py-1.5 rounded-lg font-medium"
@@ -181,24 +191,29 @@ export default function Dashboard() {
           </button>
         </div>
         <div className="flex flex-col gap-1">
-          {topicsWithAnalyze.map((t) => (
-            <div key={t.id} className="flex items-center gap-3 p-2 rounded-lg">
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ background: t.analyzeCount > 0 ? '#4f6ef7' : '#e2e8f0' }}
-              />
-              <span className="text-sm flex-1">{t.label}</span>
-              <span
-                className="text-[11px] font-semibold px-1.5 py-0.5 rounded"
-                style={{ background: t.areaColor + '15', color: t.areaColor }}
-              >
-                {t.areaLabel}
-              </span>
-              {t.analyzeCount > 0 && (
-                <span className="text-[10px] text-muted shrink-0">분석 {t.analyzeCount}건</span>
-              )}
-            </div>
-          ))}
+          {topicsWithProgress.map((t) => {
+            const reviewCount = t.attempts - t.analyzeCount;
+            return (
+              <div key={t.id} className="flex items-center gap-3 p-2 rounded-lg">
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ background: t.attempts > 0 ? '#4f6ef7' : '#e2e8f0' }}
+                />
+                <span className="text-sm flex-1">{t.label}</span>
+                <span
+                  className="text-[11px] font-semibold px-1.5 py-0.5 rounded"
+                  style={{ background: t.areaColor + '15', color: t.areaColor }}
+                >
+                  {t.areaLabel}
+                </span>
+                {t.analyzeCount > 0 && (
+                  <span className="text-[10px] text-muted shrink-0">
+                    {t.analyzeCount}건{reviewCount > 0 ? `+${reviewCount}복` : ''}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -303,7 +318,7 @@ export default function Dashboard() {
         <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-[#0f172a]">토픽별 정답률</h3>
-            <p className="text-xs text-muted">Becker 분석 기반</p>
+            <p className="text-xs text-muted">분석+복습 합산</p>
           </div>
           <div className="flex flex-col gap-2">
             {topicProgress.slice(0, 8).map((tp) => {
