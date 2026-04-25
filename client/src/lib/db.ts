@@ -1905,6 +1905,30 @@ export async function saveConceptFix(
   }
 }
 
+// ── Journal Enrichment (ConceptNotesPage overlay) ─────────────
+
+export interface JournalEnrichment {
+  concepts: string[];
+  journal_entry: string | null;
+  formula: string | null;
+  related_concepts: string[] | null;
+}
+
+export async function fetchJournalEnrichments(userId: string): Promise<JournalEnrichment[]> {
+  const { data, error } = await supabase
+    .from(DB.TABLES.CONCEPT_EXTRACTIONS)
+    .select('concepts, journal_entry, formula, related_concepts')
+    .eq('user_id', userId)
+    .not('journal_entry', 'is', null);
+  if (error) logError('fetchJournalEnrichments', error);
+  return (data ?? []).map((row) => ({
+    concepts: Array.isArray(row.concepts) ? row.concepts : [],
+    journal_entry: row.journal_entry ?? null,
+    formula: row.formula ?? null,
+    related_concepts: Array.isArray(row.related_concepts) ? row.related_concepts : null,
+  }));
+}
+
 // ── Daily Reflection ──────────────────────────────────────────
 
 export async function saveDailyReflection(

@@ -1,4 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import useStudyStore from '../store/studyStore';
+import { fetchJournalEnrichments, JournalEnrichment } from '../lib/db';
 
 interface ALItem {
   cat: string; item: string; std: string;
@@ -37,7 +39,6 @@ const assetLiabilityData: ALItem[] = [
     rule:"Control 이전 → A/R 제거. Cash + Loss 인식. Recourse 있으면 recourse liability 추가 인식.",
     trigger:"'sold receivables' / 'transferred A/R' / 'without recourse'",
     trap:"Recourse를 asset으로 착각. A/R 제거 vs 유지 혼동. With recourse → liability 인식 필수.",
-    journal_entry:"Dr. Cash\nDr. Loss on Sale of A/R\n  Cr. Accounts Receivable",
     related_concepts:["A/R Pledged — Borrowing", "Notes Receivable (Long-term)"] },
   { cat:"Receivables", item:"A/R Pledged — Borrowing", std:"gaap",
     situation_ko:"회사가 외상매출금 3억 원을 담보로 제공하고 은행에서 2억 원을 차입했다.",
@@ -45,7 +46,6 @@ const assetLiabilityData: ALItem[] = [
     rule:"Control 유지 → A/R 제거하지 않음. Cash 수령 + Note payable 인식.",
     trigger:"'pledged as collateral' / 'assigned receivables' / 'borrowing against A/R'",
     trap:"담보 제공을 A/R 제거로 착각. A/R은 BS에 그대로 유지.",
-    journal_entry:"Dr. Cash\n  Cr. Notes Payable",
     related_concepts:["A/R Factoring — Sale"] },
   { cat:"Receivables", item:"Notes Receivable (Long-term)", std:"gaap",
     situation_ko:"고객에게 3년 만기 무이자 어음 1억 원을 수령했고, 시장이자율은 연 8%이다.",
@@ -183,7 +183,6 @@ const valuationData: ValItem[] = [
     trigger:"외화 현금 환산 / restricted cash 분류",
     trap:"Restricted cash를 CE에 포함. 90일 초과 단기투자를 CE로 분류." },
   { cat:"Assets", item:"Accounts Receivable", std:"gaap", method:"NRV (Gross AR − Allowance)",
-    formula:"NRV = Gross A/R − Allowance for Doubtful Accounts",
     situation_ko:"연말 A/R 잔액 $1M에 대해 CECL 모델 기반 기대손실을 추정해야 한다.",
     situation_en:"Year-end A/R balance of $1M requires an expected credit loss estimate under the CECL model.",
     rule:"CECL(ASC 326): 기대손실 모델. Direct write-off는 GAAP 불인정(tax only). Write-off 시 NRV 불변.",
@@ -507,7 +506,21 @@ const SIDEBAR_TABS = [
   { key: 'misc' as TabKey, label: '기타', icon: '📦' },
 ];
 
+// concept 태그와 item 이름 간 fuzzy match
+function findEnrichment(itemName: string, enrichments: JournalEnrichment[]): JournalEnrichment | undefined {
+  const norm = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const normItem = norm(itemName);
+  return enrichments.find((e) =>
+    e.concepts.some((c) => {
+      const nc = norm(c);
+      return nc.length > 3 && (normItem.includes(nc) || nc.includes(normItem));
+    })
+  );
+}
+
 export default function ConceptNotesPage() {
+  const userId = useStudyStore((s) => s.userId);
   const [activeTab, setActiveTab] = useState<TabKey>('asset-liability');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [query, setQuery] = useState('');
@@ -518,6 +531,13 @@ export default function ConceptNotesPage() {
   // Quiz state
   const [quizIndex, setQuizIndex] = useState(0);
   const [shuffledItems, setShuffledItems] = useState<QuizItem[] | null>(null);
+
+  // DB enrichments: journal_entry / formula / related_concepts from concept_extractions
+  const [enrichments, setEnrichments] = useState<JournalEnrichment[]>([]);
+  useEffect(() => {
+    if (!userId) return;
+    fetchJournalEnrichments(userId).then(setEnrichments);
+  }, [userId]);
 
   // Misc (임시 저장) — persisted to localStorage
   const [miscConcepts, setMiscConcepts] = useState<string[]>(() => {
@@ -546,12 +566,23 @@ export default function ConceptNotesPage() {
   };
 
   const allItems = useMemo<QuizItem[]>(() => {
-    if (activeTab === 'asset-liability') return assetLiabilityData;
-    if (activeTab === 'valuation') return [...valuationData].sort(
-      (a, b) => (VAL_BS_ORDER[a.item] ?? 99) - (VAL_BS_ORDER[b.item] ?? 99),
-    );
-    return [];
-  }, [activeTab]);
+    const base = activeTab === 'asset-liability'
+      ? assetLiabilityData
+      : activeTab === 'valuation'
+        ? [...valuationData].sort((a, b) => (VAL_BS_ORDER[a.item] ?? 99) - (VAL_BS_ORDER[b.item] ?? 99))
+        : [];
+    if (enrichments.length === 0) return base;
+    return base.map((item) => {
+      const e = findEnrichment(item.item, enrichments);
+      if (!e) return item;
+      return {
+        ...item,
+        journal_entry: item.journal_entry ?? e.journal_entry ?? undefined,
+        formula: item.formula ?? e.formula ?? undefined,
+        related_concepts: item.related_concepts ?? e.related_concepts ?? undefined,
+      };
+    });
+  }, [activeTab, enrichments]);
 
   const handleConceptClick = useCallback((conceptName: string) => {
     const idx = allItems.findIndex(it => it.item === conceptName);
