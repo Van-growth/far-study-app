@@ -60,7 +60,7 @@ function BottomTabBar({ email }: { email: string }) {
       {showMore && (
         <div className="fixed inset-0 z-50" onClick={() => setShowMore(false)}>
           <div
-            className="absolute top-[100px] right-3 bg-white rounded-xl shadow-lg border border-border py-1 min-w-[160px]"
+            className="absolute top-[100px] right-3 bg-white rounded-xl shadow-lg border border-border py-1 min-w-[160px] max-h-[70vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {(() => { console.log('moreItems:', [
