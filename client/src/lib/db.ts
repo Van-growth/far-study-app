@@ -552,6 +552,9 @@ export interface RecentExtractionItem {
   exampleQuestion: ExampleQuestion | null
   feedback: string | null
   isFixed: boolean
+  journalEntry: string | null
+  formula: string | null
+  relatedConcepts: string[]
 }
 
 export async function fetchRecentExtractions(
@@ -1503,19 +1506,24 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
         .lte('next_review_at', now)
         .order('next_review_at', { ascending: true })
 
-    // Try full select (with migration 016 feedback cols), fall back on schema error
-    let result = await runQuery(`${coreSelect}, triggers, example_question, feedback, is_fixed`)
+    // Try full select (with migration 021 new cols), fall back on schema error
+    let result = await runQuery(`${coreSelect}, triggers, example_question, feedback, is_fixed, journal_entry, formula, related_concepts`)
     let hasTriggers = true
     let hasEq = true
     let hasFeedbackCols = true
+    let hasNewCols = true
     if (result.error) {
-      // Migration 016 may not be applied yet — retry without feedback columns
-      result = await runQuery(`${coreSelect}, triggers, example_question`)
-      hasFeedbackCols = false
+      // Migration 021 not applied — retry without new cols
+      result = await runQuery(`${coreSelect}, triggers, example_question, feedback, is_fixed`)
+      hasNewCols = false
       if (result.error) {
-        result = await runQuery(coreSelect)
-        hasTriggers = false
-        hasEq = false
+        result = await runQuery(`${coreSelect}, triggers, example_question`)
+        hasFeedbackCols = false
+        if (result.error) {
+          result = await runQuery(coreSelect)
+          hasTriggers = false
+          hasEq = false
+        }
       }
     }
     if (result.error || !result.data) return []
@@ -1544,6 +1552,11 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
       })(),
       feedback: hasFeedbackCols && typeof row.feedback === 'string' ? row.feedback : null,
       isFixed: hasFeedbackCols && row.is_fixed === true,
+      journalEntry: hasNewCols && typeof row.journal_entry === 'string' ? row.journal_entry : null,
+      formula: hasNewCols && typeof row.formula === 'string' ? row.formula : null,
+      relatedConcepts: hasNewCols && Array.isArray(row.related_concepts)
+        ? (row.related_concepts as unknown[]).filter((c): c is string => typeof c === 'string')
+        : [],
     }))
   } catch { return [] }
 }

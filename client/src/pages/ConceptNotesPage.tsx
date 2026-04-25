@@ -4,16 +4,25 @@ interface ALItem {
   cat: string; item: string; std: string;
   rule: string; trigger: string; trap: string;
   situation_ko: string; situation_en: string;
+  journal_entry?: string;
+  formula?: string;
+  related_concepts?: string[];
 }
 interface ValItem {
   cat: string; item: string; std: string;
   method: string; rule: string; trigger: string; trap: string;
   situation_ko: string; situation_en: string;
+  journal_entry?: string;
+  formula?: string;
+  related_concepts?: string[];
 }
 type QuizItem = {
   cat: string; item: string; std: string; method?: string;
   rule: string; trigger: string; trap: string;
   situation_ko: string; situation_en: string;
+  journal_entry?: string;
+  formula?: string;
+  related_concepts?: string[];
 };
 type TabKey = 'asset-liability' | 'valuation';
 type ViewMode = 'table' | 'quiz';
@@ -27,13 +36,17 @@ const assetLiabilityData: ALItem[] = [
     situation_en:"A manufacturer sells $500K of A/R to a factor and receives immediate cash proceeds.",
     rule:"Control 이전 → A/R 제거. Cash + Loss 인식. Recourse 있으면 recourse liability 추가 인식.",
     trigger:"'sold receivables' / 'transferred A/R' / 'without recourse'",
-    trap:"Recourse를 asset으로 착각. A/R 제거 vs 유지 혼동. With recourse → liability 인식 필수." },
+    trap:"Recourse를 asset으로 착각. A/R 제거 vs 유지 혼동. With recourse → liability 인식 필수.",
+    journal_entry:"Dr. Cash\nDr. Loss on Sale of A/R\n  Cr. Accounts Receivable",
+    related_concepts:["A/R Pledged — Borrowing", "Notes Receivable (Long-term)"] },
   { cat:"Receivables", item:"A/R Pledged — Borrowing", std:"gaap",
     situation_ko:"회사가 외상매출금 3억 원을 담보로 제공하고 은행에서 2억 원을 차입했다.",
     situation_en:"Company pledges $300K of A/R as collateral and borrows $200K from a bank.",
     rule:"Control 유지 → A/R 제거하지 않음. Cash 수령 + Note payable 인식.",
     trigger:"'pledged as collateral' / 'assigned receivables' / 'borrowing against A/R'",
-    trap:"담보 제공을 A/R 제거로 착각. A/R은 BS에 그대로 유지." },
+    trap:"담보 제공을 A/R 제거로 착각. A/R은 BS에 그대로 유지.",
+    journal_entry:"Dr. Cash\n  Cr. Notes Payable",
+    related_concepts:["A/R Factoring — Sale"] },
   { cat:"Receivables", item:"Notes Receivable (Long-term)", std:"gaap",
     situation_ko:"고객에게 3년 만기 무이자 어음 1억 원을 수령했고, 시장이자율은 연 8%이다.",
     situation_en:"Company receives a 3-year, non-interest-bearing note for $100K when the market rate is 8%.",
@@ -170,6 +183,7 @@ const valuationData: ValItem[] = [
     trigger:"외화 현금 환산 / restricted cash 분류",
     trap:"Restricted cash를 CE에 포함. 90일 초과 단기투자를 CE로 분류." },
   { cat:"Assets", item:"Accounts Receivable", std:"gaap", method:"NRV (Gross AR − Allowance)",
+    formula:"NRV = Gross A/R − Allowance for Doubtful Accounts",
     situation_ko:"연말 A/R 잔액 $1M에 대해 CECL 모델 기반 기대손실을 추정해야 한다.",
     situation_en:"Year-end A/R balance of $1M requires an expected credit loss estimate under the CECL model.",
     rule:"CECL(ASC 326): 기대손실 모델. Direct write-off는 GAAP 불인정(tax only). Write-off 시 NRV 불변.",
@@ -415,6 +429,46 @@ function QuizCard({
           <p className="text-xs leading-relaxed" style={{ color:'#A32D2D' }}>{item.trap}</p>
         </div>
       </div>
+
+      {/* Journal Entry */}
+      {item.journal_entry && (
+        <div className="rounded-xl p-3" style={{ background:'#f0fdf4', border:'1px solid #bbf7d0' }}>
+          <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:'#15803d' }}>
+            분개 (Journal Entry)
+          </p>
+          <div className="font-mono text-sm text-[#15803d] leading-relaxed whitespace-pre-line">
+            {item.journal_entry}
+          </div>
+        </div>
+      )}
+
+      {/* Formula */}
+      {item.formula && (
+        <div className="rounded-xl p-3" style={{ background:'#fefce8', border:'1px solid #fde68a' }}>
+          <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:'#92400e' }}>
+            계산 공식
+          </p>
+          <p className="font-mono text-sm text-[#92400e] leading-relaxed">{item.formula}</p>
+        </div>
+      )}
+
+      {/* Related Concepts */}
+      {item.related_concepts && item.related_concepts.length > 0 && (
+        <div className="rounded-xl p-3" style={{ background:'#f5f3ff', border:'1px solid #ddd6fe' }}>
+          <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:'#6d28d9' }}>
+            연결 개념
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {item.related_concepts.map((concept) => (
+              <span key={concept}
+                className="px-2.5 py-1 rounded-full text-xs font-medium"
+                style={{ background:'#ede9fe', color:'#6d28d9' }}>
+                → {concept}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

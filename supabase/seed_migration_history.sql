@@ -26,5 +26,6 @@ INSERT INTO migration_history (filename) VALUES
   ('017_add_last_reviewed.sql'),
   ('018_attempt_errors_extraction.sql'),
   ('019_backfill_pattern_ids.sql'),
-  ('020_feedback_logs_link.sql')
+  ('020_feedback_logs_link.sql'),
+  ('021_journal_formula_related.sql')
 ON CONFLICT DO NOTHING;
