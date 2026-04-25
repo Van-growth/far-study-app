@@ -83,6 +83,35 @@ export const OntologyObjects = {
     },
   },
 
+  // ✅ 구현 완료 (migration 021, db.ts:updateTopicProgressStreak)
+  TopicProgress: {
+    description: "토픽별 퀴즈·복습 누적 성과 (분석 + 복습 양방향 반영)",
+    table: "topic_progress",
+    properties: {
+      topic_id:    { type: "string",  desc: "모듈 ID (예: F3-M3)" },
+      area_id:     { type: "string",  desc: "상위 영역 ID (예: F3)" },
+      attempts:    { type: "number",  desc: "총 시도 횟수 (퀴즈 + 복습 합산)" },
+      correct:     { type: "number",  desc: "정답 횟수 (퀴즈 정답 + 복습 알았다)" },
+      streak:      { type: "number",  desc: "연속 정답 횟수 (틀리면 0 리셋)" },
+      interval:    { type: "number",  desc: "다음 복습까지 일수 (SRS 간격)" },
+      next_review: { type: "string",  desc: "다음 복습 예정일 ISO" },
+      updated_at:  { type: "string",  desc: "마지막 업데이트 시각" },
+    },
+    updateSources: ["onQuizAnswered", "onReviewCompleted"],
+  },
+
+  // ✅ 구현 완료 (migration 021, ConceptNotesPage QuizCard)
+  ConceptNote: {
+    description: "concept_extractions의 분개·공식·연결개념 확장 필드",
+    table: "concept_extractions",
+    properties: {
+      journal_entry:     { type: "string",   desc: "Dr/Cr 분개 형식 텍스트" },
+      formula:           { type: "string",   desc: "핵심 계산 공식 텍스트" },
+      related_concepts:  { type: "string[]", desc: "연결 개념 레이블 배열 (클릭 → 개념노트 이동)" },
+    },
+    displayedIn: ["ConceptNotesPage:QuizCard", "HistoryPage:ReviewCard"],
+  },
+
 } as const
 
 // ── Links ─────────────────────────────────────────────────────
@@ -129,67 +158,91 @@ export const OntologyLinks = {
     effect: "모듈별 커버리지 + 뱃지 계산",
   },
 
+  // ✅ 구현 완료 (db.ts:updateConceptReview → updateTopicProgressStreak)
+  reviewed_in: {
+    from: "Concept",
+    to: "TopicProgress",
+    description: "복습 카드 완료 시 해당 토픽의 topic_progress에 결과 반영",
+    via: "concept_extractions.topic_id → topic_progress.topic_id",
+    effect: "attempts+1, knew→correct+1, streak 업데이트. row 없으면 신규 생성.",
+  },
+
+  // ✅ 구현 완료 (migration 021 related_concepts jsonb, ConceptNotesPage)
+  related_to: {
+    from: "Concept",
+    to: "Concept",
+    description: "연결 개념 — 같은 context에서 함께 학습하면 효과적인 concept 쌍",
+    via: "concept_extractions.related_concepts (jsonb string[])",
+    effect: "개념노트 카드뷰에서 → 링크 태그로 표시. 클릭 시 해당 항목으로 이동.",
+  },
+
 } as const
 
 // ── Actions ───────────────────────────────────────────────────
 
 export const OntologyActions = {
 
+  // ✅ 구현 완료
   onConceptSaved: {
     trigger: "concept_extractions INSERT",
     description: "새 concept 저장 시",
     steps: [
-      "concept_stats upsert (tag별 정답률 초기화)",
-      "question_hash 중복 체크",
-      "topicInference로 topic_id 보정",
-      "WEAK 목록 재평가",
+      "concept_stats upsert (tag별 정답률 초기화)", // ✅
+      "question_hash 중복 체크",                    // ✅
+      "topicInference로 topic_id 보정",             // ✅
+      "WEAK 목록 재평가",                           // ✅
+      "topic_progress attempts+1 (분석 기반)",      // ✅ updateTopicProgressFromAnalysis
     ],
     implementedIn: ["db.ts:saveConceptExtraction", "AnalyzePage.tsx:handleAnalyze"],
   },
 
+  // ✅ 구현 완료
   onQuizAnswered: {
     trigger: "quiz_logs INSERT",
     description: "퀴즈 답 제출 시",
     steps: [
-      "concept_stats correct_count/total_count 업데이트",
-      "accuracy 재계산",
-      "weak_in Link 조건 평가",
-      "master_of Link 조건 평가 → Badge 승급",
+      "concept_stats correct_count/total_count 업데이트", // ✅
+      "accuracy 재계산",                                   // ✅
+      "weak_in Link 조건 평가",                           // ✅
+      "master_of Link 조건 평가 → Badge 승급",            // ✅
     ],
     implementedIn: ["db.ts:saveQuizLog", "QuizView.tsx:handleSubmit"],
   },
 
+  // ✅ 구현 완료
   onErrorTagged: {
     trigger: "attempt_errors INSERT",
     description: "오류 패턴 태깅 시",
     steps: [
-      "pattern_stats occurrence +1",
-      "caused_by Link 형성",
-      "AI 브리핑 우선순위 상승",
+      "pattern_stats occurrence +1",  // ✅
+      "caused_by Link 형성",          // ✅
+      "AI 브리핑 우선순위 상승",       // ✅
     ],
     implementedIn: ["db.ts:tagAttemptError", "ErrorTagSection.tsx"],
   },
 
+  // ✅ 구현 완료
   onDailyBriefing: {
     trigger: "홈 화면 접속 (일 1회)",
     description: "AI 튜터 브리핑 생성",
     steps: [
-      "WEAK concept 목록 조회 (weak_in Links)",
-      "top ErrorPattern 조회",
-      "개선 중인 모듈 감지 (master_of Links 진행 중)",
-      "Claude API로 오늘 처방 생성",
-      "localStorage 캐싱",
+      "WEAK concept 목록 조회 (weak_in Links)", // ✅
+      "top ErrorPattern 조회",                  // ✅
+      "개선 중인 모듈 감지 (master_of Links)",  // ✅
+      "Claude API로 오늘 처방 생성",            // ✅
+      "localStorage 캐싱",                      // ✅
     ],
     implementedIn: ["HomePage.tsx:TutorBriefing", "server/routes/tutor.ts"],
   },
 
+  // ✅ 구현 완료
   onWeakThresholdBreached: {
     trigger: "concept_stats accuracy < 0.5",
     description: "약점 감지 시",
     steps: [
-      "weak_in Link 활성화",
-      "questionGenerator WEAK 섹션에 keyword/trap 주입",
-      "AI 브리핑 처방에 포함",
+      "weak_in Link 활성화",                         // ✅
+      "questionGenerator WEAK 섹션에 keyword/trap 주입", // ✅
+      "AI 브리핑 처방에 포함",                        // ✅
     ],
     implementedIn: ["questionGenerator.ts:getWeakConcepts"],
   },
@@ -198,11 +251,32 @@ export const OntologyActions = {
     trigger: "concept_stats accuracy >= 0.8 AND concept_count >= 10",
     description: "마스터 달성 시",
     steps: [
-      "WEAK 목록에서 제거",
-      "Badge level → master 승급",
-      "토스트: 'F3-M3 마스터 달성!'",
+      "WEAK 목록에서 제거",       // ✅
+      "Badge level → master 승급", // ✅
+      "토스트: 'F3-M3 마스터 달성!'", // ✅
     ],
     implementedIn: ["badges.ts:getBadge", "AnalyzePage.tsx:badge toast"],
+  },
+
+  // ✅ 구현 완료 (db.ts:updateConceptReview → updateTopicProgressStreak)
+  onReviewCompleted: {
+    trigger: "HistoryPage 복습 카드에서 '알았다 ✅' 또는 '헷갈려 🔁' 클릭",
+    description: "복습 완료 시 topic_progress 및 concept_extractions SRS 업데이트",
+    steps: [
+      "concept_extractions: next_review_at 재계산 (SRS 간격 진행)", // ✅
+      "concept_extractions: review_count+1, review_result 기록",     // ✅
+      "topic_progress: attempts+1",                                   // ✅
+      "topic_progress: knew → correct+1",                            // ✅
+      "topic_progress: knew → streak+1, 아니면 streak=0",            // ✅
+      "topic_progress: row 없으면 0 기준 신규 생성",                  // ✅
+      "daily_review_log: knew/confused 카운트 upsert",               // ✅
+    ],
+    implementedIn: [
+      "db.ts:updateConceptReview",
+      "db.ts:updateTopicProgressStreak",
+      "db.ts:upsertDailyReviewLog",
+      "HistoryPage.tsx:handleAnswer",
+    ],
   },
 
 } as const
