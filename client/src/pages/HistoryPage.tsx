@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import useStudyStore from '../store/studyStore'
 import useClaudeStore from '../store/claudeStore'
 import { allTopics } from '../data/far-topics'
+import QuizCalculator from '../components/quiz/QuizCalculator'
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
 import {
@@ -119,6 +120,7 @@ function ExampleQuestionBlock({
 }) {
   const [selected, setSelected] = useState<string | null>(null)
   const [revealed, setRevealed] = useState(false)
+  const [calcOpen, setCalcOpen] = useState(false)
 
   if (!eq?.question) return null
 
@@ -147,7 +149,16 @@ function ExampleQuestionBlock({
   if (!hasOptions) {
     return (
       <div className="rounded-xl px-3 py-2.5" style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}>
-        <p className="text-[10px] font-semibold text-[#3730a3] mb-2">📝 예시 문제</p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] font-semibold text-[#3730a3]">📝 예시 문제</p>
+          <button
+            onClick={() => setCalcOpen(true)}
+            className="shrink-0 text-xs px-2 py-1 rounded-lg hover:bg-[#eef2ff]"
+            style={{ border: '1px solid #c7d2fe', color: '#4338ca' }}
+            title="계산기"
+          >🧮</button>
+        </div>
+        <QuizCalculator open={calcOpen} onClose={() => setCalcOpen(false)} />
         <p className="text-xs text-[#1e1b4b] leading-relaxed mb-3">{String(eq.question)}</p>
         {revealed ? (
           <div className="rounded-lg px-2.5 py-2" style={{ background: '#f0fdf4', border: '1px solid #86efac' }}>
@@ -173,7 +184,16 @@ function ExampleQuestionBlock({
   // MCQ interactive mode
   return (
     <div className="rounded-xl px-3 py-2.5" style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}>
-      <p className="text-[10px] font-semibold text-[#3730a3] mb-2">📝 예시 문제</p>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] font-semibold text-[#3730a3]">📝 예시 문제</p>
+        <button
+          onClick={() => setCalcOpen(true)}
+          className="shrink-0 text-xs px-2 py-1 rounded-lg hover:bg-[#eef2ff]"
+          style={{ border: '1px solid #c7d2fe', color: '#4338ca' }}
+          title="계산기"
+        >🧮</button>
+      </div>
+      <QuizCalculator open={calcOpen} onClose={() => setCalcOpen(false)} />
       <p className="text-xs text-[#1e1b4b] leading-relaxed mb-3">{String(eq.question)}</p>
 
       {/* A/B/C/D option buttons */}
