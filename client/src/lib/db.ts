@@ -1955,6 +1955,44 @@ export async function hasTodayReflection(userId: string): Promise<boolean> {
   return !!data;
 }
 
+// ── Concept Cards by Topic (for ConceptNotesPage dynamic tabs) ──
+
+export interface ConceptCardRow {
+  id: string
+  concepts: string[]
+  topicTags: string[]
+  trapPattern: string | null
+  formula: string | null
+  relatedConcepts: string[] | null
+  exampleQuestion: ExampleQuestion | null
+}
+
+export async function fetchConceptCardsByTopic(userId: string, topicId: string): Promise<ConceptCardRow[]> {
+  if (!hasAuth(userId)) return []
+  const { data, error } = await supabase
+    .from(DB.TABLES.CONCEPT_EXTRACTIONS)
+    .select('id, concepts, topic_tags, trap_pattern, formula, related_concepts, example_question')
+    .eq('user_id', userId)
+    .eq('topic_id', topicId)
+    .order('created_at', { ascending: true })
+  if (error) {
+    logError('fetchConceptCardsByTopic', error)
+    return []
+  }
+  return ((data ?? []) as unknown as {
+    id: string; concepts: string[]; topic_tags: string[]; trap_pattern: string | null;
+    formula: string | null; related_concepts: string[] | null; example_question: ExampleQuestion | null
+  }[]).map((r) => ({
+    id: r.id,
+    concepts: Array.isArray(r.concepts) ? r.concepts : [],
+    topicTags: Array.isArray(r.topic_tags) ? r.topic_tags : [],
+    trapPattern: r.trap_pattern ?? null,
+    formula: r.formula ?? null,
+    relatedConcepts: Array.isArray(r.related_concepts) ? r.related_concepts : null,
+    exampleQuestion: r.example_question ?? null,
+  }))
+}
+
 // ── User Settings ─────────────────────────────────────────────
 
 export async function getExamDate(userId: string): Promise<string | null> {
