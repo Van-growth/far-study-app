@@ -1954,3 +1954,24 @@ export async function hasTodayReflection(userId: string): Promise<boolean> {
   if (error) logError('hasTodayReflection', error);
   return !!data;
 }
+
+// ── User Settings ─────────────────────────────────────────────
+
+export async function getExamDate(userId: string): Promise<string | null> {
+  if (!hasAuth(userId)) return null;
+  const { data, error } = await supabase
+    .from(DB.TABLES.USER_SETTINGS)
+    .select('exam_date')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) logError('getExamDate', error);
+  return (data as { exam_date: string | null } | null)?.exam_date ?? null;
+}
+
+export async function setExamDate(userId: string, examDate: string | null): Promise<void> {
+  if (!hasAuth(userId)) return;
+  const { error } = await supabase
+    .from(DB.TABLES.USER_SETTINGS)
+    .upsert({ user_id: userId, exam_date: examDate, updated_at: new Date().toISOString() });
+  if (error) logError('setExamDate', error);
+}

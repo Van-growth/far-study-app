@@ -18,6 +18,7 @@ export const DB = {
     REVIEW_RESULT: 'review_result',
     CONCEPT_FEEDBACK: 'concept_feedback',
     DAILY_REFLECTION: 'daily_reflection',
+    USER_SETTINGS: 'user_settings',
   },
   RPC: {
     CONCEPT_STATS_INCREMENT: 'concept_stats_increment',

@@ -8,6 +8,8 @@ import {
   getTopicProgressList, get7DayReviewTrend, TopicProgressRow, DayReviewCount,
 } from '../../lib/db';
 
+type AnalysisPeriod = '1d' | '7d' | '30d';
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const userId = useStudyStore((s) => s.userId);
@@ -23,6 +25,7 @@ export default function Dashboard() {
   const [wrongTopics, setWrongTopics] = useState<TopWrongTopic[]>([]);
   const [topicProgress, setTopicProgress] = useState<TopicProgressRow[]>([]);
   const [reviewTrend, setReviewTrend] = useState<DayReviewCount[]>([]);
+  const [analysisPeriod, setAnalysisPeriod] = useState<AnalysisPeriod>('7d');
 
   useEffect(() => {
     if (!userId) return;
@@ -52,7 +55,6 @@ export default function Dashboard() {
 
   const totalAnalyzeCount = Object.values(analyzeByTopic).reduce((s, n) => s + n, 0);
 
-  // topic_progress lookup (분석+복습 합산)
   const progressByTopic = Object.fromEntries(topicProgress.map((p) => [p.topicId, p]));
 
   const topicsWithProgress = allTopics.map((topic) => ({
@@ -63,7 +65,6 @@ export default function Dashboard() {
     accuracy: progressByTopic[topic.id]?.accuracy ?? 0,
   }));
 
-  // Section-level (F1-F6) 분석+복습 합산 집계
   const sectionStats = areas.map((area) => {
     const mods = area.topics.map((t) => ({
       id: t.id,
@@ -83,6 +84,24 @@ export default function Dashboard() {
     .sort((a, b) => b.analyzeCount - a.analyzeCount)
     .slice(0, 5);
 
+  // ── 회고 분석: 기간 필터 ──────────────────────────────────────
+  const periodDays = analysisPeriod === '1d' ? 1 : analysisPeriod === '7d' ? 7 : 30;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - periodDays + 1);
+  cutoff.setHours(0, 0, 0, 0);
+
+  const periodTopics = topicProgress.filter((tp) => new Date(tp.updatedAt) >= cutoff);
+
+  const effectiveTop3 = [...periodTopics]
+    .filter((tp) => tp.attempts >= 2)
+    .sort((a, b) => b.accuracy - a.accuracy)
+    .slice(0, 3);
+
+  const inefficientTop3 = [...periodTopics]
+    .filter((tp) => tp.attempts >= 2 && tp.accuracy < 1)
+    .sort((a, b) => (b.attempts * (1 - b.accuracy)) - (a.attempts * (1 - a.accuracy)))
+    .slice(0, 3);
+
   return (
     <div className="flex flex-col gap-6">
       {/* Stat cards */}
@@ -100,6 +119,41 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* 복습 완료 추이 (최근 7일) — 상단 배치 */}
+      {reviewTrend.some((d) => d.count > 0) && (
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-[#0f172a]">복습 완료 추이</h3>
+            <p className="text-xs text-muted">최근 7일</p>
+          </div>
+          <div className="flex items-end gap-2 h-20">
+            {reviewTrend.map((d) => {
+              const maxCount = Math.max(...reviewTrend.map((x) => x.count), 1);
+              const heightPct = d.count > 0 ? Math.max((d.count / maxCount) * 100, 8) : 0;
+              const isToday = d.date === reviewTrend[reviewTrend.length - 1]?.date;
+              const label = new Date(d.date + 'T00:00:00').toLocaleDateString('ko-KR', { weekday: 'short' });
+              return (
+                <div key={d.date} className="flex flex-col items-center gap-1 flex-1">
+                  <span className="text-[10px] font-bold" style={{ color: d.count > 0 ? '#4f6ef7' : '#94a3b8' }}>
+                    {d.count > 0 ? d.count : ''}
+                  </span>
+                  <div className="w-full flex items-end" style={{ height: 52 }}>
+                    <div
+                      className="w-full rounded-t-sm transition-all"
+                      style={{
+                        height: d.count > 0 ? `${heightPct}%` : '2px',
+                        background: isToday ? '#4f6ef7' : d.count > 0 ? '#c7d2fe' : '#f1f5f9',
+                      }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-muted">{label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 복습 카드 현황 */}
       <div className="card p-5">
@@ -140,6 +194,93 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* 회고 분석 대시보드 */}
+      {topicProgress.length > 0 && (
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-[#0f172a]">회고 분석</h3>
+            <div className="flex gap-1">
+              {(['1d', '7d', '30d'] as AnalysisPeriod[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setAnalysisPeriod(p)}
+                  className="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors"
+                  style={analysisPeriod === p
+                    ? { background: '#4f6ef7', color: 'white' }
+                    : { background: '#f1f5f9', color: '#64748b' }}
+                >
+                  {p === '1d' ? '1일' : p === '7d' ? '1주일' : '1달'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-5">
+            {/* 효과 높은 것 */}
+            <div>
+              <p className="text-[11px] font-semibold mb-2.5" style={{ color: '#10b981' }}>
+                ✅ 효과 높은 것 (정답률 TOP 3)
+              </p>
+              {effectiveTop3.length === 0 ? (
+                <p className="text-xs text-muted">해당 기간 데이터 없음</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {effectiveTop3.map((tp, i) => {
+                    const topic = allTopics.find((t) => t.id === tp.topicId);
+                    const pct = Math.round(tp.accuracy * 100);
+                    return (
+                      <div key={tp.topicId} className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-muted shrink-0 w-3">{i + 1}</span>
+                        <span className="text-xs flex-1 truncate text-[#0f172a]">
+                          {topic?.label ?? tp.topicId}
+                        </span>
+                        <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden shrink-0">
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#10b981' }} />
+                        </div>
+                        <span className="text-xs font-bold shrink-0 w-8 text-right" style={{ color: '#10b981' }}>
+                          {pct}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 개선 필요한 것 */}
+            <div>
+              <p className="text-[11px] font-semibold mb-2.5" style={{ color: '#ef4444' }}>
+                ⚠️ 개선 필요 (반복 저정답 TOP 3)
+              </p>
+              {inefficientTop3.length === 0 ? (
+                <p className="text-xs text-muted">해당 기간 데이터 없음</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {inefficientTop3.map((tp, i) => {
+                    const topic = allTopics.find((t) => t.id === tp.topicId);
+                    const pct = Math.round(tp.accuracy * 100);
+                    return (
+                      <div key={tp.topicId} className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-muted shrink-0 w-3">{i + 1}</span>
+                        <span className="text-xs flex-1 truncate text-[#0f172a]">
+                          {topic?.label ?? tp.topicId}
+                        </span>
+                        <span className="text-[10px] text-muted shrink-0">{tp.attempts}회</span>
+                        <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden shrink-0">
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#ef4444' }} />
+                        </div>
+                        <span className="text-xs font-bold shrink-0 w-8 text-right" style={{ color: '#ef4444' }}>
+                          {pct}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Section-level (F1-F6) 분석+복습 합산 진도 */}
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
@@ -178,7 +319,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 전체 모듈 진도 — 분석+복습 합산 */}
+      {/* 전체 모듈 진도 */}
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-[#0f172a]">전체 모듈 진도</h3>
@@ -338,41 +479,6 @@ export default function Dashboard() {
                   <span className="text-[10px] text-muted shrink-0 w-12 text-right">
                     {tp.correct}/{tp.attempts}
                   </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* 복습 완료 추이 (최근 7일) */}
-      {reviewTrend.some((d) => d.count > 0) && (
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-[#0f172a]">복습 완료 추이</h3>
-            <p className="text-xs text-muted">최근 7일</p>
-          </div>
-          <div className="flex items-end gap-2 h-20">
-            {reviewTrend.map((d) => {
-              const maxCount = Math.max(...reviewTrend.map((x) => x.count), 1);
-              const heightPct = d.count > 0 ? Math.max((d.count / maxCount) * 100, 8) : 0;
-              const isToday = d.date === reviewTrend[reviewTrend.length - 1]?.date;
-              const label = new Date(d.date + 'T00:00:00').toLocaleDateString('ko-KR', { weekday: 'short' });
-              return (
-                <div key={d.date} className="flex flex-col items-center gap-1 flex-1">
-                  <span className="text-[10px] font-bold" style={{ color: d.count > 0 ? '#4f6ef7' : '#94a3b8' }}>
-                    {d.count > 0 ? d.count : ''}
-                  </span>
-                  <div className="w-full flex items-end" style={{ height: 52 }}>
-                    <div
-                      className="w-full rounded-t-sm transition-all"
-                      style={{
-                        height: d.count > 0 ? `${heightPct}%` : '2px',
-                        background: isToday ? '#4f6ef7' : d.count > 0 ? '#c7d2fe' : '#f1f5f9',
-                      }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-muted">{label}</span>
                 </div>
               );
             })}
