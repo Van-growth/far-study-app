@@ -109,6 +109,13 @@ function StructuredExplanation({ exp }: { exp: ExplanationStructured }) {
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E']
 
+const WRONG_MESSAGES = [
+  '😢 아쉬워요! 해설 다시 읽어봐요',
+  '🔍 천천히 다시 읽어보면 보여요!',
+  '💪 틀려야 늘어요. 해설 확인!',
+  '😅 한 번 더! 이 개념 곧 마스터해요',
+]
+
 function ExampleQuestionBlock({
   eq,
   cardId,
@@ -121,6 +128,8 @@ function ExampleQuestionBlock({
   const [selected, setSelected] = useState<string | null>(null)
   const [revealed, setRevealed] = useState(false)
   const [calcOpen, setCalcOpen] = useState(false)
+  const [shaking, setShaking] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
 
   if (!eq?.question) return null
 
@@ -139,6 +148,13 @@ function ExampleQuestionBlock({
       fireConfetti()
     } else {
       void saveWrongAnswer(cardId, letter, correctLetter)
+      // shake
+      setShaking(true)
+      setTimeout(() => setShaking(false), 500)
+      // random toast
+      const msg = WRONG_MESSAGES[Math.floor(Math.random() * WRONG_MESSAGES.length)]
+      setToast(msg)
+      setTimeout(() => setToast(null), 2000)
     }
     onAnswer?.(isCorrect, letter)
   }
@@ -183,7 +199,23 @@ function ExampleQuestionBlock({
 
   // MCQ interactive mode
   return (
-    <div className="rounded-xl px-3 py-2.5" style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}>
+    <div
+      className={`rounded-xl px-3 py-2.5 relative${shaking ? ' animate-shake' : ''}`}
+      style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}
+    >
+      {/* Toast */}
+      {toast && (
+        <div
+          className="animate-toastIn absolute left-0 right-0 -top-11 flex justify-center pointer-events-none z-10"
+        >
+          <div
+            className="px-3 py-2 rounded-xl text-xs font-semibold shadow-md"
+            style={{ background: '#1e293b', color: 'white', maxWidth: '90%' }}
+          >
+            {toast}
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-2">
         <p className="text-[10px] font-semibold text-[#3730a3]">📝 예시 문제</p>
         <button
