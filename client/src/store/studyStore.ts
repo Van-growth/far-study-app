@@ -37,6 +37,7 @@ interface StudyStore {
   userId: string | null;
   syncStatus: 'idle' | 'syncing' | 'ready' | 'offline';
   conceptDueCount: number;
+  todayReviewCount: number;
 
   // ── actions ──
   setCurrentTopic: (id: string | null) => void;
@@ -44,6 +45,8 @@ interface StudyStore {
   setAreaExpanded: (areaId: string, expanded: boolean) => void;
   getCard: (topicId: string) => SRCard;
   setConceptDueCount: (n: number) => void;
+  setTodayReviewCount: (n: number) => void;
+  incrementTodayReviewCount: () => void;
   getWeakTopics: (threshold?: number) => string[];
 
   // SRS update (local + server sync)
@@ -106,6 +109,7 @@ const useStudyStore = create<StudyStore>()(
       userId: null,
       syncStatus: 'idle' as const,
       conceptDueCount: 0,
+      todayReviewCount: 0,
 
       setCurrentTopic: (id) => set({ currentTopicId: id }),
 
@@ -120,6 +124,8 @@ const useStudyStore = create<StudyStore>()(
       getCard: (topicId) => get().srsCards[topicId] ?? DEFAULT_SR_CARD,
 
       setConceptDueCount: (n) => set({ conceptDueCount: n }),
+      setTodayReviewCount: (n) => set({ todayReviewCount: n }),
+      incrementTodayReviewCount: () => set((s) => ({ todayReviewCount: s.todayReviewCount + 1 })),
 
       getWeakTopics: (threshold = 60) =>
         Object.entries(get().srsCards)

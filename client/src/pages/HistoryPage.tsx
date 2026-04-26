@@ -13,11 +13,19 @@ import {
   generateOnDemandReviewCards,
   saveFeedback,
   saveConceptFix,
+  saveWrongAnswer,
   RecentExtractionItem,
   ConceptTrigger,
   ExampleQuestion,
   ExplanationStructured,
 } from '../lib/db'
+
+const DAILY_GOAL = 10
+
+function fireConfetti(origin?: { x: number; y: number }) {
+  const fn = (window as { confetti?: (o: object) => void }).confetti
+  fn?.({ particleCount: 90, spread: 70, origin: origin ?? { x: 0.5, y: 0.55 } })
+}
 
 async function fetchCardHint(
   concepts: string[],
@@ -98,51 +106,145 @@ function StructuredExplanation({ exp }: { exp: ExplanationStructured }) {
   )
 }
 
-function ExampleQuestionBlock({ eq }: { eq: ExampleQuestion }) {
+const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E']
+
+function ExampleQuestionBlock({
+  eq,
+  cardId,
+  onAnswer,
+}: {
+  eq: ExampleQuestion
+  cardId: string
+  onAnswer?: (isCorrect: boolean, selected: string) => void
+}) {
+  const [selected, setSelected] = useState<string | null>(null)
   const [revealed, setRevealed] = useState(false)
-  if (!eq?.question || !Array.isArray(eq.options) || eq.options.length === 0) return null
+
+  if (!eq?.question) return null
+
+  const hasOptions = Array.isArray(eq.options) && eq.options.length > 0
+  const correctLetter = eq.answer?.trim()[0]?.toUpperCase() ?? ''
+  const letters = OPTION_LETTERS.slice(0, eq.options?.length ?? 0)
 
   const isStructured = (e: unknown): e is ExplanationStructured =>
     typeof e === 'object' && e !== null && 'core' in e
 
-  return (
-    <div
-      className="rounded-xl px-3 py-2.5"
-      style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}
-    >
-      <p className="text-[10px] font-semibold text-[#3730a3] mb-2">📝 예시 문제</p>
-      <p className="text-xs text-[#1e1b4b] leading-relaxed mb-2">{String(eq.question)}</p>
-      <div className="flex flex-col gap-1 mb-3">
-        {eq.options.map((opt, i) => (
-          <p key={i} className="text-xs text-[#374151]">{typeof opt === 'string' ? opt : String(opt)}</p>
-        ))}
+  function handleSelect(letter: string) {
+    if (selected) return
+    setSelected(letter)
+    const isCorrect = letter === correctLetter
+    if (isCorrect) {
+      fireConfetti()
+    } else {
+      void saveWrongAnswer(cardId, letter, correctLetter)
+    }
+    onAnswer?.(isCorrect, letter)
+  }
+
+  const isAnswered = selected !== null
+
+  // No options → old "정답 보기" flow
+  if (!hasOptions) {
+    return (
+      <div className="rounded-xl px-3 py-2.5" style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}>
+        <p className="text-[10px] font-semibold text-[#3730a3] mb-2">📝 예시 문제</p>
+        <p className="text-xs text-[#1e1b4b] leading-relaxed mb-3">{String(eq.question)}</p>
+        {revealed ? (
+          <div className="rounded-lg px-2.5 py-2" style={{ background: '#f0fdf4', border: '1px solid #86efac' }}>
+            <p className="text-xs font-bold text-[#166534]">정답: {eq.answer ? String(eq.answer) : '(미입력)'} ✅</p>
+            {isStructured(eq.explanation)
+              ? <StructuredExplanation exp={eq.explanation} />
+              : <p className="text-xs text-[#14532d] mt-0.5 leading-relaxed">{String(eq.explanation ?? '')}</p>
+            }
+          </div>
+        ) : (
+          <button
+            onClick={() => setRevealed(true)}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+            style={{ background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe' }}
+          >
+            정답 보기
+          </button>
+        )}
       </div>
-      {revealed ? (
+    )
+  }
+
+  // MCQ interactive mode
+  return (
+    <div className="rounded-xl px-3 py-2.5" style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}>
+      <p className="text-[10px] font-semibold text-[#3730a3] mb-2">📝 예시 문제</p>
+      <p className="text-xs text-[#1e1b4b] leading-relaxed mb-3">{String(eq.question)}</p>
+
+      {/* A/B/C/D option buttons */}
+      <div className="flex flex-col gap-1.5 mb-2">
+        {letters.map((letter, i) => {
+          const opt = eq.options[i]
+          const isSelected = selected === letter
+          const isCorrect = letter === correctLetter
+
+          let bg = 'white'
+          let border = '#e2e8f0'
+          let color = '#374151'
+
+          if (isAnswered) {
+            if (isCorrect) { bg = '#f0fdf4'; border = '#86efac'; color = '#166534' }
+            else if (isSelected) { bg = '#fff5f5'; border = '#fecaca'; color = '#991b1b' }
+          } else {
+            border = '#c7d2fe'
+          }
+
+          return (
+            <button
+              key={letter}
+              onClick={() => handleSelect(letter)}
+              disabled={isAnswered}
+              className="text-left rounded-xl px-3 py-2 text-xs transition-all disabled:cursor-default"
+              style={{
+                background: bg,
+                border: `1.5px solid ${border}`,
+                color,
+                fontWeight: isAnswered && isCorrect ? 600 : 400,
+              }}
+            >
+              <span className="font-bold mr-1.5" style={{ color: isAnswered && isCorrect ? '#166534' : isAnswered && isSelected && !isCorrect ? '#991b1b' : '#4338ca' }}>{letter}.</span>
+              {typeof opt === 'string' ? opt : String(opt)}
+              {isAnswered && isCorrect && <span className="ml-1.5">✅</span>}
+              {isAnswered && isSelected && !isCorrect && <span className="ml-1.5">❌</span>}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Explanation — auto-shown after answer */}
+      {isAnswered && (
         <div
-          className="rounded-lg px-2.5 py-2"
+          className="rounded-lg px-2.5 py-2 mt-1"
           style={{ background: '#f0fdf4', border: '1px solid #86efac' }}
         >
-          <p className="text-xs font-bold text-[#166534]">정답: {eq.answer ? String(eq.answer) : '(미입력)'} ✅</p>
+          <p className="text-xs font-bold text-[#166534] mb-1">
+            {selected === correctLetter ? '✅ 정답!' : `❌ 오답 — 정답: ${correctLetter}`}
+          </p>
           {isStructured(eq.explanation)
             ? <StructuredExplanation exp={eq.explanation} />
-            : <p className="text-xs text-[#14532d] mt-0.5 leading-relaxed">{String(eq.explanation ?? '')}</p>
+            : <p className="text-xs text-[#14532d] leading-relaxed">{String(eq.explanation ?? '')}</p>
           }
         </div>
-      ) : (
-        <button
-          onClick={() => setRevealed(true)}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg"
-          style={{ background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe' }}
-        >
-          정답 보기
-        </button>
       )}
     </div>
   )
 }
 
 // ── Flashcard body ────────────────────────────────────────────
-function FlashCard({ card, visible }: { card: RecentExtractionItem; visible: boolean }) {
+function FlashCard({
+  card,
+  visible,
+  onMcqAnswer,
+}: {
+  card: RecentExtractionItem
+  visible: boolean
+  onMcqAnswer?: (isCorrect: boolean, selected: string) => void
+}) {
   const triggers = (card.triggers ?? []) as ConceptTrigger[]
   const [hint, setHint] = useState<string>('')
   const [hintLoading, setHintLoading] = useState(false)
@@ -280,7 +382,11 @@ function FlashCard({ card, visible }: { card: RecentExtractionItem; visible: boo
 
       {/* Example question */}
       {card.exampleQuestion && (
-        <ExampleQuestionBlock eq={card.exampleQuestion} />
+        <ExampleQuestionBlock
+          eq={card.exampleQuestion}
+          cardId={card.id}
+          onAnswer={onMcqAnswer}
+        />
       )}
 
       {/* Review count */}
@@ -563,6 +669,8 @@ function DoneView({ count }: { count: number }) {
 export default function HistoryPage() {
   const userId = useStudyStore((s) => s.userId)
   const setConceptDueCount = useStudyStore((s) => s.setConceptDueCount)
+  const setTodayReviewCount = useStudyStore((s) => s.setTodayReviewCount)
+  const incrementTodayReviewCount = useStudyStore((s) => s.incrementTodayReviewCount)
   const setReviewCardContext = useClaudeStore((s) => s.setReviewCardContext)
 
   const [cards, setCards] = useState<RecentExtractionItem[]>([])
@@ -574,6 +682,8 @@ export default function HistoryPage() {
   const [submitting, setSubmitting] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [noOnDemandData, setNoOnDemandData] = useState(false)
+  // MCQ answer state — reset on card change
+  const [mcqAnswerState, setMcqAnswerState] = useState<{ isCorrect: boolean; selected: string } | null>(null)
 
   // Feedback panel state
   const [feedbackOpen, setFeedbackOpen] = useState(false)
@@ -592,6 +702,7 @@ export default function HistoryPage() {
       setCards(items)
       setKnewCount(log.knewCount)
       setConfusedCount(log.confusedCount)
+      setTodayReviewCount(log.knewCount + log.confusedCount)
       setStage(items.length === 0 ? 'empty' : 'review')
     }).catch(() => setStage('empty'))
   }, [userId])
@@ -624,12 +735,13 @@ export default function HistoryPage() {
     return () => setReviewCardContext(null)
   }, [cards, idx, stage, setReviewCardContext])
 
-  // Reset feedback panel when card changes
+  // Reset feedback panel + MCQ state when card changes
   useEffect(() => {
     setFeedbackOpen(false)
     setFeedbackText('')
     setAiFixResult(null)
     setFixError(null)
+    setMcqAnswerState(null)
   }, [idx])
 
   async function handleAnswer(knew: boolean) {
@@ -646,6 +758,7 @@ export default function HistoryPage() {
       const next = idx + 1
       if (knew) setKnewCount((c) => c + 1)
       else setConfusedCount((c) => c + 1)
+      incrementTodayReviewCount()
       if (userId) void upsertDailyReviewLog(userId, { knew: knew ? 1 : 0, confused: knew ? 0 : 1 })
       if (next >= cards.length) {
         setStage('done')
@@ -780,26 +893,44 @@ export default function HistoryPage() {
     <div className="max-w-lg mx-auto flex flex-col gap-4 pb-8">
       <ProgressBar current={idx + 1} total={total} />
 
-      <FlashCard key={idx} card={current} visible={visible} />
+      <FlashCard
+        key={idx}
+        card={current}
+        visible={visible}
+        onMcqAnswer={(isCorrect, selected) => setMcqAnswerState({ isCorrect, selected })}
+      />
 
-      {/* Answer buttons */}
+      {/* Answer buttons — MCQ answered → 다음 카드, otherwise 알았다/헷갈려 */}
       <div className="flex gap-3 px-4">
-        <button
-          onClick={() => void handleAnswer(false)}
-          disabled={submitting}
-          className="flex-1 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 transition-opacity"
-          style={{ background: '#fff9db', border: '1.5px solid #fde68a', color: '#92400e' }}
-        >
-          헷갈려 🔄
-        </button>
-        <button
-          onClick={() => void handleAnswer(true)}
-          disabled={submitting}
-          className="flex-1 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 transition-opacity"
-          style={{ background: '#f0fdf4', border: '1.5px solid #86efac', color: '#166534' }}
-        >
-          알았다 ✅
-        </button>
+        {mcqAnswerState !== null ? (
+          <button
+            onClick={() => void handleAnswer(mcqAnswerState.isCorrect)}
+            disabled={submitting}
+            className="flex-1 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 transition-opacity"
+            style={{ background: '#4f6ef7', color: 'white' }}
+          >
+            다음 카드 →
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={() => void handleAnswer(false)}
+              disabled={submitting}
+              className="flex-1 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 transition-opacity"
+              style={{ background: '#fff9db', border: '1.5px solid #fde68a', color: '#92400e' }}
+            >
+              헷갈려 🔄
+            </button>
+            <button
+              onClick={() => void handleAnswer(true)}
+              disabled={submitting}
+              className="flex-1 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 transition-opacity"
+              style={{ background: '#f0fdf4', border: '1.5px solid #86efac', color: '#166534' }}
+            >
+              알았다 ✅
+            </button>
+          </>
+        )}
       </div>
 
       {/* Edit button */}

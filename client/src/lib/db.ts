@@ -535,6 +535,7 @@ export interface ExampleQuestion {
   options: string[]
   answer: string
   explanation: ExplanationStructured | string
+  wrong_answer?: { selected: string; correct: string; timestamp: string }
 }
 
 export interface RecentExtractionItem {
@@ -1953,6 +1954,33 @@ export async function hasTodayReflection(userId: string): Promise<boolean> {
     .maybeSingle();
   if (error) logError('hasTodayReflection', error);
   return !!data;
+}
+
+// ── Wrong answer recording (stores inside example_question jsonb) ──
+export async function saveWrongAnswer(
+  extractionId: string,
+  selected: string,
+  correct: string,
+): Promise<void> {
+  try {
+    const { data } = await supabase
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
+      .select('example_question')
+      .eq('id', extractionId)
+      .single()
+    const row = data as { example_question: ExampleQuestion | null } | null
+    if (!row?.example_question) return
+    const updated: ExampleQuestion = {
+      ...row.example_question,
+      wrong_answer: { selected, correct, timestamp: new Date().toISOString() },
+    }
+    await supabase
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
+      .update({ example_question: updated })
+      .eq('id', extractionId)
+  } catch (e) {
+    console.warn('[db] saveWrongAnswer failed:', e)
+  }
 }
 
 // ── Concept Cards by Topic (for ConceptNotesPage dynamic tabs) ──

@@ -5,6 +5,12 @@ import useClaudeStore from '../../store/claudeStore';
 import Sidebar from './Sidebar';
 import { MORE_MENU_ITEMS, ADMIN_MENU_ITEM } from '../../constants/navigation';
 
+const DAILY_GOAL = 10;
+const fireConfetti = () => {
+  const fn = (window as { confetti?: (o: object) => void }).confetti;
+  fn?.({ particleCount: 120, spread: 80, origin: { x: 0.5, y: 0.1 } });
+};
+
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 
 const mainTabs = [
@@ -23,7 +29,16 @@ export default function Header({ email, onSignOut }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const dueCount = useStudyStore((s) => s.conceptDueCount);
+  const todayReviewCount = useStudyStore((s) => s.todayReviewCount);
+  const prevCountRef = useRef(0);
   const isScience = location.pathname === '/science';
+
+  useEffect(() => {
+    if (todayReviewCount >= DAILY_GOAL && prevCountRef.current < DAILY_GOAL) {
+      fireConfetti();
+    }
+    prevCountRef.current = todayReviewCount;
+  }, [todayReviewCount]);
   const isPanelOpen = useClaudeStore((s) => s.isOpen);
   const togglePanel = useClaudeStore((s) => s.togglePanel);
 
@@ -62,7 +77,7 @@ export default function Header({ email, onSignOut }: HeaderProps) {
     <>
     <header
       className="fixed top-0 left-0 right-0 z-50 flex items-center px-3 md:px-5 bg-white border-b border-border"
-      style={{ height: 54 }}
+      style={{ height: 54, position: 'relative' }}
     >
       {/* Logo */}
       <div
@@ -185,9 +200,30 @@ export default function Header({ email, onSignOut }: HeaderProps) {
           ↪
         </button>
       </div>
+
+      {/* Daily progress gauge — 3px strip at header bottom */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 3,
+          background: '#f1f5f9',
+        }}
+      >
+        <div
+          style={{
+            height: '100%',
+            width: `${Math.min((todayReviewCount / DAILY_GOAL) * 100, 100)}%`,
+            background: todayReviewCount >= DAILY_GOAL ? '#22c55e' : '#4f6ef7',
+            transition: 'width 0.5s ease',
+          }}
+        />
+      </div>
     </header>
 
-    {/* Becker 목차 드로어 */}
+    {/* FAR 목차 드로어 */}
     {tocOpen && (
       <div className="fixed inset-0 z-50 flex" onClick={() => setTocOpen(false)}>
         <div className="absolute inset-0 bg-black/30" />
