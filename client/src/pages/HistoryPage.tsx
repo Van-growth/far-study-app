@@ -115,6 +115,13 @@ const WRONG_MESSAGES = [
   '💪 틀려야 늘어요. 해설 확인!',
   '😅 한 번 더! 이 개념 곧 마스터해요',
 ]
+const CORRECT_MESSAGES = [
+  '🎉 정답! 완벽해요!',
+  '⭐ 맞았어요! 이 개념 마스터 중!',
+  '🔥 정답! 계속 이 기세로!',
+  '✨ 완벽! FAR 합격 가까워지고 있어요',
+]
+function pickRandom<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)] }
 
 function ExampleQuestionBlock({
   eq,
@@ -130,6 +137,8 @@ function ExampleQuestionBlock({
   const [calcOpen, setCalcOpen] = useState(false)
   const [shaking, setShaking] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [pulsingLetter, setPulsingLetter] = useState<string | null>(null)
+  const [xpVisible, setXpVisible] = useState(false)
 
   if (!eq?.question) return null
 
@@ -146,14 +155,22 @@ function ExampleQuestionBlock({
     const isCorrect = letter === correctLetter
     if (isCorrect) {
       fireConfetti()
+      // pulse glow on correct button
+      setPulsingLetter(letter)
+      setTimeout(() => setPulsingLetter(null), 600)
+      // XP float-up
+      setXpVisible(true)
+      setTimeout(() => setXpVisible(false), 1000)
+      // toast
+      setToast(pickRandom(CORRECT_MESSAGES))
+      setTimeout(() => setToast(null), 2000)
     } else {
       void saveWrongAnswer(cardId, letter, correctLetter)
       // shake
       setShaking(true)
       setTimeout(() => setShaking(false), 500)
-      // random toast
-      const msg = WRONG_MESSAGES[Math.floor(Math.random() * WRONG_MESSAGES.length)]
-      setToast(msg)
+      // toast
+      setToast(pickRandom(WRONG_MESSAGES))
       setTimeout(() => setToast(null), 2000)
     }
     onAnswer?.(isCorrect, letter)
@@ -247,23 +264,33 @@ function ExampleQuestionBlock({
           }
 
           return (
-            <button
-              key={letter}
-              onClick={() => handleSelect(letter)}
-              disabled={isAnswered}
-              className="text-left rounded-xl px-3 py-2 text-xs transition-all disabled:cursor-default"
-              style={{
-                background: bg,
-                border: `1.5px solid ${border}`,
-                color,
-                fontWeight: isAnswered && isCorrect ? 600 : 400,
-              }}
-            >
-              <span className="font-bold mr-1.5" style={{ color: isAnswered && isCorrect ? '#166534' : isAnswered && isSelected && !isCorrect ? '#991b1b' : '#4338ca' }}>{letter}.</span>
-              {typeof opt === 'string' ? opt : String(opt)}
-              {isAnswered && isCorrect && <span className="ml-1.5">✅</span>}
-              {isAnswered && isSelected && !isCorrect && <span className="ml-1.5">❌</span>}
-            </button>
+            <div key={letter} className="relative">
+              {/* XP float-up — only on the correct button when answered correctly */}
+              {isCorrect && xpVisible && (
+                <span
+                  className="animate-floatUp absolute -top-1 right-2 text-xs font-bold pointer-events-none z-10"
+                  style={{ color: '#16a34a' }}
+                >
+                  +5 XP
+                </span>
+              )}
+              <button
+                onClick={() => handleSelect(letter)}
+                disabled={isAnswered}
+                className={`w-full text-left rounded-xl px-3 py-2 text-xs transition-all disabled:cursor-default${pulsingLetter === letter ? ' animate-correctPulse' : ''}`}
+                style={{
+                  background: bg,
+                  border: `1.5px solid ${border}`,
+                  color,
+                  fontWeight: isAnswered && isCorrect ? 600 : 400,
+                }}
+              >
+                <span className="font-bold mr-1.5" style={{ color: isAnswered && isCorrect ? '#166534' : isAnswered && isSelected && !isCorrect ? '#991b1b' : '#4338ca' }}>{letter}.</span>
+                {typeof opt === 'string' ? opt : String(opt)}
+                {isAnswered && isCorrect && <span className="ml-1.5">✅</span>}
+                {isAnswered && isSelected && !isCorrect && <span className="ml-1.5">❌</span>}
+              </button>
+            </div>
           )
         })}
       </div>
