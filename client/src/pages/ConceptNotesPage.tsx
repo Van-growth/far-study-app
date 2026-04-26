@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import useStudyStore from '../store/studyStore';
-import { fetchJournalEnrichments, JournalEnrichment } from '../lib/db';
+import { fetchJournalEnrichments, JournalEnrichment, fetchConceptCardsByTopic, ConceptCardRow } from '../lib/db';
 
 interface ALItem {
   cat: string; item: string; std: string;
@@ -26,7 +26,7 @@ type QuizItem = {
   formula?: string;
   related_concepts?: string[];
 };
-type TabKey = 'asset-liability' | 'valuation' | 'misc';
+type TabKey = 'asset-liability' | 'valuation' | 'ratios' | 'misc';
 type ViewMode = 'table' | 'quiz';
 type LangKey = 'ko' | 'en';
 
@@ -332,6 +332,26 @@ const valuationData: ValItem[] = [
 
 const AL_CATS = ['All','Receivables','Inventory','Revenue','Liabilities','PPE & Intangibles','Equity','Tax','NFP','Gov'];
 const VAL_CATS = ['All','Assets','Liabilities','Equity','Revenue','NFP','Gov'];
+const RATIO_CATS = ['All','Liquidity Ratios','Activity Ratios','Profitability Ratios','Leverage Ratios'];
+
+function conceptCardToQuizItem(card: ConceptCardRow): QuizItem {
+  const eq = card.exampleQuestion;
+  const cat = card.topicTags.find((t) =>
+    t.includes('Liquidity') || t.includes('Activity') || t.includes('Profitability') || t.includes('Leverage')
+  ) ?? 'Financial Ratios';
+  return {
+    cat,
+    item: card.concepts[0] ?? 'Financial Ratio',
+    std: 'gaap',
+    situation_ko: (typeof eq?.explanation === 'object' ? eq.explanation?.memory : undefined) ?? card.trapPattern ?? '',
+    situation_en: eq?.question ?? '',
+    rule: card.formula ?? '',
+    trigger: card.concepts.slice(0, 5).join(' / '),
+    trap: card.trapPattern ?? '',
+    formula: card.formula ?? undefined,
+    related_concepts: card.relatedConcepts ?? undefined,
+  };
+}
 
 const VAL_BS_ORDER: Record<string, number> = {
   'Cash & Cash Equivalents':1,'Accounts Receivable':2,'Inventory':3,
@@ -503,6 +523,7 @@ function QuizCard({
 const SIDEBAR_TABS = [
   { key: 'asset-liability' as TabKey, label: 'Asset vs. Liability', icon: '⚖️' },
   { key: 'valuation' as TabKey, label: 'Valuation', icon: '💰' },
+  { key: 'ratios' as TabKey, label: 'Financial Ratios', icon: '📊' },
   { key: 'misc' as TabKey, label: '기타', icon: '📦' },
 ];
 
@@ -558,8 +579,23 @@ export default function ConceptNotesPage() {
   const [enrichments, setEnrichments] = useState<JournalEnrichment[]>([]);
   useEffect(() => {
     if (!userId) return;
-    fetchJournalEnrichments(userId).then(setEnrichments);
+    fetchJournalEnrichments(userId).then((data) => {
+      console.log('[ConceptNotes] enrichments from DB:', data.length, '건');
+      console.log('[ConceptNotes] 첫 3개 샘플:', data.slice(0, 3));
+      setEnrichments(data);
+    });
   }, [userId]);
+
+  // Financial Ratios: F1-M8 카드 DB에서 동적 로드
+  const [ratioItems, setRatioItems] = useState<QuizItem[]>([]);
+  const [ratioLoading, setRatioLoading] = useState(false);
+  useEffect(() => {
+    if (!userId || activeTab !== 'ratios' || ratioItems.length > 0) return;
+    setRatioLoading(true);
+    fetchConceptCardsByTopic(userId, 'F1-M8')
+      .then((cards) => setRatioItems(cards.map(conceptCardToQuizItem)))
+      .finally(() => setRatioLoading(false));
+  }, [userId, activeTab, ratioItems.length]);
 
   // Misc (임시 저장) — persisted to localStorage
   const [miscConcepts, setMiscConcepts] = useState<string[]>(() => {
@@ -570,7 +606,7 @@ export default function ConceptNotesPage() {
     localStorage.setItem('concept-notes-misc', JSON.stringify(miscConcepts));
   }, [miscConcepts]);
 
-  const cats = activeTab === 'asset-liability' ? AL_CATS : activeTab === 'valuation' ? VAL_CATS : [];
+  const cats = activeTab === 'asset-liability' ? AL_CATS : activeTab === 'valuation' ? VAL_CATS : activeTab === 'ratios' ? RATIO_CATS : [];
 
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
@@ -588,6 +624,7 @@ export default function ConceptNotesPage() {
   };
 
   const allItems = useMemo<QuizItem[]>(() => {
+    if (activeTab === 'ratios') return ratioItems;
     const base = activeTab === 'asset-liability'
       ? assetLiabilityData
       : activeTab === 'valuation'
@@ -604,7 +641,7 @@ export default function ConceptNotesPage() {
         related_concepts: item.related_concepts ?? e.related_concepts ?? undefined,
       };
     });
-  }, [activeTab, enrichments]);
+  }, [activeTab, enrichments, ratioItems]);
 
   const handleConceptClick = useCallback((conceptName: string) => {
     const idx = allItems.findIndex(it => it.item === conceptName);
@@ -700,7 +737,7 @@ export default function ConceptNotesPage() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <h1 className="text-lg font-bold text-[#0f172a]">
-                  {activeTab === 'asset-liability' ? '⚖️ Asset vs. Liability' : activeTab === 'valuation' ? '💰 Valuation' : '📦 기타 (임시 저장)'}
+                  {activeTab === 'asset-liability' ? '⚖️ Asset vs. Liability' : activeTab === 'valuation' ? '💰 Valuation' : activeTab === 'ratios' ? '📊 Financial Ratios' : '📦 기타 (임시 저장)'}
                 </h1>
                 <p className="text-xs text-muted mt-0.5">
                   {activeTab === 'misc' ? `${miscConcepts.length}개 저장됨 · 나중에 탭으로 분류 정리` : `${filtered.length}개 항목`}
@@ -767,8 +804,15 @@ export default function ConceptNotesPage() {
               </div>
             )}
 
+            {/* ── Ratios Loading ── */}
+            {activeTab === 'ratios' && ratioLoading && (
+              <div className="bg-white rounded-2xl border border-[#e2e8f0] p-10 text-center">
+                <p className="text-sm text-muted">Financial Ratio 카드 불러오는 중...</p>
+              </div>
+            )}
+
             {/* ── Table View ── */}
-            {activeTab !== 'misc' && viewMode === 'table' && (
+            {activeTab !== 'misc' && !ratioLoading && viewMode === 'table' && (
               <div className="bg-white rounded-2xl overflow-hidden"
                 style={{ border:'1.5px solid #e2e8f0' }}>
                 <div className="overflow-x-auto">
@@ -839,7 +883,7 @@ export default function ConceptNotesPage() {
             )}
 
             {/* ── Quiz View ── */}
-            {activeTab !== 'misc' && viewMode === 'quiz' && (
+            {activeTab !== 'misc' && !ratioLoading && viewMode === 'quiz' && (
               <div className="flex flex-col gap-4">
                 {quizItems.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-[#e2e8f0] p-8 text-center">
