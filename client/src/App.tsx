@@ -16,6 +16,7 @@ import ValuationPage from './pages/ValuationPage';
 import ConceptNotesPage from './pages/ConceptNotesPage';
 import HomePage from './pages/HomePage';
 import LearningEffectPage from './pages/LearningEffectPage';
+import HowToUsePage from './pages/HowToUsePage';
 import BadgesPage from './pages/BadgesPage';
 import HistoryPage from './pages/HistoryPage';
 
@@ -88,7 +89,7 @@ function BottomTabBar({ email }: { email: string }) {
               onClick={() => { setTocOpen(true); setShowMore(false); }}
               className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors"
             >
-              📚 Becker 목차
+              📚 FAR 목차
             </button>
           </div>
         </div>
@@ -104,7 +105,7 @@ function BottomTabBar({ email }: { email: string }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
-              <span className="text-xs font-semibold text-muted uppercase tracking-wider">📚 Becker 목차</span>
+              <span className="text-xs font-semibold text-muted uppercase tracking-wider">📚 FAR 목차</span>
               <button onClick={() => setTocOpen(false)} className="text-muted hover:text-[#0f172a] text-lg leading-none px-1">×</button>
             </div>
             <div className="flex-1 overflow-y-auto">
@@ -226,6 +227,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/replay" element={<ReplayPage />} />
             <Route path="/science" element={<SciencePage />} />
             <Route path="/learning" element={<LearningEffectPage />} />
+            <Route path="/how-to-use" element={<HowToUsePage />} />
             <Route path="/valuation" element={<ValuationPage />} />
             <Route path="/concept-notes" element={<ConceptNotesPage />} />
             <Route path="/history" element={<HistoryPage />} />

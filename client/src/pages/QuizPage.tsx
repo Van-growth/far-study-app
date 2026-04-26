@@ -615,7 +615,7 @@ export default function QuizPage() {
           className="md:hidden w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
           style={{ border: '1.5px solid #e2e8f0', background: 'white', color: '#0f172a' }}
         >
-          <span>📚 Becker F1–F6</span>
+          <span>📚 FAR F1–F6</span>
           <span className="text-xs text-muted">탭하여 모듈 선택 ▾</span>
         </button>
 

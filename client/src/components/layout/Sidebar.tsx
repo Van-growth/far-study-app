@@ -31,10 +31,10 @@ export default function Sidebar({ onItemClick }: SidebarProps = {}) {
     >
       <div className="p-3">
         <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-0.5 px-1">
-          Becker F1–F6
+          FAR F1–F6
         </p>
         <p className="text-[9px] text-muted px-1 mb-3">
-          출처: AICPA Blueprint 2026 · Becker 구조
+          출처: AICPA Blueprint 2026
         </p>
 
         <div className="flex flex-col gap-1">

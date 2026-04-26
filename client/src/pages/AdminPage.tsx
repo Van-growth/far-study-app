@@ -171,7 +171,7 @@ export default function AdminPage({ email }: AdminPageProps) {
             [
               ['summary', '📊 요약'],
               ['perf', '🎯 문제·사용자'],
-              ['becker', '📘 Becker'],
+              ['becker', '📘 FAR 분석'],
               ['concept', '📈 개념별 정답률'],
             ] as [AdminTab, string][]
           ).map(([id, label]) => (
@@ -294,7 +294,7 @@ export default function AdminPage({ email }: AdminPageProps) {
         <>
         {/* Becker 분석 현황 */}
         <section className="card p-4">
-          <p className="font-semibold text-sm text-[#0f172a] mb-2">📘 Becker 분석 현황</p>
+          <p className="font-semibold text-sm text-[#0f172a] mb-2">📘 FAR 분석 현황</p>
           <div className="grid grid-cols-3 gap-2 mb-3">
             <StatCard label="총 분석" value={String(data.becker.totalExtractions)} />
             <StatCard label="누적 개념" value={String(data.becker.uniqueConcepts)} />

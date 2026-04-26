@@ -284,7 +284,7 @@ export default function Dashboard() {
       {/* Section-level (F1-F6) 분석+복습 합산 진도 */}
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-[#0f172a]">Becker 섹션별 진도</h3>
+          <h3 className="font-semibold text-[#0f172a]">FAR 섹션별 진도</h3>
           <p className="text-xs text-muted">분석+복습 합산</p>
         </div>
         <div className="flex flex-col gap-2">

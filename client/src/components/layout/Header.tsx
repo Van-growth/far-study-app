@@ -138,7 +138,7 @@ export default function Header({ email, onSignOut }: HeaderProps) {
                 onClick={() => { setTocOpen(true); setMoreOpen(false); }}
                 className="w-full text-left px-4 py-2 text-[13px] hover:bg-gray-50 transition-colors text-[#0f172a]"
               >
-                📚 Becker 목차
+                📚 FAR 목차
               </button>
             </div>
           )}
@@ -197,7 +197,7 @@ export default function Header({ email, onSignOut }: HeaderProps) {
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
-            <span className="text-xs font-semibold text-muted uppercase tracking-wider">📚 Becker 목차</span>
+            <span className="text-xs font-semibold text-muted uppercase tracking-wider">📚 FAR 목차</span>
             <button
               onClick={() => setTocOpen(false)}
               className="text-muted hover:text-[#0f172a] text-lg leading-none px-1"

@@ -50,7 +50,7 @@ export default function MobileSectionDrawer({ open, onClose }: MobileSectionDraw
         </div>
         <div className="shrink-0 px-4 py-2 flex items-center justify-between border-b border-border">
           <div>
-            <p className="text-sm font-semibold text-[#0f172a]">📚 Becker F1–F6</p>
+            <p className="text-sm font-semibold text-[#0f172a]">📚 FAR F1–F6</p>
             <p className="text-[10px] text-muted">모듈을 선택하면 해당 퀴즈가 시작됩니다.</p>
           </div>
           <button

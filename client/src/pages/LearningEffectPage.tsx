@@ -8,7 +8,7 @@ const BLUE_DARK = '#1A5FCC';
 
 // ── 1. Hero ───────────────────────────────────────────────────
 const BADGES = [
-  { icon: '📚', value: '6×', label: '문제당 학습 깊이', sub: 'Becker 단독 대비' },
+  { icon: '📚', value: '6×', label: '문제당 학습 깊이', sub: '교재 단독 대비' },
   { icon: '🎯', value: '50%', label: 'TBS 배점', sub: 'FAR 시험 전체 기준' },
   { icon: '🧠', value: '포함', label: '메타인지 훈련', sub: '자가진단 + AI 교정' },
 ];
@@ -84,7 +84,7 @@ function ComparisonSection() {
     <section className="flex flex-col gap-4">
       <div className="text-center">
         <h2 className="text-lg sm:text-xl font-bold text-[#0f172a]">
-          "Becker만" vs "FAR Study App 병행"
+          "교재만" vs "FAR Study App 병행"
         </h2>
         <p className="text-xs text-muted mt-1">같은 1문제, 완전히 다른 학습 밀도</p>
       </div>
@@ -97,7 +97,7 @@ function ComparisonSection() {
         >
           <div className="flex items-center gap-2">
             <span className="text-base">📘</span>
-            <p className="text-sm font-bold text-[#475569]">Becker만</p>
+            <p className="text-sm font-bold text-[#475569]">교재만</p>
           </div>
           <div className="flex flex-col gap-3">
             {BECKER_STEPS.map((s) => <StepItem key={s.n} {...s} accent="#94a3b8" />)}
@@ -195,7 +195,7 @@ function ExampleSection() {
         <div className="rounded-2xl overflow-hidden" style={{ border: '1.5px solid #e2e8f0' }}>
           <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: '#f1f5f9' }}>
             <span className="text-xs font-bold text-[#475569] uppercase tracking-wide">Step 1</span>
-            <span className="text-xs text-muted">MCQ로 접하는 방식 (Becker F2-M1)</span>
+            <span className="text-xs text-muted">MCQ로 접하는 방식 (FAR F2-M1)</span>
           </div>
           <div className="px-4 py-4 bg-white">
             <p className="text-xs text-muted font-mono mb-2">Q. Company A sells a product with a right of return...</p>
