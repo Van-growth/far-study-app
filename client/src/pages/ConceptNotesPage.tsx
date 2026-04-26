@@ -336,7 +336,7 @@ const RATIO_CATS = ['All','Liquidity Ratios','Activity Ratios','Profitability Ra
 
 function conceptCardToQuizItem(card: ConceptCardRow): QuizItem {
   const eq = card.exampleQuestion;
-  const cat = card.topicTags.find((t) =>
+  const cat = card.topicTags.find((t: string) =>
     t.includes('Liquidity') || t.includes('Activity') || t.includes('Profitability') || t.includes('Leverage')
   ) ?? 'Financial Ratios';
   return {
@@ -593,7 +593,7 @@ export default function ConceptNotesPage() {
     if (!userId || activeTab !== 'ratios' || ratioItems.length > 0) return;
     setRatioLoading(true);
     fetchConceptCardsByTopic(userId, 'F1-M8')
-      .then((cards) => setRatioItems(cards.map(conceptCardToQuizItem)))
+      .then((cards: ConceptCardRow[]) => setRatioItems(cards.map(conceptCardToQuizItem)))
       .finally(() => setRatioLoading(false));
   }, [userId, activeTab, ratioItems.length]);
 
