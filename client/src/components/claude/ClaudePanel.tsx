@@ -101,6 +101,21 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
 **반드시 6개 항목 모두 빠짐없이 출력할 것. 어떤 항목도 생략하거나 축약하지 말 것.**`,
   };
 
+  const buildQuCommand = (): string => {
+    const eq = reviewCardContext?.exampleQuestion;
+    if (!eq) return '현재 복습 카드에 예시 문제 데이터가 없습니다. (/qu 사용 불가)';
+    const optLines = eq.options.join('\n');
+    const expl = typeof eq.explanation === 'string'
+      ? eq.explanation
+      : [
+          eq.explanation.core,
+          eq.explanation.calculation ? `계산: ${eq.explanation.calculation}` : null,
+          eq.explanation.traps.length > 0 ? `오답 해설:\n${eq.explanation.traps.join('\n')}` : null,
+          eq.explanation.memory ? `기억 포인트: ${eq.explanation.memory}` : null,
+        ].filter(Boolean).join('\n');
+    return `문제: ${eq.question}\n${optLines}\n정답: ${eq.answer}\n해설: ${expl}\n\n위 문제 기준으로 설명해줘`;
+  };
+
   const buildReCommand = (): string => {
     const topicName =
       reviewCardContext?.topicTags[0] ??
@@ -124,9 +139,9 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const handleSend = () => {
     const t = input.trim();
     if (!t || isLoading) return;
-    const isSlash = t === '/re' || t in SLASH_COMMANDS;
+    const isSlash = t === '/re' || t === '/qu' || t in SLASH_COMMANDS;
     const { text: correctedText, corrected } = isSlash ? { text: t, corrected: false } : correctTypos(t);
-    const message = t === '/re' ? buildReCommand() : (SLASH_COMMANDS[t] ?? correctedText);
+    const message = t === '/re' ? buildReCommand() : t === '/qu' ? buildQuCommand() : (SLASH_COMMANDS[t] ?? correctedText);
     sendMessage(message, corrected);
     setInput('');
     if (taRef.current) taRef.current.style.height = 'auto';

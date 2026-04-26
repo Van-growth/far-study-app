@@ -619,6 +619,7 @@ export default function HistoryPage() {
       questionText: card.exampleQuestion?.question ?? null,
       correctAnswer: card.exampleQuestion?.answer ?? null,
       extractionId: card.id,
+      exampleQuestion: card.exampleQuestion ?? null,
     })
     return () => setReviewCardContext(null)
   }, [cards, idx, stage, setReviewCardContext])

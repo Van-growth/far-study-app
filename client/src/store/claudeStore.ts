@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { ExampleQuestion } from '../lib/db';
 
 export interface Message {
   id: string;
@@ -36,6 +37,7 @@ export interface ReviewCardContext {
   questionText: string | null;
   correctAnswer: string | null;
   extractionId: string | null;
+  exampleQuestion: ExampleQuestion | null;
 }
 
 const MAX_MESSAGES = 20;
