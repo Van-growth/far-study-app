@@ -17,29 +17,30 @@ const STEPS = [
   },
   {
     num: '②',
-    title: 'Supabase DB 저장',
+    title: '학습 기록 저장',
     color: '#0891b2',
     bg: '#ecfeff',
     border: '#a5f3fc',
     icon: '🗄️',
+    sub: '공부한 내용이 자동으로 저장돼요',
     items: [
-      { label: 'concept_extractions', desc: '개념·트리거·함정·예시 문제 누적' },
-      { label: 'topic_progress', desc: '토픽별 시도 횟수·정답 횟수 업데이트' },
-      { label: 'daily_review_log', desc: '복습 완료 기록 (날짜·토픽·결과)' },
-      { label: 'daily_reflection', desc: '컨디션·방해 요인·집중 모듈 저장' },
+      { label: '개념 학습 기록', desc: '분석한 개념·트리거·함정·예시 문제 누적' },
+      { label: '토픽별 진행 기록', desc: '토픽별 시도 횟수·정답 횟수 업데이트' },
+      { label: '복습 완료 기록', desc: '날짜·토픽·결과별 복습 이력 저장' },
+      { label: '오늘의 컨디션 기록', desc: '컨디션·방해 요인·집중 모듈 저장' },
     ],
   },
   {
     num: '③',
-    title: '연산 및 집계',
+    title: '학습 패턴 분석',
     color: '#7c3aed',
     bg: '#f5f3ff',
     border: '#ddd6fe',
     icon: '⚙️',
     items: [
-      { label: '정답률', desc: 'correct ÷ attempts — 토픽별 약점 판별' },
-      { label: '복습 완료 추이', desc: '날짜별 완료 건수 시계열 집계' },
-      { label: '회고 분석 TOP3', desc: '기간 내 정답률 상위·하위 토픽 추출' },
+      { label: '정답률 계산', desc: '맞힌 횟수 ÷ 시도 횟수 — 토픽별 약점 자동 판별' },
+      { label: '복습 완료 추이', desc: '날짜별 완료 건수 그래프 자동 생성' },
+      { label: '회고 분석 TOP3', desc: '선택 기간 내 잘하는·취약한 토픽 상위 3개 추출' },
       { label: 'D-Day 계산', desc: '시험일까지 남은 날 실시간 산정' },
     ],
   },
@@ -108,6 +109,11 @@ function StepCard({
               {step.title}
             </p>
           </div>
+          {'sub' in step && step.sub && (
+            <p className="text-[11px] mt-0.5" style={{ color: step.color, opacity: 0.75 }}>
+              {step.sub}
+            </p>
+          )}
         </div>
       </div>
 
