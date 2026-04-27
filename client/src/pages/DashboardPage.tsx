@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import useStudyStore from '../store/studyStore';
 import { getExamDate, setExamDate } from '../lib/db';
+
+const EXAM_LS_KEY = 'far_exam_date'
+function syncExamDateLS(val: string | null) {
+  try {
+    if (val) localStorage.setItem(EXAM_LS_KEY, val)
+    else localStorage.removeItem(EXAM_LS_KEY)
+  } catch { /* ignore */ }
+}
 import Dashboard from '../components/dashboard/Dashboard';
 import StudyCalendar from '../components/dashboard/StudyCalendar';
 
@@ -15,6 +23,7 @@ export default function DashboardPage() {
     getExamDate(userId).then((d) => {
       setExamDateState(d);
       setInputVal(d ?? '');
+      syncExamDateLS(d);
     });
   }, [userId]);
 
@@ -27,6 +36,7 @@ export default function DashboardPage() {
     const val = inputVal || null;
     await setExamDate(userId, val);
     setExamDateState(val);
+    syncExamDateLS(val);
     setEditing(false);
   };
 
@@ -95,6 +105,7 @@ export default function DashboardPage() {
                     if (!userId) return;
                     await setExamDate(userId, null);
                     setExamDateState(null);
+                    syncExamDateLS(null);
                     setInputVal('');
                     setEditing(false);
                   }}

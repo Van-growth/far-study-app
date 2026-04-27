@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useStudyStore from '../store/studyStore'
-import { readExamInfo } from '../components/home/ExamCountdown'
+import { readExamInfo, daysBetween, todayKST, type ExamInfo } from '../components/home/ExamCountdown'
 import DailyReflectionModal from '../components/home/DailyReflectionModal'
-import { hasTodayReflection } from '../lib/db'
+import { hasTodayReflection, getExamDate } from '../lib/db'
+
+const EXAM_LS_KEY = 'far_exam_date'
 
 const REFLECTION_KEY = 'far-reflection-date';
 
@@ -14,8 +16,22 @@ export default function HomePage() {
   const totalXp = useStudyStore((s) => s.totalXp)
   const level = useStudyStore((s) => s.level)
   const streakDays = useStudyStore((s) => s.streakDays)
-  const { daysLeft, examDate } = readExamInfo()
+  const [examInfo, setExamInfo] = useState<ExamInfo>(() => readExamInfo())
   const [showReflection, setShowReflection] = useState(false)
+
+  // Sync exam date from DB → localStorage on mount.
+  // DashboardPage stores to Supabase only; readExamInfo() reads localStorage.
+  // This closes the gap so D-day always reflects the DB value.
+  useEffect(() => {
+    if (!userId) return
+    getExamDate(userId).then((date) => {
+      if (!date) return
+      try { localStorage.setItem(EXAM_LS_KEY, date) } catch { /* ignore */ }
+      setExamInfo({ examDate: date, daysLeft: daysBetween(todayKST(), date) })
+    })
+  }, [userId])
+
+  const { daysLeft, examDate } = examInfo
 
   useEffect(() => {
     if (!userId) return;
