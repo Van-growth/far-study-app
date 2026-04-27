@@ -11,6 +11,9 @@ export default function HomePage() {
   const navigate = useNavigate()
   const dueCount = useStudyStore((s) => s.conceptDueCount)
   const userId = useStudyStore((s) => s.userId)
+  const totalXp = useStudyStore((s) => s.totalXp)
+  const level = useStudyStore((s) => s.level)
+  const streakDays = useStudyStore((s) => s.streakDays)
   const { daysLeft, examDate } = readExamInfo()
   const [showReflection, setShowReflection] = useState(false)
 
@@ -42,6 +45,22 @@ export default function HomePage() {
       )}
 
       <div className="flex flex-col items-center justify-center min-h-[70vh] gap-8 px-6">
+
+        {/* XP / Level badge */}
+        <div
+          className="flex items-center gap-2 px-4 py-2 rounded-2xl text-sm"
+          style={{ background: 'white', border: '1.5px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
+        >
+          <span className="font-bold" style={{ color: '#4338ca' }}>🪙 {totalXp} XP</span>
+          <span style={{ color: '#cbd5e1' }}>·</span>
+          <span className="font-semibold" style={{ color: '#0f172a' }}>{level}</span>
+          {streakDays >= 2 && (
+            <>
+              <span style={{ color: '#cbd5e1' }}>·</span>
+              <span className="font-semibold" style={{ color: '#f97316' }}>🔥 {streakDays}일 연속</span>
+            </>
+          )}
+        </div>
 
         {/* D-day */}
         <div className="text-center">

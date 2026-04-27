@@ -6,6 +6,7 @@ import QuizCalculator from '../components/quiz/QuizCalculator'
 import MoneyRainOverlay from '../components/MoneyRainOverlay'
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
+import { addXp } from '../lib/db'
 import {
   fetchDueExtractions,
   updateConceptReview,
@@ -103,6 +104,55 @@ function StructuredExplanation({ exp }: { exp: ExplanationStructured }) {
   )
 }
 
+// ── Sound effects ─────────────────────────────────────────────
+type AudioCtxCtor = typeof AudioContext
+function getAudioCtx(): AudioContext | null {
+  try {
+    const Ctor: AudioCtxCtor | undefined =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: AudioCtxCtor }).webkitAudioContext
+    return Ctor ? new Ctor() : null
+  } catch { return null }
+}
+
+function playCorrectSound() {
+  const ctx = getAudioCtx()
+  if (!ctx) return
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.connect(gain)
+  gain.connect(ctx.destination)
+  osc.type = 'sine'
+  osc.frequency.setValueAtTime(800, ctx.currentTime)
+  osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.15)
+  gain.gain.setValueAtTime(0.25, ctx.currentTime)
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15)
+  osc.start()
+  osc.stop(ctx.currentTime + 0.18)
+  setTimeout(() => { try { ctx.close() } catch { /* ignore */ } }, 500)
+}
+
+function playWrongSound() {
+  const ctx = getAudioCtx()
+  if (!ctx) return
+  ;([[400, 0], [300, 0.12], [220, 0.25], [150, 0.37]] as Array<[number, number]>).forEach(
+    ([freq, t]) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'square'
+      osc.frequency.value = freq
+      gain.gain.setValueAtTime(0, ctx.currentTime + t)
+      gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + t + 0.01)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.1)
+      osc.start(ctx.currentTime + t)
+      osc.stop(ctx.currentTime + t + 0.12)
+    },
+  )
+  setTimeout(() => { try { ctx.close() } catch { /* ignore */ } }, 1000)
+}
+
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E']
 
 const WRONG_MESSAGES = [
@@ -135,6 +185,7 @@ function ExampleQuestionBlock({
   const [toast, setToast] = useState<string | null>(null)
   const [pulsingLetter, setPulsingLetter] = useState<string | null>(null)
   const [xpVisible, setXpVisible] = useState(false)
+  const [xpWrongVisible, setXpWrongVisible] = useState(false)
 
   if (!eq?.question) return null
 
@@ -150,6 +201,7 @@ function ExampleQuestionBlock({
     setSelected(letter)
     const isCorrect = letter === correctLetter
     if (isCorrect) {
+      playCorrectSound()
       // pulse glow on correct button
       setPulsingLetter(letter)
       setTimeout(() => setPulsingLetter(null), 600)
@@ -160,10 +212,14 @@ function ExampleQuestionBlock({
       setToast(pickRandom(CORRECT_MESSAGES))
       setTimeout(() => setToast(null), 2000)
     } else {
+      playWrongSound()
       void saveWrongAnswer(cardId, letter, correctLetter)
       // shake
       setShaking(true)
       setTimeout(() => setShaking(false), 500)
+      // XP float-down
+      setXpWrongVisible(true)
+      setTimeout(() => setXpWrongVisible(false), 1000)
       // toast
       setToast(pickRandom(WRONG_MESSAGES))
       setTimeout(() => setToast(null), 2000)
@@ -260,13 +316,20 @@ function ExampleQuestionBlock({
 
           return (
             <div key={letter} className="relative">
-              {/* XP float-up — only on the correct button when answered correctly */}
               {isCorrect && xpVisible && (
                 <span
                   className="animate-floatUp absolute -top-1 right-2 text-xs font-bold pointer-events-none z-10"
                   style={{ color: '#16a34a' }}
                 >
-                  +5 XP
+                  +5 🪙
+                </span>
+              )}
+              {isSelected && !isCorrect && xpWrongVisible && (
+                <span
+                  className="animate-floatDown absolute -bottom-1 right-2 text-xs font-bold pointer-events-none z-10"
+                  style={{ color: '#dc2626' }}
+                >
+                  -5 💸
                 </span>
               )}
               <button
@@ -787,6 +850,8 @@ export default function HistoryPage() {
   const setConceptDueCount = useStudyStore((s) => s.setConceptDueCount)
   const setTodayReviewCount = useStudyStore((s) => s.setTodayReviewCount)
   const incrementTodayReviewCount = useStudyStore((s) => s.incrementTodayReviewCount)
+  const addXpLocal = useStudyStore((s) => s.addXpLocal)
+  const setTotalXp = useStudyStore((s) => s.setTotalXp)
   const setReviewCardContext = useClaudeStore((s) => s.setReviewCardContext)
 
   const [cards, setCards] = useState<RecentExtractionItem[]>([])
@@ -796,6 +861,7 @@ export default function HistoryPage() {
   const [confusedCount, setConfusedCount] = useState(0)
   const [fixCount, setFixCount] = useState(0)
   const [moneyRain, setMoneyRain] = useState({ open: false, count: 0 })
+  const [nonMcqXp, setNonMcqXp] = useState<{ visible: boolean; correct: boolean } | null>(null)
   const [visible, setVisible] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [generating, setGenerating] = useState(false)
@@ -869,10 +935,30 @@ export default function HistoryPage() {
     const card = cards[idx]
     if (!card) return
 
+    // Non-MCQ cards: play sound + XP float animation immediately on button click
+    // MCQ cards: sound fires in handleSelect; here we just do DB writes
+    if (mcqAnswerState === null) {
+      if (knew) {
+        playCorrectSound()
+        addXpLocal(5)
+      } else {
+        playWrongSound()
+        addXpLocal(-5)
+      }
+      setNonMcqXp({ visible: true, correct: knew })
+      setTimeout(() => setNonMcqXp(null), 1100)
+    }
+
     setSubmitting(true)
     setVisible(false)
 
     await updateConceptReview(card.id, knew)
+
+    // XP DB write for this card (fire-and-forget)
+    if (userId) {
+      void addXp(userId, knew ? 5 : -5, knew ? 'correct_answer' : 'wrong_answer')
+        .then((r) => { if (r.totalXp > 0) setTotalXp(r.totalXp) })
+    }
 
     setTimeout(() => {
       const next = idx + 1
@@ -884,7 +970,14 @@ export default function HistoryPage() {
         setStage('done')
         const finalCount = (knew ? knewCount + 1 : knewCount) + (knew ? confusedCount : confusedCount + 1)
         setMoneyRain({ open: true, count: finalCount })
-        if (userId) getConceptDueCount(userId).then(setConceptDueCount).catch(() => {})
+        if (userId) {
+          addXpLocal(10)
+          void addXp(userId, 10, 'review_complete')
+            .then((r) => {
+              if (r.totalXp > 0) setTotalXp(r.totalXp + r.streakBonus)
+            })
+          getConceptDueCount(userId).then(setConceptDueCount).catch(() => {})
+        }
       } else {
         setIdx(next)
         setVisible(true)
@@ -1052,11 +1145,29 @@ export default function HistoryPage() {
         visible={visible}
         onMcqAnswer={(isCorrect, selected) => {
           setMcqAnswerState({ isCorrect, selected })
-          if (isCorrect) setMoneyRain({ open: true, count: knewCount + confusedCount + 1 })
+          if (isCorrect) {
+            setMoneyRain({ open: true, count: knewCount + confusedCount + 1 })
+            addXpLocal(5)
+          } else {
+            addXpLocal(-5)
+          }
         }}
       />
 
       {/* Answer buttons — MCQ answered → 다음 카드, otherwise 알았다/헷갈려 */}
+      <div className="relative">
+        {nonMcqXp?.visible && (
+          <span
+            className={`absolute pointer-events-none z-10 text-xs font-bold right-6 ${
+              nonMcqXp.correct
+                ? 'animate-floatUp -top-4'
+                : 'animate-floatDown bottom-0'
+            }`}
+            style={{ color: nonMcqXp.correct ? '#16a34a' : '#dc2626' }}
+          >
+            {nonMcqXp.correct ? '+5 🪙' : '-5 💸'}
+          </span>
+        )}
       <div className="flex gap-3 px-4">
         {mcqAnswerState !== null ? (
           <button
@@ -1087,6 +1198,7 @@ export default function HistoryPage() {
             </button>
           </>
         )}
+      </div>
       </div>
 
       {/* Edit button */}

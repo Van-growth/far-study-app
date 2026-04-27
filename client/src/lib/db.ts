@@ -2041,3 +2041,101 @@ export async function setExamDate(userId: string, examDate: string | null): Prom
     .upsert({ user_id: userId, exam_date: examDate, updated_at: new Date().toISOString() });
   if (error) logError('setExamDate', error);
 }
+
+// ── XP / User Stats ───────────────────────────────────────────
+
+type XpReason = 'correct_answer' | 'wrong_answer' | 'review_complete' | 'streak'
+
+function xpToLevel(xp: number): string {
+  if (xp >= 1000) return 'CPA'
+  if (xp >= 500) return '합격자'
+  if (xp >= 200) return '고득점자'
+  return '수험생'
+}
+
+/**
+ * Log an XP event and update user_stats.
+ * Returns updated totalXp and any streak bonus awarded.
+ * Safe to fire-and-forget — never throws.
+ */
+export async function addXp(
+  userId: string,
+  amount: number,
+  reason: XpReason,
+): Promise<{ totalXp: number; streakBonus: number }> {
+  if (!hasAuth(userId)) return { totalXp: 0, streakBonus: 0 }
+  try {
+    await supabase
+      .from(DB.TABLES.USER_XP)
+      .insert({ user_id: userId, xp_amount: amount, reason })
+
+    const { data } = await supabase
+      .from(DB.TABLES.USER_STATS)
+      .select('total_xp, streak_days, last_study_date')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    const today = localDateStr()
+    const yesterday = localDateStr(new Date(Date.now() - 86_400_000))
+
+    let newTotal = Math.max(0, (data?.total_xp ?? 0) + amount)
+    let streakDays = data?.streak_days ?? 0
+    let streakBonus = 0
+
+    if (reason === 'review_complete') {
+      const last = data?.last_study_date as string | null
+      if (last === yesterday) {
+        streakDays = streakDays + 1
+        if (streakDays >= 2) {
+          streakBonus = 20
+          newTotal += 20
+          await supabase
+            .from(DB.TABLES.USER_XP)
+            .insert({ user_id: userId, xp_amount: 20, reason: 'streak' })
+        }
+      } else if (last !== today) {
+        streakDays = 1
+      }
+    }
+
+    await supabase
+      .from(DB.TABLES.USER_STATS)
+      .upsert(
+        {
+          user_id: userId,
+          total_xp: newTotal,
+          level: xpToLevel(newTotal),
+          streak_days: streakDays,
+          last_study_date: today,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' },
+      )
+
+    return { totalXp: newTotal, streakBonus }
+  } catch (e) {
+    console.warn('[db] addXp failed:', (e as Error)?.message ?? e)
+    return { totalXp: 0, streakBonus: 0 }
+  }
+}
+
+export async function getUserStats(
+  userId: string,
+): Promise<{ total_xp: number; level: string; streak_days: number }> {
+  if (!hasAuth(userId)) return { total_xp: 0, level: '수험생', streak_days: 0 }
+  try {
+    const { data } = await supabase
+      .from(DB.TABLES.USER_STATS)
+      .select('total_xp, level, streak_days')
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (!data) return { total_xp: 0, level: '수험생', streak_days: 0 }
+    return {
+      total_xp: (data.total_xp as number) ?? 0,
+      level: (data.level as string) ?? '수험생',
+      streak_days: (data.streak_days as number) ?? 0,
+    }
+  } catch {
+    return { total_xp: 0, level: '수험생', streak_days: 0 }
+  }
+}

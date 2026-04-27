@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { SRCard, DEFAULT_SR_CARD, updateCard, getAccuracy } from '../lib/srs';
-import { getProgress, upsertProgress, saveQuizLog, updateTodaySession, getConceptDueCount } from '../lib/db';
+import { getProgress, upsertProgress, saveQuizLog, updateTodaySession, getConceptDueCount, getUserStats } from '../lib/db';
 
 // ── Types ─────────────────────────────────────────────────────
 interface ServerRow {
@@ -38,6 +38,9 @@ interface StudyStore {
   syncStatus: 'idle' | 'syncing' | 'ready' | 'offline';
   conceptDueCount: number;
   todayReviewCount: number;
+  totalXp: number;
+  level: string;
+  streakDays: number;
 
   // ── actions ──
   setCurrentTopic: (id: string | null) => void;
@@ -47,6 +50,8 @@ interface StudyStore {
   setConceptDueCount: (n: number) => void;
   setTodayReviewCount: (n: number) => void;
   incrementTodayReviewCount: () => void;
+  setTotalXp: (xp: number) => void;
+  addXpLocal: (delta: number) => void;
   getWeakTopics: (threshold?: number) => string[];
 
   // SRS update (local + server sync)
@@ -58,6 +63,13 @@ interface StudyStore {
   // Server sync
   initStore: (uid: string) => Promise<void>;
   resetCard: (topicId: string) => void;
+}
+
+function xpLevel(xp: number): string {
+  if (xp >= 1000) return 'CPA'
+  if (xp >= 500) return '합격자'
+  if (xp >= 200) return '고득점자'
+  return '수험생'
 }
 
 // ── Merge local cards with server rows ────────────────────────
@@ -110,6 +122,9 @@ const useStudyStore = create<StudyStore>()(
       syncStatus: 'idle' as const,
       conceptDueCount: 0,
       todayReviewCount: 0,
+      totalXp: 0,
+      level: '수험생',
+      streakDays: 0,
 
       setCurrentTopic: (id) => set({ currentTopicId: id }),
 
@@ -126,6 +141,15 @@ const useStudyStore = create<StudyStore>()(
       setConceptDueCount: (n) => set({ conceptDueCount: n }),
       setTodayReviewCount: (n) => set({ todayReviewCount: n }),
       incrementTodayReviewCount: () => set((s) => ({ todayReviewCount: s.todayReviewCount + 1 })),
+      setTotalXp: (xp) => {
+        const clamped = Math.max(0, xp)
+        set({ totalXp: clamped, level: xpLevel(clamped) })
+      },
+      addXpLocal: (delta) =>
+        set((s) => {
+          const newXp = Math.max(0, s.totalXp + delta)
+          return { totalXp: newXp, level: xpLevel(newXp) }
+        }),
 
       getWeakTopics: (threshold = 60) =>
         Object.entries(get().srsCards)
@@ -173,13 +197,21 @@ const useStudyStore = create<StudyStore>()(
       initStore: async (uid) => {
         set({ userId: uid, syncStatus: 'syncing' });
         try {
-          const [rows, dueCount] = await Promise.all([
+          const [rows, dueCount, xpStats] = await Promise.all([
             getProgress(uid),
             getConceptDueCount(uid),
+            getUserStats(uid),
           ]);
           const local = get().srsCards;
           const merged = mergeCards(local, rows as ServerRow[]);
-          set({ srsCards: merged, syncStatus: 'ready', conceptDueCount: dueCount });
+          set({
+            srsCards: merged,
+            syncStatus: 'ready',
+            conceptDueCount: dueCount,
+            totalXp: xpStats.total_xp,
+            level: xpStats.level,
+            streakDays: xpStats.streak_days,
+          });
 
           // Sync local-only cards to server
           const serverIds = new Set((rows as ServerRow[]).map((r) => r.topic_id));

@@ -19,6 +19,8 @@ export const DB = {
     CONCEPT_FEEDBACK: 'concept_feedback',
     DAILY_REFLECTION: 'daily_reflection',
     USER_SETTINGS: 'user_settings',
+    USER_XP: 'user_xp',
+    USER_STATS: 'user_stats',
   },
   RPC: {
     CONCEPT_STATS_INCREMENT: 'concept_stats_increment',
