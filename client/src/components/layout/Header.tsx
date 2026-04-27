@@ -4,12 +4,9 @@ import useStudyStore from '../../store/studyStore';
 import useClaudeStore from '../../store/claudeStore';
 import Sidebar from './Sidebar';
 import { MORE_MENU_ITEMS, ADMIN_MENU_ITEM } from '../../constants/navigation';
+import MoneyRainOverlay from '../MoneyRainOverlay';
 
 const DAILY_GOAL = 10;
-const fireConfetti = () => {
-  const fn = (window as { confetti?: (o: object) => void }).confetti;
-  fn?.({ particleCount: 120, spread: 80, origin: { x: 0.5, y: 0.1 } });
-};
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 
@@ -32,10 +29,11 @@ export default function Header({ email, onSignOut }: HeaderProps) {
   const todayReviewCount = useStudyStore((s) => s.todayReviewCount);
   const prevCountRef = useRef(0);
   const isScience = location.pathname === '/science';
+  const [moneyRainOpen, setMoneyRainOpen] = useState(false);
 
   useEffect(() => {
     if (todayReviewCount >= DAILY_GOAL && prevCountRef.current < DAILY_GOAL) {
-      fireConfetti();
+      setMoneyRainOpen(true);
     }
     prevCountRef.current = todayReviewCount;
   }, [todayReviewCount]);
@@ -75,6 +73,7 @@ export default function Header({ email, onSignOut }: HeaderProps) {
 
   return (
     <>
+    <MoneyRainOverlay open={moneyRainOpen} count={DAILY_GOAL} onClose={() => setMoneyRainOpen(false)} />
     <header
       className="fixed top-0 left-0 right-0 z-50 flex items-center px-3 md:px-5 bg-white border-b border-border"
       style={{ height: 54, position: 'relative' }}

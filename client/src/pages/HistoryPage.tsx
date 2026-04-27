@@ -3,6 +3,7 @@ import useStudyStore from '../store/studyStore'
 import useClaudeStore from '../store/claudeStore'
 import { allTopics } from '../data/far-topics'
 import QuizCalculator from '../components/quiz/QuizCalculator'
+import MoneyRainOverlay from '../components/MoneyRainOverlay'
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
 import {
@@ -22,10 +23,6 @@ import {
 
 const DAILY_GOAL = 10
 
-function fireConfetti(origin?: { x: number; y: number }) {
-  const fn = (window as { confetti?: (o: object) => void }).confetti
-  fn?.({ particleCount: 90, spread: 70, origin: origin ?? { x: 0.5, y: 0.55 } })
-}
 
 async function fetchCardHint(
   concepts: string[],
@@ -153,7 +150,6 @@ function ExampleQuestionBlock({
     setSelected(letter)
     const isCorrect = letter === correctLetter
     if (isCorrect) {
-      fireConfetti()
       // pulse glow on correct button
       setPulsingLetter(letter)
       setTimeout(() => setPulsingLetter(null), 600)
@@ -772,7 +768,7 @@ function EmptyView({
 function DoneView({ count }: { count: number }) {
   return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-4 px-6 text-center">
-      <div className="text-6xl">🎉</div>
+      <div className="text-6xl">🤑</div>
       <p className="text-xl font-bold text-[#0f172a]">오늘 복습 완료!</p>
       <p className="text-sm text-[#64748b]">총 {count}개 카드를 복습했어요.</p>
       <div
@@ -799,6 +795,7 @@ export default function HistoryPage() {
   const [knewCount, setKnewCount] = useState(0)
   const [confusedCount, setConfusedCount] = useState(0)
   const [fixCount, setFixCount] = useState(0)
+  const [moneyRain, setMoneyRain] = useState({ open: false, count: 0 })
   const [visible, setVisible] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [generating, setGenerating] = useState(false)
@@ -885,6 +882,8 @@ export default function HistoryPage() {
       if (userId) void upsertDailyReviewLog(userId, { knew: knew ? 1 : 0, confused: knew ? 0 : 1 })
       if (next >= cards.length) {
         setStage('done')
+        const finalCount = (knew ? knewCount + 1 : knewCount) + (knew ? confusedCount : confusedCount + 1)
+        setMoneyRain({ open: true, count: finalCount })
         if (userId) getConceptDueCount(userId).then(setConceptDueCount).catch(() => {})
       } else {
         setIdx(next)
@@ -1033,7 +1032,12 @@ export default function HistoryPage() {
   }
 
   if (stage === 'empty') return <EmptyView onGenerate={handleGenerate} generating={generating} noData={noOnDemandData} />
-  if (stage === 'done') return <DoneView count={knewCount + confusedCount} />
+  if (stage === 'done') return (
+    <>
+      <MoneyRainOverlay open={moneyRain.open} count={moneyRain.count} onClose={() => setMoneyRain(prev => ({ ...prev, open: false }))} />
+      <DoneView count={knewCount + confusedCount} />
+    </>
+  )
 
   const current = cards[idx]
   const total = cards.length
@@ -1046,7 +1050,10 @@ export default function HistoryPage() {
         key={idx}
         card={current}
         visible={visible}
-        onMcqAnswer={(isCorrect, selected) => setMcqAnswerState({ isCorrect, selected })}
+        onMcqAnswer={(isCorrect, selected) => {
+          setMcqAnswerState({ isCorrect, selected })
+          if (isCorrect) setMoneyRain({ open: true, count: knewCount + confusedCount + 1 })
+        }}
       />
 
       {/* Answer buttons — MCQ answered → 다음 카드, otherwise 알았다/헷갈려 */}
@@ -1120,6 +1127,12 @@ export default function HistoryPage() {
         &nbsp;&nbsp;헷갈려: <span className="font-semibold text-[#92400e]">{confusedCount}개 🔄</span>
         &nbsp;&nbsp;문제수정: <span className="font-semibold text-[#4338ca]">{fixCount}개 ✏️</span>
       </p>
+
+      <MoneyRainOverlay
+        open={moneyRain.open}
+        count={moneyRain.count}
+        onClose={() => setMoneyRain(prev => ({ ...prev, open: false }))}
+      />
     </div>
   )
 }
