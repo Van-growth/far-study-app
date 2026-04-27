@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
-const EMOJIS = ['💰', '🪙', '💵', '💴', '💸']
+const THEMES = [
+  { text: "You're on fire! 🔥",  emojis: ['🔥', '💥', '⚡️'] },
+  { text: 'Unstoppable! 💥',      emojis: ['💥', '🚀', '⚡️', '💪'] },
+  { text: 'Keep stacking! 🪙',    emojis: ['🪙', '💰', '💵', '💴'] },
+  { text: 'Legend behavior 👑',   emojis: ['👑', '🏆', '⭐️', '💎'] },
+] as const
 
 const KEYFRAMES = `
 @keyframes moneyFall {
@@ -59,17 +64,22 @@ export default function MoneyRainOverlay({ open, count, onClose }: Props) {
     return () => clearTimeout(t)
   }, [open])
 
+  const theme = useMemo(
+    () => (open ? THEMES[Math.floor(Math.random() * THEMES.length)] : THEMES[0]),
+    [open],
+  )
+
   const coins = useMemo(() => {
     if (!open) return []
     return Array.from({ length: 42 }, (_, i) => ({
       id: i,
-      emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)],
+      emoji: theme.emojis[Math.floor(Math.random() * theme.emojis.length)],
       left: Math.random() * 96 + 1,
       delay: Math.random() * 1.8,
       duration: 1.5 + Math.random() * 1.5,
       size: 1.4 + Math.random() * 1.0,
     }))
-  }, [open])
+  }, [open, theme])
 
   if (!open) return null
 
@@ -131,7 +141,7 @@ export default function MoneyRainOverlay({ open, count, onClose }: Props) {
               animationTimingFunction: 'ease-in-out',
             }}
           >
-            부자 되세요! 🤑
+            {theme.text}
           </p>
           <p
             style={{
