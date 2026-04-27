@@ -13,7 +13,6 @@ import {
   upsertDailyReviewLog,
   generateOnDemandReviewCards,
   saveFeedback,
-  saveConceptFix,
   saveWrongAnswer,
   RecentExtractionItem,
   ConceptTrigger,
@@ -286,7 +285,7 @@ function ExampleQuestionBlock({
                 }}
               >
                 <span className="font-bold mr-1.5" style={{ color: isAnswered && isCorrect ? '#166534' : isAnswered && isSelected && !isCorrect ? '#991b1b' : '#4338ca' }}>{letter}.</span>
-                {typeof opt === 'string' ? opt : String(opt)}
+                {(typeof opt === 'string' ? opt : String(opt)).replace(/^[A-Da-d][.)]\s*/, '')}
                 {isAnswered && isCorrect && <span className="ml-1.5">✅</span>}
                 {isAnswered && isSelected && !isCorrect && <span className="ml-1.5">❌</span>}
               </button>
@@ -504,14 +503,24 @@ function extractExplanationText(
 }
 
 // ── Feedback panel ────────────────────────────────────────────
+type ErrorType = 'explanation' | 'answer' | 'option'
+
 type AiFixResult =
-  | { valid: true; correct_answer: string; explanation: string }
+  | { valid: true; correct_answer: string; explanation: string; options?: string[] }
   | { valid: false; reason: string }
+
+const ERROR_TYPE_LABELS: Record<ErrorType, string> = {
+  explanation: '해설 오류',
+  answer: '정답 오류',
+  option: '선지 오류',
+}
 
 interface FeedbackPanelProps {
   card: RecentExtractionItem
   feedbackText: string
   setFeedbackText: (v: string) => void
+  errorType: ErrorType | null
+  setErrorType: (v: ErrorType | null) => void
   aiFixLoading: boolean
   aiFixResult: AiFixResult | null
   savingFix: boolean
@@ -525,6 +534,7 @@ interface FeedbackPanelProps {
 
 function FeedbackPanel({
   card, feedbackText, setFeedbackText,
+  errorType, setErrorType,
   aiFixLoading, aiFixResult, savingFix, fixError,
   onSaveFeedback, onAiFix, onConfirmFix, onCancelFix, onClose,
 }: FeedbackPanelProps) {
@@ -584,6 +594,17 @@ function FeedbackPanel({
                     <span className="text-[#94a3b8]"> → </span>
                     <span className="font-bold text-[#166534]">{aiFixResult.correct_answer}</span>
                   </p>
+                  {aiFixResult.options && (
+                    <div>
+                      <p className="font-semibold text-[#3730a3] mb-1">선지:</p>
+                      {eq?.options?.map((opt, i) => (
+                        <p key={i} className="line-through text-[#94a3b8] leading-relaxed">{opt}</p>
+                      ))}
+                      {aiFixResult.options.map((opt, i) => (
+                        <p key={i} className="text-[#166534] leading-relaxed">{opt}</p>
+                      ))}
+                    </div>
+                  )}
                   <div>
                     <p className="font-semibold text-[#3730a3] mb-1">해설:</p>
                     <p className="line-through text-[#94a3b8] leading-relaxed">{expStr}</p>
@@ -633,6 +654,23 @@ function FeedbackPanel({
           )
         ) : (
           <>
+            {/* Error type selector */}
+            <div className="flex gap-1.5">
+              {(Object.keys(ERROR_TYPE_LABELS) as ErrorType[]).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setErrorType(errorType === type ? null : type)}
+                  className="flex-1 py-1.5 rounded-xl text-[11px] font-semibold transition-colors"
+                  style={errorType === type
+                    ? { background: '#eef2ff', color: '#3730a3', border: '1.5px solid #818cf8' }
+                    : { background: '#f8faff', color: '#94a3b8', border: '1.5px solid #e2e8f0' }
+                  }
+                >
+                  {ERROR_TYPE_LABELS[type]}
+                </button>
+              ))}
+            </div>
+
             {/* Textarea */}
             <textarea
               value={feedbackText}
@@ -659,7 +697,7 @@ function FeedbackPanel({
               </button>
               <button
                 onClick={onAiFix}
-                disabled={!feedbackText.trim() || aiFixLoading || !eq}
+                disabled={!feedbackText.trim() || aiFixLoading || !eq || !errorType}
                 className="flex-1 py-2 rounded-xl text-xs font-semibold disabled:opacity-50"
                 style={{ background: '#eef2ff', color: '#3730a3', border: '1px solid #a5b4fc' }}
               >
@@ -673,6 +711,9 @@ function FeedbackPanel({
                 )}
               </button>
             </div>
+            {!errorType && feedbackText.trim() && (
+              <p className="text-[10px] text-[#94a3b8] text-center">오류 유형을 선택해야 AI 수정이 활성화됩니다</p>
+            )}
             {aiFixLoading && (
               <p className="text-[10px] text-[#94a3b8] text-center">
                 최대 15초 소요될 수 있어요
@@ -757,6 +798,7 @@ export default function HistoryPage() {
   const [stage, setStage] = useState<Stage>('loading')
   const [knewCount, setKnewCount] = useState(0)
   const [confusedCount, setConfusedCount] = useState(0)
+  const [fixCount, setFixCount] = useState(0)
   const [visible, setVisible] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [generating, setGenerating] = useState(false)
@@ -767,6 +809,7 @@ export default function HistoryPage() {
   // Feedback panel state
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [feedbackText, setFeedbackText] = useState('')
+  const [errorType, setErrorType] = useState<ErrorType | null>(null)
   const [aiFixLoading, setAiFixLoading] = useState(false)
   const [aiFixResult, setAiFixResult] = useState<AiFixResult | null>(null)
   const [savingFix, setSavingFix] = useState(false)
@@ -818,6 +861,7 @@ export default function HistoryPage() {
   useEffect(() => {
     setFeedbackOpen(false)
     setFeedbackText('')
+    setErrorType(null)
     setAiFixResult(null)
     setFixError(null)
     setMcqAnswerState(null)
@@ -886,7 +930,7 @@ export default function HistoryPage() {
 
   async function handleAiFix() {
     const card = cards[idx]
-    if (!feedbackText.trim() || !card.exampleQuestion) return
+    if (!feedbackText.trim() || !card.exampleQuestion || !errorType) return
     setAiFixLoading(true)
     setFixError(null)
 
@@ -907,10 +951,12 @@ export default function HistoryPage() {
         body: JSON.stringify({
           id: card.id,
           feedback: feedbackText,
+          errorType,
           current: {
             question: card.exampleQuestion.question,
             correct_answer: card.exampleQuestion.answer,
             explanation: expStr,
+            options: card.exampleQuestion.options ?? [],
           },
         }),
       })
@@ -931,23 +977,47 @@ export default function HistoryPage() {
   }
 
   async function handleConfirmFix() {
-    if (!aiFixResult || !aiFixResult.valid) return
+    if (!aiFixResult || !aiFixResult.valid || !errorType) return
     const card = cards[idx]
     setSavingFix(true)
     try {
-      await saveConceptFix(card.id, feedbackText, aiFixResult.correct_answer, aiFixResult.explanation)
+      const res = await fetch(`${API_URL}/api/concept/confirm-fix`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: card.id,
+          errorType,
+          feedback: feedbackText,
+          newAnswer: aiFixResult.correct_answer,
+          newExplanation: aiFixResult.explanation,
+          newOptions: aiFixResult.options,
+          userId,
+        }),
+      })
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string }
+        setFixError(err.error ?? '저장 중 오류가 발생했어요')
+        return
+      }
       setCards((prev) =>
         prev.map((c, i) => {
           if (i !== idx) return c
           const newEq = c.exampleQuestion
-            ? { ...c.exampleQuestion, answer: aiFixResult.correct_answer, explanation: aiFixResult.explanation }
+            ? {
+                ...c.exampleQuestion,
+                answer: aiFixResult.correct_answer,
+                explanation: aiFixResult.explanation,
+                ...(aiFixResult.options ? { options: aiFixResult.options } : {}),
+              }
             : null
           return { ...c, exampleQuestion: newEq, isFixed: true, feedback: feedbackText }
         })
       )
+      setFixCount((c) => c + 1)
       setFeedbackOpen(false)
       setFeedbackText('')
       setAiFixResult(null)
+      setErrorType(null)
     } finally {
       setSavingFix(false)
     }
@@ -1031,6 +1101,8 @@ export default function HistoryPage() {
           card={current}
           feedbackText={feedbackText}
           setFeedbackText={setFeedbackText}
+          errorType={errorType}
+          setErrorType={setErrorType}
           aiFixLoading={aiFixLoading}
           aiFixResult={aiFixResult}
           savingFix={savingFix}
@@ -1039,13 +1111,14 @@ export default function HistoryPage() {
           onAiFix={() => void handleAiFix()}
           onConfirmFix={() => void handleConfirmFix()}
           onCancelFix={() => setAiFixResult(null)}
-          onClose={() => { setFeedbackOpen(false); setAiFixResult(null); setFixError(null) }}
+          onClose={() => { setFeedbackOpen(false); setAiFixResult(null); setFixError(null); setErrorType(null) }}
         />
       )}
 
       <p className="text-center text-[11px] text-[#64748b]">
         오늘 완료: <span className="font-semibold text-[#166534]">{knewCount}개 ✅</span>
         &nbsp;&nbsp;헷갈려: <span className="font-semibold text-[#92400e]">{confusedCount}개 🔄</span>
+        &nbsp;&nbsp;문제수정: <span className="font-semibold text-[#4338ca]">{fixCount}개 ✏️</span>
       </p>
     </div>
   )

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface HistoryEntry {
   id: number;
@@ -6,9 +7,6 @@ interface HistoryEntry {
   result: string;
 }
 
-// Safely evaluate a numeric expression limited to digits, decimal points,
-// whitespace, parentheses, and the four operators. Uses Function constructor
-// but only after whitelisting the characters — no identifiers allowed.
 function safeEval(expr: string): string {
   const cleaned = expr.replace(/\s+/g, '');
   if (!/^[0-9+\-*/().%]+$/.test(cleaned)) return 'Error';
@@ -53,77 +51,74 @@ export default function QuizCalculator({ open, onClose }: QuizCalculatorProps) {
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed left-0 right-0 bottom-0 z-50 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:bg-black/40 pointer-events-none sm:pointer-events-auto"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      className="fixed bottom-4 right-4 z-50 w-72 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+      style={{ border: '1px solid #e2e8f0', maxHeight: '380px' }}
     >
       <div
-        className="pointer-events-auto w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl p-3 sm:p-4 flex flex-col gap-2 sm:gap-3 animate-slideUp shadow-2xl border-t border-border sm:border"
-        style={{
-          maxHeight: '50vh',
-          paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
-        }}
+        className="flex items-center justify-between px-3 py-2 shrink-0"
+        style={{ borderBottom: '1px solid #f1f5f9' }}
       >
-        <div className="flex items-center justify-between shrink-0">
-          <p className="font-semibold text-sm text-[#0f172a]">🧮 계산기</p>
-          <button onClick={onClose} className="text-muted text-lg w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100">
-            ×
-          </button>
-        </div>
+        <p className="font-semibold text-sm text-[#0f172a]">🧮 계산기</p>
+        <button
+          onClick={onClose}
+          className="text-[#94a3b8] text-lg w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100"
+        >
+          ×
+        </button>
+      </div>
 
-        <div className="flex gap-3 min-h-0 flex-1 overflow-hidden">
-          {/* Calculator */}
-          <div className="flex-1 flex flex-col gap-1.5 min-h-0">
-            <div
-              className="text-right font-mono text-base px-3 py-1.5 rounded-lg shrink-0"
-              style={{ background: '#f1f5f9', color: '#0f172a' }}
-            >
-              {display || '0'}
-            </div>
-            <div className="grid grid-cols-4 gap-1 flex-1 min-h-0">
-              <button onClick={clear} className="col-span-2 py-1.5 rounded-lg bg-[#fee2e2] text-[#991b1b] text-sm font-semibold">
-                C
-              </button>
-              <button onClick={back} className="col-span-2 py-1.5 rounded-lg bg-[#fef3c7] text-[#92400e] text-sm font-semibold">
-                ←
-              </button>
-              {KEYS.flat().map((k) => (
-                <button
-                  key={k}
-                  onClick={() => press(k)}
-                  className="py-1.5 rounded-lg text-sm font-semibold"
-                  style={{
-                    background: k === '=' ? '#4f6ef7' : '#f8fafc',
-                    color: k === '=' ? 'white' : '#0f172a',
-                    border: '1px solid #e2e8f0',
-                  }}
-                >
-                  {k}
-                </button>
-              ))}
-            </div>
+      <div className="flex gap-2 p-2.5 flex-1 min-h-0 overflow-hidden">
+        {/* Calculator */}
+        <div className="flex-1 flex flex-col gap-1.5">
+          <div
+            className="text-right font-mono text-base px-2.5 py-1.5 rounded-lg shrink-0"
+            style={{ background: '#f1f5f9', color: '#0f172a' }}
+          >
+            {display || '0'}
           </div>
-
-          {/* History */}
-          <div className="w-24 sm:w-28 shrink-0 flex flex-col gap-1 overflow-y-auto min-h-0">
-            <p className="text-[10px] text-muted font-semibold">History</p>
-            {history.length === 0 && <p className="text-[10px] text-muted">—</p>}
-            {history.map((h) => (
+          <div className="grid grid-cols-4 gap-1">
+            <button onClick={clear} className="col-span-2 py-1.5 rounded-lg bg-[#fee2e2] text-[#991b1b] text-sm font-semibold">
+              C
+            </button>
+            <button onClick={back} className="col-span-2 py-1.5 rounded-lg bg-[#fef3c7] text-[#92400e] text-sm font-semibold">
+              ←
+            </button>
+            {KEYS.flat().map((k) => (
               <button
-                key={h.id}
-                onClick={() => setDisplay(h.result === 'Error' ? h.expression : h.result)}
-                className="text-left text-[10px] p-1 rounded hover:bg-gray-100"
+                key={k}
+                onClick={() => press(k)}
+                className="py-1.5 rounded-lg text-sm font-semibold"
+                style={{
+                  background: k === '=' ? '#4f6ef7' : '#f8fafc',
+                  color: k === '=' ? 'white' : '#0f172a',
+                  border: '1px solid #e2e8f0',
+                }}
               >
-                <div className="text-muted truncate">{h.expression}</div>
-                <div className="font-mono text-[#0f172a]">= {h.result}</div>
+                {k}
               </button>
             ))}
           </div>
         </div>
+
+        {/* History */}
+        <div className="w-20 shrink-0 flex flex-col gap-1 overflow-y-auto">
+          <p className="text-[10px] text-[#94a3b8] font-semibold">History</p>
+          {history.length === 0 && <p className="text-[10px] text-[#94a3b8]">—</p>}
+          {history.map((h) => (
+            <button
+              key={h.id}
+              onClick={() => setDisplay(h.result === 'Error' ? h.expression : h.result)}
+              className="text-left text-[10px] p-1 rounded hover:bg-gray-100"
+            >
+              <div className="text-[#94a3b8] truncate">{h.expression}</div>
+              <div className="font-mono text-[#0f172a]">= {h.result}</div>
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
