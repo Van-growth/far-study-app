@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import useStudyStore from '../store/studyStore';
-import { getExamDate, setExamDate } from '../lib/db';
+import { getExamDate, setExamDate, getDailyGoal, saveDailyGoal } from '../lib/db';
 
 const EXAM_LS_KEY = 'far_exam_date'
 function syncExamDateLS(val: string | null) {
@@ -14,9 +14,12 @@ import StudyCalendar from '../components/dashboard/StudyCalendar';
 
 export default function DashboardPage() {
   const userId = useStudyStore((s) => s.userId);
+  const setDailyGoalStore = useStudyStore((s) => s.setDailyGoal);
   const [examDate, setExamDateState] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [inputVal, setInputVal] = useState('');
+  const [dailyGoal, setDailyGoalState] = useState(10);
+  const [goalSaving, setGoalSaving] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -25,7 +28,21 @@ export default function DashboardPage() {
       setInputVal(d ?? '');
       syncExamDateLS(d);
     });
+    getDailyGoal(userId).then((g) => {
+      setDailyGoalState(g);
+      setDailyGoalStore(g);
+    });
   }, [userId]);
+
+  const handleGoalChange = async (next: number) => {
+    if (!userId || goalSaving) return;
+    const clamped = Math.max(1, Math.min(50, next));
+    setDailyGoalState(clamped);
+    setDailyGoalStore(clamped);
+    setGoalSaving(true);
+    await saveDailyGoal(userId, clamped);
+    setGoalSaving(false);
+  };
 
   const dDayCount = examDate
     ? Math.ceil((new Date(examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
@@ -126,6 +143,44 @@ export default function DashboardPage() {
 
         <StudyCalendar />
         <Dashboard />
+
+        {/* Daily goal settings */}
+        <div
+          className="rounded-2xl p-5"
+          style={{ background: 'white', border: '1.5px solid #e2e8f0' }}
+        >
+          <h3 className="text-sm font-bold text-[#0f172a] mb-4">⚙️ 복습 설정</h3>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[#374151]">하루 복습 목표</p>
+              <p className="text-xs text-[#94a3b8] mt-0.5">1 ~ 50개 범위</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => void handleGoalChange(dailyGoal - 1)}
+                disabled={dailyGoal <= 1 || goalSaving}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-xl font-bold transition-opacity disabled:opacity-30"
+                style={{ background: '#f1f5f9', color: '#374151' }}
+              >
+                −
+              </button>
+              <span className="text-xl font-extrabold w-8 text-center" style={{ color: '#4f6ef7' }}>
+                {dailyGoal}
+              </span>
+              <button
+                onClick={() => void handleGoalChange(dailyGoal + 1)}
+                disabled={dailyGoal >= 50 || goalSaving}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-xl font-bold transition-opacity disabled:opacity-30"
+                style={{ background: '#eef2ff', color: '#4338ca' }}
+              >
+                +
+              </button>
+            </div>
+          </div>
+          {goalSaving && (
+            <p className="text-[10px] text-[#94a3b8] text-right mt-2">저장 중…</p>
+          )}
+        </div>
       </div>
     </div>
   );

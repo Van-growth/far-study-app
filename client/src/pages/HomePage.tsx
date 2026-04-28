@@ -16,6 +16,8 @@ export default function HomePage() {
   const totalXp = useStudyStore((s) => s.totalXp)
   const level = useStudyStore((s) => s.level)
   const streakDays = useStudyStore((s) => s.streakDays)
+  const todayReviewCount = useStudyStore((s) => s.todayReviewCount)
+  const dailyGoal = useStudyStore((s) => s.dailyGoal)
   const [examInfo, setExamInfo] = useState<ExamInfo>(() => readExamInfo())
   const [showReflection, setShowReflection] = useState(false)
 
@@ -54,6 +56,9 @@ export default function HomePage() {
     setShowReflection(false);
   };
 
+  const goalAchieved = dailyGoal > 0 && todayReviewCount >= dailyGoal
+  const goalPct = dailyGoal > 0 ? Math.min(100, (todayReviewCount / dailyGoal) * 100) : 0
+
   return (
     <>
       {showReflection && userId && (
@@ -76,6 +81,34 @@ export default function HomePage() {
               <span className="font-semibold" style={{ color: '#f97316' }}>🔥 {streakDays}일 연속</span>
             </>
           )}
+        </div>
+
+        {/* Daily goal progress card */}
+        <div
+          className="w-full max-w-xs px-4 py-3 rounded-2xl flex flex-col gap-2"
+          style={{
+            background: goalAchieved ? '#f0fdf4' : 'white',
+            border: `1.5px solid ${goalAchieved ? '#86efac' : '#e2e8f0'}`,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold" style={{ color: goalAchieved ? '#166534' : '#64748b' }}>
+              {goalAchieved ? '🎉 오늘 목표 달성!' : '오늘 복습'}
+            </span>
+            <span className="text-sm font-bold" style={{ color: goalAchieved ? '#166534' : '#4f6ef7' }}>
+              {todayReviewCount} / {dailyGoal} {goalAchieved ? '✅' : '🔥'}
+            </span>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: '#f1f5f9' }}>
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${goalPct}%`,
+                background: goalAchieved ? '#22c55e' : 'linear-gradient(90deg, #4f6ef7, #818cf8)',
+              }}
+            />
+          </div>
         </div>
 
         {/* D-day */}

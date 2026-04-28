@@ -2093,6 +2093,36 @@ export async function fetchConceptCardsByTopic(userId: string, topicId: string):
 
 // ── User Settings ─────────────────────────────────────────────
 
+export async function getDailyGoal(userId: string): Promise<number> {
+  if (!hasAuth(userId)) return 10
+  const { data, error } = await supabase
+    .from(DB.TABLES.USER_SETTINGS)
+    .select('daily_goal')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) {
+    const code = (error as { code?: string }).code ?? ''
+    const msg = (error.message ?? '').toLowerCase()
+    if (code === 'PGRST204' || code === '42703' || msg.includes('daily_goal')) return 10
+    logError('getDailyGoal', error)
+    return 10
+  }
+  return (data as { daily_goal?: number | null } | null)?.daily_goal ?? 10
+}
+
+export async function saveDailyGoal(userId: string, goal: number): Promise<void> {
+  if (!hasAuth(userId)) return
+  const { error } = await supabase
+    .from(DB.TABLES.USER_SETTINGS)
+    .upsert({ user_id: userId, daily_goal: goal, updated_at: new Date().toISOString() })
+  if (error) {
+    const code = (error as { code?: string }).code ?? ''
+    const msg = (error.message ?? '').toLowerCase()
+    if (code === 'PGRST204' || code === '42703' || msg.includes('daily_goal')) return
+    logError('saveDailyGoal', error)
+  }
+}
+
 export async function getExamDate(userId: string): Promise<string | null> {
   if (!hasAuth(userId)) return null;
   const { data, error } = await supabase

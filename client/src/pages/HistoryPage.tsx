@@ -120,39 +120,55 @@ function getAudioCtx(): AudioContext | null {
 function playCorrectSound() {
   const ctx = getAudioCtx()
   if (!ctx) return
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.connect(gain)
-  gain.connect(ctx.destination)
-  osc.type = 'sine'
-  osc.frequency.setValueAtTime(800, ctx.currentTime)
-  osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.15)
-  gain.gain.setValueAtTime(0.25, ctx.currentTime)
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15)
-  osc.start()
-  osc.stop(ctx.currentTime + 0.18)
-  setTimeout(() => { try { ctx.close() } catch { /* ignore */ } }, 500)
+  ;([[880, 0], [1100, 0.13]] as Array<[number, number]>).forEach(([freq, delay]) => {
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.type = 'triangle'
+    osc.frequency.value = freq
+    gain.gain.setValueAtTime(0, ctx.currentTime + delay)
+    gain.gain.linearRampToValueAtTime(0.28, ctx.currentTime + delay + 0.01)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.22)
+    osc.start(ctx.currentTime + delay)
+    osc.stop(ctx.currentTime + delay + 0.25)
+  })
+  setTimeout(() => { try { ctx.close() } catch { /* ignore */ } }, 700)
 }
 
 function playWrongSound() {
   const ctx = getAudioCtx()
   if (!ctx) return
-  ;([[400, 0], [300, 0.12], [220, 0.25], [150, 0.37]] as Array<[number, number]>).forEach(
-    ([freq, t]) => {
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.type = 'square'
-      osc.frequency.value = freq
-      gain.gain.setValueAtTime(0, ctx.currentTime + t)
-      gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + t + 0.01)
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.1)
-      osc.start(ctx.currentTime + t)
-      osc.stop(ctx.currentTime + t + 0.12)
-    },
-  )
-  setTimeout(() => { try { ctx.close() } catch { /* ignore */ } }, 1000)
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.connect(gain)
+  gain.connect(ctx.destination)
+  osc.type = 'sawtooth'
+  osc.frequency.value = 110
+  gain.gain.setValueAtTime(0.3, ctx.currentTime)
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28)
+  osc.start()
+  osc.stop(ctx.currentTime + 0.3)
+  setTimeout(() => { try { ctx.close() } catch { /* ignore */ } }, 500)
+}
+
+function playGoalSound() {
+  const ctx = getAudioCtx()
+  if (!ctx) return
+  ;([[523, 0], [659, 0.19], [784, 0.38]] as Array<[number, number]>).forEach(([freq, delay]) => {
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.type = 'triangle'
+    osc.frequency.value = freq
+    gain.gain.setValueAtTime(0, ctx.currentTime + delay)
+    gain.gain.linearRampToValueAtTime(0.22, ctx.currentTime + delay + 0.02)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.38)
+    osc.start(ctx.currentTime + delay)
+    osc.stop(ctx.currentTime + delay + 0.42)
+  })
+  setTimeout(() => { try { ctx.close() } catch { /* ignore */ } }, 1500)
 }
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E']
@@ -1055,6 +1071,8 @@ export default function HistoryPage() {
   const incrementTodayReviewCount = useStudyStore((s) => s.incrementTodayReviewCount)
   const addXpLocal = useStudyStore((s) => s.addXpLocal)
   const setTotalXp = useStudyStore((s) => s.setTotalXp)
+  const todayCount = useStudyStore((s) => s.todayReviewCount)
+  const dailyGoal = useStudyStore((s) => s.dailyGoal)
   const setReviewCardContext = useClaudeStore((s) => s.setReviewCardContext)
 
   const [cards, setCards] = useState<RecentExtractionItem[]>([])
@@ -1074,6 +1092,15 @@ export default function HistoryPage() {
 
   // Tab state
   const [activeTab, setActiveTab] = useState<'review' | 'history'>('review')
+
+  // Visual effects state
+  const [showGoalOverlay, setShowGoalOverlay] = useState(false)
+  const [cardBouncing, setCardBouncing] = useState(false)
+  const [showGreenFlash, setShowGreenFlash] = useState(false)
+  const [showRedFlash, setShowRedFlash] = useState(false)
+  const overlayShownRef = useRef(false)
+  const goalFanfarePlayedRef = useRef(false)
+  const prevTodayCountRef = useRef(todayCount)
 
   // Feedback panel state
   const [feedbackOpen, setFeedbackOpen] = useState(false)
@@ -1126,6 +1153,26 @@ export default function HistoryPage() {
     return () => setReviewCardContext(null)
   }, [cards, idx, stage, setReviewCardContext])
 
+  // Goal overlay on first non-loading render
+  useEffect(() => {
+    if (stage !== 'loading' && !overlayShownRef.current) {
+      overlayShownRef.current = true
+      setShowGoalOverlay(true)
+      const t = setTimeout(() => setShowGoalOverlay(false), 1500)
+      return () => clearTimeout(t)
+    }
+  }, [stage])
+
+  // Goal fanfare: play when count crosses threshold
+  useEffect(() => {
+    const prev = prevTodayCountRef.current
+    prevTodayCountRef.current = todayCount
+    if (!goalFanfarePlayedRef.current && prev < dailyGoal && todayCount >= dailyGoal && dailyGoal > 0) {
+      goalFanfarePlayedRef.current = true
+      playGoalSound()
+    }
+  }, [todayCount, dailyGoal])
+
   // Reset feedback panel + MCQ state when card changes
   useEffect(() => {
     setFeedbackOpen(false)
@@ -1147,9 +1194,15 @@ export default function HistoryPage() {
       if (knew) {
         playCorrectSound()
         addXpLocal(5)
+        setCardBouncing(true)
+        setTimeout(() => setCardBouncing(false), 400)
+        setShowGreenFlash(true)
+        setTimeout(() => setShowGreenFlash(false), 600)
       } else {
         playWrongSound()
         addXpLocal(-5)
+        setShowRedFlash(true)
+        setTimeout(() => setShowRedFlash(false), 600)
       }
       setNonMcqXp({ visible: true, correct: knew })
       setTimeout(() => setNonMcqXp(null), 1100)
@@ -1333,8 +1386,47 @@ export default function HistoryPage() {
   const current = cards[idx] ?? null
   const total = cards.length
 
+  const goalAchieved = dailyGoal > 0 && todayCount >= dailyGoal
+  const goalPct = dailyGoal > 0 ? Math.min(100, (todayCount / dailyGoal) * 100) : 0
+
   return (
     <div className="max-w-lg mx-auto flex flex-col pb-8">
+      {/* Screen flash overlays */}
+      {showGreenFlash && (
+        <div
+          className="fixed inset-0 pointer-events-none z-50 animate-greenFlash"
+          style={{ boxShadow: 'inset 0 0 0 7px #22c55e' }}
+        />
+      )}
+      {showRedFlash && (
+        <div
+          className="fixed inset-0 pointer-events-none z-50 animate-redFlash"
+          style={{ boxShadow: 'inset 0 0 0 7px #ef4444' }}
+        />
+      )}
+
+      {/* Goal overlay */}
+      {showGoalOverlay && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center pointer-events-none">
+          <div className="animate-goalCelebrate text-center px-8 py-6 rounded-2xl" style={{ background: 'rgba(255,255,255,0.12)' }}>
+            <p className="text-white text-3xl font-extrabold mb-2">
+              {goalAchieved ? '🎉 오늘 목표 달성!' : `오늘 목표`}
+            </p>
+            {!goalAchieved && (
+              <p className="text-white/90 text-xl font-bold mb-3">
+                {todayCount} / {dailyGoal}
+              </p>
+            )}
+            <div className="h-2.5 w-48 mx-auto rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.25)' }}>
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${goalPct}%`, background: goalAchieved ? '#4ade80' : '#818cf8' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tab bar */}
       <div className="flex px-4 pt-3">
         {(['review', 'history'] as const).map((tab) => (
@@ -1367,20 +1459,28 @@ export default function HistoryPage() {
             <>
               <ProgressBar current={idx + 1} total={total} />
 
-              <FlashCard
-                key={idx}
-                card={current}
-                visible={visible}
-                onMcqAnswer={(isCorrect, selected) => {
-                  setMcqAnswerState({ isCorrect, selected })
-                  if (isCorrect) {
-                    setMoneyRain({ open: true, count: knewCount + confusedCount + 1 })
-                    addXpLocal(5)
-                  } else {
-                    addXpLocal(-5)
-                  }
-                }}
-              />
+              <div className={cardBouncing ? 'animate-cardBounce' : ''}>
+                <FlashCard
+                  key={idx}
+                  card={current}
+                  visible={visible}
+                  onMcqAnswer={(isCorrect, selected) => {
+                    setMcqAnswerState({ isCorrect, selected })
+                    if (isCorrect) {
+                      setMoneyRain({ open: true, count: knewCount + confusedCount + 1 })
+                      addXpLocal(5)
+                      setCardBouncing(true)
+                      setTimeout(() => setCardBouncing(false), 400)
+                      setShowGreenFlash(true)
+                      setTimeout(() => setShowGreenFlash(false), 600)
+                    } else {
+                      addXpLocal(-5)
+                      setShowRedFlash(true)
+                      setTimeout(() => setShowRedFlash(false), 600)
+                    }
+                  }}
+                />
+              </div>
 
               {/* Answer buttons */}
               <div className="relative">

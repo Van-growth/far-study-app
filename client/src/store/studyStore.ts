@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { SRCard, DEFAULT_SR_CARD, updateCard, getAccuracy } from '../lib/srs';
-import { getProgress, upsertProgress, saveQuizLog, updateTodaySession, getConceptDueCount, getUserStats } from '../lib/db';
+import { getProgress, upsertProgress, saveQuizLog, updateTodaySession, getConceptDueCount, getUserStats, getDailyGoal } from '../lib/db';
 
 // ── Types ─────────────────────────────────────────────────────
 interface ServerRow {
@@ -38,6 +38,7 @@ interface StudyStore {
   syncStatus: 'idle' | 'syncing' | 'ready' | 'offline';
   conceptDueCount: number;
   todayReviewCount: number;
+  dailyGoal: number;
   totalXp: number;
   level: string;
   streakDays: number;
@@ -50,6 +51,7 @@ interface StudyStore {
   setConceptDueCount: (n: number) => void;
   setTodayReviewCount: (n: number) => void;
   incrementTodayReviewCount: () => void;
+  setDailyGoal: (n: number) => void;
   setTotalXp: (xp: number) => void;
   addXpLocal: (delta: number) => void;
   getWeakTopics: (threshold?: number) => string[];
@@ -122,6 +124,7 @@ const useStudyStore = create<StudyStore>()(
       syncStatus: 'idle' as const,
       conceptDueCount: 0,
       todayReviewCount: 0,
+      dailyGoal: 10,
       totalXp: 0,
       level: '수험생',
       streakDays: 0,
@@ -141,6 +144,7 @@ const useStudyStore = create<StudyStore>()(
       setConceptDueCount: (n) => set({ conceptDueCount: n }),
       setTodayReviewCount: (n) => set({ todayReviewCount: n }),
       incrementTodayReviewCount: () => set((s) => ({ todayReviewCount: s.todayReviewCount + 1 })),
+      setDailyGoal: (n) => set({ dailyGoal: Math.max(1, Math.min(50, n)) }),
       setTotalXp: (xp) => {
         const clamped = Math.max(0, xp)
         set({ totalXp: clamped, level: xpLevel(clamped) })
@@ -197,10 +201,11 @@ const useStudyStore = create<StudyStore>()(
       initStore: async (uid) => {
         set({ userId: uid, syncStatus: 'syncing' });
         try {
-          const [rows, dueCount, xpStats] = await Promise.all([
+          const [rows, dueCount, xpStats, goal] = await Promise.all([
             getProgress(uid),
             getConceptDueCount(uid),
             getUserStats(uid),
+            getDailyGoal(uid),
           ]);
           const local = get().srsCards;
           const merged = mergeCards(local, rows as ServerRow[]);
@@ -211,6 +216,7 @@ const useStudyStore = create<StudyStore>()(
             totalXp: xpStats.total_xp,
             level: xpStats.level,
             streakDays: xpStats.streak_days,
+            dailyGoal: goal,
           });
 
           // Sync local-only cards to server
