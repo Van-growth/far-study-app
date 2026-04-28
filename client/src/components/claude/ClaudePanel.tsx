@@ -46,7 +46,6 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const setPendingQuiz = useClaudeStore((s) => s.setPendingQuiz);
 
   const [input, setInput] = useState('');
-  const [copied, setCopied] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
@@ -90,17 +89,6 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
     const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 50;
     shouldAutoScrollRef.current = atBottom;
     setIsAtBottom(atBottom);
-  };
-
-  const handleCopy = () => {
-    const text = messages
-      .filter((m) => m.content)
-      .map((m) => `[${m.role === 'user' ? '나' : 'Claude'}]\n${m.content}`)
-      .join('\n\n---\n\n');
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
   };
 
   const SLASH_COMMANDS: Record<string, string> = {
@@ -200,23 +188,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
           </div>
           <div className="flex items-center gap-1">
             {messages.length > 0 && (
-              <>
-                <button
-                  onClick={handleCopy}
-                  title="대화 내용 복사"
-                  className="text-[11px] text-muted hover:text-[#0f172a] px-2 py-1 rounded-lg hover:bg-gray-100 flex items-center gap-1"
-                >
-                  {copied ? (
-                    <span className="text-[#166534] font-semibold">복사됨 ✓</span>
-                  ) : (
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                    </svg>
-                  )}
-                </button>
-                <button onClick={clearMessages} className="text-[11px] text-muted hover:text-[#0f172a] px-2 py-1 rounded-lg hover:bg-gray-100">초기화</button>
-              </>
+              <button onClick={clearMessages} className="text-[11px] text-muted hover:text-[#0f172a] px-2 py-1 rounded-lg hover:bg-gray-100">초기화</button>
             )}
             <button onClick={closePanel} className="w-11 h-11 flex items-center justify-center rounded-lg text-muted hover:text-[#0f172a] hover:bg-gray-100 text-xl">×</button>
           </div>

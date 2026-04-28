@@ -1813,6 +1813,7 @@ export interface ReviewHistoryItem {
   topicTags: string[]
   concepts: string[]
   trapPattern: string | null
+  triggers: ConceptTrigger[]
   exampleQuestion: ExampleQuestion | null
   lastReviewedAt: string
   reviewResult: 'known' | 'confused' | null
@@ -1834,7 +1835,7 @@ export async function fetchReviewHistory(
 
     let query = supabase
       .from(DB.TABLES.CONCEPT_EXTRACTIONS)
-      .select('id, topic_id, topic_tags, concepts, trap_pattern, example_question, last_reviewed_at, review_result')
+      .select('id, topic_id, topic_tags, concepts, trap_pattern, triggers, example_question, last_reviewed_at, review_result')
       .eq('user_id', userId)
       .not('last_reviewed_at', 'is', null)
       .order('last_reviewed_at', { ascending: false })
@@ -1858,6 +1859,7 @@ export async function fetchReviewHistory(
       topicTags: (Array.isArray(row.topic_tags) ? row.topic_tags : []).filter((c): c is string => typeof c === 'string'),
       concepts: (Array.isArray(row.concepts) ? row.concepts : []).filter((c): c is string => typeof c === 'string'),
       trapPattern: typeof row.trap_pattern === 'string' ? row.trap_pattern : null,
+      triggers: Array.isArray(row.triggers) ? (row.triggers as ConceptTrigger[]) : [],
       exampleQuestion: (() => {
         if (!row.example_question || typeof row.example_question !== 'object' || Array.isArray(row.example_question)) return null
         const eq = row.example_question as Record<string, unknown>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -78,6 +79,14 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   const isLoading = useClaudeStore((s) => s.isLoading);
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
   const reviewCardContext = useClaudeStore((s) => s.reviewCardContext);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(message.content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
 
   if (isUser) {
     return (
@@ -119,13 +128,29 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           <span className="inline-block w-1.5 h-4 bg-[#4f6ef7] ml-0.5 animate-pulse align-text-bottom rounded-sm" />
         )}
         {!isStreaming && message.content && (
-          <FeedbackButtons
-            messageId={message.id}
-            messagePreview={message.content}
-            source="claude"
-            topicId={reviewCardContext?.topicId ?? currentTopicId ?? null}
-            extractionId={reviewCardContext?.extractionId ?? null}
-          />
+          <div className="flex items-center">
+            <FeedbackButtons
+              messageId={message.id}
+              messagePreview={message.content}
+              source="claude"
+              topicId={reviewCardContext?.topicId ?? currentTopicId ?? null}
+              extractionId={reviewCardContext?.extractionId ?? null}
+            />
+            <button
+              onClick={handleCopy}
+              className="mt-1.5 ml-0.5 w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100"
+              title="답변 복사"
+            >
+              {copied ? (
+                <span className="text-[10px] text-[#166534] font-semibold">✓</span>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+              )}
+            </button>
+          </div>
         )}
       </div>
     </div>

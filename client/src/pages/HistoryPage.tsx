@@ -962,35 +962,77 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                   </div>
                 )}
 
-                {/* Example question — expand for confused cards */}
+                {/* Example question — question always shown, detail on expand */}
                 {current.exampleQuestion && (
-                  <div>
-                    {current.reviewResult === 'confused' && (
-                      <button
-                        onClick={() => setExpandedId(expandedId === current.id ? null : current.id)}
-                        className="text-xs font-semibold mb-2"
-                        style={{ color: '#4338ca' }}
-                      >
-                        {expandedId === current.id ? '해설 접기 ▲' : '해설 보기 ▼'}
-                      </button>
-                    )}
-                    {(expandedId === current.id || current.reviewResult === 'known') && (
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-xs text-[#1e1b4b] leading-relaxed">{current.exampleQuestion.question}</p>
+                    <button
+                      onClick={() => setExpandedId(expandedId === current.id ? null : current.id)}
+                      className="text-xs font-semibold self-start"
+                      style={{ color: '#4338ca' }}
+                    >
+                      {expandedId === current.id ? '해설 접기 ▲' : '해설 보기 ▼'}
+                    </button>
+                    {expandedId === current.id && (
                       <div
-                        className="rounded-xl px-3 py-2.5 text-xs flex flex-col gap-1.5"
+                        className="flex flex-col gap-2 rounded-xl px-3 py-2.5 text-xs"
                         style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}
                       >
-                        <p className="text-[#1e1b4b] leading-relaxed">{current.exampleQuestion.question}</p>
+                        {/* A/B/C/D options */}
+                        {Array.isArray(current.exampleQuestion.options) && current.exampleQuestion.options.length > 0 && (
+                          <div className="flex flex-col gap-1">
+                            {current.exampleQuestion.options.map((opt, i) => {
+                              const letter = OPTION_LETTERS[i]
+                              const correctLetter = current.exampleQuestion!.answer?.trim()[0]?.toUpperCase() ?? ''
+                              const isCorrect = letter === correctLetter
+                              return (
+                                <p key={i} className="leading-relaxed" style={{ color: isCorrect ? '#166534' : '#374151', fontWeight: isCorrect ? 600 : 400 }}>
+                                  <span className="font-bold mr-1" style={{ color: isCorrect ? '#166534' : '#4338ca' }}>{letter}.</span>
+                                  {(typeof opt === 'string' ? opt : String(opt)).replace(/^[A-Da-d][.)]\s*/, '')}
+                                  {isCorrect && <span className="ml-1">✅</span>}
+                                </p>
+                              )
+                            })}
+                          </div>
+                        )}
                         <p className="font-bold" style={{ color: '#166534' }}>정답: {current.exampleQuestion.answer}</p>
+
+                        {/* Triggers */}
+                        {current.triggers.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">⚡ 트리거</p>
+                            <div className="flex flex-wrap gap-1">
+                              {current.triggers.map((t, i) => (
+                                <span key={i} className="px-2 py-0.5 rounded-full text-[10px] font-medium" style={{ background: '#fff7ed', border: '1px solid #fed7aa', color: '#9a3412' }}>
+                                  {t.keyword}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Trap */}
+                        {current.trapPattern && (
+                          <div>
+                            <p className="text-[10px] font-semibold text-[#991b1b] mb-0.5">⚠️ 함정</p>
+                            <p className="text-[#7f1d1d] leading-relaxed">{current.trapPattern}</p>
+                          </div>
+                        )}
+
+                        {/* Explanation */}
+                        {current.exampleQuestion.explanation && (
+                          <div>
+                            <p className="text-[10px] font-semibold text-[#166534] mb-0.5">💡 해설</p>
+                            <p className="text-[#14532d] leading-relaxed whitespace-pre-wrap">
+                              {typeof current.exampleQuestion.explanation === 'string'
+                                ? current.exampleQuestion.explanation
+                                : (current.exampleQuestion.explanation as ExplanationStructured).core
+                                  ?? JSON.stringify(current.exampleQuestion.explanation)}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
-
-                {/* Trap pattern */}
-                {current.trapPattern && (
-                  <div className="rounded-xl px-3 py-2" style={{ background: '#fff5f5', border: '1px solid #fecaca' }}>
-                    <p className="text-[10px] font-semibold text-[#991b1b] mb-0.5">⚠️ 함정 패턴</p>
-                    <p className="text-xs text-[#7f1d1d] leading-relaxed">{current.trapPattern}</p>
                   </div>
                 )}
               </div>
