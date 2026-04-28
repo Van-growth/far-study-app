@@ -16,7 +16,9 @@ import {
   generateOnDemandReviewCards,
   saveFeedback,
   saveWrongAnswer,
+  fetchReviewHistory,
   RecentExtractionItem,
+  ReviewHistoryItem,
   ConceptTrigger,
   ExampleQuestion,
   ExplanationStructured,
@@ -702,13 +704,22 @@ function FeedbackPanel({
                   {aiFixResult.reason}
                 </p>
               </div>
-              <button
-                onClick={onCancelFix}
-                className="w-full py-2 rounded-xl text-xs font-semibold"
-                style={{ background: '#f1f5f9', color: '#64748b' }}
-              >
-                확인
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={onCancelFix}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                  style={{ background: '#f1f5f9', color: '#64748b' }}
+                >
+                  확인
+                </button>
+                <button
+                  onClick={onSaveFeedback}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                  style={{ background: '#fff7ed', color: '#92400e', border: '1px solid #fed7aa' }}
+                >
+                  그래도 피드백 반영하기
+                </button>
+              </div>
             </>
           )
         ) : (
@@ -781,6 +792,198 @@ function FeedbackPanel({
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+// ── Review History Tab ────────────────────────────────────────
+type HistoryFilter = 'today' | 'week' | 'all'
+
+function ReviewHistoryTab({ userId }: { userId: string }) {
+  const [filter, setFilter] = useState<HistoryFilter>('today')
+  const [items, setItems] = useState<ReviewHistoryItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [cardIdx, setCardIdx] = useState(0)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [cardVisible, setCardVisible] = useState(true)
+  const touchStartX = useRef<number | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    setCardIdx(0)
+    setExpandedId(null)
+    fetchReviewHistory(userId, filter)
+      .then(setItems)
+      .finally(() => setLoading(false))
+  }, [userId, filter])
+
+  const goTo = (next: number) => {
+    if (next < 0 || next >= items.length) return
+    setCardVisible(false)
+    setExpandedId(null)
+    setTimeout(() => { setCardIdx(next); setCardVisible(true) }, 150)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return
+    const diff = touchStartX.current - e.changedTouches[0].clientX
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) goTo(cardIdx + 1)
+      else goTo(cardIdx - 1)
+    }
+    touchStartX.current = null
+  }
+
+  const FILTER_LABELS: Record<HistoryFilter, string> = { today: '오늘', week: '이번 주', all: '전체' }
+  const current = items[cardIdx]
+
+  return (
+    <div className="flex flex-col gap-4 px-4 pt-4">
+      {/* Date filter */}
+      <div className="flex gap-1.5">
+        {(Object.keys(FILTER_LABELS) as HistoryFilter[]).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className="flex-1 py-1.5 rounded-xl text-xs font-semibold transition-colors"
+            style={filter === f
+              ? { background: '#eef2ff', color: '#3730a3', border: '1.5px solid #818cf8' }
+              : { background: '#f8faff', color: '#94a3b8', border: '1.5px solid #e2e8f0' }
+            }
+          >
+            {FILTER_LABELS[f]}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-10">
+          <div className="w-5 h-5 border-2 border-[#4f6ef7] border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : items.length === 0 ? (
+        <div className="flex flex-col items-center py-12 text-center gap-2">
+          <p className="text-4xl">📭</p>
+          <p className="text-sm font-semibold text-[#0f172a]">복습 기록이 없어요</p>
+          <p className="text-xs text-[#64748b]">복습을 완료하면 여기에 기록이 쌓여요</p>
+        </div>
+      ) : (
+        <>
+          {/* Navigation */}
+          <div className="flex items-center justify-between px-1">
+            <button
+              onClick={() => goTo(cardIdx - 1)}
+              disabled={cardIdx === 0}
+              className="text-xs px-2 py-1.5 rounded-lg font-semibold disabled:opacity-30 transition-opacity"
+              style={{ color: '#4f6ef7' }}
+            >
+              ← 이전
+            </button>
+            <span className="text-xs font-bold text-[#64748b]">{cardIdx + 1} / {items.length}</span>
+            <button
+              onClick={() => goTo(cardIdx + 1)}
+              disabled={cardIdx === items.length - 1}
+              className="text-xs px-2 py-1.5 rounded-lg font-semibold disabled:opacity-30 transition-opacity"
+              style={{ color: '#4f6ef7' }}
+            >
+              다음 →
+            </button>
+          </div>
+
+          {/* Card */}
+          {current && (
+            <div
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              className="rounded-2xl overflow-hidden"
+              style={{
+                border: `1.5px solid ${current.reviewResult === 'known' ? '#86efac' : '#fecaca'}`,
+                background: 'white',
+                boxShadow: '0 4px 24px 0 rgba(79,110,247,0.07)',
+                transition: 'opacity 0.15s ease',
+                opacity: cardVisible ? 1 : 0,
+              }}
+            >
+              {/* Result banner */}
+              <div
+                className="px-4 py-2.5 flex items-center justify-between"
+                style={{ background: current.reviewResult === 'known' ? '#f0fdf4' : '#fff5f5' }}
+              >
+                <span className="text-xs font-bold" style={{ color: current.reviewResult === 'known' ? '#166534' : '#991b1b' }}>
+                  {current.reviewResult === 'known' ? '✅ 알았다' : '🔄 헷갈려'}
+                </span>
+                <span className="text-[10px] text-[#94a3b8]">
+                  {new Date(current.lastReviewedAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                </span>
+              </div>
+
+              {/* Body */}
+              <div className="p-4 flex flex-col gap-3">
+                {/* Topic badge */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {current.topicId && (
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: '#eef2ff', color: '#4338ca' }}>
+                      {current.topicId}
+                    </span>
+                  )}
+                  {current.topicTags.slice(0, 2).map((tag, i) => (
+                    <span key={i} className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#f1f5f9', color: '#64748b' }}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Concepts */}
+                {current.concepts.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {current.concepts.slice(0, 5).map((c, i) => (
+                      <span key={i} className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: '#f8faff', color: '#3730a3', border: '1px solid #e0e7ff' }}>
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Example question — expand for confused cards */}
+                {current.exampleQuestion && (
+                  <div>
+                    {current.reviewResult === 'confused' && (
+                      <button
+                        onClick={() => setExpandedId(expandedId === current.id ? null : current.id)}
+                        className="text-xs font-semibold mb-2"
+                        style={{ color: '#4338ca' }}
+                      >
+                        {expandedId === current.id ? '해설 접기 ▲' : '해설 보기 ▼'}
+                      </button>
+                    )}
+                    {(expandedId === current.id || current.reviewResult === 'known') && (
+                      <div
+                        className="rounded-xl px-3 py-2.5 text-xs flex flex-col gap-1.5"
+                        style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}
+                      >
+                        <p className="text-[#1e1b4b] leading-relaxed">{current.exampleQuestion.question}</p>
+                        <p className="font-bold" style={{ color: '#166534' }}>정답: {current.exampleQuestion.answer}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Trap pattern */}
+                {current.trapPattern && (
+                  <div className="rounded-xl px-3 py-2" style={{ background: '#fff5f5', border: '1px solid #fecaca' }}>
+                    <p className="text-[10px] font-semibold text-[#991b1b] mb-0.5">⚠️ 함정 패턴</p>
+                    <p className="text-xs text-[#7f1d1d] leading-relaxed">{current.trapPattern}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <p className="text-center text-[10px] text-[#94a3b8]">좌우 스와이프 또는 버튼으로 이동</p>
+        </>
+      )}
     </div>
   )
 }
@@ -868,6 +1071,9 @@ export default function HistoryPage() {
   const [noOnDemandData, setNoOnDemandData] = useState(false)
   // MCQ answer state — reset on card change
   const [mcqAnswerState, setMcqAnswerState] = useState<{ isCorrect: boolean; selected: string } | null>(null)
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'review' | 'history'>('review')
 
   // Feedback panel state
   const [feedbackOpen, setFeedbackOpen] = useState(false)
@@ -1124,127 +1330,151 @@ export default function HistoryPage() {
     )
   }
 
-  if (stage === 'empty') return <EmptyView onGenerate={handleGenerate} generating={generating} noData={noOnDemandData} />
-  if (stage === 'done') return (
-    <>
-      <MoneyRainOverlay open={moneyRain.open} count={moneyRain.count} onClose={() => setMoneyRain(prev => ({ ...prev, open: false }))} />
-      <DoneView count={knewCount + confusedCount} />
-    </>
-  )
-
-  const current = cards[idx]
+  const current = cards[idx] ?? null
   const total = cards.length
 
   return (
-    <div className="max-w-lg mx-auto flex flex-col gap-4 pb-8">
-      <ProgressBar current={idx + 1} total={total} />
-
-      <FlashCard
-        key={idx}
-        card={current}
-        visible={visible}
-        onMcqAnswer={(isCorrect, selected) => {
-          setMcqAnswerState({ isCorrect, selected })
-          if (isCorrect) {
-            setMoneyRain({ open: true, count: knewCount + confusedCount + 1 })
-            addXpLocal(5)
-          } else {
-            addXpLocal(-5)
-          }
-        }}
-      />
-
-      {/* Answer buttons — MCQ answered → 다음 카드, otherwise 알았다/헷갈려 */}
-      <div className="relative">
-        {nonMcqXp?.visible && (
-          <span
-            className={`absolute pointer-events-none z-10 text-xs font-bold right-6 ${
-              nonMcqXp.correct
-                ? 'animate-floatUp -top-4'
-                : 'animate-floatDown bottom-0'
-            }`}
-            style={{ color: nonMcqXp.correct ? '#16a34a' : '#dc2626' }}
-          >
-            {nonMcqXp.correct ? '+5 🪙' : '-5 💸'}
-          </span>
-        )}
-      <div className="flex gap-3 px-4">
-        {mcqAnswerState !== null ? (
+    <div className="max-w-lg mx-auto flex flex-col pb-8">
+      {/* Tab bar */}
+      <div className="flex px-4 pt-3">
+        {(['review', 'history'] as const).map((tab) => (
           <button
-            onClick={() => void handleAnswer(mcqAnswerState.isCorrect)}
-            disabled={submitting}
-            className="flex-1 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 transition-opacity"
-            style={{ background: '#4f6ef7', color: 'white' }}
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className="flex-1 py-2.5 text-sm font-semibold transition-colors"
+            style={activeTab === tab
+              ? { color: '#4f6ef7', borderBottom: '2.5px solid #4f6ef7' }
+              : { color: '#94a3b8', borderBottom: '2.5px solid transparent' }
+            }
           >
-            다음 카드 →
+            {tab === 'review' ? '복습하기' : '히스토리'}
           </button>
-        ) : (
-          <>
-            <button
-              onClick={() => void handleAnswer(false)}
-              disabled={submitting}
-              className="flex-1 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 transition-opacity"
-              style={{ background: '#fff9db', border: '1.5px solid #fde68a', color: '#92400e' }}
-            >
-              헷갈려 🔄
-            </button>
-            <button
-              onClick={() => void handleAnswer(true)}
-              disabled={submitting}
-              className="flex-1 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 transition-opacity"
-              style={{ background: '#f0fdf4', border: '1.5px solid #86efac', color: '#166534' }}
-            >
-              알았다 ✅
-            </button>
-          </>
-        )}
+        ))}
       </div>
-      </div>
+      <div className="h-px bg-[#f1f5f9] mb-2" />
 
-      {/* Edit button */}
-      <div className="flex justify-center">
-        <button
-          onClick={() => {
-            setFeedbackOpen((v) => !v)
-            if (feedbackOpen) { setAiFixResult(null); setFixError(null) }
-          }}
-          className="text-xs text-[#94a3b8] hover:text-[#64748b] transition-colors"
-        >
-          ✏️ 문제 수정
-        </button>
-      </div>
+      {activeTab === 'history' ? (
+        userId ? <ReviewHistoryTab userId={userId} /> : null
+      ) : (
+        <div className="flex flex-col gap-4 pt-2">
+          {stage === 'empty' && (
+            <EmptyView onGenerate={handleGenerate} generating={generating} noData={noOnDemandData} />
+          )}
+          {stage === 'done' && (
+            <DoneView count={knewCount + confusedCount} />
+          )}
+          {stage === 'review' && current && (
+            <>
+              <ProgressBar current={idx + 1} total={total} />
 
-      {/* Feedback panel */}
-      {feedbackOpen && (
-        <FeedbackPanel
-          card={current}
-          feedbackText={feedbackText}
-          setFeedbackText={setFeedbackText}
-          errorType={errorType}
-          setErrorType={setErrorType}
-          aiFixLoading={aiFixLoading}
-          aiFixResult={aiFixResult}
-          savingFix={savingFix}
-          fixError={fixError}
-          onSaveFeedback={() => void handleSaveFeedback()}
-          onAiFix={() => void handleAiFix()}
-          onConfirmFix={() => void handleConfirmFix()}
-          onCancelFix={() => setAiFixResult(null)}
-          onClose={() => { setFeedbackOpen(false); setAiFixResult(null); setFixError(null); setErrorType(null) }}
-        />
+              <FlashCard
+                key={idx}
+                card={current}
+                visible={visible}
+                onMcqAnswer={(isCorrect, selected) => {
+                  setMcqAnswerState({ isCorrect, selected })
+                  if (isCorrect) {
+                    setMoneyRain({ open: true, count: knewCount + confusedCount + 1 })
+                    addXpLocal(5)
+                  } else {
+                    addXpLocal(-5)
+                  }
+                }}
+              />
+
+              {/* Answer buttons */}
+              <div className="relative">
+                {nonMcqXp?.visible && (
+                  <span
+                    className={`absolute pointer-events-none z-10 text-xs font-bold right-6 ${
+                      nonMcqXp.correct ? 'animate-floatUp -top-4' : 'animate-floatDown bottom-0'
+                    }`}
+                    style={{ color: nonMcqXp.correct ? '#16a34a' : '#dc2626' }}
+                  >
+                    {nonMcqXp.correct ? '+5 🪙' : '-5 💸'}
+                  </span>
+                )}
+                <div className="flex gap-3 px-4">
+                  {mcqAnswerState !== null ? (
+                    <button
+                      onClick={() => void handleAnswer(mcqAnswerState.isCorrect)}
+                      disabled={submitting}
+                      className="flex-1 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 transition-opacity"
+                      style={{ background: '#4f6ef7', color: 'white' }}
+                    >
+                      다음 카드 →
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => void handleAnswer(false)}
+                        disabled={submitting}
+                        className="flex-1 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 transition-opacity"
+                        style={{ background: '#fff9db', border: '1.5px solid #fde68a', color: '#92400e' }}
+                      >
+                        헷갈려 🔄
+                      </button>
+                      <button
+                        onClick={() => void handleAnswer(true)}
+                        disabled={submitting}
+                        className="flex-1 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 transition-opacity"
+                        style={{ background: '#f0fdf4', border: '1.5px solid #86efac', color: '#166534' }}
+                      >
+                        알았다 ✅
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Edit button */}
+              <div className="flex justify-center">
+                <button
+                  onClick={() => {
+                    setFeedbackOpen((v) => !v)
+                    if (feedbackOpen) { setAiFixResult(null); setFixError(null) }
+                  }}
+                  className="text-xs text-[#94a3b8] hover:text-[#64748b] transition-colors"
+                >
+                  ✏️ 문제 수정
+                </button>
+              </div>
+
+              {/* Feedback panel */}
+              {feedbackOpen && (
+                <FeedbackPanel
+                  card={current}
+                  feedbackText={feedbackText}
+                  setFeedbackText={setFeedbackText}
+                  errorType={errorType}
+                  setErrorType={setErrorType}
+                  aiFixLoading={aiFixLoading}
+                  aiFixResult={aiFixResult}
+                  savingFix={savingFix}
+                  fixError={fixError}
+                  onSaveFeedback={() => void handleSaveFeedback()}
+                  onAiFix={() => void handleAiFix()}
+                  onConfirmFix={() => void handleConfirmFix()}
+                  onCancelFix={() => setAiFixResult(null)}
+                  onClose={() => { setFeedbackOpen(false); setAiFixResult(null); setFixError(null); setErrorType(null) }}
+                />
+              )}
+
+              <p className="text-center text-[11px] text-[#64748b]">
+                오늘 완료: <span className="font-semibold text-[#166534]">{knewCount}개 ✅</span>
+                &nbsp;&nbsp;헷갈려: <span className="font-semibold text-[#92400e]">{confusedCount}개 🔄</span>
+                &nbsp;&nbsp;문제수정: <span className="font-semibold text-[#4338ca]">{fixCount}개 ✏️</span>
+              </p>
+            </>
+          )}
+
+          <MoneyRainOverlay
+            open={moneyRain.open}
+            count={moneyRain.count}
+            onClose={() => setMoneyRain(prev => ({ ...prev, open: false }))}
+          />
+        </div>
       )}
-
-      <p className="text-center text-[11px] text-[#64748b]">
-        오늘 완료: <span className="font-semibold text-[#166534]">{knewCount}개 ✅</span>
-        &nbsp;&nbsp;헷갈려: <span className="font-semibold text-[#92400e]">{confusedCount}개 🔄</span>
-        &nbsp;&nbsp;문제수정: <span className="font-semibold text-[#4338ca]">{fixCount}개 ✏️</span>
-      </p>
-
-      <MoneyRainOverlay
-        open={moneyRain.open}
-        count={moneyRain.count}
-        onClose={() => setMoneyRain(prev => ({ ...prev, open: false }))}
-      />
     </div>
   )
 }

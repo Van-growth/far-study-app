@@ -46,6 +46,8 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const setPendingQuiz = useClaudeStore((s) => s.setPendingQuiz);
 
   const [input, setInput] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);   // user intent: follow bottom?
@@ -79,14 +81,26 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   }, [messages]);
 
   const handleMsgsScroll = () => {
-    // Ignore scroll events caused by our own scrollTo calls
     if (isProgrammaticRef.current) {
       isProgrammaticRef.current = false;
       return;
     }
     const el = msgsRef.current;
     if (!el) return;
-    shouldAutoScrollRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 50;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 50;
+    shouldAutoScrollRef.current = atBottom;
+    setIsAtBottom(atBottom);
+  };
+
+  const handleCopy = () => {
+    const text = messages
+      .filter((m) => m.content)
+      .map((m) => `[${m.role === 'user' ? '나' : 'Claude'}]\n${m.content}`)
+      .join('\n\n---\n\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   const SLASH_COMMANDS: Record<string, string> = {
@@ -186,7 +200,23 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
           </div>
           <div className="flex items-center gap-1">
             {messages.length > 0 && (
-              <button onClick={clearMessages} className="text-[11px] text-muted hover:text-[#0f172a] px-2 py-1 rounded-lg hover:bg-gray-100">초기화</button>
+              <>
+                <button
+                  onClick={handleCopy}
+                  title="대화 내용 복사"
+                  className="text-[11px] text-muted hover:text-[#0f172a] px-2 py-1 rounded-lg hover:bg-gray-100 flex items-center gap-1"
+                >
+                  {copied ? (
+                    <span className="text-[#166534] font-semibold">복사됨 ✓</span>
+                  ) : (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                  )}
+                </button>
+                <button onClick={clearMessages} className="text-[11px] text-muted hover:text-[#0f172a] px-2 py-1 rounded-lg hover:bg-gray-100">초기화</button>
+              </>
             )}
             <button onClick={closePanel} className="w-11 h-11 flex items-center justify-center rounded-lg text-muted hover:text-[#0f172a] hover:bg-gray-100 text-xl">×</button>
           </div>
@@ -221,7 +251,8 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
       </div>
 
       {/* Messages */}
-      <div ref={msgsRef} onScroll={handleMsgsScroll} className="flex-1 min-h-0 overflow-y-auto px-3 py-4">
+      <div className="flex-1 min-h-0 relative">
+      <div ref={msgsRef} onScroll={handleMsgsScroll} className="absolute inset-0 overflow-y-auto px-3 py-4">
         {isEmpty && !isLoading ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4 gap-3">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl" style={{ background: '#eef2ff' }}>👋</div>
@@ -252,6 +283,20 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
             {showTyping && <TypingBubble />}
           </div>
         )}
+      </div>
+      {/* Scroll to bottom button */}
+      {!isAtBottom && messages.length > 0 && (
+        <button
+          onClick={scrollToBottom}
+          className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-full shadow-md z-10 transition-opacity"
+          style={{ background: '#4f6ef7', color: 'white', opacity: 0.9 }}
+          title="최하단으로 이동"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      )}
       </div>
 
       {/* Short Starter buttons — shown when a quiz context is pending and chat is empty */}

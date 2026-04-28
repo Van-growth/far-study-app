@@ -1805,6 +1805,76 @@ export async function getTodayReviewStats(
   }
 }
 
+// ── Review History (concept_extractions + last_reviewed_at) ──
+
+export interface ReviewHistoryItem {
+  id: string
+  topicId: string | null
+  topicTags: string[]
+  concepts: string[]
+  trapPattern: string | null
+  exampleQuestion: ExampleQuestion | null
+  lastReviewedAt: string
+  reviewResult: 'known' | 'confused' | null
+}
+
+export async function fetchReviewHistory(
+  userId: string,
+  filter: 'today' | 'week' | 'all',
+): Promise<ReviewHistoryItem[]> {
+  if (!hasAuth(userId)) return []
+  try {
+    const startDate = new Date()
+    if (filter === 'today') {
+      startDate.setHours(0, 0, 0, 0)
+    } else if (filter === 'week') {
+      startDate.setDate(startDate.getDate() - 7)
+      startDate.setHours(0, 0, 0, 0)
+    }
+
+    let query = supabase
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
+      .select('id, topic_id, topic_tags, concepts, trap_pattern, example_question, last_reviewed_at, review_result')
+      .eq('user_id', userId)
+      .not('last_reviewed_at', 'is', null)
+      .order('last_reviewed_at', { ascending: false })
+
+    if (filter !== 'all') {
+      query = query.gte('last_reviewed_at', startDate.toISOString())
+    }
+
+    const { data, error } = await query
+    if (error) {
+      const code = (error as { code?: string }).code ?? ''
+      const msg = (error.message ?? '').toLowerCase()
+      if (code === 'PGRST204' || code === '42703' || msg.includes('last_reviewed_at')) return []
+      return []
+    }
+    if (!data) return []
+
+    return (data as unknown as Record<string, unknown>[]).map((row) => ({
+      id: String(row.id ?? ''),
+      topicId: typeof row.topic_id === 'string' ? row.topic_id : null,
+      topicTags: (Array.isArray(row.topic_tags) ? row.topic_tags : []).filter((c): c is string => typeof c === 'string'),
+      concepts: (Array.isArray(row.concepts) ? row.concepts : []).filter((c): c is string => typeof c === 'string'),
+      trapPattern: typeof row.trap_pattern === 'string' ? row.trap_pattern : null,
+      exampleQuestion: (() => {
+        if (!row.example_question || typeof row.example_question !== 'object' || Array.isArray(row.example_question)) return null
+        const eq = row.example_question as Record<string, unknown>
+        if (!eq.question || !Array.isArray(eq.options) || eq.options.length === 0) return null
+        return {
+          question: String(eq.question),
+          options: (eq.options as unknown[]).map((o) => (typeof o === 'string' ? o : String(o))),
+          answer: eq.answer != null ? String(eq.answer) : '',
+          explanation: eq.explanation ?? '',
+        } as ExampleQuestion
+      })(),
+      lastReviewedAt: typeof row.last_reviewed_at === 'string' ? row.last_reviewed_at : '',
+      reviewResult: row.review_result === 'known' ? 'known' : row.review_result === 'confused' ? 'confused' : null,
+    }))
+  } catch { return [] }
+}
+
 // ── Daily review log (migration 012) ─────────────────────────
 
 /** @deprecated daily_review_log table removed — tracking moved to concept_extractions.reviewed_at */
