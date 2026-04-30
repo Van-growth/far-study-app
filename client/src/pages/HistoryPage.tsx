@@ -362,7 +362,7 @@ function ExampleQuestionBlock({
                 }}
               >
                 <span className="font-bold mr-1.5" style={{ color: isAnswered && isCorrect ? '#166534' : isAnswered && isSelected && !isCorrect ? '#991b1b' : '#4338ca' }}>{letter}.</span>
-                {(typeof opt === 'string' ? opt : String(opt)).replace(/^[A-Da-d][.)]\s*/, '')}
+                {(typeof opt === 'string' ? opt : String(opt)).replace(/^\(?[A-Ea-e][.):\s]\)?\s*/i, '')}
                 {isAnswered && isCorrect && <span className="ml-1.5">✅</span>}
                 {isAnswered && isSelected && !isCorrect && <span className="ml-1.5">❌</span>}
               </button>
@@ -466,6 +466,15 @@ function FlashCard({
         ))}
       </div>
 
+      {/* Example question — shown first so you see the challenge before the concepts */}
+      {card.exampleQuestion && (
+        <ExampleQuestionBlock
+          eq={card.exampleQuestion}
+          cardId={card.id}
+          onAnswer={onMcqAnswer}
+        />
+      )}
+
       {/* Concepts */}
       {card.concepts.length > 0 && (
         <div>
@@ -480,6 +489,26 @@ function FlashCard({
                 style={{ background: '#eef2ff', color: '#3730a3' }}
               >
                 {c}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Trigger keywords */}
+      {triggers.length > 0 && (
+        <div>
+          <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-2">
+            ⚡ 트리거 키워드
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {triggers.map((t, i) => (
+              <span
+                key={i}
+                className="text-xs px-2.5 py-1 rounded-full font-medium"
+                style={{ background: '#fff7ed', border: '1px solid #fed7aa', color: '#9a3412' }}
+              >
+                {t.keyword}
               </span>
             ))}
           </div>
@@ -513,35 +542,6 @@ function FlashCard({
             <p className="text-xs text-[#14532d] leading-relaxed whitespace-pre-line">{hint}</p>
           )}
         </div>
-      )}
-
-      {/* Trigger keywords */}
-      {triggers.length > 0 && (
-        <div>
-          <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-2">
-            ⚡ 트리거 키워드
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {triggers.map((t, i) => (
-              <span
-                key={i}
-                className="text-xs px-2.5 py-1 rounded-full font-medium"
-                style={{ background: '#fff7ed', border: '1px solid #fed7aa', color: '#9a3412' }}
-              >
-                {t.keyword}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Example question */}
-      {card.exampleQuestion && (
-        <ExampleQuestionBlock
-          eq={card.exampleQuestion}
-          cardId={card.id}
-          onAnswer={onMcqAnswer}
-        />
       )}
 
       {/* Review count */}
@@ -951,18 +951,7 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                   ))}
                 </div>
 
-                {/* Concepts */}
-                {current.concepts.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {current.concepts.slice(0, 5).map((c, i) => (
-                      <span key={i} className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: '#f8faff', color: '#3730a3', border: '1px solid #e0e7ff' }}>
-                        {c}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Example question — question always shown, detail on expand */}
+                {/* Example question — shown first; concepts below */}
                 {current.exampleQuestion && (
                   <div className="flex flex-col gap-1.5">
                     <p className="text-xs text-[#1e1b4b] leading-relaxed">{current.exampleQuestion.question}</p>
@@ -978,17 +967,17 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                         className="flex flex-col gap-2 rounded-xl px-3 py-2.5 text-xs"
                         style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}
                       >
-                        {/* A/B/C/D options */}
+                        {/* A/B/C/D options — slice to 4 to prevent duplicates from malformed data */}
                         {Array.isArray(current.exampleQuestion.options) && current.exampleQuestion.options.length > 0 && (
                           <div className="flex flex-col gap-1">
-                            {current.exampleQuestion.options.map((opt, i) => {
+                            {current.exampleQuestion.options.slice(0, 4).map((opt, i) => {
                               const letter = OPTION_LETTERS[i]
                               const correctLetter = current.exampleQuestion!.answer?.trim()[0]?.toUpperCase() ?? ''
                               const isCorrect = letter === correctLetter
                               return (
                                 <p key={i} className="leading-relaxed" style={{ color: isCorrect ? '#166534' : '#374151', fontWeight: isCorrect ? 600 : 400 }}>
                                   <span className="font-bold mr-1" style={{ color: isCorrect ? '#166534' : '#4338ca' }}>{letter}.</span>
-                                  {(typeof opt === 'string' ? opt : String(opt)).replace(/^[A-Da-d][.)]\s*/, '')}
+                                  {(typeof opt === 'string' ? opt : String(opt)).replace(/^\(?[A-Ea-e][.):\s]\)?\s*/i, '')}
                                   {isCorrect && <span className="ml-1">✅</span>}
                                 </p>
                               )
@@ -1033,6 +1022,17 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                         )}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Concepts — below question */}
+                {current.concepts.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {current.concepts.slice(0, 5).map((c, i) => (
+                      <span key={i} className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: '#f8faff', color: '#3730a3', border: '1px solid #e0e7ff' }}>
+                        {c}
+                      </span>
+                    ))}
                   </div>
                 )}
               </div>

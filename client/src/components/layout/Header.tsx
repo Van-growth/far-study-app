@@ -76,7 +76,7 @@ export default function Header({ email, onSignOut }: HeaderProps) {
     <MoneyRainOverlay open={moneyRainOpen} count={DAILY_GOAL} onClose={() => setMoneyRainOpen(false)} />
     <header
       className="fixed top-0 left-0 right-0 z-50 flex items-center px-3 md:px-5 bg-white border-b border-border"
-      style={{ height: 54, position: 'relative' }}
+      style={{ height: 54 }}
     >
       {/* Logo */}
       <div

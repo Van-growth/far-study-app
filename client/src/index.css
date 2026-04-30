@@ -6,6 +6,10 @@
   * {
     box-sizing: border-box;
   }
+  /* iOS Safari input zoom prevention — font-size < 16px triggers auto-zoom */
+  input, textarea, select {
+    font-size: 16px;
+  }
   body {
     font-family: 'DM Sans', sans-serif;
     background-color: #f0f4f8;
