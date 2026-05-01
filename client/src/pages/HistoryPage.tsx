@@ -150,7 +150,9 @@ function useTTS() {
       audioRef.current = audio
       audio.onended = () => { audioRef.current = null; setPlaying(false); setScript(null) }
       audio.onerror = () => { audioRef.current = null; setPlaying(false); setScript(null) }
-      await audio.play()
+      // fire-and-forget: catch here so the try-block completes normally,
+      // letting React commit script=s before any potential play() rejection
+      audio.play().catch(() => { audioRef.current = null; setPlaying(false); setScript(null) })
     } catch {
       setPlaying(false)
       setScript(null)
@@ -660,7 +662,7 @@ function FlashCard({
       )}
 
       {/* TTS script subtitle */}
-      {playing && script && (
+      {!!script && (
         <div
           className="animate-fadeIn rounded-xl px-3 py-2 text-[11px] leading-relaxed text-[#475569]"
           style={{ background: '#f8faff', border: '1px solid #e0e7ff' }}
@@ -1281,7 +1283,7 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                 )}
 
                 {/* TTS script subtitle */}
-                {ttsPlaying && ttsScript && (
+                {!!ttsScript && (
                   <div
                     className="animate-fadeIn rounded-xl px-3 py-2 text-[11px] leading-relaxed text-[#475569]"
                     style={{ background: '#f8faff', border: '1px solid #e0e7ff' }}
