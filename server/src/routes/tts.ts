@@ -39,7 +39,7 @@ async function synthesize(
     voice: { languageCode: 'en-US', name: 'en-US-Wavenet-F' },
     audioConfig: { audioEncoding: 'MP3', speakingRate: 0.85 },
   };
-  if (withTimepoints) reqBody.enableTimePointing = ['SSML_MARK'];
+  if (withTimepoints) reqBody.enableTimePointingModes = ['SSML_MARK'];
   const gRes = await fetch(`${GOOGLE_TTS_URL}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
