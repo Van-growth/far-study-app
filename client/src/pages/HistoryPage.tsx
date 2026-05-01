@@ -83,13 +83,12 @@ function splitSentences(text: string): string[] {
   return [text.trim()].filter(Boolean)
 }
 
-function TTSOverlay({ script, progress, onStop }: {
+function TTSOverlay({ script, currentSentenceIdx, onStop }: {
   script: string
-  progress: number
+  currentSentenceIdx: number
   onStop: () => void
 }) {
   const sentences = splitSentences(script)
-  const currentIdx = Math.min(Math.floor(progress * sentences.length), sentences.length - 1)
 
   return (
     <div
@@ -109,7 +108,7 @@ function TTSOverlay({ script, progress, onStop }: {
           <p
             key={i}
             className="transition-all duration-300 leading-relaxed"
-            style={i === currentIdx
+            style={i === currentSentenceIdx
               ? { color: 'white', fontWeight: 700, fontSize: '1rem' }
               : { color: 'rgba(255,255,255,0.3)', fontWeight: 400, fontSize: '0.8rem' }
             }
@@ -163,7 +162,7 @@ function StructuredExplanation({ exp }: { exp: ExplanationStructured }) {
 function useTTS() {
   const [playing, setPlaying] = useState(false)
   const [script, setScript] = useState<string | null>(null)
-  const [progress, setProgress] = useState(0)
+  const [currentSentenceIdx, setCurrentSentenceIdx] = useState(0)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const stop = useCallback(() => {
@@ -174,7 +173,7 @@ function useTTS() {
     }
     setPlaying(false)
     setScript(null)
-    setProgress(0)
+    setCurrentSentenceIdx(0)
   }, [])
 
   const play = useCallback(async (
@@ -192,28 +191,51 @@ function useTTS() {
         body: JSON.stringify({ topicId, oneLiner, trapPattern }),
       })
       if (!res.ok) { setPlaying(false); return }
-      const { audioContent, script: s } = await res.json() as { audioContent: string; script?: string }
+      const { audioContent, script: s, timepoints: tp } = await res.json() as {
+        audioContent: string
+        script?: string
+        timepoints?: Array<{ markName: string; timeSeconds: number }>
+      }
       setScript(s ?? null)
+
+      // Pre-compute for use in ontimeupdate closure
+      const points = tp ?? []
+      const sentenceCount = splitSentences(s ?? '').length
+
       const audio = new Audio(`data:audio/mp3;base64,${audioContent}`)
       audioRef.current = audio
       audio.ontimeupdate = () => {
-        const dur = audio.duration
-        if (dur && isFinite(dur) && dur > 0) setProgress(audio.currentTime / dur)
+        const ct = audio.currentTime
+        if (points.length > 0) {
+          // Timepoint-based: last mark whose timeSeconds ≤ currentTime
+          let idx = 0
+          for (let j = 0; j < points.length; j++) {
+            if (ct >= points[j].timeSeconds) idx = j
+            else break
+          }
+          setCurrentSentenceIdx(idx)
+        } else if (sentenceCount > 0) {
+          // Fallback: even distribution by progress
+          const dur = audio.duration
+          if (dur && isFinite(dur) && dur > 0) {
+            setCurrentSentenceIdx(Math.min(Math.floor((ct / dur) * sentenceCount), sentenceCount - 1))
+          }
+        }
       }
-      audio.onended = () => { audioRef.current = null; setPlaying(false); setScript(null); setProgress(0) }
-      audio.onerror = () => { audioRef.current = null; setPlaying(false); setScript(null); setProgress(0) }
+      audio.onended = () => { audioRef.current = null; setPlaying(false); setScript(null); setCurrentSentenceIdx(0) }
+      audio.onerror = () => { audioRef.current = null; setPlaying(false); setScript(null); setCurrentSentenceIdx(0) }
       // fire-and-forget: catch here so the try-block completes normally,
       // letting React commit script=s before any potential play() rejection
-      audio.play().catch(() => { audioRef.current = null; setPlaying(false); setScript(null); setProgress(0) })
+      audio.play().catch(() => { audioRef.current = null; setPlaying(false); setScript(null); setCurrentSentenceIdx(0) })
     } catch {
       setPlaying(false)
       setScript(null)
-      setProgress(0)
+      setCurrentSentenceIdx(0)
     }
   }, [stop])
 
   useEffect(() => stop, [stop])
-  return { play, stop, playing, script, progress }
+  return { play, stop, playing, script, currentSentenceIdx }
 }
 
 // ── Sound effects ─────────────────────────────────────────────
@@ -540,7 +562,7 @@ function FlashCard({
   const flashUserId = useStudyStore((s) => s.userId)
   const [relatedCount, setRelatedCount] = useState(0)
   const relatedFetchedRef = useRef<string | null>(null)
-  const { play, stop, playing, script, progress } = useTTS()
+  const { play, stop, playing, script, currentSentenceIdx } = useTTS()
 
   // Stop TTS on card change or unmount
   useEffect(() => { stop() }, [card.id, stop])
@@ -715,7 +737,7 @@ function FlashCard({
       )}
 
       {/* TTS overlay */}
-      {!!script && <TTSOverlay script={script} progress={progress} onStop={stop} />}
+      {!!script && <TTSOverlay script={script} currentSentenceIdx={currentSentenceIdx} onStop={stop} />}
     </div>
   )
 }
@@ -1051,7 +1073,7 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
   const navigate = useNavigate()
   const [relatedCount, setRelatedCount] = useState(0)
   const relatedFetchedRef = useRef<string | null>(null)
-  const { play: ttsPlay, stop: ttsStop, playing: ttsPlaying, script: ttsScript, progress: ttsProgress } = useTTS()
+  const { play: ttsPlay, stop: ttsStop, playing: ttsPlaying, script: ttsScript, currentSentenceIdx: ttsCurrentIdx } = useTTS()
 
   // Stop TTS on card change or page navigation
   useEffect(() => { ttsStop() }, [current?.id, ttsStop])
@@ -1329,7 +1351,7 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                 )}
 
                 {/* TTS overlay */}
-                {!!ttsScript && <TTSOverlay script={ttsScript} progress={ttsProgress} onStop={ttsStop} />}
+                {!!ttsScript && <TTSOverlay script={ttsScript} currentSentenceIdx={ttsCurrentIdx} onStop={ttsStop} />}
               </div>
             </div>
           )}

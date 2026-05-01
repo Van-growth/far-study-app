@@ -13,24 +13,45 @@ Only reformat what's given into conversational English.
 Focus on: what the rule is, and what trap to avoid.
 Return plain text only. No markdown, no headers, no bullet points, no dashes, no asterisks, no duration notes. Just natural flowing speech text.`;
 
-async function synthesize(text: string): Promise<string | null> {
+interface Timepoint { markName: string; timeSeconds: number }
+interface SynthResult { audioContent: string; timepoints: Timepoint[] }
+
+function splitSentences(text: string): string[] {
+  const parts = text.match(/[^.!?]+[.!?]+["']?\s*/g);
+  if (parts && parts.length > 0) return parts.map((s) => s.trim()).filter(Boolean);
+  return [text.trim()].filter(Boolean);
+}
+
+function escapeXml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+async function synthesize(
+  input: { text: string } | { ssml: string },
+  withTimepoints = false,
+): Promise<SynthResult | null> {
   const apiKey = process.env.GOOGLE_TTS_API_KEY;
   if (!apiKey) return null;
+  const reqBody: Record<string, unknown> = {
+    input: 'text' in input
+      ? { text: (input as { text: string }).text.slice(0, 1000) }
+      : { ssml: (input as { ssml: string }).ssml },
+    voice: { languageCode: 'en-US', name: 'en-US-Wavenet-F' },
+    audioConfig: { audioEncoding: 'MP3', speakingRate: 0.85 },
+  };
+  if (withTimepoints) reqBody.enableTimePointing = ['SSML_MARK'];
   const gRes = await fetch(`${GOOGLE_TTS_URL}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      input: { text: text.slice(0, 1000) },
-      voice: { languageCode: 'en-US', name: 'en-US-Wavenet-F' },
-      audioConfig: { audioEncoding: 'MP3', speakingRate: 0.85 },
-    }),
+    body: JSON.stringify(reqBody),
   });
   if (!gRes.ok) {
     console.error('[tts] Google error:', gRes.status, (await gRes.text()).slice(0, 200));
     return null;
   }
-  const data = await gRes.json() as { audioContent?: string };
-  return data.audioContent ?? null;
+  const data = await gRes.json() as { audioContent?: string; timepoints?: Timepoint[] };
+  if (!data.audioContent) return null;
+  return { audioContent: data.audioContent, timepoints: data.timepoints ?? [] };
 }
 
 /**
@@ -43,9 +64,9 @@ router.post('/', async (req: Request, res: Response) => {
   if (!text?.trim()) return res.status(400).json({ error: 'text required' });
   if (!process.env.GOOGLE_TTS_API_KEY) return res.status(500).json({ error: 'GOOGLE_TTS_API_KEY not configured' });
   try {
-    const audioContent = await synthesize(text);
-    if (!audioContent) return res.status(502).json({ error: 'Google TTS failed' });
-    return res.json({ audioContent });
+    const result = await synthesize({ text });
+    if (!result) return res.status(502).json({ error: 'Google TTS failed' });
+    return res.json({ audioContent: result.audioContent });
   } catch (err) {
     console.error('[tts] error:', err);
     return res.status(500).json({ error: 'Internal error' });
@@ -87,10 +108,12 @@ router.post('/podcast', async (req: Request, res: Response) => {
     const script = msg.content[0]?.type === 'text' ? msg.content[0].text.trim() : '';
     if (!script) return res.status(502).json({ error: 'Script generation failed' });
 
-    const audioContent = await synthesize(script);
-    if (!audioContent) return res.status(502).json({ error: 'Google TTS failed' });
+    const sentences = splitSentences(script);
+    const ssml = `<speak>${sentences.map((s, i) => `<mark name="s${i}"/>${escapeXml(s)}`).join(' ')}</speak>`;
+    const result = await synthesize({ ssml }, true);
+    if (!result) return res.status(502).json({ error: 'Google TTS failed' });
 
-    return res.json({ audioContent, script });
+    return res.json({ audioContent: result.audioContent, script, timepoints: result.timepoints });
   } catch (err) {
     console.error('[tts/podcast] error:', err);
     return res.status(500).json({ error: 'Internal error' });
