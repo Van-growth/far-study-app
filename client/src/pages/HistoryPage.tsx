@@ -57,12 +57,13 @@ async function fetchCardHint(
 type Stage = 'loading' | 'empty' | 'review' | 'done'
 
 // ── Progress bar ──────────────────────────────────────────────
-function ProgressBar({ current, total }: { current: number; total: number }) {
+function ProgressBar({ current, total, mode }: { current: number; total: number; mode?: 'normal' | 'queue' | 'confused' }) {
   const pct = total > 0 ? (current / total) * 100 : 0
+  const label = mode === 'queue' ? '오늘의 큐' : mode === 'confused' ? '오답 재출제' : '오늘 복습'
   return (
     <div className="px-4 pt-4 pb-2">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-xs font-semibold text-[#4f6ef7]">오늘 복습</span>
+        <span className="text-xs font-semibold text-[#4f6ef7]">{label}</span>
         <span className="text-xs font-bold text-[#0f172a]">{current} / {total}</span>
       </div>
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -572,7 +573,10 @@ function FlashCard({
       {/* Related notes link */}
       {relatedCount > 0 && card.topicId && (
         <button
-          onClick={() => navigate(`/concept-notes?q=${encodeURIComponent(card.topicId!)}`)}
+          onClick={() => {
+            const q = card.topicTags[0] ?? allTopics.find(t => t.id === card.topicId)?.label ?? card.topicId!
+            navigate(`/concept-notes?q=${encodeURIComponent(q)}`)
+          }}
           className="text-[10px] text-[#4f6ef7] self-start hover:underline"
         >
           📚 같은 토픽 분석 {relatedCount}개 보기 →
@@ -843,23 +847,49 @@ function FeedbackPanel({
 // ── Review History Tab ────────────────────────────────────────
 type HistoryFilter = 'today' | 'week' | 'all'
 
+function applyHistToggles(base: ReviewHistoryItem[], shuffle: boolean, confusedOnly: boolean): ReviewHistoryItem[] {
+  let result = confusedOnly ? base.filter((c) => c.reviewResult === 'confused') : base
+  if (shuffle) result = [...result].sort(() => Math.random() - 0.5)
+  return result
+}
+
 function ReviewHistoryTab({ userId }: { userId: string }) {
   const [filter, setFilter] = useState<HistoryFilter>('today')
+  const [originalItems, setOriginalItems] = useState<ReviewHistoryItem[]>([])
   const [items, setItems] = useState<ReviewHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [cardIdx, setCardIdx] = useState(0)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [cardVisible, setCardVisible] = useState(true)
   const touchStartX = useRef<number | null>(null)
+  const [histShuffleOn, setHistShuffleOn] = useState(false)
+  const [histConfusedFilterOn, setHistConfusedFilterOn] = useState(false)
 
   useEffect(() => {
     setLoading(true)
     setCardIdx(0)
     setExpandedId(null)
     fetchReviewHistory(userId, filter)
-      .then(setItems)
+      .then((data) => {
+        setOriginalItems(data)
+        setItems(applyHistToggles(data, histShuffleOn, histConfusedFilterOn))
+      })
       .finally(() => setLoading(false))
   }, [userId, filter])
+
+  function handleHistToggleShuffle() {
+    const next = !histShuffleOn
+    setHistShuffleOn(next)
+    setItems(applyHistToggles(originalItems, next, histConfusedFilterOn))
+    setCardIdx(0)
+  }
+
+  function handleHistToggleConfused() {
+    const next = !histConfusedFilterOn
+    setHistConfusedFilterOn(next)
+    setItems(applyHistToggles(originalItems, histShuffleOn, next))
+    setCardIdx(0)
+  }
 
   const goTo = (next: number) => {
     if (next < 0 || next >= items.length) return
@@ -935,15 +965,47 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
         ))}
       </div>
 
+      {/* Shuffle + confused filter toggles */}
+      {originalItems.length > 0 && (
+        <div className="flex gap-2">
+          <button
+            onClick={handleHistToggleShuffle}
+            className="flex-1 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+            style={{
+              background: histShuffleOn ? '#4f6ef7' : '#f1f5f9',
+              color: histShuffleOn ? 'white' : '#64748b',
+              border: histShuffleOn ? '1.5px solid #4f6ef7' : '1.5px solid #e2e8f0',
+            }}
+          >
+            🔀 {histShuffleOn ? '섞는 중' : '순서 섞기'}
+          </button>
+          <button
+            onClick={handleHistToggleConfused}
+            className="flex-1 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+            style={{
+              background: histConfusedFilterOn ? '#f59e0b' : '#f1f5f9',
+              color: histConfusedFilterOn ? 'white' : '#64748b',
+              border: histConfusedFilterOn ? '1.5px solid #f59e0b' : '1.5px solid #e2e8f0',
+            }}
+          >
+            {histConfusedFilterOn ? `🔄 필터 중 ${items.length}개` : '헷갈린 것만'}
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex justify-center py-10">
           <div className="w-5 h-5 border-2 border-[#4f6ef7] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center py-12 text-center gap-2">
-          <p className="text-4xl">📭</p>
-          <p className="text-sm font-semibold text-[#0f172a]">복습 기록이 없어요</p>
-          <p className="text-xs text-[#64748b]">복습을 완료하면 여기에 기록이 쌓여요</p>
+          <p className="text-4xl">{histConfusedFilterOn ? '🎉' : '📭'}</p>
+          <p className="text-sm font-semibold text-[#0f172a]">
+            {histConfusedFilterOn ? '헷갈린 카드가 없어요!' : '복습 기록이 없어요'}
+          </p>
+          <p className="text-xs text-[#64748b]">
+            {histConfusedFilterOn ? '이 기간엔 모두 알았어요 👍' : '복습을 완료하면 여기에 기록이 쌓여요'}
+          </p>
         </div>
       ) : (
         <>
@@ -1099,7 +1161,10 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                 {/* Related notes link */}
                 {relatedCount > 0 && current.topicId && (
                   <button
-                    onClick={() => navigate(`/concept-notes?q=${encodeURIComponent(current.topicId!)}`)}
+                    onClick={() => {
+                      const q = current.topicTags[0] ?? allTopics.find(t => t.id === current.topicId)?.label ?? current.topicId!
+                      navigate(`/concept-notes?q=${encodeURIComponent(q)}`)
+                    }}
                     className="text-[10px] text-[#4f6ef7] self-start hover:underline mt-1"
                   >
                     📚 같은 토픽 분석 {relatedCount}개 보기 →
@@ -1456,6 +1521,22 @@ export default function HistoryPage() {
     }
   }
 
+  async function handleExitMode() {
+    if (!userId || modeLoading) return
+    setModeLoading(true)
+    try {
+      const items = await fetchDueExtractions(userId)
+      setOriginalCards(items)
+      setCards(applyToggles(items, shuffleOn, confusedFilterOn))
+      setIdx(0)
+      setVisible(true)
+      setReviewMode('normal')
+      setStage(items.length === 0 ? 'empty' : 'review')
+    } finally {
+      setModeLoading(false)
+    }
+  }
+
   async function handleGenerate() {
     if (!userId || generating) return
     setGenerating(true)
@@ -1703,7 +1784,7 @@ export default function HistoryPage() {
                   border: shuffleOn ? '1.5px solid #4f6ef7' : '1.5px solid #e2e8f0',
                 }}
               >
-                🔀 셔플 {shuffleOn ? 'ON' : 'OFF'}
+                🔀 {shuffleOn ? '섞는 중' : '순서 섞기'}
               </button>
               <button
                 onClick={handleToggleConfusedFilter}
@@ -1714,7 +1795,7 @@ export default function HistoryPage() {
                   border: confusedFilterOn ? '1.5px solid #f59e0b' : '1.5px solid #e2e8f0',
                 }}
               >
-                🔄 헷갈려만 {confusedFilterOn ? `${cards.length}개` : 'OFF'}
+                {confusedFilterOn ? `🔄 필터 중 ${cards.length}개` : '헷갈린 것만'}
               </button>
             </div>
           )}
@@ -1733,7 +1814,7 @@ export default function HistoryPage() {
           {stage === 'review' && current && (
             <>
               {reviewMode !== 'normal' && (
-                <div className="flex items-center gap-2 px-4">
+                <div className="flex items-center justify-between px-4">
                   <span
                     className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
                     style={{
@@ -1741,12 +1822,19 @@ export default function HistoryPage() {
                       color: reviewMode === 'queue' ? '#4338ca' : '#b91c1c',
                     }}
                   >
-                    {reviewMode === 'queue' ? '🔄 오늘의 큐' : '❌ 오답 재출제'}
+                    {reviewMode === 'queue' ? '🔄 오늘의 큐' : '❌ 오답 재출제'} 모드
                   </span>
-                  <span className="text-xs text-[#94a3b8]">모드로 진행 중</span>
+                  <button
+                    onClick={() => void handleExitMode()}
+                    disabled={modeLoading}
+                    className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full disabled:opacity-40"
+                    style={{ background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' }}
+                  >
+                    모드 종료 ×
+                  </button>
                 </div>
               )}
-              <ProgressBar current={idx + 1} total={total} />
+              <ProgressBar current={idx + 1} total={total} mode={reviewMode} />
 
               <div className={cardBouncing ? 'animate-cardBounce' : ''}>
                 <FlashCard
