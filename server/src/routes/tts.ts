@@ -108,7 +108,8 @@ router.post('/podcast', async (req: Request, res: Response) => {
     const script = msg.content[0]?.type === 'text' ? msg.content[0].text.trim() : '';
     if (!script) return res.status(502).json({ error: 'Script generation failed' });
 
-    const sentences = splitSentences(script);
+    const ttsScript = script.replace(/GAAP/g, 'gap');
+    const sentences = splitSentences(ttsScript);
     const ssml = `<speak>${sentences.map((s, i) => `<mark name="s${i}"/>${escapeXml(s)}`).join(' ')}</speak>`;
     const result = await synthesize({ ssml }, true);
     if (!result) return res.status(502).json({ error: 'Google TTS failed' });

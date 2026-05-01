@@ -193,6 +193,18 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
       handleKbCommand();
       return;
     }
+    if (t === '/en') {
+      setInput('');
+      if (taRef.current) taRef.current.style.height = 'auto';
+      const lastScript = useClaudeStore.getState().lastTtsScript;
+      if (!lastScript) {
+        useClaudeStore.getState().addMessage({ role: 'user', content: '/en' });
+        useClaudeStore.getState().addMessage({ role: 'assistant', content: '🔊 먼저 팟캐스트를 재생한 후 /en을 사용해주세요.' });
+        return;
+      }
+      sendMessage(`/en — 아래 팟캐스트 스크립트를 한국어로 해설해줘:\n\n${lastScript}`);
+      return;
+    }
     const isSlash = t === '/re' || t === '/qu' || t in SLASH_COMMANDS;
     const { text: correctedText, corrected } = isSlash ? { text: t, corrected: false } : correctTypos(t);
     const message = t === '/re' ? buildReCommand() : t === '/qu' ? buildQuCommand() : (SLASH_COMMANDS[t] ?? correctedText);
@@ -356,7 +368,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
             onChange={(e) => setInput(e.target.value)}
             onInput={autoResize}
             onKeyDown={handleKey}
-            placeholder="질문 입력… /re /qu /go /kb"
+            placeholder="질문 입력… /re /qu /go /kb /en"
             disabled={isLoading}
             rows={1}
             className="flex-1 bg-transparent text-sm text-[#0f172a] resize-none outline-none placeholder:text-muted leading-relaxed disabled:opacity-50"

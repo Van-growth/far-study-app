@@ -49,6 +49,7 @@ interface ClaudeStore {
   pendingQuiz: PendingQuizContext | null;
   analyzeContext: AnalyzeContext | null;
   reviewCardContext: ReviewCardContext | null;
+  lastTtsScript: string | null;
 
   togglePanel: () => void;
   openPanel: () => void;
@@ -61,6 +62,7 @@ interface ClaudeStore {
   setAnalyzeContext: (ctx: AnalyzeContext | null) => void;
   setReviewCardContext: (ctx: ReviewCardContext | null) => void;
   setMessageFeedback: (id: string, fb: 'up' | 'down' | null) => void;
+  setLastTtsScript: (s: string | null) => void;
 }
 
 const useClaudeStore = create<ClaudeStore>((set) => ({
@@ -70,6 +72,7 @@ const useClaudeStore = create<ClaudeStore>((set) => ({
   pendingQuiz: null,
   analyzeContext: null,
   reviewCardContext: null,
+  lastTtsScript: null,
 
   togglePanel: () => set((s) => ({ isOpen: !s.isOpen })),
   openPanel: () => set({ isOpen: true }),
@@ -77,6 +80,7 @@ const useClaudeStore = create<ClaudeStore>((set) => ({
   setPendingQuiz: (ctx) => set({ pendingQuiz: ctx }),
   setAnalyzeContext: (ctx) => set({ analyzeContext: ctx }),
   setReviewCardContext: (ctx) => set({ reviewCardContext: ctx }),
+  setLastTtsScript: (s) => set({ lastTtsScript: s }),
   setMessageFeedback: (id, fb) =>
     set((s) => ({
       messages: s.messages.map((m) => (m.id === id ? { ...m, feedback: fb } : m)),

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import useStudyStore from '../store/studyStore'
 import useClaudeStore from '../store/claudeStore'
@@ -90,34 +91,38 @@ function TTSOverlay({ script, currentSentenceIdx, onStop }: {
 }) {
   const sentences = splitSentences(script)
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 flex flex-col items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.75)', zIndex: 9999 }}
+      style={{ background: 'rgba(0,0,0,0.75)', zIndex: 9999, cursor: 'text' }}
     >
       <button
         onClick={onStop}
         className="absolute top-5 right-5 w-10 h-10 flex items-center justify-center rounded-full text-white text-xl"
-        style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}
+        style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
         title="정지"
       >
         ⏹
       </button>
-      <div className="flex flex-col gap-4 px-8 max-w-sm w-full text-center">
+      <div
+        className="flex flex-col gap-4 px-8 max-w-sm w-full text-center"
+        style={{ overflowY: 'auto', maxHeight: '70vh', paddingBottom: '1rem', userSelect: 'text' }}
+      >
         {sentences.map((sentence, i) => (
           <p
             key={i}
             className="transition-all duration-300 leading-relaxed"
             style={i === currentSentenceIdx
-              ? { color: 'white', fontWeight: 700, fontSize: '1rem' }
-              : { color: 'rgba(255,255,255,0.3)', fontWeight: 400, fontSize: '0.8rem' }
+              ? { color: 'white', fontWeight: 700, fontSize: '1rem', userSelect: 'text' }
+              : { color: 'rgba(255,255,255,0.3)', fontWeight: 400, fontSize: '0.8rem', userSelect: 'text' }
             }
           >
             {sentence}
           </p>
         ))}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -163,6 +168,7 @@ function useTTS() {
   const [playing, setPlaying] = useState(false)
   const [script, setScript] = useState<string | null>(null)
   const [currentSentenceIdx, setCurrentSentenceIdx] = useState(0)
+  const [loading, setLoading] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const stop = useCallback(() => {
@@ -174,6 +180,7 @@ function useTTS() {
     setPlaying(false)
     setScript(null)
     setCurrentSentenceIdx(0)
+    setLoading(false)
   }, [])
 
   const play = useCallback(async (
@@ -184,19 +191,22 @@ function useTTS() {
     if (!oneLiner && !trapPattern) return
     stop()
     setPlaying(true)
+    setLoading(true)
     try {
       const res = await fetch(`${API_URL}/api/tts/podcast`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topicId, oneLiner, trapPattern }),
       })
-      if (!res.ok) { setPlaying(false); return }
+      if (!res.ok) { setPlaying(false); setLoading(false); return }
       const { audioContent, script: s, timepoints: tp } = await res.json() as {
         audioContent: string
         script?: string
         timepoints?: Array<{ markName: string; timeSeconds: number }>
       }
       setScript(s ?? null)
+      setLoading(false)
+      if (s) useClaudeStore.getState().setLastTtsScript(s)
 
       // Pre-compute for use in ontimeupdate closure
       const points = tp ?? []
@@ -231,11 +241,12 @@ function useTTS() {
       setPlaying(false)
       setScript(null)
       setCurrentSentenceIdx(0)
+      setLoading(false)
     }
   }, [stop])
 
   useEffect(() => stop, [stop])
-  return { play, stop, playing, script, currentSentenceIdx }
+  return { play, stop, playing, script, currentSentenceIdx, loading }
 }
 
 // ── Sound effects ─────────────────────────────────────────────
@@ -325,12 +336,14 @@ function ExampleQuestionBlock({
   onAnswer,
   onTTS,
   ttsPlaying,
+  ttsLoading,
 }: {
   eq: ExampleQuestion
   cardId: string
   onAnswer?: (isCorrect: boolean, selected: string) => void
   onTTS?: () => void
   ttsPlaying?: boolean
+  ttsLoading?: boolean
 }) {
   const [selected, setSelected] = useState<string | null>(null)
   const [revealed, setRevealed] = useState(false)
@@ -394,8 +407,9 @@ function ExampleQuestionBlock({
               <button
                 onClick={onTTS}
                 className="shrink-0 text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#eef2ff]"
+                style={{ border: '1px solid #c7d2fe', color: '#4338ca' }}
                 title={ttsPlaying ? '정지' : '읽기'}
-              >{ttsPlaying ? '⏹' : '🔊'}</button>
+              >{ttsLoading ? <div className="w-3 h-3 border-2 border-[#4338ca] border-t-transparent rounded-full animate-spin inline-block" /> : ttsPlaying ? '⏹' : '🔊'}</button>
             )}
             <button
               onClick={() => setCalcOpen(true)}
@@ -454,8 +468,9 @@ function ExampleQuestionBlock({
             <button
               onClick={onTTS}
               className="shrink-0 text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#eef2ff]"
+              style={{ border: '1px solid #c7d2fe', color: '#4338ca' }}
               title={ttsPlaying ? '정지' : '읽기'}
-            >{ttsPlaying ? '⏹' : '🔊'}</button>
+            >{ttsLoading ? <div className="w-3 h-3 border-2 border-[#4338ca] border-t-transparent rounded-full animate-spin inline-block" /> : ttsPlaying ? '⏹' : '🔊'}</button>
           )}
           <button
             onClick={() => setCalcOpen(true)}
@@ -562,7 +577,7 @@ function FlashCard({
   const flashUserId = useStudyStore((s) => s.userId)
   const [relatedCount, setRelatedCount] = useState(0)
   const relatedFetchedRef = useRef<string | null>(null)
-  const { play, stop, playing, script, currentSentenceIdx } = useTTS()
+  const { play, stop, playing, script, currentSentenceIdx, loading: ttsLoading } = useTTS()
 
   // Stop TTS on card change or unmount
   useEffect(() => { stop() }, [card.id, stop])
@@ -644,6 +659,7 @@ function FlashCard({
           onAnswer={onMcqAnswer}
           onTTS={() => playing ? stop() : void play(card.topicId, card.oneLiner, card.trapPattern)}
           ttsPlaying={playing}
+          ttsLoading={ttsLoading}
         />
       )}
 
@@ -1073,7 +1089,8 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
   const navigate = useNavigate()
   const [relatedCount, setRelatedCount] = useState(0)
   const relatedFetchedRef = useRef<string | null>(null)
-  const { play: ttsPlay, stop: ttsStop, playing: ttsPlaying, script: ttsScript, currentSentenceIdx: ttsCurrentIdx } = useTTS()
+  const { play: ttsPlay, stop: ttsStop, playing: ttsPlaying, script: ttsScript, currentSentenceIdx: ttsCurrentIdx, loading: ttsLoading } = useTTS()
+  const [histCalcOpen, setHistCalcOpen] = useState(false)
 
   // Stop TTS on card change or page navigation
   useEffect(() => { ttsStop() }, [current?.id, ttsStop])
@@ -1231,16 +1248,26 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                       {tag}
                     </span>
                   ))}
-                  {(current.oneLiner || current.trapPattern) && (
+                  <div className="ml-auto flex items-center gap-1">
+                    {(current.oneLiner || current.trapPattern) && (
+                      <button
+                        onClick={() => ttsPlaying ? ttsStop() : void ttsPlay(current.topicId, current.oneLiner, current.trapPattern)}
+                        className="text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#eef2ff]"
+                        style={{ border: '1px solid #c7d2fe', color: '#4338ca' }}
+                        title={ttsPlaying ? '정지' : '읽기'}
+                      >
+                        {ttsLoading ? <div className="w-3 h-3 border-2 border-[#4338ca] border-t-transparent rounded-full animate-spin inline-block" /> : ttsPlaying ? '⏹' : '🔊'}
+                      </button>
+                    )}
                     <button
-                      onClick={() => ttsPlaying ? ttsStop() : void ttsPlay(current.topicId, current.oneLiner, current.trapPattern)}
-                      className="ml-auto text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#f1f5f9]"
-                      title={ttsPlaying ? '정지' : '읽기'}
-                    >
-                      {ttsPlaying ? '⏹' : '🔊'}
-                    </button>
-                  )}
+                      onClick={() => setHistCalcOpen(true)}
+                      className="shrink-0 text-xs px-2 py-1 rounded-lg hover:bg-[#eef2ff]"
+                      style={{ border: '1px solid #c7d2fe', color: '#4338ca' }}
+                      title="계산기"
+                    >🧮</button>
+                  </div>
                 </div>
+                <QuizCalculator open={histCalcOpen} onClose={() => setHistCalcOpen(false)} />
 
                 {/* Example question — shown first; concepts below */}
                 {current.exampleQuestion && (
