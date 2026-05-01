@@ -19,15 +19,27 @@ import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
+// scripts/.env.script has the current API keys; load it last with override so it wins
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../scripts/.env.script'), override: true });
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY;
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_KEY || !ANTHROPIC_KEY) {
+  console.error('Missing required env vars:');
+  if (!SUPABASE_URL) console.error('  SUPABASE_URL');
+  if (!SUPABASE_KEY) console.error('  SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_KEY');
+  if (!ANTHROPIC_KEY) console.error('  ANTHROPIC_API_KEY');
+  process.exit(1);
+}
+
+const anthropic = new Anthropic({ apiKey: ANTHROPIC_KEY });
 const MODEL = 'claude-sonnet-4-5-20250929';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 interface ExampleQuestion {
   question: string;
@@ -162,13 +174,14 @@ async function applyFix(row: ExtractionRow, result: ValidationResult): Promise<v
 async function main() {
   const args = process.argv.slice(2);
   const doFix = args.includes('--fix');
+  const unfixedOnly = args.includes('--unfixed-only');
   const limitIdx = args.indexOf('--limit');
   const limit = limitIdx >= 0 ? parseInt(args[limitIdx + 1] ?? '50') : 50;
   const topicIdx = args.indexOf('--topic');
   const topicFilter = topicIdx >= 0 ? args[topicIdx + 1] : null;
 
   console.log(`\n=== validate-questions ===`);
-  console.log(`mode: ${doFix ? 'FIX' : 'DRY-RUN'}  limit: ${limit}  topic: ${topicFilter ?? 'all'}\n`);
+  console.log(`mode: ${doFix ? 'FIX' : 'DRY-RUN'}  limit: ${limit}  topic: ${topicFilter ?? 'all'}  unfixed-only: ${unfixedOnly}\n`);
 
   let query = supabase
     .from('concept_extractions')
@@ -179,6 +192,10 @@ async function main() {
 
   if (topicFilter) {
     query = query.eq('topic_id', topicFilter);
+  }
+
+  if (unfixedOnly) {
+    query = query.or('is_fixed.is.null,is_fixed.eq.false');
   }
 
   const { data, error } = await query;
