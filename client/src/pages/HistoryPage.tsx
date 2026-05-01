@@ -235,7 +235,7 @@ function ExampleQuestionBlock({
       setTimeout(() => setXpVisible(false), 1000)
       // toast
       setToast(pickRandom(CORRECT_MESSAGES))
-      setTimeout(() => setToast(null), 2000)
+      setTimeout(() => setToast(null), 1800)
     } else {
       playWrongSound()
       void saveWrongAnswer(cardId, letter, correctLetter)
@@ -247,7 +247,7 @@ function ExampleQuestionBlock({
       setTimeout(() => setXpWrongVisible(false), 1000)
       // toast
       setToast(pickRandom(WRONG_MESSAGES))
-      setTimeout(() => setToast(null), 2000)
+      setTimeout(() => setToast(null), 2500)
     }
     onAnswer?.(isCorrect, letter)
   }
