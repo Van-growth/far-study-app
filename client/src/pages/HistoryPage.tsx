@@ -1075,8 +1075,36 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
 
                 {/* Example question — shown first; concepts below */}
                 {current.exampleQuestion && (
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-2">
+                    {/* 1. 문제 텍스트 — 항상 표시 */}
                     <p className="text-xs text-[#1e1b4b] leading-relaxed">{current.exampleQuestion.question}</p>
+
+                    {/* 2. 선지 A/B/C/D — 항상 표시. 해설 펼친 후에만 정답 강조 */}
+                    {Array.isArray(current.exampleQuestion.options) && current.exampleQuestion.options.length > 0 && (
+                      <div className="flex flex-col gap-0.5">
+                        {current.exampleQuestion.options.slice(0, 4).map((opt, i) => {
+                          const letter = OPTION_LETTERS[i]
+                          const revealed = expandedId === current.id
+                          const correctLetter = current.exampleQuestion!.answer?.trim()[0]?.toUpperCase() ?? ''
+                          const isCorrect = revealed && letter === correctLetter
+                          return (
+                            <p
+                              key={i}
+                              className="text-xs leading-relaxed"
+                              style={{ color: isCorrect ? '#166534' : '#374151', fontWeight: isCorrect ? 600 : 400 }}
+                            >
+                              <span className="font-bold mr-1" style={{ color: isCorrect ? '#166534' : '#4338ca' }}>
+                                {letter}.
+                              </span>
+                              {(typeof opt === 'string' ? opt : String(opt)).replace(/^\(?[A-Ea-e][.):\s]\)?\s*/i, '')}
+                              {isCorrect && <span className="ml-1">✅</span>}
+                            </p>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {/* 3. 해설 보기 버튼 */}
                     <button
                       onClick={() => setExpandedId(expandedId === current.id ? null : current.id)}
                       className="text-xs font-semibold self-start"
@@ -1084,31 +1112,15 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                     >
                       {expandedId === current.id ? '해설 접기 ▲' : '해설 보기 ▼'}
                     </button>
+
+                    {/* 4. 펼쳤을 때만: 정답 + 해설 + 트리거 + 함정 */}
                     {expandedId === current.id && (
                       <div
                         className="flex flex-col gap-2 rounded-xl px-3 py-2.5 text-xs"
                         style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}
                       >
-                        {/* A/B/C/D options — slice to 4 to prevent duplicates from malformed data */}
-                        {Array.isArray(current.exampleQuestion.options) && current.exampleQuestion.options.length > 0 && (
-                          <div className="flex flex-col gap-1">
-                            {current.exampleQuestion.options.slice(0, 4).map((opt, i) => {
-                              const letter = OPTION_LETTERS[i]
-                              const correctLetter = current.exampleQuestion!.answer?.trim()[0]?.toUpperCase() ?? ''
-                              const isCorrect = letter === correctLetter
-                              return (
-                                <p key={i} className="leading-relaxed" style={{ color: isCorrect ? '#166534' : '#374151', fontWeight: isCorrect ? 600 : 400 }}>
-                                  <span className="font-bold mr-1" style={{ color: isCorrect ? '#166534' : '#4338ca' }}>{letter}.</span>
-                                  {(typeof opt === 'string' ? opt : String(opt)).replace(/^\(?[A-Ea-e][.):\s]\)?\s*/i, '')}
-                                  {isCorrect && <span className="ml-1">✅</span>}
-                                </p>
-                              )
-                            })}
-                          </div>
-                        )}
                         <p className="font-bold" style={{ color: '#166534' }}>정답: {current.exampleQuestion.answer}</p>
 
-                        {/* Triggers */}
                         {current.triggers.length > 0 && (
                           <div>
                             <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">⚡ 트리거</p>
@@ -1122,7 +1134,6 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                           </div>
                         )}
 
-                        {/* Trap */}
                         {current.trapPattern && (
                           <div>
                             <p className="text-[10px] font-semibold text-[#991b1b] mb-0.5">⚠️ 함정</p>
@@ -1130,7 +1141,6 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                           </div>
                         )}
 
-                        {/* Explanation */}
                         {current.exampleQuestion.explanation && (
                           <div>
                             <p className="text-[10px] font-semibold text-[#166534] mb-0.5">💡 해설</p>
