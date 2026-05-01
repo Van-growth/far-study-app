@@ -556,6 +556,7 @@ export interface RecentExtractionItem {
   journalEntry: string | null
   formula: string | null
   relatedConcepts: string[]
+  reviewResult?: 'known' | 'confused' | null
 }
 
 export async function fetchRecentExtractions(
@@ -1502,7 +1503,7 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
   try {
     const now = new Date().toISOString()
     // Columns added by later migrations — fetched opportunistically, absent = []
-    const coreSelect = `${EXTRACTION_BASE_SELECT}, next_review_at, review_interval, review_count`
+    const coreSelect = `${EXTRACTION_BASE_SELECT}, next_review_at, review_interval, review_count, review_result`
 
     const runQuery = (select: string) =>
       supabase
@@ -1564,6 +1565,7 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
       relatedConcepts: hasNewCols && Array.isArray(row.related_concepts)
         ? (row.related_concepts as unknown[]).filter((c): c is string => typeof c === 'string')
         : [],
+      reviewResult: row.review_result === 'known' ? 'known' : row.review_result === 'confused' ? 'confused' : null,
     }))
   } catch { return [] }
 }
@@ -1835,12 +1837,13 @@ function parseConfusedRows(data: unknown[]): RecentExtractionItem[] {
     relatedConcepts: Array.isArray(row.related_concepts)
       ? (row.related_concepts as unknown[]).filter((c): c is string => typeof c === 'string')
       : [],
+    reviewResult: row.review_result === 'known' ? 'known' : row.review_result === 'confused' ? 'confused' : null,
   }))
 }
 
 const CONFUSED_SELECT =
   `${EXTRACTION_BASE_SELECT}, next_review_at, review_interval, review_count, last_reviewed_at,` +
-  ` triggers, example_question, feedback, is_fixed, journal_entry, formula, related_concepts`
+  ` triggers, example_question, feedback, is_fixed, journal_entry, formula, related_concepts, review_result`
 
 export async function fetchConfusedCards(userId: string): Promise<RecentExtractionItem[]> {
   if (!hasAuth(userId)) return []

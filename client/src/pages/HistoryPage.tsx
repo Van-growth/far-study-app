@@ -1144,6 +1144,9 @@ export default function HistoryPage() {
   const [totalConfusedCount, setTotalConfusedCount] = useState(0)
   const [queueDone, setQueueDone] = useState(false)
   const [modeLoading, setModeLoading] = useState(false)
+  const [originalCards, setOriginalCards] = useState<RecentExtractionItem[]>([])
+  const [shuffleOn, setShuffleOn] = useState(false)
+  const [confusedFilterOn, setConfusedFilterOn] = useState(false)
 
   // Visual effects state
   const [showGoalOverlay, setShowGoalOverlay] = useState(false)
@@ -1180,6 +1183,7 @@ export default function HistoryPage() {
       if (modeParam === 'queue' && confusedCnt > 0) {
         const qCards = await fetchTodayQueue(userId, 5)
         if (qCards.length > 0) {
+          setOriginalCards(qCards)
           setCards(qCards)
           setReviewMode('queue')
           setStage('review')
@@ -1188,6 +1192,7 @@ export default function HistoryPage() {
       } else if (modeParam === 'confused' && confusedCnt > 0) {
         const cCards = await fetchConfusedCards(userId)
         if (cCards.length > 0) {
+          setOriginalCards(cCards)
           setCards(cCards)
           setReviewMode('confused')
           setStage('review')
@@ -1195,6 +1200,7 @@ export default function HistoryPage() {
         }
       }
 
+      setOriginalCards(items)
       setCards(items)
       setStage(items.length === 0 ? 'empty' : 'review')
     }).catch(() => setStage('empty'))
@@ -1257,6 +1263,26 @@ export default function HistoryPage() {
     setFixError(null)
     setMcqAnswerState(null)
   }, [idx])
+
+  function applyToggles(base: RecentExtractionItem[], shuffle: boolean, confusedOnly: boolean): RecentExtractionItem[] {
+    let result = confusedOnly ? base.filter((c) => c.reviewResult === 'confused') : base
+    if (shuffle) result = [...result].sort(() => Math.random() - 0.5)
+    return result
+  }
+
+  function handleToggleShuffle() {
+    const next = !shuffleOn
+    setShuffleOn(next)
+    setCards(applyToggles(originalCards, next, confusedFilterOn))
+    setIdx(0)
+  }
+
+  function handleToggleConfusedFilter() {
+    const next = !confusedFilterOn
+    setConfusedFilterOn(next)
+    setCards(applyToggles(originalCards, shuffleOn, next))
+    setIdx(0)
+  }
 
   async function handleAnswer(knew: boolean) {
     if (submitting || !visible) return
@@ -1335,7 +1361,8 @@ export default function HistoryPage() {
     setModeLoading(true)
     try {
       const qCards = await fetchTodayQueue(userId, 5)
-      setCards(qCards)
+      setOriginalCards(qCards)
+      setCards(applyToggles(qCards, shuffleOn, confusedFilterOn))
       setIdx(0)
       setVisible(true)
       setReviewMode('queue')
@@ -1351,7 +1378,8 @@ export default function HistoryPage() {
     setModeLoading(true)
     try {
       const cCards = await fetchConfusedCards(userId)
-      setCards(cCards)
+      setOriginalCards(cCards)
+      setCards(applyToggles(cCards, shuffleOn, confusedFilterOn))
       setIdx(0)
       setVisible(true)
       setReviewMode('confused')
@@ -1374,7 +1402,8 @@ export default function HistoryPage() {
         fetchDueExtractions(userId),
         getTodayReviewStats(userId),
       ])
-      setCards(items)
+      setOriginalCards(items)
+      setCards(applyToggles(items, shuffleOn, confusedFilterOn))
       setIdx(0)
       setKnewCount(log.knewCount)
       setConfusedCount(log.confusedCount)
@@ -1595,11 +1624,44 @@ export default function HistoryPage() {
             </div>
           )}
 
+          {/* Shuffle + confused filter toggles */}
+          {stage === 'review' && (
+            <div className="flex gap-2 px-4">
+              <button
+                onClick={handleToggleShuffle}
+                className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+                style={{
+                  background: shuffleOn ? '#4f6ef7' : '#f1f5f9',
+                  color: shuffleOn ? 'white' : '#64748b',
+                  border: shuffleOn ? '1.5px solid #4f6ef7' : '1.5px solid #e2e8f0',
+                }}
+              >
+                🔀 셔플 {shuffleOn ? 'ON' : 'OFF'}
+              </button>
+              <button
+                onClick={handleToggleConfusedFilter}
+                className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+                style={{
+                  background: confusedFilterOn ? '#f59e0b' : '#f1f5f9',
+                  color: confusedFilterOn ? 'white' : '#64748b',
+                  border: confusedFilterOn ? '1.5px solid #f59e0b' : '1.5px solid #e2e8f0',
+                }}
+              >
+                🔄 헷갈려만 {confusedFilterOn ? `${cards.length}개` : 'OFF'}
+              </button>
+            </div>
+          )}
+
           {stage === 'empty' && (
             <EmptyView onGenerate={handleGenerate} generating={generating} noData={noOnDemandData} />
           )}
           {stage === 'done' && (
             <DoneView count={knewCount + confusedCount} />
+          )}
+          {stage === 'review' && !current && confusedFilterOn && (
+            <div className="px-4 py-8 text-sm text-center text-[#94a3b8]">
+              현재 덱에 헷갈린 카드가 없어요 🎉
+            </div>
           )}
           {stage === 'review' && current && (
             <>
