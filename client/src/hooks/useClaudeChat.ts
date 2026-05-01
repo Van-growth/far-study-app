@@ -51,6 +51,13 @@ const SYSTEM_PROMPT = `너는 USCPA FAR 시험을 같이 공부하는 친한 선
 
 const ALPHA = ['A', 'B', 'C', 'D'];
 
+export interface TutorDbContext {
+  todayStats: { knew: number; confused: number };
+  weakTopics: { topicId: string; accuracy: number; attempts: number }[];
+  topErrorPatterns: { name: string; count: number }[];
+  recentConfusedTopics: { topicId: string; count: number }[];
+}
+
 export interface QuizContext {
   q: string;
   opts: [string, string, string, string];
@@ -111,6 +118,24 @@ async function streamChat(
   }
 }
 
+function buildDbContextBlock(ctx: TutorDbContext, dailyGoal?: number): string {
+  const total = ctx.todayStats.knew + ctx.todayStats.confused;
+  const lines = ['---', '[학습자 현황]', ''];
+  lines.push(`오늘 풀이: ${total}개${dailyGoal ? ` / 목표: ${dailyGoal}개` : ''}`);
+  if (ctx.weakTopics.length > 0) {
+    lines.push(`취약 토픽 Top ${ctx.weakTopics.length}: ${ctx.weakTopics.map((t) => `${t.topicId}(${t.accuracy}%)`).join(', ')}`);
+  }
+  if (ctx.topErrorPatterns.length > 0) {
+    lines.push(`자주 틀리는 패턴: ${ctx.topErrorPatterns.map((p) => `${p.name} ${p.count}회`).join(', ')}`);
+  }
+  if (ctx.recentConfusedTopics.length > 0) {
+    lines.push(`최근 7일 헷갈린 토픽: ${ctx.recentConfusedTopics.map((t) => t.topicId).join(', ')}`);
+  }
+  lines.push('---');
+  lines.push('위 데이터를 참고해서 학생의 약점에 맞게 개인화된 답변 제공. 위 수치는 참고용이며 답변에 그대로 노출하지 말 것.');
+  return lines.join('\n');
+}
+
 // Builds a context block for the system prompt from the analyze page state.
 function buildAnalyzeContextBlock(ctx: AnalyzeContext): string {
   const MAX_Q = 1500;
@@ -154,7 +179,13 @@ function buildReviewCardContextBlock(ctx: ReviewCardContext): string {
 }
 
 // ── Hook ──────────────────────────────────────────────────────
-export function useClaudeChat(currentTopicLabel?: string, analyzeCtx?: AnalyzeContext | null, reviewCardCtx?: ReviewCardContext | null) {
+export function useClaudeChat(
+  currentTopicLabel?: string,
+  analyzeCtx?: AnalyzeContext | null,
+  reviewCardCtx?: ReviewCardContext | null,
+  dbCtx?: TutorDbContext | null,
+  dailyGoal?: number,
+) {
   const store = useClaudeStore();
 
   const callStreamAPI = (userContent: string, corrected?: boolean) => {
@@ -170,12 +201,17 @@ export function useClaudeChat(currentTopicLabel?: string, analyzeCtx?: AnalyzeCo
     // Build API messages (exclude the empty assistant message we just added)
     const apiMsgs = messages.slice(0, -1).map((m) => ({ role: m.role, content: m.content }));
 
+    // DB context injected first; analyze/review card context layered on top.
+    const baseSystem = dbCtx
+      ? `${SYSTEM_PROMPT}\n\n${buildDbContextBlock(dbCtx, dailyGoal)}`
+      : SYSTEM_PROMPT;
+
     // Inject context into system prompt — analyze takes priority over review card.
     const systemPrompt = analyzeCtx
-      ? `${SYSTEM_PROMPT}\n\n${buildAnalyzeContextBlock(analyzeCtx)}`
+      ? `${baseSystem}\n\n${buildAnalyzeContextBlock(analyzeCtx)}`
       : reviewCardCtx
-      ? `${SYSTEM_PROMPT}\n\n${buildReviewCardContextBlock(reviewCardCtx)}`
-      : SYSTEM_PROMPT;
+      ? `${baseSystem}\n\n${buildReviewCardContextBlock(reviewCardCtx)}`
+      : baseSystem;
 
     let accumulated = '';
 

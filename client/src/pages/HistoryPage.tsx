@@ -860,6 +860,26 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
   const FILTER_LABELS: Record<HistoryFilter, string> = { today: '오늘', week: '이번 주', all: '전체' }
   const current = items[cardIdx]
 
+  const setReviewCardContext = useClaudeStore((s) => s.setReviewCardContext)
+  useEffect(() => {
+    if (!current) { setReviewCardContext(null); return }
+    const topicLabel = current.topicId
+      ? (allTopics.find((t) => t.id === current.topicId)?.label ?? null)
+      : null
+    setReviewCardContext({
+      topicId: current.topicId,
+      topicLabel,
+      topicTags: current.topicTags,
+      concepts: current.concepts,
+      trapPattern: current.trapPattern,
+      questionText: current.exampleQuestion?.question ?? null,
+      correctAnswer: current.exampleQuestion?.answer ?? null,
+      extractionId: current.id,
+      exampleQuestion: current.exampleQuestion ?? null,
+    })
+    return () => setReviewCardContext(null)
+  }, [current, setReviewCardContext])
+
   return (
     <div className="flex flex-col gap-4 px-4 pt-4">
       {/* Date filter */}
@@ -1207,8 +1227,9 @@ export default function HistoryPage() {
   }, [userId])
 
   // Must be before any early returns — Rules of Hooks
+  // Only set context when on the review tab — history tab manages its own context via ReviewHistoryTab
   useEffect(() => {
-    if (stage !== 'review') {
+    if (stage !== 'review' || activeTab !== 'review') {
       setReviewCardContext(null)
       return
     }
@@ -1232,7 +1253,7 @@ export default function HistoryPage() {
       exampleQuestion: card.exampleQuestion ?? null,
     })
     return () => setReviewCardContext(null)
-  }, [cards, idx, stage, setReviewCardContext])
+  }, [cards, idx, stage, activeTab, setReviewCardContext])
 
   // Goal overlay on first non-loading render
   useEffect(() => {

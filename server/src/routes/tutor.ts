@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import { supabase } from '../lib/supabase';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -183,6 +184,79 @@ router.post('/daily-briefing', async (req: Request, res: Response) => {
     const msg = err instanceof Error ? err.message : 'unknown';
     console.warn('[tutor] daily-briefing failed:', msg);
     return res.json({ briefingText: '오늘도 열심히 해보자! 💪', suggestedMode: 'normal' });
+  }
+});
+
+/**
+ * GET /api/tutor/context?userId=xxx
+ *
+ * DB에서 학습자 개인화 데이터 조회 → 튜터 시스템 프롬프트 주입용.
+ * Returns: { available, todayStats, weakTopics, topErrorPatterns, recentConfusedTopics }
+ */
+router.get('/context', async (req: Request, res: Response) => {
+  const userId = req.query.userId as string | undefined;
+  if (!userId) return res.status(400).json({ available: false, error: 'userId required' });
+  if (!supabase) return res.json({ available: false });
+
+  try {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const [weakTopicsRes, attemptErrorsRes, recentLogRes, todayReviewRes] = await Promise.all([
+      supabase.from('topic_progress').select('topic_id, attempts, correct').eq('user_id', userId).gte('attempts', 2),
+      supabase.from('attempt_errors').select('pattern_id').eq('user_id', userId),
+      supabase.from('review_log').select('topic_id').eq('user_id', userId).eq('result', 'confused').gte('created_at', sevenDaysAgo.toISOString()),
+      supabase.from('concept_extractions').select('review_result').eq('user_id', userId).gte('last_reviewed_at', todayStart.toISOString()).not('last_reviewed_at', 'is', null),
+    ]);
+
+    // Weak topics — sort by accuracy asc, top 3
+    const weakTopics = ((weakTopicsRes.data ?? []) as { topic_id: string; attempts: number; correct: number }[])
+      .map((r) => ({ topicId: r.topic_id, accuracy: Math.round((r.correct / r.attempts) * 100), attempts: r.attempts }))
+      .sort((a, b) => a.accuracy - b.accuracy)
+      .slice(0, 3);
+
+    // Error patterns — count by pattern_id, fetch names
+    const patternCounts = new Map<string, number>();
+    for (const r of ((attemptErrorsRes.data ?? []) as { pattern_id: string | null }[])) {
+      if (r.pattern_id) patternCounts.set(r.pattern_id, (patternCounts.get(r.pattern_id) ?? 0) + 1);
+    }
+    const topPatternIds = [...patternCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+    let topErrorPatterns: { name: string; count: number }[] = [];
+    if (topPatternIds.length > 0) {
+      const { data: patternData } = await supabase
+        .from('error_patterns')
+        .select('pattern_id, name')
+        .in('pattern_id', topPatternIds.map(([id]) => id));
+      topErrorPatterns = topPatternIds.map(([id, count]) => ({
+        name: (patternData as { pattern_id: string; name: string }[] | null)?.find((p) => p.pattern_id === id)?.name ?? id,
+        count,
+      }));
+    }
+
+    // Recent 7-day confused topics — count by topic_id
+    const topicCounts = new Map<string, number>();
+    for (const r of ((recentLogRes.data ?? []) as { topic_id: string | null }[])) {
+      if (r.topic_id) topicCounts.set(r.topic_id, (topicCounts.get(r.topic_id) ?? 0) + 1);
+    }
+    const recentConfusedTopics = [...topicCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([topicId, count]) => ({ topicId, count }));
+
+    // Today's stats from concept_extractions
+    const todayRows = (todayReviewRes.data ?? []) as { review_result: string }[];
+    const todayStats = {
+      knew: todayRows.filter((r) => r.review_result === 'known').length,
+      confused: todayRows.filter((r) => r.review_result === 'confused').length,
+    };
+
+    return res.json({ available: true, todayStats, weakTopics, topErrorPatterns, recentConfusedTopics });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'unknown';
+    console.warn('[tutor] context failed:', msg);
+    return res.json({ available: false });
   }
 });
 

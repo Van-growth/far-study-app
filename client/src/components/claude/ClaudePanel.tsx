@@ -1,9 +1,11 @@
 import { useRef, useEffect, useState, KeyboardEvent } from 'react';
 import useClaudeStore from '../../store/claudeStore';
 import useStudyStore from '../../store/studyStore';
-import { useClaudeChat } from '../../hooks/useClaudeChat';
+import { useClaudeChat, TutorDbContext } from '../../hooks/useClaudeChat';
 import { getTopicById } from '../../data/far-topics';
 import MessageBubble, { TypingBubble } from './MessageBubble';
+
+const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
 const BOUNCE_CSS = `@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}`;
 if (typeof document !== 'undefined' && !document.getElementById('claude-bounce')) {
@@ -36,13 +38,32 @@ interface ClaudePanelProps {
 
 export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
+  const userId = useStudyStore((s) => s.userId);
+  const dailyGoal = useStudyStore((s) => s.dailyGoal);
   const topic = currentTopicId ? getTopicById(currentTopicId) : null;
   const analyzeContext = useClaudeStore((s) => s.analyzeContext);
   const reviewCardContext = useClaudeStore((s) => s.reviewCardContext);
   const pendingQuiz = useClaudeStore((s) => s.pendingQuiz);
+  const isOpen = useClaudeStore((s) => s.isOpen);
+
+  const [dbContext, setDbContext] = useState<TutorDbContext | null>(null);
+  const [contextLoading, setContextLoading] = useState(false);
+  const contextFetchedRef = useRef(false);
+
+  // Fetch personalized DB context once when panel first opens
+  useEffect(() => {
+    if (!isOpen || !userId || contextFetchedRef.current) return;
+    contextFetchedRef.current = true;
+    setContextLoading(true);
+    fetch(`${API_URL}/api/tutor/context?userId=${encodeURIComponent(userId)}`)
+      .then((r) => r.json() as Promise<{ available: boolean } & Partial<TutorDbContext>>)
+      .then((data) => { if (data.available) setDbContext(data as TutorDbContext); })
+      .catch(() => { /* silent fail — tutor works without DB context */ })
+      .finally(() => setContextLoading(false));
+  }, [isOpen, userId]);
 
   const { messages, isLoading, closePanel, sendMessage, sendStarter, clearMessages } =
-    useClaudeChat(topic?.label, analyzeContext, reviewCardContext);
+    useClaudeChat(topic?.label, analyzeContext, reviewCardContext, dbContext, dailyGoal);
   const setPendingQuiz = useClaudeStore((s) => s.setPendingQuiz);
 
   const [input, setInput] = useState('');
@@ -51,7 +72,6 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const msgsRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);   // user intent: follow bottom?
   const isProgrammaticRef = useRef(false);    // suppress scroll events from our own scrollTo
-  const isOpen = useClaudeStore((s) => s.isOpen);
 
   useEffect(() => { if (isOpen) setTimeout(() => taRef.current?.focus(), 300); }, [isOpen]);
 
@@ -184,7 +204,8 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
           <div className="flex items-center gap-2">
             <span>💬</span>
             <p className="font-semibold text-sm text-[#0f172a]">Claude 튜터</p>
-            {isLoading && <div className="w-3 h-3 border-2 border-[#4f6ef7] border-t-transparent rounded-full animate-spin" />}
+            {(isLoading || contextLoading) && <div className="w-3 h-3 border-2 border-[#4f6ef7] border-t-transparent rounded-full animate-spin" />}
+            {contextLoading && <span className="text-[10px] text-[#94a3b8]">학습 현황 로딩 중</span>}
           </div>
           <div className="flex items-center gap-1">
             {messages.length > 0 && (
