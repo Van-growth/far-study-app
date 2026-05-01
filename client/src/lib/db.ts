@@ -1874,6 +1874,33 @@ export async function fetchTodayQueue(userId: string, limit = 5): Promise<Recent
   } catch { return [] }
 }
 
+export async function fetchRelatedExtractions(
+  userId: string,
+  topicId: string | null,
+  excludeId: string,
+  limit = 3,
+): Promise<{ id: string; topicId: string | null; concepts: string[] }[]> {
+  if (!hasAuth(userId) || !topicId) return []
+  try {
+    const { data, error } = await supabase
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
+      .select('id, topic_id, concepts')
+      .eq('user_id', userId)
+      .eq('topic_id', topicId)
+      .neq('id', excludeId || 'none')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error || !data) return []
+    return (data as { id: string; topic_id: string | null; concepts: unknown[] }[])
+      .filter((r) => Array.isArray(r.concepts) && (r.concepts as unknown[]).length > 0)
+      .map((r) => ({
+        id: r.id,
+        topicId: r.topic_id,
+        concepts: (r.concepts as unknown[]).filter((c): c is string => typeof c === 'string'),
+      }))
+  } catch { return [] }
+}
+
 // ── tutor_sessions ────────────────────────────────────────────
 
 export interface TutorSessionRow {

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import useStudyStore from '../store/studyStore';
 import { fetchJournalEnrichments, JournalEnrichment, fetchConceptCardsByTopic, ConceptCardRow } from '../lib/db';
 
@@ -615,9 +616,10 @@ function findEnrichment(itemName: string, enrichments: JournalEnrichment[]): Jou
 
 export default function ConceptNotesPage() {
   const userId = useStudyStore((s) => s.userId);
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>('asset-liability');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => searchParams.get('q') ?? '');
   const [activeCat, setActiveCat] = useState('All');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [lang, setLang] = useState<LangKey>('ko');

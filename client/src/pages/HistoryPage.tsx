@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import useStudyStore from '../store/studyStore'
 import useClaudeStore from '../store/claudeStore'
 import { allTopics } from '../data/far-topics'
@@ -20,6 +21,7 @@ import {
   insertReviewLog,
   fetchConfusedCards,
   fetchTodayQueue,
+  fetchRelatedExtractions,
   getConfusedCount,
   RecentExtractionItem,
   ReviewHistoryItem,
@@ -408,6 +410,18 @@ function FlashCard({
   const [hint, setHint] = useState<string>('')
   const [hintLoading, setHintLoading] = useState(false)
   const fetchedId = useRef<string | null>(null)
+  const navigate = useNavigate()
+  const flashUserId = useStudyStore((s) => s.userId)
+  const [relatedCount, setRelatedCount] = useState(0)
+  const relatedFetchedRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!flashUserId || !card.topicId || relatedFetchedRef.current === card.id) return
+    relatedFetchedRef.current = card.id
+    fetchRelatedExtractions(flashUserId, card.topicId, card.id, 20)
+      .then((items) => setRelatedCount(items.length))
+      .catch(() => {})
+  }, [card.id, card.topicId, flashUserId])
 
   useEffect(() => {
     if (fetchedId.current === card.id) return
@@ -553,6 +567,16 @@ function FlashCard({
         <p className="text-[10px] text-[#94a3b8] mt-auto">
           복습 {card.reviewCount}회 · {card.reviewInterval}일 간격
         </p>
+      )}
+
+      {/* Related notes link */}
+      {relatedCount > 0 && card.topicId && (
+        <button
+          onClick={() => navigate(`/concept-notes?q=${encodeURIComponent(card.topicId!)}`)}
+          className="text-[10px] text-[#4f6ef7] self-start hover:underline"
+        >
+          📚 같은 토픽 분석 {relatedCount}개 보기 →
+        </button>
       )}
     </div>
   )
@@ -860,6 +884,18 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
   const FILTER_LABELS: Record<HistoryFilter, string> = { today: '오늘', week: '이번 주', all: '전체' }
   const current = items[cardIdx]
 
+  const navigate = useNavigate()
+  const [relatedCount, setRelatedCount] = useState(0)
+  const relatedFetchedRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!current?.id || !current?.topicId || relatedFetchedRef.current === current.id) return
+    relatedFetchedRef.current = current.id
+    fetchRelatedExtractions(userId, current.topicId, current.id, 20)
+      .then((items) => setRelatedCount(items.length))
+      .catch(() => {})
+  }, [current?.id, current?.topicId, userId])
+
   const setReviewCardContext = useClaudeStore((s) => s.setReviewCardContext)
   useEffect(() => {
     if (!current) { setReviewCardContext(null); return }
@@ -1058,6 +1094,16 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                       </span>
                     ))}
                   </div>
+                )}
+
+                {/* Related notes link */}
+                {relatedCount > 0 && current.topicId && (
+                  <button
+                    onClick={() => navigate(`/concept-notes?q=${encodeURIComponent(current.topicId!)}`)}
+                    className="text-[10px] text-[#4f6ef7] self-start hover:underline mt-1"
+                  >
+                    📚 같은 토픽 분석 {relatedCount}개 보기 →
+                  </button>
                 )}
               </div>
             </div>
