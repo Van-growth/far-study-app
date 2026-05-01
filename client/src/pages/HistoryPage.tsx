@@ -113,30 +113,41 @@ function StructuredExplanation({ exp }: { exp: ExplanationStructured }) {
   )
 }
 
-// ── TTS ───────────────────────────────────────────────────────
+// ── TTS (Google WaveNet via /api/tts) ────────────────────────
 function useTTS() {
   const [playing, setPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
   const stop = useCallback(() => {
-    window.speechSynthesis?.cancel()
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.src = ''
+      audioRef.current = null
+    }
     setPlaying(false)
   }, [])
-  const play = useCallback((text: string) => {
-    if (!window.speechSynthesis) return
-    window.speechSynthesis.cancel()
-    const utter = new SpeechSynthesisUtterance(text)
-    utter.lang = 'en-US'
-    try {
-      const saved = localStorage.getItem('tts_voice_name')
-      if (saved) {
-        const v = window.speechSynthesis.getVoices().find((vx) => vx.name === saved)
-        if (v) utter.voice = v
-      }
-    } catch { /* ignore */ }
-    utter.onend = () => setPlaying(false)
-    utter.onerror = () => setPlaying(false)
-    window.speechSynthesis.speak(utter)
+
+  const play = useCallback(async (text: string) => {
+    stop()
     setPlaying(true)
-  }, [])
+    try {
+      const res = await fetch(`${API_URL}/api/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      })
+      if (!res.ok) { setPlaying(false); return }
+      const { audioContent } = await res.json() as { audioContent: string }
+      const audio = new Audio(`data:audio/mp3;base64,${audioContent}`)
+      audioRef.current = audio
+      audio.onended = () => { audioRef.current = null; setPlaying(false) }
+      audio.onerror = () => { audioRef.current = null; setPlaying(false) }
+      await audio.play()
+    } catch {
+      setPlaying(false)
+    }
+  }, [stop])
+
   useEffect(() => stop, [stop])
   return { play, stop, playing }
 }
@@ -150,8 +161,8 @@ function buildTTSText(
   const parts: string[] = []
   if (topicId) parts.push(topicId)
   const keywords = triggers.map((t) => t.keyword).filter(Boolean)
-  if (keywords.length > 0) parts.push('트리거: ' + keywords.join(', '))
-  if (trapPattern) parts.push('함정: ' + trapPattern)
+  if (keywords.length > 0) parts.push('Triggers: ' + keywords.join(', '))
+  if (trapPattern) parts.push('Trap: ' + trapPattern)
   if (oneLiner) parts.push(oneLiner)
   return parts.join('. ')
 }

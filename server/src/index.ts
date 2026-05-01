@@ -12,6 +12,7 @@ import adminRouter from './routes/admin';
 import errorPatternsRouter from './routes/errorPatterns';
 import tutorRouter from './routes/tutor';
 import conceptRouter from './routes/concept';
+import ttsRouter from './routes/tts';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -55,6 +56,9 @@ app.use('/api/tutor', tutorRouter);
 
 // ── Concept feedback & AI fix ─────────────────────────────────
 app.use('/api/concept', conceptRouter);
+
+// ── Google TTS proxy ──────────────────────────────────────────
+app.use('/api/tts', ttsRouter);
 
 // ── 404 ───────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

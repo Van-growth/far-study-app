@@ -45,15 +45,13 @@ function extractExplanationText(explanation: unknown): string {
 async function summarise(explanation: string): Promise<string> {
   const msg = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 100,
+    max_tokens: 80,
     system:
-      '너는 미국 회계사(USCPA FAR) 학습용 요약 도우미야. ' +
-      '주어진 해설의 핵심 계산/판단 로직만 30자 이내 한국어 한 줄로 요약해. ' +
-      '숫자 공식이 있으면 포함. 설명 없이 요약문만 출력.',
+      'Summarize the key accounting rule in one line, max 15 words, English only, keep accounting terms as-is. Output the summary only.',
     messages: [{ role: 'user', content: explanation.slice(0, 800) }],
   });
   const text = msg.content[0]?.type === 'text' ? msg.content[0].text.trim() : '';
-  return text.slice(0, 50); // hard cap
+  return text.slice(0, 120); // hard cap
 }
 
 async function main() {
@@ -69,7 +67,6 @@ async function main() {
     .from('concept_extractions')
     .select('id, example_question')
     .not('example_question', 'is', null)
-    .is('one_liner', null)
     .order('created_at', { ascending: false })
     .limit(limit);
 
