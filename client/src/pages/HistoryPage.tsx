@@ -113,7 +113,7 @@ function StructuredExplanation({ exp }: { exp: ExplanationStructured }) {
   )
 }
 
-// ── TTS (Google WaveNet via /api/tts) ────────────────────────
+// ── TTS (Haiku podcast script → Google WaveNet via /api/tts/podcast) ──────
 function useTTS() {
   const [playing, setPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -127,14 +127,19 @@ function useTTS() {
     setPlaying(false)
   }, [])
 
-  const play = useCallback(async (text: string) => {
+  const play = useCallback(async (
+    topicId: string | null,
+    oneLiner: string | null,
+    trapPattern: string | null,
+  ) => {
+    if (!oneLiner && !trapPattern) return
     stop()
     setPlaying(true)
     try {
-      const res = await fetch(`${API_URL}/api/tts`, {
+      const res = await fetch(`${API_URL}/api/tts/podcast`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ topicId, oneLiner, trapPattern }),
       })
       if (!res.ok) { setPlaying(false); return }
       const { audioContent } = await res.json() as { audioContent: string }
@@ -150,21 +155,6 @@ function useTTS() {
 
   useEffect(() => stop, [stop])
   return { play, stop, playing }
-}
-
-function buildTTSText(
-  topicId: string | null,
-  triggers: ConceptTrigger[],
-  trapPattern: string | null,
-  oneLiner: string | null,
-): string {
-  const parts: string[] = []
-  if (topicId) parts.push(topicId)
-  const keywords = triggers.map((t) => t.keyword).filter(Boolean)
-  if (keywords.length > 0) parts.push('Triggers: ' + keywords.join(', '))
-  if (trapPattern) parts.push('Trap: ' + trapPattern)
-  if (oneLiner) parts.push(oneLiner)
-  return parts.join('. ')
 }
 
 // ── Sound effects ─────────────────────────────────────────────
@@ -544,7 +534,7 @@ function FlashCard({
         <button
           onClick={() => playing
             ? stop()
-            : play(buildTTSText(card.topicId, triggers, card.trapPattern, card.oneLiner))
+            : void play(card.topicId, card.oneLiner, card.trapPattern)
           }
           className="ml-auto text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#f1f5f9]"
           title={playing ? '정지' : '읽기'}
@@ -1188,7 +1178,7 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                       <button
                         onClick={() => ttsPlaying
                           ? ttsStop()
-                          : ttsPlay(buildTTSText(current.topicId, current.triggers, current.trapPattern, current.oneLiner))
+                          : void ttsPlay(current.topicId, current.oneLiner, current.trapPattern)
                         }
                         className="text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#f1f5f9]"
                         title={ttsPlaying ? '정지' : '읽기'}
