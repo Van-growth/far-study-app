@@ -52,7 +52,7 @@ interface ExtractionRow {
   id: string;
   topic_id: string;
   example_question: ExampleQuestion;
-  is_fixed?: boolean;
+  is_fixed: boolean | null;
 }
 
 interface ValidationResult {
