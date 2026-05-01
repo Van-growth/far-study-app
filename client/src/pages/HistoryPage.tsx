@@ -76,6 +76,52 @@ function ProgressBar({ current, total, mode }: { current: number; total: number;
   )
 }
 
+// ── TTS Overlay ───────────────────────────────────────────────
+function splitSentences(text: string): string[] {
+  const parts = text.match(/[^.!?]+[.!?]+["']?\s*/g)
+  if (parts && parts.length > 0) return parts.map((s) => s.trim()).filter(Boolean)
+  return [text.trim()].filter(Boolean)
+}
+
+function TTSOverlay({ script, progress, onStop }: {
+  script: string
+  progress: number
+  onStop: () => void
+}) {
+  const sentences = splitSentences(script)
+  const currentIdx = Math.min(Math.floor(progress * sentences.length), sentences.length - 1)
+
+  return (
+    <div
+      className="fixed inset-0 flex flex-col items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.75)', zIndex: 9999 }}
+    >
+      <button
+        onClick={onStop}
+        className="absolute top-5 right-5 w-10 h-10 flex items-center justify-center rounded-full text-white text-xl"
+        style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}
+        title="정지"
+      >
+        ⏹
+      </button>
+      <div className="flex flex-col gap-4 px-8 max-w-sm w-full text-center">
+        {sentences.map((sentence, i) => (
+          <p
+            key={i}
+            className="transition-all duration-300 leading-relaxed"
+            style={i === currentIdx
+              ? { color: 'white', fontWeight: 700, fontSize: '1rem' }
+              : { color: 'rgba(255,255,255,0.3)', fontWeight: 400, fontSize: '0.8rem' }
+            }
+          >
+            {sentence}
+          </p>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Example Question ──────────────────────────────────────────
 function StructuredExplanation({ exp }: { exp: ExplanationStructured }) {
   return (
@@ -117,6 +163,7 @@ function StructuredExplanation({ exp }: { exp: ExplanationStructured }) {
 function useTTS() {
   const [playing, setPlaying] = useState(false)
   const [script, setScript] = useState<string | null>(null)
+  const [progress, setProgress] = useState(0)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const stop = useCallback(() => {
@@ -127,6 +174,7 @@ function useTTS() {
     }
     setPlaying(false)
     setScript(null)
+    setProgress(0)
   }, [])
 
   const play = useCallback(async (
@@ -148,19 +196,24 @@ function useTTS() {
       setScript(s ?? null)
       const audio = new Audio(`data:audio/mp3;base64,${audioContent}`)
       audioRef.current = audio
-      audio.onended = () => { audioRef.current = null; setPlaying(false); setScript(null) }
-      audio.onerror = () => { audioRef.current = null; setPlaying(false); setScript(null) }
+      audio.ontimeupdate = () => {
+        const dur = audio.duration
+        if (dur && isFinite(dur) && dur > 0) setProgress(audio.currentTime / dur)
+      }
+      audio.onended = () => { audioRef.current = null; setPlaying(false); setScript(null); setProgress(0) }
+      audio.onerror = () => { audioRef.current = null; setPlaying(false); setScript(null); setProgress(0) }
       // fire-and-forget: catch here so the try-block completes normally,
       // letting React commit script=s before any potential play() rejection
-      audio.play().catch(() => { audioRef.current = null; setPlaying(false); setScript(null) })
+      audio.play().catch(() => { audioRef.current = null; setPlaying(false); setScript(null); setProgress(0) })
     } catch {
       setPlaying(false)
       setScript(null)
+      setProgress(0)
     }
   }, [stop])
 
   useEffect(() => stop, [stop])
-  return { play, stop, playing, script }
+  return { play, stop, playing, script, progress }
 }
 
 // ── Sound effects ─────────────────────────────────────────────
@@ -487,7 +540,7 @@ function FlashCard({
   const flashUserId = useStudyStore((s) => s.userId)
   const [relatedCount, setRelatedCount] = useState(0)
   const relatedFetchedRef = useRef<string | null>(null)
-  const { play, stop, playing, script } = useTTS()
+  const { play, stop, playing, script, progress } = useTTS()
 
   // Stop TTS on card change or unmount
   useEffect(() => { stop() }, [card.id, stop])
@@ -661,15 +714,8 @@ function FlashCard({
         </button>
       )}
 
-      {/* TTS script subtitle */}
-      {!!script && (
-        <div
-          className="animate-fadeIn rounded-xl px-3 py-2 text-[11px] leading-relaxed text-[#475569]"
-          style={{ background: '#f8faff', border: '1px solid #e0e7ff' }}
-        >
-          {script}
-        </div>
-      )}
+      {/* TTS overlay */}
+      {!!script && <TTSOverlay script={script} progress={progress} onStop={stop} />}
     </div>
   )
 }
@@ -1005,7 +1051,7 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
   const navigate = useNavigate()
   const [relatedCount, setRelatedCount] = useState(0)
   const relatedFetchedRef = useRef<string | null>(null)
-  const { play: ttsPlay, stop: ttsStop, playing: ttsPlaying, script: ttsScript } = useTTS()
+  const { play: ttsPlay, stop: ttsStop, playing: ttsPlaying, script: ttsScript, progress: ttsProgress } = useTTS()
 
   // Stop TTS on card change or page navigation
   useEffect(() => { ttsStop() }, [current?.id, ttsStop])
@@ -1282,15 +1328,8 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                   </button>
                 )}
 
-                {/* TTS script subtitle */}
-                {!!ttsScript && (
-                  <div
-                    className="animate-fadeIn rounded-xl px-3 py-2 text-[11px] leading-relaxed text-[#475569]"
-                    style={{ background: '#f8faff', border: '1px solid #e0e7ff' }}
-                  >
-                    {ttsScript}
-                  </div>
-                )}
+                {/* TTS overlay */}
+                {!!ttsScript && <TTSOverlay script={ttsScript} progress={ttsProgress} onStop={ttsStop} />}
               </div>
             </div>
           )}

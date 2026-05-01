@@ -10,7 +10,8 @@ DO NOT add any information not provided.
 DO NOT mention any ASC numbers or standard references.
 DO NOT invent examples or numbers.
 Only reformat what's given into conversational English.
-Focus on: what the rule is, and what trap to avoid.`;
+Focus on: what the rule is, and what trap to avoid.
+Return plain text only. No markdown, no headers, no bullet points, no dashes, no asterisks, no duration notes. Just natural flowing speech text.`;
 
 async function synthesize(text: string): Promise<string | null> {
   const apiKey = process.env.GOOGLE_TTS_API_KEY;
