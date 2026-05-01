@@ -21,7 +21,7 @@ async function synthesize(text: string): Promise<string | null> {
     body: JSON.stringify({
       input: { text: text.slice(0, 1000) },
       voice: { languageCode: 'en-US', name: 'en-US-Wavenet-F' },
-      audioConfig: { audioEncoding: 'MP3' },
+      audioConfig: { audioEncoding: 'MP3', speakingRate: 0.85 },
     }),
   });
   if (!gRes.ok) {

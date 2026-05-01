@@ -116,6 +116,7 @@ function StructuredExplanation({ exp }: { exp: ExplanationStructured }) {
 // ── TTS (Haiku podcast script → Google WaveNet via /api/tts/podcast) ──────
 function useTTS() {
   const [playing, setPlaying] = useState(false)
+  const [script, setScript] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const stop = useCallback(() => {
@@ -125,6 +126,7 @@ function useTTS() {
       audioRef.current = null
     }
     setPlaying(false)
+    setScript(null)
   }, [])
 
   const play = useCallback(async (
@@ -142,19 +144,21 @@ function useTTS() {
         body: JSON.stringify({ topicId, oneLiner, trapPattern }),
       })
       if (!res.ok) { setPlaying(false); return }
-      const { audioContent } = await res.json() as { audioContent: string }
+      const { audioContent, script: s } = await res.json() as { audioContent: string; script?: string }
+      setScript(s ?? null)
       const audio = new Audio(`data:audio/mp3;base64,${audioContent}`)
       audioRef.current = audio
-      audio.onended = () => { audioRef.current = null; setPlaying(false) }
-      audio.onerror = () => { audioRef.current = null; setPlaying(false) }
+      audio.onended = () => { audioRef.current = null; setPlaying(false); setScript(null) }
+      audio.onerror = () => { audioRef.current = null; setPlaying(false); setScript(null) }
       await audio.play()
     } catch {
       setPlaying(false)
+      setScript(null)
     }
   }, [stop])
 
   useEffect(() => stop, [stop])
-  return { play, stop, playing }
+  return { play, stop, playing, script }
 }
 
 // ── Sound effects ─────────────────────────────────────────────
@@ -242,10 +246,14 @@ function ExampleQuestionBlock({
   eq,
   cardId,
   onAnswer,
+  onTTS,
+  ttsPlaying,
 }: {
   eq: ExampleQuestion
   cardId: string
   onAnswer?: (isCorrect: boolean, selected: string) => void
+  onTTS?: () => void
+  ttsPlaying?: boolean
 }) {
   const [selected, setSelected] = useState<string | null>(null)
   const [revealed, setRevealed] = useState(false)
@@ -304,12 +312,21 @@ function ExampleQuestionBlock({
       <div className="rounded-xl px-3 py-2.5" style={{ background: '#f8faff', border: '1px solid #c7d2fe' }}>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] font-semibold text-[#3730a3]">📝 예시 문제</p>
-          <button
-            onClick={() => setCalcOpen(true)}
-            className="shrink-0 text-xs px-2 py-1 rounded-lg hover:bg-[#eef2ff]"
-            style={{ border: '1px solid #c7d2fe', color: '#4338ca' }}
-            title="계산기"
-          >🧮</button>
+          <div className="flex items-center gap-1">
+            {onTTS && (
+              <button
+                onClick={onTTS}
+                className="shrink-0 text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#eef2ff]"
+                title={ttsPlaying ? '정지' : '읽기'}
+              >{ttsPlaying ? '⏹' : '🔊'}</button>
+            )}
+            <button
+              onClick={() => setCalcOpen(true)}
+              className="shrink-0 text-xs px-2 py-1 rounded-lg hover:bg-[#eef2ff]"
+              style={{ border: '1px solid #c7d2fe', color: '#4338ca' }}
+              title="계산기"
+            >🧮</button>
+          </div>
         </div>
         <QuizCalculator open={calcOpen} onClose={() => setCalcOpen(false)} />
         <p className="text-xs text-[#1e1b4b] leading-relaxed mb-3">{String(eq.question)}</p>
@@ -355,12 +372,21 @@ function ExampleQuestionBlock({
       )}
       <div className="flex items-center justify-between mb-2">
         <p className="text-[10px] font-semibold text-[#3730a3]">📝 예시 문제</p>
-        <button
-          onClick={() => setCalcOpen(true)}
-          className="shrink-0 text-xs px-2 py-1 rounded-lg hover:bg-[#eef2ff]"
-          style={{ border: '1px solid #c7d2fe', color: '#4338ca' }}
-          title="계산기"
-        >🧮</button>
+        <div className="flex items-center gap-1">
+          {onTTS && (
+            <button
+              onClick={onTTS}
+              className="shrink-0 text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#eef2ff]"
+              title={ttsPlaying ? '정지' : '읽기'}
+            >{ttsPlaying ? '⏹' : '🔊'}</button>
+          )}
+          <button
+            onClick={() => setCalcOpen(true)}
+            className="shrink-0 text-xs px-2 py-1 rounded-lg hover:bg-[#eef2ff]"
+            style={{ border: '1px solid #c7d2fe', color: '#4338ca' }}
+            title="계산기"
+          >🧮</button>
+        </div>
       </div>
       <QuizCalculator open={calcOpen} onClose={() => setCalcOpen(false)} />
       <p className="text-xs text-[#1e1b4b] leading-relaxed mb-3">{String(eq.question)}</p>
@@ -459,7 +485,7 @@ function FlashCard({
   const flashUserId = useStudyStore((s) => s.userId)
   const [relatedCount, setRelatedCount] = useState(0)
   const relatedFetchedRef = useRef<string | null>(null)
-  const { play, stop, playing } = useTTS()
+  const { play, stop, playing, script } = useTTS()
 
   // Stop TTS on card change or unmount
   useEffect(() => { stop() }, [card.id, stop])
@@ -531,16 +557,6 @@ function FlashCard({
             {tag}
           </span>
         ))}
-        <button
-          onClick={() => playing
-            ? stop()
-            : void play(card.topicId, card.oneLiner, card.trapPattern)
-          }
-          className="ml-auto text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#f1f5f9]"
-          title={playing ? '정지' : '읽기'}
-        >
-          {playing ? '⏹' : '🔊'}
-        </button>
       </div>
 
       {/* Example question — shown first so you see the challenge before the concepts */}
@@ -549,6 +565,8 @@ function FlashCard({
           eq={card.exampleQuestion}
           cardId={card.id}
           onAnswer={onMcqAnswer}
+          onTTS={() => playing ? stop() : void play(card.topicId, card.oneLiner, card.trapPattern)}
+          ttsPlaying={playing}
         />
       )}
 
@@ -639,6 +657,16 @@ function FlashCard({
         >
           📚 같은 토픽 분석 {relatedCount}개 보기 →
         </button>
+      )}
+
+      {/* TTS script subtitle */}
+      {playing && script && (
+        <div
+          className="animate-fadeIn rounded-xl px-3 py-2 text-[11px] leading-relaxed text-[#475569]"
+          style={{ background: '#f8faff', border: '1px solid #e0e7ff' }}
+        >
+          {script}
+        </div>
       )}
     </div>
   )
@@ -975,7 +1003,7 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
   const navigate = useNavigate()
   const [relatedCount, setRelatedCount] = useState(0)
   const relatedFetchedRef = useRef<string | null>(null)
-  const { play: ttsPlay, stop: ttsStop, playing: ttsPlaying } = useTTS()
+  const { play: ttsPlay, stop: ttsStop, playing: ttsPlaying, script: ttsScript } = useTTS()
 
   // Stop TTS on card change or page navigation
   useEffect(() => { ttsStop() }, [current?.id, ttsStop])
@@ -1133,6 +1161,15 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                       {tag}
                     </span>
                   ))}
+                  {(current.oneLiner || current.trapPattern) && (
+                    <button
+                      onClick={() => ttsPlaying ? ttsStop() : void ttsPlay(current.topicId, current.oneLiner, current.trapPattern)}
+                      className="ml-auto text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#f1f5f9]"
+                      title={ttsPlaying ? '정지' : '읽기'}
+                    >
+                      {ttsPlaying ? '⏹' : '🔊'}
+                    </button>
+                  )}
                 </div>
 
                 {/* Example question — shown first; concepts below */}
@@ -1166,26 +1203,14 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                       </div>
                     )}
 
-                    {/* 3. 해설 보기 버튼 + TTS */}
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setExpandedId(expandedId === current.id ? null : current.id)}
-                        className="text-xs font-semibold"
-                        style={{ color: '#4338ca' }}
-                      >
-                        {expandedId === current.id ? '해설 접기 ▲' : '해설 보기 ▼'}
-                      </button>
-                      <button
-                        onClick={() => ttsPlaying
-                          ? ttsStop()
-                          : void ttsPlay(current.topicId, current.oneLiner, current.trapPattern)
-                        }
-                        className="text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#f1f5f9]"
-                        title={ttsPlaying ? '정지' : '읽기'}
-                      >
-                        {ttsPlaying ? '⏹' : '🔊'}
-                      </button>
-                    </div>
+                    {/* 3. 해설 보기 버튼 */}
+                    <button
+                      onClick={() => setExpandedId(expandedId === current.id ? null : current.id)}
+                      className="text-xs font-semibold self-start"
+                      style={{ color: '#4338ca' }}
+                    >
+                      {expandedId === current.id ? '해설 접기 ▲' : '해설 보기 ▼'}
+                    </button>
 
                     {/* 4. 펼쳤을 때만: 정답 + 해설 + 트리거 + 함정 */}
                     {expandedId === current.id && (
@@ -1253,6 +1278,16 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                   >
                     📚 같은 토픽 분석 {relatedCount}개 보기 →
                   </button>
+                )}
+
+                {/* TTS script subtitle */}
+                {ttsPlaying && ttsScript && (
+                  <div
+                    className="animate-fadeIn rounded-xl px-3 py-2 text-[11px] leading-relaxed text-[#475569]"
+                    style={{ background: '#f8faff', border: '1px solid #e0e7ff' }}
+                  >
+                    {ttsScript}
+                  </div>
                 )}
               </div>
             </div>
