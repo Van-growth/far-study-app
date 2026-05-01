@@ -108,7 +108,10 @@ export default function DailyBriefingModal({ userId }: Props) {
       const mode = (['queue', 'confused', 'normal'] as const).includes(json.suggestedMode as 'queue' | 'confused' | 'normal')
         ? (json.suggestedMode as 'queue' | 'confused' | 'normal')
         : 'normal'
-      setBriefingText(json.briefingText)
+      const fallback = totalConfused > 0
+        ? `오늘도 FAR 공부 시작해보자. 오답 ${totalConfused}개 쌓여있어 👇`
+        : '오늘도 FAR 공부 시작해보자 💪'
+      setBriefingText(json.briefingText || fallback)
       setSuggestedMode(mode)
       void upsertTutorSession(uid, today, json.briefingText, mode)
     } catch {
@@ -201,8 +204,9 @@ export default function DailyBriefingModal({ userId }: Props) {
               onClick={() => void handleAction('normal')}
               className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
               style={{
-                background: suggestedMode === 'normal' ? '#0f172a' : '#f1f5f9',
-                color: suggestedMode === 'normal' ? 'white' : '#475569',
+                background: suggestedMode === 'normal' ? '#f1f5f9' : '#f8fafc',
+                color: suggestedMode === 'normal' ? '#1e293b' : '#94a3b8',
+                border: suggestedMode === 'normal' ? '1.5px solid #64748b' : '1.5px solid #e2e8f0',
               }}
             >
               📚 일반 복습

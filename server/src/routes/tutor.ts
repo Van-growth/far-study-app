@@ -175,7 +175,7 @@ router.post('/daily-briefing', async (req: Request, res: Response) => {
       const mode = (['queue', 'confused', 'normal'] as const).includes(parsed.suggestedMode as 'queue' | 'confused' | 'normal')
         ? parsed.suggestedMode as 'queue' | 'confused' | 'normal'
         : 'normal';
-      return res.json({ briefingText: parsed.briefingText ?? '오늘도 화이팅!', suggestedMode: mode });
+      return res.json({ briefingText: parsed.briefingText || '오늘도 화이팅!', suggestedMode: mode });
     } catch {
       return res.json({ briefingText: text, suggestedMode: 'normal' });
     }
