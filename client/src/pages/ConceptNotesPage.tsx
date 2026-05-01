@@ -26,7 +26,14 @@ type QuizItem = {
   formula?: string;
   related_concepts?: string[];
 };
-type TabKey = 'asset-liability' | 'valuation' | 'ratios' | 'misc';
+interface DisclosureItem {
+  cat: string;
+  item: string;
+  disclosure: string;
+  freq: string;
+  trap: string;
+}
+type TabKey = 'asset-liability' | 'valuation' | 'ratios' | 'disclosures' | 'misc';
 type ViewMode = 'table' | 'quiz';
 type LangKey = 'ko' | 'en';
 
@@ -333,6 +340,49 @@ const valuationData: ValItem[] = [
 const AL_CATS = ['All','Receivables','Inventory','Revenue','Liabilities','PPE & Intangibles','Equity','Tax','NFP','Gov'];
 const VAL_CATS = ['All','Assets','Liabilities','Equity','Revenue','NFP','Gov'];
 const RATIO_CATS = ['All','Liquidity Ratios','Activity Ratios','Profitability Ratios','Leverage Ratios'];
+const DISC_CATS = ['All', '자산', '부채', '자본', '거래·이익손실'];
+
+const disclosureData: DisclosureItem[] = [
+  { cat: '자산', item: 'Inventory', freq: '⭐⭐⭐',
+    disclosure: 'LIFO reserve, LCM 평가손실, 재고자산 원가배분방법 (FIFO/LIFO/Average)',
+    trap: 'LIFO reserve 공시 누락 시 재고·원가 비교 불가. LIFO liquidation 발생 시 별도 공시 필요' },
+  { cat: '자산', item: 'Goodwill', freq: '⭐⭐⭐',
+    disclosure: '사업부문별 goodwill 내역, 연간 손상검사 결과, 손상차손 인식 금액 및 사유',
+    trap: '손상 비가역적 — 차기 회복 불가. GAAP에서 주기적 상각 금지 (IFRS는 상각)' },
+  { cat: '자산', item: 'Investments (AFS/HTM/Trading)', freq: '⭐⭐⭐',
+    disclosure: '분류별 공정가치·미실현손익·상각후원가, HTM→AFS 재분류 사유, 기대신용손실(ECL)',
+    trap: 'HTM 중도 매각 시 Tainting rule — 전체 포트폴리오 HTM 분류 불가 (2년)' },
+  { cat: '자산', item: 'Leases — ROU Asset', freq: '⭐⭐⭐',
+    disclosure: '향후 5년 + 이후 리스료 지급 스케줄, Finance vs Operating 유형, 가중평균 할인율',
+    trap: 'Short-term lease (<12개월) ROU 인식 면제 → 주석 공시만. Variable lease는 제외' },
+  { cat: '부채', item: 'Long-term Debt', freq: '⭐⭐⭐',
+    disclosure: '향후 5년 연도별 만기 상환액, 이자율·담보 조건, 차입약정(Covenant) 위반 여부',
+    trap: '1년 내 만기도래분 → Current 재분류 필수. Refinancing 완료 전엔 재분류 불가' },
+  { cat: '부채', item: 'Contingencies', freq: '⭐⭐⭐',
+    disclosure: 'Probable → 부채 인식 + 금액 공시 / Possible → 주석만 / Remote → 공시 불요',
+    trap: '"Reasonably possible" ≠ Probable. Probable이나 금액 불확실 → 범위 하한 인식' },
+  { cat: '부채', item: 'Pensions', freq: '⭐⭐⭐',
+    disclosure: 'PBO, Plan assets 공정가치, Funded status, Net periodic pension cost 구성요소, AOCI 잔액',
+    trap: 'Funded status = Plan assets − PBO (음수 = 부채). AOCI 속 미인식손익은 NI 미통과' },
+  { cat: '부채', item: 'Deferred Tax', freq: '⭐⭐',
+    disclosure: '이연법인세 자산/부채 구성내역, Valuation allowance 설정 이유, 주요 일시적 차이 항목',
+    trap: 'VA = 실현 불확실(more likely than not). 영구적 차이는 이연세금 없음' },
+  { cat: '자본', item: 'EPS', freq: '⭐⭐⭐',
+    disclosure: 'Basic EPS + Diluted EPS 분리 공시, 분자·분모 조정 내역 (옵션·전환사채·전환우선주)',
+    trap: 'Antidilutive 증권은 Diluted에서 제외. 가중평균 주식수 = 기간 비례 계산' },
+  { cat: '자본', item: 'AOCI', freq: '⭐⭐',
+    disclosure: 'AFS 미실현손익 / 연금 미인식손익 / 외화환산조정 — 항목별 기초·변동·기말 잔액',
+    trap: 'AOCI는 OCI 누적액. 실현 시 Reclassification adjustment → NI로 이동' },
+  { cat: '거래·이익손실', item: 'Revenue (ASC 606)', freq: '⭐⭐⭐',
+    disclosure: '수행의무 기술, 거래가격 배분, Contract assets/liabilities 잔액, 반품·환불 추정액',
+    trap: 'Contract asset ≠ A/R. 조건부 수취권(performance 조건) vs 무조건 수취권(A/R)' },
+  { cat: '거래·이익손실', item: 'Segment Reporting', freq: '⭐⭐⭐',
+    disclosure: '10% rule (수익/이익/자산) 충족 세그먼트 별도 공시, 세그먼트 간 조정 내역, 주요 고객',
+    trap: '외부매출 75% 충족할 때까지 세그먼트 추가 필요. Management approach 기준' },
+  { cat: '거래·이익손실', item: 'Subsequent Events', freq: '⭐⭐⭐',
+    disclosure: 'Type I (인식): BS일 이전 상황 → 수치 조정 / Type II (공시): 새로운 사건 → 주석만',
+    trap: 'Type I·II 혼동. 감사보고서 발행일까지 모니터링. 비상장사는 재무제표 준비 완료일 기준' },
+];
 
 function conceptCardToQuizItem(card: ConceptCardRow): QuizItem {
   const eq = card.exampleQuestion;
@@ -524,6 +574,7 @@ const SIDEBAR_TABS = [
   { key: 'asset-liability' as TabKey, label: 'Asset vs. Liability', icon: '⚖️' },
   { key: 'valuation' as TabKey, label: 'Valuation', icon: '💰' },
   { key: 'ratios' as TabKey, label: 'Financial Ratios', icon: '📊' },
+  { key: 'disclosures' as TabKey, label: 'Required Disclosures', icon: '📢' },
   { key: 'misc' as TabKey, label: '기타', icon: '📦' },
 ];
 
@@ -606,7 +657,7 @@ export default function ConceptNotesPage() {
     localStorage.setItem('concept-notes-misc', JSON.stringify(miscConcepts));
   }, [miscConcepts]);
 
-  const cats = activeTab === 'asset-liability' ? AL_CATS : activeTab === 'valuation' ? VAL_CATS : activeTab === 'ratios' ? RATIO_CATS : [];
+  const cats = activeTab === 'asset-liability' ? AL_CATS : activeTab === 'valuation' ? VAL_CATS : activeTab === 'ratios' ? RATIO_CATS : activeTab === 'disclosures' ? DISC_CATS : [];
 
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
@@ -674,6 +725,20 @@ export default function ConceptNotesPage() {
     return items;
   }, [allItems, activeCat, query]);
 
+  const filteredDisclosures = useMemo(() => {
+    let items = disclosureData;
+    if (activeCat !== 'All') items = items.filter(d => d.cat === activeCat);
+    const q = query.trim().toLowerCase();
+    if (q) {
+      items = items.filter(d =>
+        d.item.toLowerCase().includes(q) ||
+        d.disclosure.toLowerCase().includes(q) ||
+        d.trap.toLowerCase().includes(q),
+      );
+    }
+    return items;
+  }, [activeCat, query]);
+
   const quizItems = shuffledItems ?? filtered;
   const currentCard = quizItems[quizIndex] ?? quizItems[0];
 
@@ -737,13 +802,13 @@ export default function ConceptNotesPage() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <h1 className="text-lg font-bold text-[#0f172a]">
-                  {activeTab === 'asset-liability' ? '⚖️ Asset vs. Liability' : activeTab === 'valuation' ? '💰 Valuation' : activeTab === 'ratios' ? '📊 Financial Ratios' : '📦 기타 (임시 저장)'}
+                  {activeTab === 'asset-liability' ? '⚖️ Asset vs. Liability' : activeTab === 'valuation' ? '💰 Valuation' : activeTab === 'ratios' ? '📊 Financial Ratios' : activeTab === 'disclosures' ? '📢 Required Disclosures' : '📦 기타 (임시 저장)'}
                 </h1>
                 <p className="text-xs text-muted mt-0.5">
-                  {activeTab === 'misc' ? `${miscConcepts.length}개 저장됨 · 나중에 탭으로 분류 정리` : `${filtered.length}개 항목`}
+                  {activeTab === 'misc' ? `${miscConcepts.length}개 저장됨 · 나중에 탭으로 분류 정리` : activeTab === 'disclosures' ? `${filteredDisclosures.length}개 항목` : `${filtered.length}개 항목`}
                 </p>
               </div>
-              {activeTab !== 'misc' && (
+              {activeTab !== 'misc' && activeTab !== 'disclosures' && (
                 <div className="flex rounded-xl overflow-hidden" style={{ border:'1.5px solid #e2e8f0' }}>
                   {(['table','quiz'] as ViewMode[]).map(mode => (
                     <button key={mode}
@@ -760,8 +825,8 @@ export default function ConceptNotesPage() {
               )}
             </div>
 
-            {/* Search + Category pills — misc 탭에서는 숨김 */}
-            {activeTab !== 'misc' && (
+            {/* Search + Category pills — misc·disclosures 탭에서는 숨김 */}
+            {activeTab !== 'misc' && activeTab !== 'disclosures' && (
               <>
                 <input value={query}
                   onChange={e => { setQuery(e.target.value); resetFilter(); }}
@@ -811,8 +876,75 @@ export default function ConceptNotesPage() {
               </div>
             )}
 
+            {/* ── Disclosures View ── */}
+            {activeTab === 'disclosures' && (
+              <div className="flex flex-col gap-3">
+                {/* Search + Category filter */}
+                <input value={query}
+                  onChange={e => { setQuery(e.target.value); }}
+                  placeholder="항목명 / 공시 내용 / 헷갈림 포인트 검색"
+                  className="w-full text-sm rounded-xl px-4 py-2.5 bg-white"
+                  style={{ border:'1.5px solid #e2e8f0', outline:'none' }} />
+                <div className="flex gap-1.5 flex-wrap">
+                  {DISC_CATS.map(cat => (
+                    <button key={cat}
+                      onClick={() => setActiveCat(cat)}
+                      className="px-3 py-1 rounded-full text-xs font-medium transition-colors"
+                      style={{
+                        background: activeCat === cat ? '#4f6ef7' : '#f1f5f9',
+                        color: activeCat === cat ? 'white' : '#475569',
+                      }}>
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+                <div className="bg-white rounded-2xl overflow-hidden" style={{ border:'1.5px solid #e2e8f0' }}>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[780px]">
+                      <thead>
+                        <tr style={{ background:'#f8fafc', borderBottom:'1.5px solid #e2e8f0' }}>
+                          {['항목', '필수 공시 내용', '시험 빈도', '⚠️ 헷갈림 포인트'].map(h => (
+                            <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold text-muted uppercase tracking-wide">
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredDisclosures.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="px-3 py-8 text-sm text-muted text-center">
+                              검색 결과가 없습니다.
+                            </td>
+                          </tr>
+                        ) : filteredDisclosures.map((d, i) => (
+                          <tr key={d.item}
+                            className="border-b border-[#f1f5f9]"
+                            style={{ background: i % 2 === 0 ? 'white' : '#fafbff' }}>
+                            <td className="px-3 py-3" style={{ minWidth: 160 }}>
+                              <p className="text-sm font-semibold text-[#0f172a]">{d.item}</p>
+                              <span className="text-[10px] text-muted">{d.cat}</span>
+                            </td>
+                            <td className="px-3 py-3 text-xs text-[#374151] leading-relaxed" style={{ minWidth: 260 }}>
+                              {d.disclosure}
+                            </td>
+                            <td className="px-3 py-3 text-sm font-bold text-center" style={{ minWidth: 90, color: '#dc2626' }}>
+                              {d.freq}
+                            </td>
+                            <td className="px-3 py-3 text-xs leading-relaxed" style={{ minWidth: 220, color: '#b45309' }}>
+                              {d.trap}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ── Table View ── */}
-            {activeTab !== 'misc' && !ratioLoading && viewMode === 'table' && (
+            {activeTab !== 'misc' && activeTab !== 'disclosures' && !ratioLoading && viewMode === 'table' && (
               <div className="bg-white rounded-2xl overflow-hidden"
                 style={{ border:'1.5px solid #e2e8f0' }}>
                 <div className="overflow-x-auto">
@@ -883,7 +1015,7 @@ export default function ConceptNotesPage() {
             )}
 
             {/* ── Quiz View ── */}
-            {activeTab !== 'misc' && !ratioLoading && viewMode === 'quiz' && (
+            {activeTab !== 'misc' && activeTab !== 'disclosures' && !ratioLoading && viewMode === 'quiz' && (
               <div className="flex flex-col gap-4">
                 {quizItems.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-[#e2e8f0] p-8 text-center">
