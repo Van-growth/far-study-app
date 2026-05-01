@@ -109,12 +109,10 @@ router.post('/podcast', async (req: Request, res: Response) => {
     if (!script) return res.status(502).json({ error: 'Script generation failed' });
 
     const ttsScript = script.replace(/GAAP/g, 'gap');
-    const sentences = splitSentences(ttsScript);
-    const ssml = `<speak>${sentences.map((s, i) => `<mark name="s${i}"/>${escapeXml(s)}`).join(' ')}</speak>`;
-    const result = await synthesize({ ssml }, true);
+    const result = await synthesize({ text: ttsScript });
     if (!result) return res.status(502).json({ error: 'Google TTS failed' });
 
-    return res.json({ audioContent: result.audioContent, script, timepoints: result.timepoints });
+    return res.json({ audioContent: result.audioContent, script, timepoints: [] });
   } catch (err) {
     console.error('[tts/podcast] error:', err);
     return res.status(500).json({ error: 'Internal error' });
