@@ -124,7 +124,7 @@ function useTTS() {
     if (!window.speechSynthesis) return
     window.speechSynthesis.cancel()
     const utter = new SpeechSynthesisUtterance(text)
-    utter.lang = 'ko-KR'
+    utter.lang = 'en-US'
     try {
       const saved = localStorage.getItem('tts_voice_name')
       if (saved) {

@@ -18,7 +18,7 @@ function VoiceSelector() {
 
   const loadVoices = useCallback(() => {
     if (!window.speechSynthesis) return
-    const v = window.speechSynthesis.getVoices().filter((vx) => vx.lang.startsWith('ko'))
+    const v = window.speechSynthesis.getVoices().filter((vx) => vx.lang.startsWith('en'))
     if (v.length === 0) return
     setVoices(v)
     try {
@@ -37,8 +37,8 @@ function VoiceSelector() {
 
   if (voices.length === 0) return null
 
-  const femaleVoices = voices.filter((v) => /female|여성|yuna|나라|sora|미나|heami/i.test(v.name))
-  const maleVoices = voices.filter((v) => !/female|여성|yuna|나라|sora|미나|heami/i.test(v.name))
+  const femaleVoices = voices.filter((v) => /female|zira|susan|samantha|victoria|aria|jenny|eva|linda/i.test(v.name))
+  const maleVoices = voices.filter((v) => !/female|zira|susan|samantha|victoria|aria|jenny|eva|linda/i.test(v.name))
 
   return (
     <div
