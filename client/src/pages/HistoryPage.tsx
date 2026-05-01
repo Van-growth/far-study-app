@@ -1249,16 +1249,19 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                     </span>
                   ))}
                   <div className="ml-auto flex items-center gap-1">
-                    {(current.oneLiner || current.trapPattern) && (
-                      <button
-                        onClick={() => ttsPlaying ? ttsStop() : void ttsPlay(current.topicId, current.oneLiner, current.trapPattern)}
-                        className="text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#eef2ff]"
-                        style={{ border: '1px solid #c7d2fe', color: '#4338ca' }}
-                        title={ttsPlaying ? '정지' : '읽기'}
-                      >
-                        {ttsLoading ? <div className="w-3 h-3 border-2 border-[#4338ca] border-t-transparent rounded-full animate-spin inline-block" /> : ttsPlaying ? '⏹' : '🔊'}
-                      </button>
-                    )}
+                    <button
+                      onClick={() => ttsPlaying ? ttsStop() : void ttsPlay(
+                        current.topicId,
+                        current.oneLiner ?? (current.concepts.length > 0 ? current.concepts.slice(0, 3).join('. ') : null),
+                        current.trapPattern,
+                      )}
+                      disabled={!current.oneLiner && !current.trapPattern && current.concepts.length === 0}
+                      className="text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#eef2ff] disabled:opacity-30 disabled:cursor-not-allowed"
+                      style={{ border: '1px solid #c7d2fe', color: '#4338ca' }}
+                      title={ttsPlaying ? '정지' : '읽기'}
+                    >
+                      {ttsLoading ? <div className="w-3 h-3 border-2 border-[#4338ca] border-t-transparent rounded-full animate-spin inline-block" /> : ttsPlaying ? '⏹' : '🔊'}
+                    </button>
                     <button
                       onClick={() => setHistCalcOpen(true)}
                       className="shrink-0 text-xs px-2 py-1 rounded-lg hover:bg-[#eef2ff]"
