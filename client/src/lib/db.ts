@@ -1770,6 +1770,215 @@ export async function updateConceptReview(id: string, knew: boolean): Promise<vo
   }
 }
 
+// ── review_log ────────────────────────────────────────────────
+
+export async function insertReviewLog(
+  userId: string,
+  conceptId: string,
+  topicId: string | null,
+  result: 'known' | 'confused',
+): Promise<void> {
+  if (!hasAuth(userId)) return
+  try {
+    await supabase.from(DB.TABLES.REVIEW_LOG).insert({
+      user_id: userId,
+      concept_id: conceptId,
+      topic_id: topicId,
+      result,
+    })
+  } catch (e) {
+    console.warn('[db] insertReviewLog failed:', e)
+  }
+}
+
+export async function getConfusedCount(userId: string): Promise<number> {
+  if (!hasAuth(userId)) return 0
+  try {
+    const { count, error } = await supabase
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('review_result', 'confused')
+    if (error) return 0
+    return count ?? 0
+  } catch { return 0 }
+}
+
+function parseConfusedRows(data: unknown[]): RecentExtractionItem[] {
+  return (data as Record<string, unknown>[]).map((row) => ({
+    id: String(row.id ?? ''),
+    createdAt: String(row.created_at ?? ''),
+    topicId: typeof row.topic_id === 'string' ? row.topic_id : null,
+    concepts: (Array.isArray(row.concepts) ? row.concepts : []).filter((c): c is string => typeof c === 'string'),
+    ascReferences: (Array.isArray(row.asc_references) ? row.asc_references : []).filter((c): c is string => typeof c === 'string'),
+    topicTags: (Array.isArray(row.topic_tags) ? row.topic_tags : []).filter((c): c is string => typeof c === 'string'),
+    trapPattern: typeof row.trap_pattern === 'string' ? row.trap_pattern : null,
+    triggers: Array.isArray(row.triggers) ? (row.triggers as ConceptTrigger[]) : [],
+    nextReviewAt: typeof row.next_review_at === 'string' ? row.next_review_at : null,
+    reviewInterval: typeof row.review_interval === 'number' ? row.review_interval : 0,
+    reviewCount: typeof row.review_count === 'number' ? row.review_count : 0,
+    exampleQuestion: (() => {
+      if (!row.example_question || typeof row.example_question !== 'object' || Array.isArray(row.example_question)) return null
+      const eq = row.example_question as Record<string, unknown>
+      if (!eq.question || !Array.isArray(eq.options) || eq.options.length === 0) return null
+      return {
+        question: String(eq.question),
+        options: (eq.options as unknown[]).map((o) => (typeof o === 'string' ? o : String(o))),
+        answer: eq.answer != null ? String(eq.answer) : '',
+        explanation: eq.explanation ?? '',
+      } as ExampleQuestion
+    })(),
+    feedback: typeof row.feedback === 'string' ? row.feedback : null,
+    isFixed: row.is_fixed === true,
+    journalEntry: typeof row.journal_entry === 'string' ? row.journal_entry : null,
+    formula: typeof row.formula === 'string' ? row.formula : null,
+    relatedConcepts: Array.isArray(row.related_concepts)
+      ? (row.related_concepts as unknown[]).filter((c): c is string => typeof c === 'string')
+      : [],
+  }))
+}
+
+const CONFUSED_SELECT =
+  `${EXTRACTION_BASE_SELECT}, next_review_at, review_interval, review_count, last_reviewed_at,` +
+  ` triggers, example_question, feedback, is_fixed, journal_entry, formula, related_concepts`
+
+export async function fetchConfusedCards(userId: string): Promise<RecentExtractionItem[]> {
+  if (!hasAuth(userId)) return []
+  try {
+    const { data, error } = await supabase
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
+      .select(CONFUSED_SELECT)
+      .eq('user_id', userId)
+      .eq('review_result', 'confused')
+      .order('last_reviewed_at', { ascending: true, nullsFirst: true })
+    if (error || !data) return []
+    return parseConfusedRows(data as unknown[])
+  } catch { return [] }
+}
+
+export async function fetchTodayQueue(userId: string, limit = 5): Promise<RecentExtractionItem[]> {
+  if (!hasAuth(userId)) return []
+  try {
+    const { data, error } = await supabase
+      .from(DB.TABLES.CONCEPT_EXTRACTIONS)
+      .select(CONFUSED_SELECT)
+      .eq('user_id', userId)
+      .eq('review_result', 'confused')
+      .order('last_reviewed_at', { ascending: true, nullsFirst: true })
+      .limit(limit)
+    if (error || !data) return []
+    return parseConfusedRows(data as unknown[])
+  } catch { return [] }
+}
+
+// ── tutor_sessions ────────────────────────────────────────────
+
+export interface TutorSessionRow {
+  briefingText: string | null
+  suggestedMode: string | null
+  wasClicked: boolean
+}
+
+export async function getTutorSession(userId: string, date: string): Promise<TutorSessionRow | null> {
+  if (!hasAuth(userId)) return null
+  try {
+    const { data, error } = await supabase
+      .from(DB.TABLES.TUTOR_SESSIONS)
+      .select('briefing_text, suggested_mode, was_clicked')
+      .eq('user_id', userId)
+      .eq('date', date)
+      .maybeSingle()
+    if (error || !data) return null
+    const row = data as { briefing_text: string | null; suggested_mode: string | null; was_clicked: boolean }
+    return { briefingText: row.briefing_text, suggestedMode: row.suggested_mode, wasClicked: row.was_clicked }
+  } catch { return null }
+}
+
+export async function upsertTutorSession(
+  userId: string,
+  date: string,
+  briefingText: string,
+  suggestedMode: string,
+): Promise<void> {
+  if (!hasAuth(userId)) return
+  try {
+    await supabase.from(DB.TABLES.TUTOR_SESSIONS).upsert(
+      { user_id: userId, date, briefing_text: briefingText, suggested_mode: suggestedMode },
+      { onConflict: 'user_id,date', ignoreDuplicates: false },
+    )
+  } catch (e) {
+    console.warn('[db] upsertTutorSession failed:', e)
+  }
+}
+
+export async function markTutorSessionClicked(userId: string, date: string): Promise<void> {
+  if (!hasAuth(userId)) return
+  try {
+    await supabase
+      .from(DB.TABLES.TUTOR_SESSIONS)
+      .update({ was_clicked: true })
+      .eq('user_id', userId)
+      .eq('date', date)
+  } catch (e) {
+    console.warn('[db] markTutorSessionClicked failed:', e)
+  }
+}
+
+// ── topic_progress weak spots ─────────────────────────────────
+
+export interface WeakTopic {
+  topicId: string
+  attempts: number
+  correct: number
+}
+
+export async function getWeakestTopics(userId: string, n = 2): Promise<WeakTopic[]> {
+  if (!hasAuth(userId)) return []
+  try {
+    const { data, error } = await supabase
+      .from(DB.TABLES.TOPIC_PROGRESS)
+      .select('topic_id, attempts, correct')
+      .eq('user_id', userId)
+      .gte('attempts', 2)
+    if (error || !data) return []
+    return (data as { topic_id: string; attempts: number; correct: number }[])
+      .map((r) => ({ topicId: r.topic_id, attempts: r.attempts, correct: r.correct }))
+      .sort((a, b) => (a.correct / a.attempts) - (b.correct / b.attempts))
+      .slice(0, n)
+  } catch { return [] }
+}
+
+// ── review_log topic confusion pattern ───────────────────────
+
+export interface RecentConfusedTopic {
+  topicId: string
+  confusedCount: number
+}
+
+export async function getRecentConfusedTopics(userId: string, days = 3): Promise<RecentConfusedTopic[]> {
+  if (!hasAuth(userId)) return []
+  try {
+    const since = new Date()
+    since.setDate(since.getDate() - days)
+    since.setHours(0, 0, 0, 0)
+    const { data, error } = await supabase
+      .from(DB.TABLES.REVIEW_LOG)
+      .select('topic_id')
+      .eq('user_id', userId)
+      .eq('result', 'confused')
+      .gte('reviewed_at', since.toISOString())
+      .not('topic_id', 'is', null)
+    if (error || !data) return []
+    const acc: Record<string, number> = {}
+    for (const row of data as { topic_id: string }[]) {
+      acc[row.topic_id] = (acc[row.topic_id] ?? 0) + 1
+    }
+    return Object.entries(acc)
+      .map(([topicId, confusedCount]) => ({ topicId, confusedCount }))
+      .sort((a, b) => b.confusedCount - a.confusedCount)
+  } catch { return [] }
+}
+
 /** Count today's known/confused reviews from concept_extractions.reviewed_at. */
 export async function getTodayReviewStats(
   userId: string,

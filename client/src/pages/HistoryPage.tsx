@@ -17,6 +17,10 @@ import {
   saveFeedback,
   saveWrongAnswer,
   fetchReviewHistory,
+  insertReviewLog,
+  fetchConfusedCards,
+  fetchTodayQueue,
+  getConfusedCount,
   RecentExtractionItem,
   ReviewHistoryItem,
   ConceptTrigger,
@@ -1135,6 +1139,12 @@ export default function HistoryPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState<'review' | 'history'>('review')
 
+  // Review mode (normal = SRS due cards, confused = retry confused, queue = today's top-5 confused)
+  const [reviewMode, setReviewMode] = useState<'normal' | 'confused' | 'queue'>('normal')
+  const [totalConfusedCount, setTotalConfusedCount] = useState(0)
+  const [queueDone, setQueueDone] = useState(false)
+  const [modeLoading, setModeLoading] = useState(false)
+
   // Visual effects state
   const [showGoalOverlay, setShowGoalOverlay] = useState(false)
   const [cardBouncing, setCardBouncing] = useState(false)
@@ -1155,14 +1165,37 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (!userId) return
+    const modeParam = new URLSearchParams(window.location.search).get('mode') as 'queue' | 'confused' | null
+
     Promise.all([
       fetchDueExtractions(userId),
       getTodayReviewStats(userId),
-    ]).then(([items, log]) => {
-      setCards(items)
+      getConfusedCount(userId),
+    ]).then(async ([items, log, confusedCnt]) => {
       setKnewCount(log.knewCount)
       setConfusedCount(log.confusedCount)
       setTodayReviewCount(log.knewCount + log.confusedCount)
+      setTotalConfusedCount(confusedCnt)
+
+      if (modeParam === 'queue' && confusedCnt > 0) {
+        const qCards = await fetchTodayQueue(userId, 5)
+        if (qCards.length > 0) {
+          setCards(qCards)
+          setReviewMode('queue')
+          setStage('review')
+          return
+        }
+      } else if (modeParam === 'confused' && confusedCnt > 0) {
+        const cCards = await fetchConfusedCards(userId)
+        if (cCards.length > 0) {
+          setCards(cCards)
+          setReviewMode('confused')
+          setStage('review')
+          return
+        }
+      }
+
+      setCards(items)
       setStage(items.length === 0 ? 'empty' : 'review')
     }).catch(() => setStage('empty'))
   }, [userId])
@@ -1255,6 +1288,11 @@ export default function HistoryPage() {
 
     await updateConceptReview(card.id, knew)
 
+    // review_log INSERT (fire-and-forget)
+    if (userId) {
+      void insertReviewLog(userId, card.id, card.topicId, knew ? 'known' : 'confused')
+    }
+
     // XP DB write for this card (fire-and-forget)
     if (userId) {
       void addXp(userId, knew ? 5 : -5, knew ? 'correct_answer' : 'wrong_answer')
@@ -1266,8 +1304,13 @@ export default function HistoryPage() {
       if (knew) setKnewCount((c) => c + 1)
       else setConfusedCount((c) => c + 1)
       incrementTodayReviewCount()
+      // 오답 재출제/큐 모드에서 정답 처리 시 confused 카운트 감소
+      if (knew && reviewMode !== 'normal') {
+        setTotalConfusedCount((c) => Math.max(0, c - 1))
+      }
       if (userId) void upsertDailyReviewLog(userId, { knew: knew ? 1 : 0, confused: knew ? 0 : 1 })
       if (next >= cards.length) {
+        if (reviewMode === 'queue') setQueueDone(true)
         setStage('done')
         const finalCount = (knew ? knewCount + 1 : knewCount) + (knew ? confusedCount : confusedCount + 1)
         setMoneyRain({ open: true, count: finalCount })
@@ -1285,6 +1328,37 @@ export default function HistoryPage() {
       }
       setSubmitting(false)
     }, 200)
+  }
+
+  async function handleStartQueue() {
+    if (!userId || modeLoading) return
+    setModeLoading(true)
+    try {
+      const qCards = await fetchTodayQueue(userId, 5)
+      setCards(qCards)
+      setIdx(0)
+      setVisible(true)
+      setReviewMode('queue')
+      setQueueDone(false)
+      setStage(qCards.length === 0 ? 'empty' : 'review')
+    } finally {
+      setModeLoading(false)
+    }
+  }
+
+  async function handleStartConfused() {
+    if (!userId || modeLoading) return
+    setModeLoading(true)
+    try {
+      const cCards = await fetchConfusedCards(userId)
+      setCards(cCards)
+      setIdx(0)
+      setVisible(true)
+      setReviewMode('confused')
+      setStage(cCards.length === 0 ? 'empty' : 'review')
+    } finally {
+      setModeLoading(false)
+    }
   }
 
   async function handleGenerate() {
@@ -1491,6 +1565,36 @@ export default function HistoryPage() {
         userId ? <ReviewHistoryTab userId={userId} /> : null
       ) : (
         <div className="flex flex-col gap-4 pt-2">
+          {/* Mode quick-start buttons */}
+          {totalConfusedCount > 0 && (
+            <div className="flex gap-2 px-4">
+              <button
+                onClick={() => void handleStartQueue()}
+                disabled={modeLoading}
+                className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
+                style={{
+                  background: reviewMode === 'queue' ? '#4f6ef7' : '#eef2ff',
+                  color: reviewMode === 'queue' ? 'white' : '#4338ca',
+                  border: '1.5px solid #c7d2fe',
+                }}
+              >
+                {queueDone ? '✅' : '🔄'} 오늘의 큐 {Math.min(5, totalConfusedCount)}문제
+              </button>
+              <button
+                onClick={() => void handleStartConfused()}
+                disabled={modeLoading}
+                className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
+                style={{
+                  background: reviewMode === 'confused' ? '#dc2626' : '#fef2f2',
+                  color: reviewMode === 'confused' ? 'white' : '#b91c1c',
+                  border: '1.5px solid #fecaca',
+                }}
+              >
+                ❌ 오답 재출제 {totalConfusedCount}개
+              </button>
+            </div>
+          )}
+
           {stage === 'empty' && (
             <EmptyView onGenerate={handleGenerate} generating={generating} noData={noOnDemandData} />
           )}
@@ -1499,6 +1603,20 @@ export default function HistoryPage() {
           )}
           {stage === 'review' && current && (
             <>
+              {reviewMode !== 'normal' && (
+                <div className="flex items-center gap-2 px-4">
+                  <span
+                    className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                    style={{
+                      background: reviewMode === 'queue' ? '#eef2ff' : '#fef2f2',
+                      color: reviewMode === 'queue' ? '#4338ca' : '#b91c1c',
+                    }}
+                  >
+                    {reviewMode === 'queue' ? '🔄 오늘의 큐' : '❌ 오답 재출제'}
+                  </span>
+                  <span className="text-xs text-[#94a3b8]">모드로 진행 중</span>
+                </div>
+              )}
               <ProgressBar current={idx + 1} total={total} />
 
               <div className={cardBouncing ? 'animate-cardBounce' : ''}>

@@ -21,6 +21,8 @@ export const DB = {
     USER_SETTINGS: 'user_settings',
     USER_XP: 'user_xp',
     USER_STATS: 'user_stats',
+    REVIEW_LOG: 'review_log',
+    TUTOR_SESSIONS: 'tutor_sessions',
   },
   RPC: {
     CONCEPT_STATS_INCREMENT: 'concept_stats_increment',

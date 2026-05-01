@@ -19,6 +19,7 @@ import LearningEffectPage from './pages/LearningEffectPage';
 import HowToUsePage from './pages/HowToUsePage';
 import BadgesPage from './pages/BadgesPage';
 import HistoryPage from './pages/HistoryPage';
+import DailyBriefingModal from './components/DailyBriefingModal';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 import useClaudeStore from './store/claudeStore';
@@ -175,6 +176,7 @@ function AppLayout({ email }: { email: string }) {
   const location = useLocation();
   const isScience = location.pathname === '/science';
   const isPanelOpen = useClaudeStore((s) => s.isOpen);
+  const userId = useStudyStore((s) => s.userId);
 
   const [panelWidth, setPanelWidth] = useState(PANEL_DEFAULT);
   const isDragging = useRef(false);
@@ -281,6 +283,9 @@ function AppLayout({ email }: { email: string }) {
 
       {/* Mobile Claude modal */}
       <ClaudeModal />
+
+      {/* Daily briefing modal — session-once */}
+      <DailyBriefingModal userId={userId} />
     </div>
   );
 }
