@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useStudyStore from '../store/studyStore'
 import useClaudeStore from '../store/claudeStore'
@@ -111,6 +111,49 @@ function StructuredExplanation({ exp }: { exp: ExplanationStructured }) {
       )}
     </div>
   )
+}
+
+// ── TTS ───────────────────────────────────────────────────────
+function useTTS() {
+  const [playing, setPlaying] = useState(false)
+  const stop = useCallback(() => {
+    window.speechSynthesis?.cancel()
+    setPlaying(false)
+  }, [])
+  const play = useCallback((text: string) => {
+    if (!window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    const utter = new SpeechSynthesisUtterance(text)
+    utter.lang = 'ko-KR'
+    try {
+      const saved = localStorage.getItem('tts_voice_name')
+      if (saved) {
+        const v = window.speechSynthesis.getVoices().find((vx) => vx.name === saved)
+        if (v) utter.voice = v
+      }
+    } catch { /* ignore */ }
+    utter.onend = () => setPlaying(false)
+    utter.onerror = () => setPlaying(false)
+    window.speechSynthesis.speak(utter)
+    setPlaying(true)
+  }, [])
+  useEffect(() => stop, [stop])
+  return { play, stop, playing }
+}
+
+function buildTTSText(
+  topicId: string | null,
+  triggers: ConceptTrigger[],
+  trapPattern: string | null,
+  oneLiner: string | null,
+): string {
+  const parts: string[] = []
+  if (topicId) parts.push(topicId)
+  const keywords = triggers.map((t) => t.keyword).filter(Boolean)
+  if (keywords.length > 0) parts.push('트리거: ' + keywords.join(', '))
+  if (trapPattern) parts.push('함정: ' + trapPattern)
+  if (oneLiner) parts.push(oneLiner)
+  return parts.join('. ')
 }
 
 // ── Sound effects ─────────────────────────────────────────────
@@ -415,6 +458,10 @@ function FlashCard({
   const flashUserId = useStudyStore((s) => s.userId)
   const [relatedCount, setRelatedCount] = useState(0)
   const relatedFetchedRef = useRef<string | null>(null)
+  const { play, stop, playing } = useTTS()
+
+  // Stop TTS on card change or unmount
+  useEffect(() => { stop() }, [card.id, stop])
 
   useEffect(() => {
     if (!flashUserId || !card.topicId || relatedFetchedRef.current === card.id) return
@@ -483,6 +530,16 @@ function FlashCard({
             {tag}
           </span>
         ))}
+        <button
+          onClick={() => playing
+            ? stop()
+            : play(buildTTSText(card.topicId, triggers, card.trapPattern, card.oneLiner))
+          }
+          className="ml-auto text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#f1f5f9]"
+          title={playing ? '정지' : '읽기'}
+        >
+          {playing ? '⏹' : '🔊'}
+        </button>
       </div>
 
       {/* Example question — shown first so you see the challenge before the concepts */}
@@ -917,6 +974,10 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
   const navigate = useNavigate()
   const [relatedCount, setRelatedCount] = useState(0)
   const relatedFetchedRef = useRef<string | null>(null)
+  const { play: ttsPlay, stop: ttsStop, playing: ttsPlaying } = useTTS()
+
+  // Stop TTS on card change or page navigation
+  useEffect(() => { ttsStop() }, [current?.id, ttsStop])
 
   useEffect(() => {
     if (!current?.id || !current?.topicId || relatedFetchedRef.current === current.id) return
@@ -1104,14 +1165,26 @@ function ReviewHistoryTab({ userId }: { userId: string }) {
                       </div>
                     )}
 
-                    {/* 3. 해설 보기 버튼 */}
-                    <button
-                      onClick={() => setExpandedId(expandedId === current.id ? null : current.id)}
-                      className="text-xs font-semibold self-start"
-                      style={{ color: '#4338ca' }}
-                    >
-                      {expandedId === current.id ? '해설 접기 ▲' : '해설 보기 ▼'}
-                    </button>
+                    {/* 3. 해설 보기 버튼 + TTS */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setExpandedId(expandedId === current.id ? null : current.id)}
+                        className="text-xs font-semibold"
+                        style={{ color: '#4338ca' }}
+                      >
+                        {expandedId === current.id ? '해설 접기 ▲' : '해설 보기 ▼'}
+                      </button>
+                      <button
+                        onClick={() => ttsPlaying
+                          ? ttsStop()
+                          : ttsPlay(buildTTSText(current.topicId, current.triggers, current.trapPattern, current.oneLiner))
+                        }
+                        className="text-base leading-none px-1 py-0.5 rounded-lg hover:bg-[#f1f5f9]"
+                        title={ttsPlaying ? '정지' : '읽기'}
+                      >
+                        {ttsPlaying ? '⏹' : '🔊'}
+                      </button>
+                    </div>
 
                     {/* 4. 펼쳤을 때만: 정답 + 해설 + 트리거 + 함정 */}
                     {expandedId === current.id && (

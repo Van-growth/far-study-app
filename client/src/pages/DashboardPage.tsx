@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import useStudyStore from '../store/studyStore';
 import { getExamDate, setExamDate, getDailyGoal, saveDailyGoal } from '../lib/db';
 
@@ -11,6 +11,71 @@ function syncExamDateLS(val: string | null) {
 }
 import Dashboard from '../components/dashboard/Dashboard';
 import StudyCalendar from '../components/dashboard/StudyCalendar';
+
+function VoiceSelector() {
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
+  const [selected, setSelected] = useState('')
+
+  const loadVoices = useCallback(() => {
+    if (!window.speechSynthesis) return
+    const v = window.speechSynthesis.getVoices().filter((vx) => vx.lang.startsWith('ko'))
+    if (v.length === 0) return
+    setVoices(v)
+    try {
+      const saved = localStorage.getItem('tts_voice_name') ?? ''
+      setSelected(v.some((vx) => vx.name === saved) ? saved : v[0].name)
+    } catch {
+      setSelected(v[0].name)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadVoices()
+    window.speechSynthesis?.addEventListener('voiceschanged', loadVoices)
+    return () => window.speechSynthesis?.removeEventListener('voiceschanged', loadVoices)
+  }, [loadVoices])
+
+  if (voices.length === 0) return null
+
+  const femaleVoices = voices.filter((v) => /female|여성|yuna|나라|sora|미나|heami/i.test(v.name))
+  const maleVoices = voices.filter((v) => !/female|여성|yuna|나라|sora|미나|heami/i.test(v.name))
+
+  return (
+    <div
+      className="flex items-center justify-between mt-4 pt-4"
+      style={{ borderTop: '1px solid #f1f5f9' }}
+    >
+      <div>
+        <p className="text-sm font-semibold text-[#374151]">🔊 TTS 음성</p>
+        <p className="text-xs text-[#94a3b8] mt-0.5">복습 카드 읽기 음성</p>
+      </div>
+      <select
+        value={selected}
+        onChange={(e) => {
+          setSelected(e.target.value)
+          try { localStorage.setItem('tts_voice_name', e.target.value) } catch { /* ignore */ }
+        }}
+        className="text-xs rounded-lg px-2 py-1.5"
+        style={{ border: '1.5px solid #e2e8f0', color: '#374151', background: 'white', maxWidth: '160px' }}
+      >
+        {femaleVoices.length > 0 && (
+          <optgroup label="여성">
+            {femaleVoices.map((v) => (
+              <option key={v.name} value={v.name}>{v.name.replace(/^Microsoft\s+/i, '')}</option>
+            ))}
+          </optgroup>
+        )}
+        {maleVoices.length > 0 && (
+          <optgroup label="남성">
+            {maleVoices.map((v) => (
+              <option key={v.name} value={v.name}>{v.name.replace(/^Microsoft\s+/i, '')}</option>
+            ))}
+          </optgroup>
+        )}
+      </select>
+    </div>
+  )
+}
 
 export default function DashboardPage() {
   const userId = useStudyStore((s) => s.userId);
@@ -180,6 +245,7 @@ export default function DashboardPage() {
           {goalSaving && (
             <p className="text-[10px] text-[#94a3b8] text-right mt-2">저장 중…</p>
           )}
+          <VoiceSelector />
         </div>
       </div>
     </div>

@@ -18,6 +18,34 @@ interface ExampleQuestion {
   explanation: ExplanationStructured
 }
 
+async function generateOneLiner(
+  explanationCore: string,
+  anthropicKey: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 80,
+        system: '핵심 계산/판단 로직을 30자 이내로 요약. 회계 용어는 영어 그대로, 연결어·설명만 한국어. 요약문만 출력.',
+        messages: [{ role: 'user', content: explanationCore.slice(0, 600) }],
+      }),
+    })
+    if (!res.ok) return null
+    const data = await res.json() as { content?: { type: string; text: string }[] }
+    const text = (data.content?.[0]?.text ?? '').trim()
+    return text.slice(0, 50) || null
+  } catch {
+    return null
+  }
+}
+
 async function generateExampleQuestion(
   concepts: string[],
   trapPattern: string | null,
@@ -148,18 +176,29 @@ Deno.serve(async (req: Request) => {
     statErrors = errors.length
   }
 
-  // 2. Generate example question via Claude Haiku
+  // 2. Generate example question + one_liner via Claude Haiku (sequential: one_liner uses eq.explanation.core)
   const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
   if (anthropicKey && id && Array.isArray(concepts) && concepts.length > 0) {
     const eq = await generateExampleQuestion(concepts, trap_pattern ?? null, anthropicKey)
     if (eq) {
+      const explanationSource =
+        typeof eq.explanation === 'object' && eq.explanation !== null
+          ? ((eq.explanation as Record<string, unknown>).core as string | undefined) ?? ''
+          : String(eq.explanation ?? '')
+      const oneLiner = explanationSource
+        ? await generateOneLiner(explanationSource, anthropicKey)
+        : null
+
+      const updatePayload: Record<string, unknown> = { example_question: eq }
+      if (oneLiner) updatePayload.one_liner = oneLiner
+
       const { error: updateErr } = await supabase
         .from('concept_extractions')
-        .update({ example_question: eq })
+        .update(updatePayload)
         .eq('id', id)
 
       if (updateErr) {
-        console.error('example_question update error:', updateErr)
+        console.error('example_question/one_liner update error:', updateErr)
       }
     }
   }

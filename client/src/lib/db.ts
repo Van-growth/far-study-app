@@ -4,7 +4,7 @@ import { DB } from '../constants/db'
 
 // ── concept_extractions 공통 select 상수 ─────────────────────
 const EXTRACTION_BASE_SELECT =
-  'id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern'
+  'id, created_at, topic_id, concepts, asc_references, topic_tags, trap_pattern, one_liner'
 
 // ── Auth guard ────────────────────────────────────────────────
 // All write helpers below check this first. If userId is missing, we
@@ -557,6 +557,7 @@ export interface RecentExtractionItem {
   formula: string | null
   relatedConcepts: string[]
   reviewResult?: 'known' | 'confused' | null
+  oneLiner: string | null
 }
 
 export async function fetchRecentExtractions(
@@ -590,6 +591,7 @@ export async function fetchRecentExtractions(
       journalEntry: null,
       formula: null,
       relatedConcepts: [],
+      oneLiner: typeof row.one_liner === 'string' ? row.one_liner : null,
     }))
 
   try {
@@ -646,6 +648,7 @@ export async function fetchExtractionsPage(
       journalEntry: null,
       formula: null,
       relatedConcepts: [],
+      oneLiner: typeof row.one_liner === 'string' ? row.one_liner : null,
     }))
     return { items, total: count ?? null }
   } catch {
@@ -1566,6 +1569,7 @@ export async function fetchDueExtractions(userId: string): Promise<RecentExtract
         ? (row.related_concepts as unknown[]).filter((c): c is string => typeof c === 'string')
         : [],
       reviewResult: row.review_result === 'known' ? 'known' : row.review_result === 'confused' ? 'confused' : null,
+      oneLiner: typeof row.one_liner === 'string' ? row.one_liner : null,
     }))
   } catch { return [] }
 }
@@ -1838,6 +1842,7 @@ function parseConfusedRows(data: unknown[]): RecentExtractionItem[] {
       ? (row.related_concepts as unknown[]).filter((c): c is string => typeof c === 'string')
       : [],
     reviewResult: row.review_result === 'known' ? 'known' : row.review_result === 'confused' ? 'confused' : null,
+    oneLiner: typeof row.one_liner === 'string' ? row.one_liner : null,
   }))
 }
 
@@ -2056,6 +2061,7 @@ export interface ReviewHistoryItem {
   exampleQuestion: ExampleQuestion | null
   lastReviewedAt: string
   reviewResult: 'known' | 'confused' | null
+  oneLiner: string | null
 }
 
 export async function fetchReviewHistory(
@@ -2074,7 +2080,7 @@ export async function fetchReviewHistory(
 
     let query = supabase
       .from(DB.TABLES.CONCEPT_EXTRACTIONS)
-      .select('id, topic_id, topic_tags, concepts, trap_pattern, triggers, example_question, last_reviewed_at, review_result')
+      .select('id, topic_id, topic_tags, concepts, trap_pattern, one_liner, triggers, example_question, last_reviewed_at, review_result')
       .eq('user_id', userId)
       .not('last_reviewed_at', 'is', null)
       .order('last_reviewed_at', { ascending: false })
@@ -2112,6 +2118,7 @@ export async function fetchReviewHistory(
       })(),
       lastReviewedAt: typeof row.last_reviewed_at === 'string' ? row.last_reviewed_at : '',
       reviewResult: row.review_result === 'known' ? 'known' : row.review_result === 'confused' ? 'confused' : null,
+      oneLiner: typeof row.one_liner === 'string' ? row.one_liner : null,
     }))
   } catch { return [] }
 }
