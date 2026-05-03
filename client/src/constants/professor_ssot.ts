@@ -288,6 +288,25 @@ Useful Life 기준 → Shorter of:
 - 🎯 "Lease expense 얼마?" 문제가 제일 많이 출제
 - 계산: 전체 총 납입액 / 리스기간 = 매기 균등 Lease expense
 
+### Free Rent Period (Operating Lease)
+예) 5년 계약, 1년 무료, 4년 유상
+
+- 총 납입액 ÷ 전체 리스기간(5년) = 매기 균등 Lease expense
+- ❌ 유상 기간(4년)으로 나눔 → ✔ 전체 리스기간(5년)으로 나눔
+- ❌ 무료기간 비용 없음 → ✔ 무료기간도 사용한 것 → 균등 인식
+
+분개:
+1년차 (무료기간) → Cash 없어도 비용 인식:
+  Dr. Lease Expense (균등금액)
+  Cr. Deferred Rent (나중에 갚을 것처럼 쌓아둠)
+
+2~5년차 (유상기간):
+  Dr. Lease Expense (균등금액)
+  Dr. Deferred Rent (쌓인 거 털어냄)
+  Cr. Cash
+
+한 줄 암기: Free rent도 리스기간에 포함 → 총 납입액 ÷ 전체 리스기간
+
 ### Trap
 - ❌ Operating lease = 그냥 Rent Expense → ✔ ASC 842 이후 ROU/Liability 있음
 - ❌ 단기리스도 ROU 잡는다 → ✔ 1년 이하 예외, Rent Expense만
