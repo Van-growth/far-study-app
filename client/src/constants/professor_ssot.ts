@@ -247,6 +247,13 @@ Useful Life 기준:
 - Current portion = 다음 1년 내 상환될 Lease Obligation 원금
 - ❌ Current portion = 다음 연도 납입액 전체 → ✔ 원금 부분만 (Interest 제외)
 
+### Annuity Due vs Ordinary Annuity
+- Ordinary annuity: 기말 지급 → PV factor 그대로
+- Annuity due: 기초 지급 → × (1 + r)
+- 공식: Annuity due PV = Ordinary annuity PV × (1 + r)
+- 예) PV factor (10%, 4년) = 3.1699 × 1.1 = 3.4869
+- ❌ Annuity due에 ordinary factor 그대로 사용 → ✔ 반드시 × (1+r)
+
 ### Trap
 - ❌ Operating lease = 그냥 Rent Expense → ✔ ASC 842 이후 ROU/Liability 있음
 - ❌ 단기리스도 ROU 잡는다 → ✔ 1년 이하 예외, Rent Expense만
