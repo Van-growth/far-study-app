@@ -254,7 +254,30 @@ Useful Life 기준:
 - 예) PV factor (10%, 4년) = 3.1699 × 1.1 = 3.4869
 - ❌ Annuity due에 ordinary factor 그대로 사용 → ✔ 반드시 × (1+r)
 
+### Operating Lease 분개 3단계
+
+**1단계: Inception**
+- Finance Lease와 동일
+- Dr. ROU Asset / Cr. Lease Obligation
+
+**2단계: Payment**
+- 비용은 매기 균등 인식 (Even out) ← 가장 중요
+- Lease expense = 전체 총 납입액 / 리스기간 (straight-line)
+- ❌ Finance lease처럼 Interest expense 별도 계산 → ✔ 균등 인식
+
+**2단계 + 3단계 통합: ROU / Lease Obligation 제거**
+- Payment + Depreciation이 함께 작동해서 ROU와 Lease Obligation 상계/소멸
+- 상각표는 Finance Lease와 동일하게 작성
+- ROU Asset과 Lease Obligation이 서로 상계되면서 없어지는 구조
+
+2가지 처리 방법:
+① Lease Obligation amortization 상각
+② ROU Asset 상각비용만큼 제거
+
 ### Trap
 - ❌ Operating lease = 그냥 Rent Expense → ✔ ASC 842 이후 ROU/Liability 있음
 - ❌ 단기리스도 ROU 잡는다 → ✔ 1년 이하 예외, Rent Expense만
-- ❌ Lessor 문제 → ✔ 2024년부터 출제 없음, Lessee만`;
+- ❌ Lessor 문제 → ✔ 2024년부터 출제 없음, Lessee만
+- ❌ Operating lease Inception 없음 → ✔ Finance와 동일하게 ROU/Lease Obligation 잡음
+- ❌ 비용 불균등 인식 → ✔ 반드시 straight-line 균등
+- ❌ Interest expense 별도 → ✔ Operating은 Lease expense 하나로 균등`;
