@@ -232,6 +232,15 @@ Useful Life 기준:
 - Operating: 전체 비용이 flat하게 일정
 - ⭐ 최종 총비용은 동일 — 결국 같은 cash가 나가기 때문
 
+### Lease 문제 접근 순서
+1. Finance vs Operating 먼저 구분
+   → T-B-75-90-S 5가지 조건 체크
+2. Finance Lease이면:
+   → Useful life 확인 (1~2번 조건 vs 3~5번 조건)
+   → 감가상각 기준 먼저 잡고 풀기
+3. Payment 형태 확인
+   → 연말 지급 / Annuity Due(연초) / 연말 발생+연초 지급
+
 ### Trap
 - ❌ Operating lease = 그냥 Rent Expense → ✔ ASC 842 이후 ROU/Liability 있음
 - ❌ 단기리스도 ROU 잡는다 → ✔ 1년 이하 예외, Rent Expense만
