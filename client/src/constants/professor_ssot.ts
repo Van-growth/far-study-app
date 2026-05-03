@@ -149,6 +149,16 @@ OCI=Other Comprehensive Income / PL=Profit & Loss
 
 ## Lease (Lessee 기준 — 2024년부터 Lessor 출제 없음)
 
+### Lease 문제 접근 순서
+1. Finance vs Operating 먼저 구분 → T-B-75-90-S 5가지 조건 체크
+2. Finance Lease이면:
+   → Useful life 확인 (1~2번 조건 vs 3~5번 조건)
+   → 감가상각 기준 먼저 잡고 풀기
+3. Payment 형태 확인
+   → 연말 지급 / Annuity Due(연초) / 연말 발생+연초 지급
+
+---
+
 ### Finance Lease 5가지 조건 (하나라도 해당되면 Finance Lease)
 T-B-75-90-S 암기:
 1. Title transfer — 리스 종료 시 소유권 이전
@@ -161,12 +171,6 @@ T-B-75-90-S 암기:
 - 1~2번 (Title/Bargain): 소유권 이전 의도 → 돌려줄 생각 없음
 - 3~5번 (75%/90%/Specialized): 경제적 실질상 소유와 유사 → 형식은 반납, 실질은 취득
 
-### Operating Lease
-- 1년 이하 단기 리스 → Rent Expense만 (ROU/Lease Liability 없음)
-- 1년 초과 Operating Lease (ASC 842 이후):
-  → ROU Asset + Lease Liability 잡고 → Rent Expense straight-line
-  → ❌ 예전처럼 그냥 Rent Expense만 아님
-
 ### Lease Liability 초기 인식
 - Lease Liability = 연간 납입액 × PV annuity factor (할인율, 리스기간)
 - 예) 연 $1,000 × 4년, IBR 10% → $1,000 × 3.1699 = $3,170
@@ -178,6 +182,13 @@ T-B-75-90-S 암기:
 IBR vs 명목이자율:
 - IBR: 리스이용자가 비슷한 조건으로 차입 시 내야 할 이자율 (신용도 기반)
 - 명목이자율: 인플레이션 미반영 표면 이자율 → Lease에 사용 안 함
+
+### Annuity Due vs Ordinary Annuity
+- Ordinary annuity: 기말 지급 → PV factor 그대로
+- Annuity due: 기초 지급 → × (1 + r)
+- 공식: Annuity due PV = Ordinary annuity PV × (1 + r)
+- 예) PV factor (10%, 4년) = 3.1699 × 1.1 = 3.4869
+- ❌ Annuity due에 ordinary factor 그대로 사용 → ✔ 반드시 × (1+r)
 
 ### Finance Lease 분개 3단계
 
@@ -221,38 +232,18 @@ Useful Life 기준:
 - 3~5번 조건(75%/90%/Specialized): Lease term 동안 상각
   → Lease term vs Useful life → Shorter 기준 (실제로는 거의 useful life > lease term)
 
-### Finance vs Operating 비용 패턴 비교 (시험 자주 출제)
+---
 
-| 구분 | Interest Expense | Depreciation | 총 비용 패턴 |
-|------|-----------------|--------------|-------------|
-| Finance Lease | 초반 많고 점점 감소 | 일정 | 초반 高, 후반 低 |
-| Operating Lease | 없음 | 없음 | Flat (일정) |
+### Operating Lease 최우선 원칙
+⭐ 항상 비용을 Even out!
+→ 돈을 내든 안 내든 비용은 잡는다
+→ 현금 흐름과 무관하게 리스기간 전체로 균등 인식
 
-- Finance: 초반에 비용 많이 타고 갈수록 줄어드는 구조
-- Operating: 전체 비용이 flat하게 일정
-- ⭐ 최종 총비용은 동일 — 결국 같은 cash가 나가기 때문
-
-### Lease 문제 접근 순서
-1. Finance vs Operating 먼저 구분
-   → T-B-75-90-S 5가지 조건 체크
-2. Finance Lease이면:
-   → Useful life 확인 (1~2번 조건 vs 3~5번 조건)
-   → 감가상각 기준 먼저 잡고 풀기
-3. Payment 형태 확인
-   → 연말 지급 / Annuity Due(연초) / 연말 발생+연초 지급
-
-### Net of Current Portion (B/S 표시)
-- Lease Obligation = Current portion + Non-current portion
-- Net of current portion = 전체 Lease Obligation - Current portion = Non-current
-- Current portion = 다음 1년 내 상환될 Lease Obligation 원금
-- ❌ Current portion = 다음 연도 납입액 전체 → ✔ 원금 부분만 (Interest 제외)
-
-### Annuity Due vs Ordinary Annuity
-- Ordinary annuity: 기말 지급 → PV factor 그대로
-- Annuity due: 기초 지급 → × (1 + r)
-- 공식: Annuity due PV = Ordinary annuity PV × (1 + r)
-- 예) PV factor (10%, 4년) = 3.1699 × 1.1 = 3.4869
-- ❌ Annuity due에 ordinary factor 그대로 사용 → ✔ 반드시 × (1+r)
+### Operating Lease (ASC 842 기준)
+- 1년 이하 단기 리스 → Rent Expense만 (ROU/Lease Liability 없음)
+- 1년 초과:
+  → ROU Asset + Lease Liability 잡고 → Rent Expense straight-line
+  → ❌ 예전처럼 그냥 Rent Expense만 아님
 
 ### Operating Lease 분개 3단계
 
@@ -273,15 +264,6 @@ Useful Life 기준:
 2가지 처리 방법:
 ① Lease Obligation amortization 상각
 ② ROU Asset 상각비용만큼 제거
-
-### Leasehold Improvement
-- 임차한 자산에 Capex 발생 시
-- Dr. Leasehold Improvement / Cr. Cash
-
-Useful Life 기준 → Shorter of:
-① Lease remaining term
-   - 계약 갱신 옵션이 probable하면 잔여기간에 포함해서 계산
-② Leasehold Improvement economic useful life
 
 ### Operating Lease 시험 출제 포인트
 - ⭐ 비용 Even out (straight-line) 이 제일 핵심
@@ -307,10 +289,33 @@ Useful Life 기준 → Shorter of:
 
 한 줄 암기: Free rent도 리스기간에 포함 → 총 납입액 ÷ 전체 리스기간
 
-### Operating Lease 최우선 원칙
-⭐ 항상 비용을 Even out!
-→ 돈을 내든 안 내든 비용은 잡는다
-→ 현금 흐름과 무관하게 리스기간 전체로 균등 인식
+---
+
+### Finance vs Operating 비용 패턴 비교 (시험 자주 출제)
+
+| 구분 | Interest Expense | Depreciation | 총 비용 패턴 |
+|------|-----------------|--------------|-------------|
+| Finance Lease | 초반 많고 점점 감소 | 일정 | 초반 高, 후반 低 |
+| Operating Lease | 없음 | 없음 | Flat (일정) |
+
+- Finance: 초반에 비용 많이 타고 갈수록 줄어드는 구조
+- Operating: 전체 비용이 flat하게 일정
+- ⭐ 최종 총비용은 동일 — 결국 같은 cash가 나가기 때문
+
+### Net of Current Portion (B/S 표시)
+- Lease Obligation = Current portion + Non-current portion
+- Net of current portion = 전체 Lease Obligation - Current portion = Non-current
+- Current portion = 다음 1년 내 상환될 Lease Obligation 원금
+- ❌ Current portion = 다음 연도 납입액 전체 → ✔ 원금 부분만 (Interest 제외)
+
+### Leasehold Improvement
+- 임차한 자산에 Capex 발생 시
+- Dr. Leasehold Improvement / Cr. Cash
+
+Useful Life 기준 → Shorter of:
+① Lease remaining term
+   - 계약 갱신 옵션이 probable하면 잔여기간에 포함해서 계산
+② Leasehold Improvement economic useful life
 
 ### Trap
 - ❌ Operating lease = 그냥 Rent Expense → ✔ ASC 842 이후 ROU/Liability 있음
