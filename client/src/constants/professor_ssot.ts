@@ -307,6 +307,11 @@ Useful Life 기준 → Shorter of:
 
 한 줄 암기: Free rent도 리스기간에 포함 → 총 납입액 ÷ 전체 리스기간
 
+### Operating Lease 최우선 원칙
+⭐ 항상 비용을 Even out!
+→ 돈을 내든 안 내든 비용은 잡는다
+→ 현금 흐름과 무관하게 리스기간 전체로 균등 인식
+
 ### Trap
 - ❌ Operating lease = 그냥 Rent Expense → ✔ ASC 842 이후 ROU/Liability 있음
 - ❌ 단기리스도 ROU 잡는다 → ✔ 1년 이하 예외, Rent Expense만
