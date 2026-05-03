@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -9,6 +9,12 @@ import FeedbackButtons from '../feedback/FeedbackButtons';
 
 interface MessageBubbleProps {
   message: Message;
+}
+
+// Strip HTML/SVG tags and ```html/svg fences for TTS plaintext
+function extractTextForTts(content: string): string {
+  const noBlocks = content.replace(/```(?:html|svg)[\s\S]*?```/gi, '[그림]');
+  return noBlocks.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 // ── Typing animation (3 dots) ──────────────────────────────────
@@ -48,6 +54,11 @@ const MD_COMPONENTS = {
   ol: ({ children }: { children?: React.ReactNode }) => <ol className="list-decimal ml-5 my-1 space-y-0.5">{children}</ol>,
   li: ({ children }: { children?: React.ReactNode }) => <li className="text-sm leading-relaxed">{children}</li>,
   code: ({ children, className }: { children?: React.ReactNode; className?: string }) => {
+    const lang = className?.replace('language-', '') ?? '';
+    const raw = String(children ?? '').replace(/\n$/, '');
+    if (lang === 'html' || lang === 'svg') {
+      return <div className="my-2 overflow-x-auto" dangerouslySetInnerHTML={{ __html: raw }} />;
+    }
     if (className?.includes('language-')) {
       return (
         <pre className="my-2 p-3 rounded-lg text-xs font-mono leading-relaxed overflow-x-auto" style={{ background: '#f1f5f9', color: '#0f172a' }}>
@@ -73,6 +84,51 @@ const MD_COMPONENTS = {
   td: ({ children }: { children?: React.ReactNode }) => <td className="border border-[#e2e8f0] px-2 py-1">{children}</td>,
 };
 
+// ── TTS hook ───────────────────────────────────────────────────
+function useTts(content: string) {
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  const toggle = useCallback(() => {
+    if (!('speechSynthesis' in window)) return;
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const text = extractTextForTts(content);
+    if (!text) return;
+
+    const utter = new SpeechSynthesisUtterance(text);
+    utterRef.current = utter;
+    utter.onend = () => setIsSpeaking(false);
+    utter.onerror = () => setIsSpeaking(false);
+
+    const speak = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const koVoice = voices.find((v) => v.lang.startsWith('ko'));
+      const enVoice = voices.find((v) => v.lang.startsWith('en'));
+      utter.voice = koVoice ?? enVoice ?? null;
+      utter.lang = koVoice ? 'ko-KR' : 'en-US';
+      window.speechSynthesis.speak(utter);
+      setIsSpeaking(true);
+    };
+
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null;
+        speak();
+      };
+    } else {
+      speak();
+    }
+  }, [isSpeaking, content]);
+
+  return { isSpeaking, toggle };
+}
+
 // ── Main component ─────────────────────────────────────────────
 export default function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user';
@@ -80,6 +136,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
   const reviewCardContext = useClaudeStore((s) => s.reviewCardContext);
   const [copied, setCopied] = useState(false);
+  const { isSpeaking, toggle: toggleTts } = useTts(message.content);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content).then(() => {
@@ -104,13 +161,12 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     );
   }
 
-  // Determine if this message is still being streamed
   const messages = useClaudeStore.getState().messages;
   const isLastMessage = messages[messages.length - 1]?.id === message.id;
   const isStreaming = isLastMessage && isLoading;
 
   return (
-    <div className="flex gap-2 mb-3">
+    <div className="group flex gap-2 mb-3">
       {/* Avatar */}
       <div className="w-6 h-6 rounded-full bg-[#4f6ef7] flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-0.5">
         C
@@ -128,7 +184,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           <span className="inline-block w-1.5 h-4 bg-[#4f6ef7] ml-0.5 animate-pulse align-text-bottom rounded-sm" />
         )}
         {!isStreaming && message.content && (
-          <div className="flex items-center">
+          <div className="flex items-center mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
             <FeedbackButtons
               messageId={message.id}
               messagePreview={message.content}
@@ -136,9 +192,10 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
               topicId={reviewCardContext?.topicId ?? currentTopicId ?? null}
               extractionId={reviewCardContext?.extractionId ?? null}
             />
+            {/* Copy button */}
             <button
               onClick={handleCopy}
-              className="mt-1.5 ml-0.5 w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100"
+              className="ml-0.5 w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100"
               title="답변 복사"
             >
               {copied ? (
@@ -147,6 +204,25 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+              )}
+            </button>
+            {/* TTS button */}
+            <button
+              onClick={toggleTts}
+              className="ml-0.5 w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100"
+              title={isSpeaking ? '정지' : '읽어주기'}
+            >
+              {isSpeaking ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="#4f6ef7" stroke="none">
+                  <rect x="4" y="4" width="5" height="16" rx="1" />
+                  <rect x="15" y="4" width="5" height="16" rx="1" />
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
                 </svg>
               )}
             </button>
