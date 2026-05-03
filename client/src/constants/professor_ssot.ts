@@ -167,6 +167,18 @@ T-B-75-90-S 암기:
   → ROU Asset + Lease Liability 잡고 → Rent Expense straight-line
   → ❌ 예전처럼 그냥 Rent Expense만 아님
 
+### Lease Liability 초기 인식
+- Lease Liability = 연간 납입액 × PV annuity factor (할인율, 리스기간)
+- 예) 연 $1,000 × 4년, IBR 10% → $1,000 × 3.1699 = $3,170
+
+할인율 우선순위:
+1순위: Implicit rate (리스 내재이자율) — 알 수 있을 때
+2순위: IBR (Incremental Borrowing Rate) — Implicit rate 모를 때
+
+IBR vs 명목이자율:
+- IBR: 리스이용자가 비슷한 조건으로 차입 시 내야 할 이자율 (신용도 기반)
+- 명목이자율: 인플레이션 미반영 표면 이자율 → Lease에 사용 안 함
+
 ### Trap
 - ❌ Operating lease = 그냥 Rent Expense → ✔ ASC 842 이후 ROU/Liability 있음
 - ❌ 단기리스도 ROU 잡는다 → ✔ 1년 이하 예외, Rent Expense만
