@@ -174,11 +174,74 @@ function computeWeakList(srsCards: Record<string, SRCard>): WeakModuleRef[] {
     .slice(0, 8);
 }
 
+// ── Game sounds (Web Audio API) ───────────────────────────────
+function getGameAudioCtx(): AudioContext | null {
+  try { return new AudioContext() } catch { return null }
+}
+function playCorrectSoundGame() {
+  const ctx = getGameAudioCtx(); if (!ctx) return
+  ;([[880, 0], [1100, 0.13]] as [number, number][]).forEach(([freq, delay]) => {
+    const osc = ctx.createOscillator(), gain = ctx.createGain()
+    osc.connect(gain); gain.connect(ctx.destination)
+    osc.type = 'sine'; osc.frequency.value = freq
+    gain.gain.setValueAtTime(0.18, ctx.currentTime + delay)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.35)
+    osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.35)
+  })
+  setTimeout(() => { try { ctx.close() } catch { /* */ } }, 700)
+}
+function playWrongSoundGame() {
+  const ctx = getGameAudioCtx(); if (!ctx) return
+  const osc = ctx.createOscillator(), gain = ctx.createGain()
+  osc.connect(gain); gain.connect(ctx.destination)
+  osc.type = 'sawtooth'; osc.frequency.value = 180
+  gain.gain.setValueAtTime(0.18, ctx.currentTime)
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4)
+  osc.start(); osc.stop(ctx.currentTime + 0.4)
+  setTimeout(() => { try { ctx.close() } catch { /* */ } }, 500)
+}
+function playComboSoundGame() {
+  const ctx = getGameAudioCtx(); if (!ctx) return
+  ;([[660, 0], [880, 0.1], [1100, 0.2], [1320, 0.3]] as [number, number][]).forEach(([freq, delay]) => {
+    const osc = ctx.createOscillator(), gain = ctx.createGain()
+    osc.connect(gain); gain.connect(ctx.destination)
+    osc.type = 'sine'; osc.frequency.value = freq
+    gain.gain.setValueAtTime(0.15, ctx.currentTime + delay)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.25)
+    osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.25)
+  })
+  setTimeout(() => { try { ctx.close() } catch { /* */ } }, 800)
+}
+function playLevelUpSoundGame() {
+  const ctx = getGameAudioCtx(); if (!ctx) return
+  ;([[523, 0], [659, 0.15], [784, 0.3], [1047, 0.45]] as [number, number][]).forEach(([freq, delay]) => {
+    const osc = ctx.createOscillator(), gain = ctx.createGain()
+    osc.connect(gain); gain.connect(ctx.destination)
+    osc.type = 'sine'; osc.frequency.value = freq
+    gain.gain.setValueAtTime(0.2, ctx.currentTime + delay)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.5)
+    osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.5)
+  })
+  setTimeout(() => { try { ctx.close() } catch { /* */ } }, 1200)
+}
+
 // ─────────────────────────────────────────────────────────────
 export default function QuizPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const recordAnswer = useStudyStore((s) => s.recordAnswer);
+  const addXpLocal = useStudyStore((s) => s.addXpLocal);
+
+  // ── Game state ───────────────────────────────────────────────
+  const comboRef = useRef(0);
+  const [comboDisplay, setComboDisplay] = useState(0);
+  const [showGreenFlash, setShowGreenFlash] = useState(false);
+  const [showRedFlash, setShowRedFlash] = useState(false);
+  const [xpFloatKey, setXpFloatKey] = useState(0);
+  const [xpFloatLabel, setXpFloatLabel] = useState('+10 XP');
+  const [showXpFloat, setShowXpFloat] = useState(false);
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [levelUpLabel, setLevelUpLabel] = useState('');
 
   const mode = (params.get('mode') ?? 'interleave') as QuizMode;
   // Accept both `topicId` (legacy) and `moduleId` (used by the AI coach
@@ -395,6 +458,38 @@ export default function QuizPage() {
       sourceTrap: result.sourceTrap ?? null,
     };
     recordAnswer(result.topicId, result.correct, log);
+
+    // ── Game feedback ───────────────────────────────────────
+    const levelBefore = useStudyStore.getState().level;
+    if (result.correct) {
+      comboRef.current += 1;
+      const newCombo = comboRef.current;
+      setComboDisplay(newCombo);
+      let xpGain = 10;
+      if (newCombo >= 5) { xpGain += 10; playComboSoundGame(); }
+      else if (newCombo >= 3) { xpGain += 5; playCorrectSoundGame(); }
+      else { playCorrectSoundGame(); }
+      addXpLocal(xpGain);
+      setXpFloatLabel(`+${xpGain} XP`);
+      setXpFloatKey((k) => k + 1);
+      setShowXpFloat(true);
+      setTimeout(() => setShowXpFloat(false), 1000);
+      setShowGreenFlash(true);
+      setTimeout(() => setShowGreenFlash(false), 600);
+    } else {
+      comboRef.current = 0;
+      setComboDisplay(0);
+      playWrongSoundGame();
+      setShowRedFlash(true);
+      setTimeout(() => setShowRedFlash(false), 600);
+    }
+    const levelAfter = useStudyStore.getState().level;
+    if (levelAfter !== levelBefore) {
+      setLevelUpLabel(levelAfter);
+      setShowLevelUp(true);
+      playLevelUpSoundGame();
+      setTimeout(() => setShowLevelUp(false), 3000);
+    }
     // 오늘 누적 — 네트워크 재호출 없이 낙관적 증분.
     setTodayStats((prev) =>
       prev
@@ -607,6 +702,47 @@ export default function QuizPage() {
   };
 
   return (
+    <>
+      {/* Screen flash overlays */}
+      {showGreenFlash && (
+        <div className="fixed inset-0 pointer-events-none z-50 animate-greenFlash"
+          style={{ boxShadow: 'inset 0 0 0 7px #22c55e' }} />
+      )}
+      {showRedFlash && (
+        <div className="fixed inset-0 pointer-events-none z-50 animate-redFlash"
+          style={{ boxShadow: 'inset 0 0 0 7px #ef4444' }} />
+      )}
+
+      {/* XP float */}
+      {showXpFloat && (
+        <div key={xpFloatKey} className="fixed top-24 right-6 pointer-events-none z-50 animate-xpFloat font-extrabold text-lg"
+          style={{ color: '#4338ca' }}>
+          {xpFloatLabel}
+        </div>
+      )}
+
+      {/* Combo badge */}
+      {comboDisplay >= 3 && (
+        <div key={comboDisplay} className="fixed top-20 inset-x-0 flex justify-center pointer-events-none z-50">
+          <div className="animate-comboAppear px-5 py-1.5 rounded-full text-white font-bold text-sm shadow-lg"
+            style={{ background: comboDisplay >= 5 ? '#f59e0b' : '#ef4444' }}>
+            {comboDisplay >= 5 ? '🔥🔥' : '🔥'} Combo ×{comboDisplay}
+          </div>
+        </div>
+      )}
+
+      {/* Level-up overlay */}
+      {showLevelUp && (
+        <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
+          <div className="animate-levelUpPop bg-white rounded-3xl px-10 py-8 text-center shadow-2xl"
+            style={{ border: '3px solid #4338ca' }}>
+            <div className="text-5xl mb-2">🎉</div>
+            <div className="text-2xl font-extrabold" style={{ color: '#4338ca' }}>레벨업!</div>
+            <div className="text-xl font-bold mt-1" style={{ color: '#0f172a' }}>{levelUpLabel}</div>
+          </div>
+        </div>
+      )}
+
     <div className="p-4 sm:p-6">
       <div className="max-w-2xl mx-auto flex flex-col gap-4">
         {/* Mobile section drawer trigger — hidden on desktop */}
@@ -715,6 +851,7 @@ export default function QuizPage() {
 
       <MobileSectionDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </div>
+    </>
   );
 }
 

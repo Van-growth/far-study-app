@@ -68,9 +68,8 @@ interface StudyStore {
 }
 
 function xpLevel(xp: number): string {
-  if (xp >= 1000) return 'CPA'
-  if (xp >= 500) return '합격자'
-  if (xp >= 200) return '고득점자'
+  if (xp >= 500) return 'CPA'
+  if (xp >= 200) return '합격자'
   return '수험생'
 }
 

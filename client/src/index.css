@@ -178,3 +178,31 @@
 .animate-goalFadeOut {
   animation: goalFadeOut 1.5s ease-out forwards;
 }
+
+@keyframes xpFloat {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  60%  { opacity: 1; transform: translateY(-32px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-56px) scale(0.9); }
+}
+.animate-xpFloat {
+  animation: xpFloat 1s ease-out forwards;
+}
+
+@keyframes levelUpPop {
+  0%   { opacity: 0; transform: scale(0.6) translateY(20px); }
+  50%  { opacity: 1; transform: scale(1.06) translateY(-4px); }
+  75%  { transform: scale(0.97) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-levelUpPop {
+  animation: levelUpPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes comboAppear {
+  0%   { opacity: 0; transform: scale(0.5) translateY(8px); }
+  60%  { opacity: 1; transform: scale(1.15) translateY(-4px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-comboAppear {
+  animation: comboAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}

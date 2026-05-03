@@ -5,6 +5,12 @@ import { readExamInfo, daysBetween, todayKST, type ExamInfo } from '../component
 import DailyReflectionModal from '../components/home/DailyReflectionModal'
 import { hasTodayReflection, getExamDate } from '../lib/db'
 
+function streakEmoji(days: number): string {
+  if (days >= 30) return '🏆'
+  if (days >= 7) return '🔥🔥'
+  return '🔥'
+}
+
 const EXAM_LS_KEY = 'far_exam_date'
 
 const REFLECTION_KEY = 'far-reflection-date';
@@ -20,6 +26,7 @@ export default function HomePage() {
   const dailyGoal = useStudyStore((s) => s.dailyGoal)
   const [examInfo, setExamInfo] = useState<ExamInfo>(() => readExamInfo())
   const [showReflection, setShowReflection] = useState(false)
+  const [showStreakWarning, setShowStreakWarning] = useState(false)
 
   // Sync exam date from DB → localStorage on mount.
   // DashboardPage stores to Supabase only; readExamInfo() reads localStorage.
@@ -56,6 +63,17 @@ export default function HomePage() {
     setShowReflection(false);
   };
 
+  // 스트릭 손실 회피 경고 — 23시 이후 + 오늘 복습 0
+  useEffect(() => {
+    const check = () => {
+      const hour = new Date().getHours()
+      setShowStreakWarning(streakDays > 0 && todayReviewCount === 0 && hour >= 23)
+    }
+    check()
+    const timer = setInterval(check, 60_000)
+    return () => clearInterval(timer)
+  }, [streakDays, todayReviewCount])
+
   const goalAchieved = dailyGoal > 0 && todayReviewCount >= dailyGoal
   const goalPct = dailyGoal > 0 ? Math.min(100, (todayReviewCount / dailyGoal) * 100) : 0
 
@@ -75,13 +93,25 @@ export default function HomePage() {
           <span className="font-bold" style={{ color: '#4338ca' }}>🪙 {totalXp} XP</span>
           <span style={{ color: '#cbd5e1' }}>·</span>
           <span className="font-semibold" style={{ color: '#0f172a' }}>{level}</span>
-          {streakDays >= 2 && (
+          {streakDays >= 1 && (
             <>
               <span style={{ color: '#cbd5e1' }}>·</span>
-              <span className="font-semibold" style={{ color: '#f97316' }}>🔥 {streakDays}일 연속</span>
+              <span className="font-semibold" style={{ color: '#f97316' }}>
+                {streakEmoji(streakDays)} {streakDays}일 연속
+              </span>
             </>
           )}
         </div>
+
+        {/* 스트릭 손실 회피 경고 */}
+        {showStreakWarning && (
+          <div
+            className="w-full max-w-xs px-4 py-2.5 rounded-2xl text-sm font-semibold text-center"
+            style={{ background: '#fff7ed', border: '1.5px solid #fb923c', color: '#c2410c' }}
+          >
+            ⚠️ 오늘 복습 안 하면 스트릭이 끊겨요!
+          </div>
+        )}
 
         {/* Daily goal progress card */}
         <div
