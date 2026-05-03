@@ -147,7 +147,27 @@ OCI=Other Comprehensive Income / PL=Profit & Loss
 - warranty liability 인식이 핵심
 - 단, 비용 인식 시점(언제 expense 잡는지)은 연도 구분 영향 있음
 
-## Lease
-- 2024년부터 Lessor 문제 출제 안 됨
-- Lessee 문제만 공부/복습/분석/출제 대상
-- Lessor 관련 문제 전부 제외`;
+## Lease (Lessee 기준 — 2024년부터 Lessor 출제 없음)
+
+### Finance Lease 5가지 조건 (하나라도 해당되면 Finance Lease)
+T-B-75-90-S 암기:
+1. Title transfer — 리스 종료 시 소유권 이전
+2. Bargain purchase option — 시장가보다 낮은 가격 매입 옵션
+3. Lease term ≥ 75% of economic life
+4. PV of lease payments ≥ 90% of asset FV
+5. Specialized nature — 리스이용자 외 대안적 사용 불가
+
+구조적 구분:
+- 1~2번 (Title/Bargain): 소유권 이전 의도 → 돌려줄 생각 없음
+- 3~5번 (75%/90%/Specialized): 경제적 실질상 소유와 유사 → 형식은 반납, 실질은 취득
+
+### Operating Lease
+- 1년 이하 단기 리스 → Rent Expense만 (ROU/Lease Liability 없음)
+- 1년 초과 Operating Lease (ASC 842 이후):
+  → ROU Asset + Lease Liability 잡고 → Rent Expense straight-line
+  → ❌ 예전처럼 그냥 Rent Expense만 아님
+
+### Trap
+- ❌ Operating lease = 그냥 Rent Expense → ✔ ASC 842 이후 ROU/Liability 있음
+- ❌ 단기리스도 ROU 잡는다 → ✔ 1년 이하 예외, Rent Expense만
+- ❌ Lessor 문제 → ✔ 2024년부터 출제 없음, Lessee만`;
