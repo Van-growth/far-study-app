@@ -63,11 +63,12 @@ export default function HomePage() {
     setShowReflection(false);
   };
 
-  // 스트릭 손실 회피 경고 — 23시 이후 + 오늘 복습 0
+  // 스트릭 손실 회피 경고 — 점심(12~13시) / 퇴근(18~19시) / 자정 전(23시~) + 오늘 복습 0
   useEffect(() => {
     const check = () => {
       const hour = new Date().getHours()
-      setShowStreakWarning(streakDays > 0 && todayReviewCount === 0 && hour >= 23)
+      const isWarningHour = (hour >= 12 && hour < 14) || (hour >= 18 && hour < 20) || hour >= 23
+      setShowStreakWarning(streakDays > 0 && todayReviewCount === 0 && isWarningHour)
     }
     check()
     const timer = setInterval(check, 60_000)
