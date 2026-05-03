@@ -179,6 +179,59 @@ IBR vs 명목이자율:
 - IBR: 리스이용자가 비슷한 조건으로 차입 시 내야 할 이자율 (신용도 기반)
 - 명목이자율: 인플레이션 미반영 표면 이자율 → Lease에 사용 안 함
 
+### Finance Lease 분개 3단계
+
+**1단계: Inception (리스 개시)**
+Dr. ROU Asset / Cr. Lease Obligation
+
+Lease Obligation = PV of lease payments:
+- 구성: ① Annual fixed lease payment (항상 포함)
+  + ② Option price (구매옵션 행사 시) 또는 ③ Guaranteed Residual Value (GRV)
+  → 1번만 / 1+2 / 1+3 조합만 나옴
+- 할인율: Lessor's implicit rate 우선 / 모르면 IBR
+- ROU = Lease Obligation 금액과 동일
+
+cf) Initial Direct Cost (피할 수 없는 비용):
+→ Cash 추가 지출 + ROU에 가산
+
+**2단계: Payment (연말 지급)**
+Dr. Interest Expense
+Dr. Lease Obligation
+Cr. Cash
+
+- Interest Expense = Beginning Lease Obligation × 할인율
+- 1년 미만이면 월할 계산
+- Cash 지급은 일정 / Interest는 점점 감소 / Lease Obligation 상환은 점점 증가
+
+Payment 형태 2가지 추가:
+① Annuity Due (연초 지급):
+  - PV 계산 시 annuity due 기준으로 당겨서 계산
+  - 첫 해 inception 시점 바로: Dr. Lease Obligation / Cr. Cash (Interest 없음)
+  - 2년차부터 일반 분개와 동일
+
+② 연말 발생, 연초 지급:
+  - 연말: Dr. Interest Expense / Cr. Interest Payable
+  - 연초: Dr. Interest Payable + Dr. Lease Obligation / Cr. Cash
+
+**3단계: Depreciation**
+Dr. Depreciation Expense / Cr. Accumulated Depreciation
+
+Useful Life 기준:
+- 1~2번 조건(Title/Bargain): 돌려주지 않음 → Lease property 내용연수 기준
+- 3~5번 조건(75%/90%/Specialized): Lease term 동안 상각
+  → Lease term vs Useful life → Shorter 기준 (실제로는 거의 useful life > lease term)
+
+### Finance vs Operating 비용 패턴 비교 (시험 자주 출제)
+
+| 구분 | Interest Expense | Depreciation | 총 비용 패턴 |
+|------|-----------------|--------------|-------------|
+| Finance Lease | 초반 많고 점점 감소 | 일정 | 초반 高, 후반 低 |
+| Operating Lease | 없음 | 없음 | Flat (일정) |
+
+- Finance: 초반에 비용 많이 타고 갈수록 줄어드는 구조
+- Operating: 전체 비용이 flat하게 일정
+- ⭐ 최종 총비용은 동일 — 결국 같은 cash가 나가기 때문
+
 ### Trap
 - ❌ Operating lease = 그냥 Rent Expense → ✔ ASC 842 이후 ROU/Liability 있음
 - ❌ 단기리스도 ROU 잡는다 → ✔ 1년 이하 예외, Rent Expense만
