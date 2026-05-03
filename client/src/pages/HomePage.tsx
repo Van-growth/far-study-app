@@ -66,7 +66,7 @@ export default function HomePage() {
   // 스트릭 손실 회피 경고 — 점심(12~13시) / 퇴근(18~19시) / 자정 전(23시~) + 오늘 복습 0
   useEffect(() => {
     const check = () => {
-      const hour = new Date().getHours()
+      const hour = parseInt(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul', hour: 'numeric', hour12: false }), 10)
       const isWarningHour = (hour >= 12 && hour < 14) || (hour >= 18 && hour < 20) || hour >= 23
       setShowStreakWarning(streakDays > 0 && todayReviewCount === 0 && isWarningHour)
     }
