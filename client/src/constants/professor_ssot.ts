@@ -241,6 +241,12 @@ Useful Life 기준:
 3. Payment 형태 확인
    → 연말 지급 / Annuity Due(연초) / 연말 발생+연초 지급
 
+### Net of Current Portion (B/S 표시)
+- Lease Obligation = Current portion + Non-current portion
+- Net of current portion = 전체 Lease Obligation - Current portion = Non-current
+- Current portion = 다음 1년 내 상환될 Lease Obligation 원금
+- ❌ Current portion = 다음 연도 납입액 전체 → ✔ 원금 부분만 (Interest 제외)
+
 ### Trap
 - ❌ Operating lease = 그냥 Rent Expense → ✔ ASC 842 이후 ROU/Liability 있음
 - ❌ 단기리스도 ROU 잡는다 → ✔ 1년 이하 예외, Rent Expense만
