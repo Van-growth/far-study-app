@@ -145,4 +145,9 @@ OCI=Other Comprehensive Income / PL=Profit & Loss
 - 연도별 % 쪼개기 X
 - 총매출 × total warranty % = warranty expense (I/S 접근법)
 - warranty liability 인식이 핵심
-- 단, 비용 인식 시점(언제 expense 잡는지)은 연도 구분 영향 있음`;
+- 단, 비용 인식 시점(언제 expense 잡는지)은 연도 구분 영향 있음
+
+## Lease
+- 2024년부터 Lessor 문제 출제 안 됨
+- Lessee 문제만 공부/복습/분석/출제 대상
+- Lessor 관련 문제 전부 제외`;
