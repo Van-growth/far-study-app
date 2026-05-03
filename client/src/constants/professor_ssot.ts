@@ -274,6 +274,20 @@ Useful Life 기준:
 ① Lease Obligation amortization 상각
 ② ROU Asset 상각비용만큼 제거
 
+### Leasehold Improvement
+- 임차한 자산에 Capex 발생 시
+- Dr. Leasehold Improvement / Cr. Cash
+
+Useful Life 기준 → Shorter of:
+① Lease remaining term
+   - 계약 갱신 옵션이 probable하면 잔여기간에 포함해서 계산
+② Leasehold Improvement economic useful life
+
+### Operating Lease 시험 출제 포인트
+- ⭐ 비용 Even out (straight-line) 이 제일 핵심
+- 🎯 "Lease expense 얼마?" 문제가 제일 많이 출제
+- 계산: 전체 총 납입액 / 리스기간 = 매기 균등 Lease expense
+
 ### Trap
 - ❌ Operating lease = 그냥 Rent Expense → ✔ ASC 842 이후 ROU/Liability 있음
 - ❌ 단기리스도 ROU 잡는다 → ✔ 1년 이하 예외, Rent Expense만
