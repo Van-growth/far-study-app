@@ -54,7 +54,7 @@ async function loadTopics(): Promise<TopicRow[]> {
 }
 
 async function saveFlashResult(userId: string, topicId: string, result: 'known' | 'confused') {
-  await supabase.from(DB.TABLES.REVIEW_LOG).insert({
+  const { error } = await supabase.from(DB.TABLES.REVIEW_LOG).insert({
     user_id: userId,
     concept_id: null,
     topic_id: topicId,
@@ -62,6 +62,7 @@ async function saveFlashResult(userId: string, topicId: string, result: 'known' 
     source: 'flashcard',
     reviewed_at: new Date().toISOString(),
   })
+  if (error) console.error('[flashcard] saveFlashResult failed:', error)
 }
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -215,8 +216,6 @@ export default function ConceptNotesPage() {
     advance(index + 1)
   }
 
-  const handleSkip = () => advance(index + 1)
-
   const topic = deck[index]
   const known = results.filter(r => r?.result === 'known').length
 
@@ -324,7 +323,7 @@ export default function ConceptNotesPage() {
                     </button>
                   )}
 
-                  {/* Revealed: RULE + TRAP + Next */}
+                  {/* Revealed: RULE + TRAP + EXAMPLE */}
                   {revealed && topic && (
                     <div className="animate-fadeIn" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                       {topic.rule && (
@@ -348,20 +347,16 @@ export default function ConceptNotesPage() {
                           <ExampleText text={topic.example} />
                         </div>
                       )}
-                      <button
-                        onClick={handleSkip}
-                        className="w-full py-3.5 rounded-2xl text-white font-bold animate-slideUp"
-                        style={{ background: '#4f6ef7' }}
-                      >
-                        Next →
-                      </button>
+                      <p className="text-center text-xs font-medium" style={{ color: '#94a3b8' }}>
+                        아래 버튼으로 평가해주세요 ↓
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Bottom bar: ✕ Don't know | ✓ Got it */}
+            {/* Bottom bar: 몰라요 | 알아요 */}
             <div className="shrink-0 px-4 pb-4 pt-2 bg-[#f0f4f8]"
               style={{ borderTop: '1px solid #e2e8f0' }}>
               <div className="max-w-lg mx-auto flex gap-3">
@@ -370,14 +365,14 @@ export default function ConceptNotesPage() {
                   className="flex-1 py-4 rounded-2xl text-base font-black active:scale-95 transition-transform"
                   style={{ background: '#fef2f2', border: '2px solid #fca5a5', color: '#dc2626' }}
                 >
-                  ✕ Don't know
+                  ✕ 몰라요
                 </button>
                 <button
                   onClick={() => handleRate('known')}
                   className="flex-1 py-4 rounded-2xl text-base font-black active:scale-95 transition-transform"
                   style={{ background: '#f0fdf4', border: '2px solid #86efac', color: '#16a34a' }}
                 >
-                  ✓ Got it
+                  ✓ 알아요
                 </button>
               </div>
             </div>
