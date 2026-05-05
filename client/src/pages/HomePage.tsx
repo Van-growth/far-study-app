@@ -1,82 +1,150 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useStudyStore from '../store/studyStore'
-import { readExamInfo, daysBetween, todayKST, type ExamInfo } from '../components/home/ExamCountdown'
+import { daysBetween, todayKST } from '../components/home/ExamCountdown'
 import DailyReflectionModal from '../components/home/DailyReflectionModal'
 import { hasTodayReflection, getExamDate } from '../lib/db'
+import { supabase } from '../lib/supabase'
+import { DB } from '../constants/db'
 
-function streakEmoji(days: number): string {
-  if (days >= 30) return '🏆'
-  if (days >= 7) return '🔥🔥'
-  return '🔥'
+const EXAM_DATE_DEFAULT = '2026-06-08'
+const EXAM_LS_KEY = 'far_exam_date'
+const REFLECTION_KEY = 'far-reflection-date'
+
+interface WeakTopic {
+  topicId: string
+  topicName: string
+  confusedCount: number
 }
 
-const EXAM_LS_KEY = 'far_exam_date'
+async function loadWeakTopics(userId: string): Promise<WeakTopic[]> {
+  const since = new Date()
+  since.setDate(since.getDate() - 30)
 
-const REFLECTION_KEY = 'far-reflection-date';
+  const { data } = await supabase
+    .from(DB.TABLES.REVIEW_LOG)
+    .select('topic_id, result')
+    .eq('user_id', userId)
+    .not('topic_id', 'is', null)
+    .gte('reviewed_at', since.toISOString())
+
+  if (!data || data.length === 0) return []
+
+  const confused: Record<string, number> = {}
+  for (const r of data as { topic_id: string; result: string }[]) {
+    if (r.result === 'confused') {
+      confused[r.topic_id] = (confused[r.topic_id] ?? 0) + 1
+    }
+  }
+
+  const topIds = Object.entries(confused)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([id]) => id)
+
+  if (topIds.length === 0) return []
+
+  const { data: topics } = await supabase
+    .from(DB.TABLES.TOPICS)
+    .select('topic_id, topic_name')
+    .in('topic_id', topIds)
+
+  const nameMap: Record<string, string> = {}
+  for (const t of (topics ?? []) as { topic_id: string; topic_name: string }[]) {
+    nameMap[t.topic_id] = t.topic_name
+  }
+
+  return topIds.map(id => ({
+    topicId: id,
+    topicName: nameMap[id] ?? id,
+    confusedCount: confused[id] ?? 0,
+  }))
+}
+
+async function loadTodaySprintCount(userId: string): Promise<number> {
+  const midnight = new Date()
+  midnight.setHours(0, 0, 0, 0)
+  const { count } = await supabase
+    .from(DB.TABLES.REVIEW_LOG)
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .is('concept_id', null)
+    .gte('reviewed_at', midnight.toISOString())
+  return Math.ceil((count ?? 0) / 5)
+}
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const dueCount = useStudyStore((s) => s.conceptDueCount)
   const userId = useStudyStore((s) => s.userId)
-  const totalXp = useStudyStore((s) => s.totalXp)
-  const level = useStudyStore((s) => s.level)
   const streakDays = useStudyStore((s) => s.streakDays)
   const todayReviewCount = useStudyStore((s) => s.todayReviewCount)
-  const dailyGoal = useStudyStore((s) => s.dailyGoal)
-  const [examInfo, setExamInfo] = useState<ExamInfo>(() => readExamInfo())
+
+  const [examDate, setExamDate] = useState(EXAM_DATE_DEFAULT)
+  const [daysLeft, setDaysLeft] = useState<number | null>(
+    () => daysBetween(todayKST(), EXAM_DATE_DEFAULT),
+  )
+  const [sprintCount, setSprintCount] = useState(0)
+  const [weakTopics, setWeakTopics] = useState<WeakTopic[]>([])
   const [showReflection, setShowReflection] = useState(false)
   const [showStreakWarning, setShowStreakWarning] = useState(false)
 
-  // Sync exam date from DB → localStorage on mount.
-  // DashboardPage stores to Supabase only; readExamInfo() reads localStorage.
-  // This closes the gap so D-day always reflects the DB value.
+  // Sync exam date from DB
   useEffect(() => {
     if (!userId) return
     getExamDate(userId).then((date) => {
       if (!date) return
       try { localStorage.setItem(EXAM_LS_KEY, date) } catch { /* ignore */ }
-      setExamInfo({ examDate: date, daysLeft: daysBetween(todayKST(), date) })
+      setExamDate(date)
+      setDaysLeft(daysBetween(todayKST(), date))
     })
   }, [userId])
 
-  const { daysLeft, examDate } = examInfo
-
+  // Load sprint count + weak topics
   useEffect(() => {
-    if (!userId) return;
-    const today = new Date().toISOString().slice(0, 10);
-    // Skip if already seen today (avoids DB call on same-day revisits)
-    if (localStorage.getItem(REFLECTION_KEY) === today) return;
-    // Check DB in case user submitted from another device / cleared storage
+    if (!userId) return
+    loadTodaySprintCount(userId).then(setSprintCount)
+    loadWeakTopics(userId).then(setWeakTopics)
+  }, [userId])
+
+  // Reflection modal
+  useEffect(() => {
+    if (!userId) return
+    const today = new Date().toISOString().slice(0, 10)
+    if (localStorage.getItem(REFLECTION_KEY) === today) return
     hasTodayReflection(userId).then((has) => {
       if (has) {
-        localStorage.setItem(REFLECTION_KEY, today);
+        localStorage.setItem(REFLECTION_KEY, today)
       } else {
-        setShowReflection(true);
+        setShowReflection(true)
       }
-    });
-  }, [userId]);
+    })
+  }, [userId])
 
-  const handleClose = () => {
-    const today = new Date().toISOString().slice(0, 10);
-    localStorage.setItem(REFLECTION_KEY, today);
-    setShowReflection(false);
-  };
-
-  // 스트릭 손실 회피 경고 — 점심(12~13시) / 퇴근(18~19시) / 자정 전(23시~) + 오늘 복습 0
+  // Streak warning
   useEffect(() => {
     const check = () => {
-      const hour = parseInt(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul', hour: 'numeric', hour12: false }), 10)
-      const isWarningHour = (hour >= 12 && hour < 14) || (hour >= 18 && hour < 20) || hour >= 23
-      setShowStreakWarning(streakDays > 0 && todayReviewCount === 0 && isWarningHour)
+      const hour = parseInt(
+        new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul', hour: 'numeric', hour12: false }),
+        10,
+      )
+      const isWarning = (hour >= 12 && hour < 14) || (hour >= 18 && hour < 20) || hour >= 23
+      setShowStreakWarning(streakDays > 0 && todayReviewCount === 0 && isWarning)
     }
     check()
     const timer = setInterval(check, 60_000)
     return () => clearInterval(timer)
   }, [streakDays, todayReviewCount])
 
-  const goalAchieved = dailyGoal > 0 && todayReviewCount >= dailyGoal
-  const goalPct = dailyGoal > 0 ? Math.min(100, (todayReviewCount / dailyGoal) * 100) : 0
+  const handleClose = () => {
+    localStorage.setItem(REFLECTION_KEY, new Date().toISOString().slice(0, 10))
+    setShowReflection(false)
+  }
+
+  // Format exam date as "2026년 6월 8일"
+  const examDateLabel = (() => {
+    const [y, m, d] = examDate.split('-').map(Number)
+    return `${y}년 ${m}월 ${d}일`
+  })()
 
   return (
     <>
@@ -84,27 +152,46 @@ export default function HomePage() {
         <DailyReflectionModal userId={userId} onClose={handleClose} />
       )}
 
-      <div className="flex flex-col items-center justify-center min-h-[70vh] gap-8 px-6">
-
-        {/* XP / Level badge */}
-        <div
-          className="flex items-center gap-2 px-4 py-2 rounded-2xl text-sm"
-          style={{ background: 'white', border: '1.5px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
-        >
-          <span className="font-bold" style={{ color: '#4338ca' }}>🪙 {totalXp} XP</span>
-          <span style={{ color: '#cbd5e1' }}>·</span>
-          <span className="font-semibold" style={{ color: '#0f172a' }}>{level}</span>
-          {streakDays >= 1 && (
-            <>
-              <span style={{ color: '#cbd5e1' }}>·</span>
-              <span className="font-semibold" style={{ color: '#f97316' }}>
-                {streakEmoji(streakDays)} {streakDays}일 연속
-              </span>
-            </>
-          )}
+      <div
+        className="flex flex-col items-center justify-center px-6 gap-7"
+        style={{ height: 'calc(100dvh - 98px)' }}
+      >
+        {/* D-Day — dominant */}
+        <div className="text-center">
+          <div
+            className="font-extrabold leading-none"
+            style={{ fontSize: 88, color: '#4f6ef7', letterSpacing: '-3px' }}
+          >
+            {daysLeft !== null ? `D-${daysLeft}` : 'D-?'}
+          </div>
+          <p className="mt-2 text-sm" style={{ color: '#94a3b8' }}>
+            FAR 시험일 · {examDateLabel}
+          </p>
         </div>
 
-        {/* 스트릭 손실 회피 경고 */}
+        {/* Stats row */}
+        <div className="flex gap-3 w-full max-w-xs">
+          <div
+            className="flex-1 flex flex-col items-center py-4 rounded-2xl gap-1"
+            style={{ background: 'white', border: '1.5px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
+          >
+            <span className="text-xs font-medium" style={{ color: '#94a3b8' }}>오늘 스프린트</span>
+            <span className="text-2xl font-extrabold" style={{ color: '#0f172a' }}>
+              {sprintCount}회
+            </span>
+          </div>
+          <div
+            className="flex-1 flex flex-col items-center py-4 rounded-2xl gap-1"
+            style={{ background: 'white', border: '1.5px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
+          >
+            <span className="text-xs font-medium" style={{ color: '#94a3b8' }}>연속 스트릭</span>
+            <span className="text-2xl font-extrabold" style={{ color: streakDays > 0 ? '#f97316' : '#cbd5e1' }}>
+              {streakDays > 0 ? `🔥 ${streakDays}일` : '—'}
+            </span>
+          </div>
+        </div>
+
+        {/* Streak warning */}
         {showStreakWarning && (
           <div
             className="w-full max-w-xs px-4 py-2.5 rounded-2xl text-sm font-semibold text-center"
@@ -114,90 +201,57 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Daily goal progress card */}
-        <div
-          className="w-full max-w-xs px-4 py-3 rounded-2xl flex flex-col gap-2"
-          style={{
-            background: goalAchieved ? '#f0fdf4' : 'white',
-            border: `1.5px solid ${goalAchieved ? '#86efac' : '#e2e8f0'}`,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold" style={{ color: goalAchieved ? '#166534' : '#64748b' }}>
-              {goalAchieved ? '🎉 오늘 목표 달성!' : '오늘 복습'}
-            </span>
-            <span className="text-sm font-bold" style={{ color: goalAchieved ? '#166534' : '#4f6ef7' }}>
-              {todayReviewCount} / {dailyGoal} {goalAchieved ? '✅' : '🔥'}
-            </span>
-          </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: '#f1f5f9' }}>
+        {/* Weak Topics TOP 3 */}
+        <div className="w-full max-w-xs flex flex-col gap-2">
+          <span className="text-xs font-semibold" style={{ color: '#64748b' }}>
+            📉 개선 필요 TOP 3
+          </span>
+          {weakTopics.length === 0 ? (
             <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${goalPct}%`,
-                background: goalAchieved ? '#22c55e' : 'linear-gradient(90deg, #4f6ef7, #818cf8)',
-              }}
-            />
-          </div>
-        </div>
-
-        {/* D-day */}
-        <div className="text-center">
-          {daysLeft !== null ? (
-            <>
-              <span className="text-sm text-[#64748b]">FAR 시험까지</span>
-              <div className="flex items-baseline gap-1 justify-center mt-0.5">
-                <span className="text-4xl font-extrabold text-[#4f6ef7]">D-{daysLeft}</span>
-              </div>
-              {examDate && (
-                <p className="text-xs text-[#94a3b8] mt-0.5">{examDate}</p>
-              )}
-            </>
-          ) : (
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="text-sm text-[#94a3b8] underline underline-offset-2"
+              className="py-3 px-4 rounded-xl text-sm text-center"
+              style={{ background: 'white', border: '1.5px solid #e2e8f0', color: '#94a3b8' }}
             >
-              시험일 설정하기
-            </button>
+              아직 데이터 없음 — 스프린트를 시작해보세요!
+            </div>
+          ) : (
+            weakTopics.map((t, i) => (
+              <button
+                key={t.topicId}
+                onClick={() => navigate('/sprint')}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-left w-full transition-opacity hover:opacity-80 active:opacity-60"
+                style={{ background: 'white', border: '1.5px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
+              >
+                <span
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                  style={{ background: '#fef2f2', color: '#ef4444' }}
+                >
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold truncate" style={{ color: '#0f172a' }}>
+                    {t.topicName}
+                  </div>
+                  <div className="text-xs" style={{ color: '#94a3b8' }}>
+                    오답 {t.confusedCount}회
+                  </div>
+                </div>
+                <span className="text-lg" style={{ color: '#cbd5e1' }}>›</span>
+              </button>
+            ))
           )}
         </div>
 
-        {/* 복습하기 */}
+        {/* Sprint CTA */}
         <button
-          onClick={() => navigate('/history')}
-          className="w-full max-w-xs py-5 rounded-2xl flex flex-col items-center gap-1 font-bold text-white transition-opacity hover:opacity-90 active:opacity-80"
+          onClick={() => navigate('/sprint')}
+          className="w-full max-w-xs py-5 rounded-2xl flex items-center justify-center gap-2 font-bold text-white text-xl transition-opacity hover:opacity-90 active:opacity-80"
           style={{
-            background: dueCount > 0 ? '#ef4444' : '#4f6ef7',
-            boxShadow: dueCount > 0
-              ? '0 8px 24px rgba(239,68,68,0.3)'
-              : '0 8px 24px rgba(79,110,247,0.25)',
+            background: '#4f6ef7',
+            boxShadow: '0 8px 24px rgba(79,110,247,0.3)',
           }}
         >
-          <span className="text-xl">🔁 복습하기</span>
-          {dueCount > 0 ? (
-            <span className="text-sm font-medium opacity-90">{dueCount}개 대기 중</span>
-          ) : (
-            <span className="text-sm font-medium opacity-75">복습 카드 보기</span>
-          )}
+          ⚡ 스프린트 시작
         </button>
-
-        {/* 분석하기 */}
-        <button
-          onClick={() => navigate('/analyze')}
-          className="w-full max-w-xs py-4 rounded-2xl flex items-center justify-center gap-2 font-semibold transition-opacity hover:opacity-90 active:opacity-80"
-          style={{
-            background: 'white',
-            border: '1.5px solid #e2e8f0',
-            color: '#0f172a',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-          }}
-        >
-          <span className="text-lg">📝</span>
-          <span>분석하기</span>
-        </button>
-
       </div>
     </>
   )
