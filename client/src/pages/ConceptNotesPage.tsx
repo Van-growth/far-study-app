@@ -22,18 +22,11 @@ type Phase = 'menu' | 'quiz' | 'result'
 // ── Constants ──────────────────────────────────────────────────
 const MAX_CARDS = 5
 
-const TAB_CATEGORIES: Record<string, string[]> = {
-  'Asset vs. Liability': ['PPE', 'LEASE', 'INV', 'INVEST', 'EQUITY', 'INTANG', 'SW', 'CONT'],
-  'Valuation':           ['TAX', 'CF', 'CHANGE', 'CONSOL', 'NFP', 'VAL'],
-  'Financial Ratios':    ['EPS', 'INT', 'ANNUITY', 'REV', 'PART'],
-  'Required Disclosures':['TBS'],
-}
-
-const SIDEBAR_TABS = [
-  { key: 'Asset vs. Liability', icon: '⚖️' },
-  { key: 'Valuation',           icon: '💰' },
-  { key: 'Financial Ratios',    icon: '📊' },
-  { key: 'Required Disclosures',icon: '📢' },
+const CATEGORY_TABS = [
+  { key: 'Asset vs. Liability', icon: '⚖️', cats: ['PPE', 'LEASE', 'INV', 'INVEST', 'EQUITY', 'INTANG', 'SW', 'CONT'] },
+  { key: 'Valuation',           icon: '💰', cats: ['TAX', 'CF', 'CHANGE', 'CONSOL', 'NFP', 'VAL'] },
+  { key: 'Financial Ratios',    icon: '📊', cats: ['EPS', 'INT', 'ANNUITY', 'REV', 'PART'] },
+  { key: 'Required Disclosures',icon: '📢', cats: ['TBS'] },
 ]
 
 // ── Supabase ───────────────────────────────────────────────────
@@ -70,15 +63,13 @@ function categoryOf(topicId: string): string {
   return topicId.split('_')[0]
 }
 
-function pickDeck(allTopics: TopicRow[], tabKey: string): TopicRow[] {
-  const cats = TAB_CATEGORIES[tabKey] ?? []
+function pickDeck(allTopics: TopicRow[], cats: string[]): TopicRow[] {
   const pool = allTopics.filter(t => cats.includes(categoryOf(t.topicId)))
   const source = pool.length > 0 ? pool : allTopics
   return [...source].sort(() => Math.random() - 0.5).slice(0, MAX_CARDS)
 }
 
 // ── Sub-components ─────────────────────────────────────────────
-
 function RuleText({ text }: { text: string }) {
   const lines = text.split('\n').map(l => l.trimStart()).filter(l => l.length > 0)
   return (
@@ -129,7 +120,6 @@ function ExampleText({ text }: { text: string }) {
             </div>
           )
         }
-        // Highlight numbers (integers and decimals, possibly with commas)
         const parts = trimmed.split(/(\$?[\d,]+(?:\.\d+)?%?)/)
         return (
           <div key={i}>
@@ -174,7 +164,7 @@ function ProgressDots({ total, current, results }: {
 export default function ConceptNotesPage() {
   const userId = useStudyStore((s) => s.userId)
   const [allTopics, setAllTopics] = useState<TopicRow[]>([])
-  const [activeTab, setActiveTab] = useState<string | null>(null)
+  const [activeTabKey, setActiveTabKey] = useState<string | null>(null)
   const [phase, setPhase] = useState<Phase>('menu')
   const [deck, setDeck] = useState<TopicRow[]>([])
   const [index, setIndex] = useState(0)
@@ -185,9 +175,11 @@ export default function ConceptNotesPage() {
   useEffect(() => { loadTopics().then(setAllTopics) }, [])
 
   const startQuiz = (tabKey: string) => {
-    const picked = pickDeck(allTopics, tabKey)
+    const tab = CATEGORY_TABS.find(t => t.key === tabKey)
+    if (!tab) return
+    const picked = pickDeck(allTopics, tab.cats)
     if (picked.length === 0) return
-    setActiveTab(tabKey)
+    setActiveTabKey(tabKey)
     setDeck(picked)
     setIndex(0)
     setRevealed(false)
@@ -219,235 +211,202 @@ export default function ConceptNotesPage() {
   const topic = deck[index]
   const known = results.filter(r => r?.result === 'known').length
 
-  const sidebarNav = (
-    <nav className="flex flex-col gap-1 p-3">
-      {SIDEBAR_TABS.map(tab => {
-        const active = activeTab === tab.key && phase !== 'menu'
-        return (
-          <button key={tab.key}
-            onClick={() => startQuiz(tab.key)}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-left text-sm transition-colors"
-            style={{
-              background: active ? '#eef2ff' : 'transparent',
-              color: active ? '#4f6ef7' : '#475569',
-              fontWeight: active ? 600 : 400,
-            }}>
-            <span>{tab.icon}</span>
-            <span>{tab.key}</span>
-          </button>
-        )
-      })}
-    </nav>
-  )
-
   return (
-    <div className="flex h-full" style={{ minHeight: 0 }}>
+    <div className="flex flex-col" style={{ height: 'calc(100dvh - 98px)' }}>
 
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col shrink-0 bg-white"
-        style={{ width: 196, borderRight: '1.5px solid #e2e8f0' }}>
-        <div className="px-4 py-3" style={{ borderBottom: '1px solid #e2e8f0' }}>
-          <p className="text-xs font-bold text-[#0f172a] uppercase tracking-wider">📑 개념노트</p>
-        </div>
-        {sidebarNav}
-      </aside>
+      {/* ── 상단 카테고리 탭 (항상 표시) ── */}
+      <div
+        className="shrink-0 flex overflow-x-auto gap-2 px-3 pt-2.5 pb-2 bg-white"
+        style={{ borderBottom: '1.5px solid #e2e8f0' }}
+      >
+        {CATEGORY_TABS.map(tab => {
+          const active = activeTabKey === tab.key
+          return (
+            <button
+              key={tab.key}
+              onClick={() => startQuiz(tab.key)}
+              className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors"
+              style={{
+                background: active ? '#4f6ef7' : '#f1f5f9',
+                color: active ? 'white' : '#475569',
+              }}
+            >
+              {tab.icon} {tab.key}
+            </button>
+          )
+        })}
+      </div>
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-        {/* Mobile tabs */}
-        <div className="md:hidden flex overflow-x-auto gap-2 px-3 pt-3 pb-2 bg-white shrink-0"
-          style={{ borderBottom: '1.5px solid #e2e8f0' }}>
-          {SIDEBAR_TABS.map(tab => {
-            const active = activeTab === tab.key && phase !== 'menu'
-            return (
-              <button key={tab.key}
-                onClick={() => startQuiz(tab.key)}
-                className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors"
-                style={{
-                  background: active ? '#4f6ef7' : '#f1f5f9',
-                  color: active ? 'white' : '#475569',
-                }}>
-                {tab.icon} {tab.key}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* ── Menu ── */}
-        {phase === 'menu' && (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center space-y-3 px-6">
-              <div className="text-4xl">📑</div>
-              <p className="text-sm font-semibold text-[#0f172a]">카테고리를 선택해 플래시카드를 시작하세요</p>
-              <p className="text-xs text-muted">최대 {MAX_CARDS}장 랜덤</p>
-            </div>
+      {/* ── Menu ── */}
+      {phase === 'menu' && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-3 px-6">
+            <div className="text-4xl">📑</div>
+            <p className="text-sm font-semibold text-[#0f172a]">카테고리를 선택해 플래시카드를 시작하세요</p>
+            <p className="text-xs text-muted">최대 {MAX_CARDS}장 랜덤</p>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ── Quiz ── */}
-        {phase === 'quiz' && (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-auto">
-              <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
-
-                {/* Header row: dots + counter */}
-                <div className="flex items-center justify-between">
-                  <ProgressDots total={deck.length} current={index} results={results} />
-                  <span className="text-xs text-muted">{index + 1} / {deck.length}</span>
-                </div>
-
-                {/* Category badge */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full"
-                    style={{ background: '#eff6ff', color: '#4f6ef7' }}>
-                    {topic?.topicId}
-                  </span>
-                  <span className="text-xs text-muted truncate">{activeTab}</span>
-                </div>
-
-                {/* Card */}
-                <div className="bg-white rounded-2xl shadow-card border border-border" style={{ padding: 24 }}>
-                  {/* Front: topic name */}
-                  <p className="leading-snug" style={{ fontSize: 22, fontWeight: 600, color: '#0f172a', marginBottom: 16 }}>
-                    {topic?.topicName}
-                  </p>
-
-                  {/* Reveal button */}
-                  {!revealed && (
-                    <button
-                      onClick={() => setRevealed(true)}
-                      className="w-full py-3 rounded-xl text-sm font-bold transition-colors"
-                      style={{ background: '#eff6ff', color: '#4f6ef7' }}
-                    >
-                      Reveal RULE →
-                    </button>
-                  )}
-
-                  {/* Revealed: RULE + TRAP + EXAMPLE */}
-                  {revealed && topic && (
-                    <div className="animate-fadeIn" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                      {topic.rule && (
-                        <div className="rounded-xl p-3"
-                          style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                          <div className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1.5">RULE</div>
-                          <RuleText text={topic.rule} />
-                        </div>
-                      )}
-                      {topic.trap && (
-                        <div className="rounded-xl p-3"
-                          style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
-                          <div className="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1.5">TRAP ⚠️</div>
-                          <TrapText text={topic.trap} />
-                        </div>
-                      )}
-                      {topic.example && (
-                        <div className="rounded-xl p-3"
-                          style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">EXAMPLE</div>
-                          <ExampleText text={topic.example} />
-                        </div>
-                      )}
-                      <p className="text-center text-xs font-medium" style={{ color: '#94a3b8' }}>
-                        아래 버튼으로 평가해주세요 ↓
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom bar: 몰라요 | 알아요 */}
-            <div className="shrink-0 px-4 pb-4 pt-2 bg-[#f0f4f8]"
-              style={{ borderTop: '1px solid #e2e8f0' }}>
-              <div className="max-w-lg mx-auto flex gap-3">
-                <button
-                  onClick={() => handleRate('confused')}
-                  className="flex-1 py-4 rounded-2xl text-base font-black active:scale-95 transition-transform"
-                  style={{ background: '#fef2f2', border: '2px solid #fca5a5', color: '#dc2626' }}
-                >
-                  ✕ 몰라요
-                </button>
-                <button
-                  onClick={() => handleRate('known')}
-                  className="flex-1 py-4 rounded-2xl text-base font-black active:scale-95 transition-transform"
-                  style={{ background: '#f0fdf4', border: '2px solid #86efac', color: '#16a34a' }}
-                >
-                  ✓ 알아요
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Result ── */}
-        {phase === 'result' && (
+      {/* ── Quiz ── */}
+      {phase === 'quiz' && (
+        <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-auto">
-            <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
+            <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
 
-              {/* Score header */}
-              <div
-                className="rounded-2xl p-6 text-center text-white shadow-lg"
-                style={{
-                  background: known >= deck.length * 0.8
-                    ? 'linear-gradient(135deg, #22c55e, #16a34a)'
-                    : 'linear-gradient(135deg, #4f6ef7, #7c3aed)',
-                }}
-              >
-                <div className="text-5xl font-black mb-1">
-                  {known}<span className="text-2xl opacity-70">/{deck.length}</span>
-                </div>
-                <div className="text-white/80 text-sm">
-                  {deck.length > 0 ? Math.round((known / deck.length) * 100) : 0}% Got it
-                </div>
+              {/* 진행 dots + 카운터 */}
+              <div className="flex items-center justify-between">
+                <ProgressDots total={deck.length} current={index} results={results} />
+                <span className="text-xs text-muted">{index + 1} / {deck.length}</span>
               </div>
 
-              {/* Confused list */}
-              {confusedItems.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold text-muted uppercase tracking-wider px-1">
-                    Review Needed
+              {/* topic_id 뱃지 */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full"
+                  style={{ background: '#eff6ff', color: '#4f6ef7' }}>
+                  {topic?.topicId}
+                </span>
+                <span className="text-xs text-muted truncate">{activeTabKey}</span>
+              </div>
+
+              {/* 카드 */}
+              <div className="bg-white rounded-2xl shadow-card border border-border" style={{ padding: 24 }}>
+                <p className="leading-snug" style={{ fontSize: 22, fontWeight: 600, color: '#0f172a', marginBottom: 16 }}>
+                  {topic?.topicName}
+                </p>
+
+                {!revealed && (
+                  <button
+                    onClick={() => setRevealed(true)}
+                    className="w-full py-3 rounded-xl text-sm font-bold transition-colors"
+                    style={{ background: '#eff6ff', color: '#4f6ef7' }}
+                  >
+                    Reveal RULE →
+                  </button>
+                )}
+
+                {revealed && topic && (
+                  <div className="animate-fadeIn" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {topic.rule && (
+                      <div className="rounded-xl p-3"
+                        style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                        <div className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1.5">RULE</div>
+                        <RuleText text={topic.rule} />
+                      </div>
+                    )}
+                    {topic.trap && (
+                      <div className="rounded-xl p-3"
+                        style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+                        <div className="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1.5">TRAP ⚠️</div>
+                        <TrapText text={topic.trap} />
+                      </div>
+                    )}
+                    {topic.example && (
+                      <div className="rounded-xl p-3"
+                        style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">EXAMPLE</div>
+                        <ExampleText text={topic.example} />
+                      </div>
+                    )}
+                    <p className="text-center text-xs font-medium" style={{ color: '#94a3b8' }}>
+                      아래 버튼으로 평가해주세요 ↓
+                    </p>
                   </div>
-                  {confusedItems.map(t => (
-                    <div key={t.topicId} className="bg-white rounded-xl border border-border overflow-hidden">
-                      <div className="flex items-center gap-3 p-3.5">
-                        <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                          style={{ background: '#fef2f2', color: '#b91c1c' }}>✗</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                              style={{ background: '#eff6ff', color: '#4f6ef7' }}>
-                              {t.topicId}
-                            </span>
-                          </div>
-                          <p className="text-sm font-medium text-[#0f172a]">{t.topicName}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 하단 평가 버튼 */}
+          <div className="shrink-0 px-4 pb-4 pt-2 bg-[#f0f4f8]"
+            style={{ borderTop: '1px solid #e2e8f0' }}>
+            <div className="max-w-lg mx-auto flex gap-3">
+              <button
+                onClick={() => handleRate('confused')}
+                className="flex-1 py-4 rounded-2xl text-base font-black active:scale-95 transition-transform"
+                style={{ background: '#fef2f2', border: '2px solid #fca5a5', color: '#dc2626' }}
+              >
+                ✕ 몰라요
+              </button>
+              <button
+                onClick={() => handleRate('known')}
+                className="flex-1 py-4 rounded-2xl text-base font-black active:scale-95 transition-transform"
+                style={{ background: '#f0fdf4', border: '2px solid #86efac', color: '#16a34a' }}
+              >
+                ✓ 알아요
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Result ── */}
+      {phase === 'result' && (
+        <div className="flex-1 overflow-auto">
+          <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
+
+            {/* 점수 헤더 */}
+            <div
+              className="rounded-2xl p-6 text-center text-white shadow-lg"
+              style={{
+                background: known >= deck.length * 0.8
+                  ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                  : 'linear-gradient(135deg, #4f6ef7, #7c3aed)',
+              }}
+            >
+              <div className="text-5xl font-black mb-1">
+                {known}<span className="text-2xl opacity-70">/{deck.length}</span>
+              </div>
+              <div className="text-white/80 text-sm">
+                {deck.length > 0 ? Math.round((known / deck.length) * 100) : 0}% 알아요
+              </div>
+            </div>
+
+            {/* 몰라요 목록 */}
+            {confusedItems.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-muted uppercase tracking-wider px-1">
+                  복습 필요
+                </div>
+                {confusedItems.map(t => (
+                  <div key={t.topicId} className="bg-white rounded-xl border border-border overflow-hidden">
+                    <div className="flex items-center gap-3 p-3.5">
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                        style={{ background: '#fef2f2', color: '#b91c1c' }}>✗</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                            style={{ background: '#eff6ff', color: '#4f6ef7' }}>
+                            {t.topicId}
+                          </span>
                         </div>
+                        <p className="text-sm font-medium text-[#0f172a]">{t.topicName}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-3 pb-6">
-                <button
-                  onClick={() => { setPhase('menu'); setActiveTab(null) }}
-                  className="flex-1 py-3.5 rounded-2xl text-sm font-bold border border-border bg-white text-[#64748b]"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={() => activeTab && startQuiz(activeTab)}
-                  className="py-3.5 px-6 rounded-2xl text-white font-bold"
-                  style={{ background: 'linear-gradient(135deg, #4f6ef7, #7c3aed)', flex: 2 }}
-                >
-                  다시 {MAX_CARDS}장 ⚡
-                </button>
+                  </div>
+                ))}
               </div>
+            )}
+
+            {/* 액션 버튼 */}
+            <div className="flex gap-3 pb-6">
+              <button
+                onClick={() => { setPhase('menu'); setActiveTabKey(null) }}
+                className="flex-1 py-3.5 rounded-2xl text-sm font-bold border border-border bg-white text-[#64748b]"
+              >
+                카테고리 선택
+              </button>
+              <button
+                onClick={() => activeTabKey && startQuiz(activeTabKey)}
+                className="py-3.5 px-6 rounded-2xl text-white font-bold"
+                style={{ background: 'linear-gradient(135deg, #4f6ef7, #7c3aed)', flex: 2 }}
+              >
+                다시 {MAX_CARDS}장 ⚡
+              </button>
             </div>
           </div>
-        )}
-
-      </div>
+        </div>
+      )}
     </div>
   )
 }
