@@ -13,6 +13,12 @@ interface WeakTopic {
   confusedCount: number
 }
 
+interface FlashWeakTopic {
+  topicId: string
+  topicName: string
+  confusedCount: number
+}
+
 interface CriticalTopic {
   topicId: string
   topicName: string
@@ -40,6 +46,32 @@ async function loadWeakTopics(userId: string): Promise<WeakTopic[]> {
     .select('topic_id')
     .eq('user_id', userId)
     .eq('source', 'sprint')
+    .eq('result', 'confused')
+    .not('topic_id', 'is', null)
+    .gte('reviewed_at', since.toISOString())
+  if (!data || data.length === 0) return []
+  const counts: Record<string, number> = {}
+  for (const r of data as { topic_id: string }[]) {
+    counts[r.topic_id] = (counts[r.topic_id] ?? 0) + 1
+  }
+  const topIds = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => id)
+  const { data: topics } = await supabase
+    .from(DB.TABLES.TOPICS).select('topic_id, topic_name').in('topic_id', topIds)
+  const nameMap: Record<string, string> = {}
+  for (const t of (topics ?? []) as { topic_id: string; topic_name: string }[]) {
+    nameMap[t.topic_id] = t.topic_name
+  }
+  return topIds.map(id => ({ topicId: id, topicName: nameMap[id] ?? id, confusedCount: counts[id] ?? 0 }))
+}
+
+async function loadFlashWeakTopics(userId: string): Promise<FlashWeakTopic[]> {
+  const since = new Date()
+  since.setDate(since.getDate() - 30)
+  const { data } = await supabase
+    .from(DB.TABLES.REVIEW_LOG)
+    .select('topic_id')
+    .eq('user_id', userId)
+    .eq('source', 'flashcard')
     .eq('result', 'confused')
     .not('topic_id', 'is', null)
     .gte('reviewed_at', since.toISOString())
@@ -95,12 +127,14 @@ export default function DashboardPage() {
   const daysLeft = daysBetween(todayKST(), EXAM_DATE)
   const [sprintCount, setSprintCount] = useState(0)
   const [weakTopics, setWeakTopics] = useState<WeakTopic[]>([])
+  const [flashWeakTopics, setFlashWeakTopics] = useState<FlashWeakTopic[]>([])
   const [criticalTopics, setCriticalTopics] = useState<CriticalTopic[]>([])
 
   useEffect(() => {
     if (!userId) return
     loadTodaySprintCount(userId).then(setSprintCount)
     loadWeakTopics(userId).then(setWeakTopics)
+    loadFlashWeakTopics(userId).then(setFlashWeakTopics)
     loadCriticalTopics(userId).then(setCriticalTopics)
   }, [userId])
 
@@ -178,13 +212,56 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ④ 집중 필요 */}
-      {criticalTopics.length > 0 && (
-        <div className="w-full max-w-xs flex flex-col gap-1.5">
-          <span className="text-xs font-semibold" style={{ color: '#dc2626' }}>
-            🔴 집중 필요 (스프린트+개념 동시 취약)
-          </span>
-          {criticalTopics.map((t, i) => (
+      {/* ② 개념 취약 TOP3 */}
+      <div className="w-full max-w-xs flex flex-col gap-1.5">
+        <span className="text-xs font-semibold" style={{ color: '#1d4ed8' }}>
+          📘 개념 취약 TOP3 (플래시카드)
+        </span>
+        {flashWeakTopics.length === 0 ? (
+          <div
+            className="py-2.5 px-4 rounded-xl text-xs text-center"
+            style={{ background: '#eff6ff', border: '1.5px solid #93c5fd', color: '#3b82f6' }}
+          >
+            아직 기록이 없어요 — 개념 탭을 사용해보세요!
+          </div>
+        ) : (
+          flashWeakTopics.map((t, i) => (
+            <button
+              key={t.topicId}
+              onClick={() => navigate('/concept-notes')}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-left w-full transition-opacity hover:opacity-80 active:opacity-60"
+              style={{ background: '#eff6ff', border: '1.5px solid #93c5fd', boxShadow: '0 1px 4px rgba(59,130,246,0.08)' }}
+            >
+              <span
+                className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                style={{ background: '#dbeafe', color: '#1d4ed8' }}
+              >
+                {i + 1}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold truncate" style={{ color: '#1e3a5f' }}>{t.topicName}</div>
+                <div className="text-[10px]" style={{ color: '#60a5fa' }}>오답 {t.confusedCount}회</div>
+              </div>
+              <span className="text-base" style={{ color: '#93c5fd' }}>›</span>
+            </button>
+          ))
+        )}
+      </div>
+
+      {/* ③ 집중 필요 교집합 */}
+      <div className="w-full max-w-xs flex flex-col gap-1.5">
+        <span className="text-xs font-semibold" style={{ color: '#dc2626' }}>
+          🔴 집중 필요 (스프린트+개념 동시 취약)
+        </span>
+        {criticalTopics.length === 0 ? (
+          <div
+            className="py-2.5 px-4 rounded-xl text-xs text-center"
+            style={{ background: '#fef2f2', border: '1.5px solid #fca5a5', color: '#f87171' }}
+          >
+            아직 기록이 없어요
+          </div>
+        ) : (
+          criticalTopics.map((t, i) => (
             <button
               key={t.topicId}
               onClick={() => navigate('/sprint')}
@@ -203,9 +280,9 @@ export default function DashboardPage() {
               </div>
               <span className="text-base" style={{ color: '#fca5a5' }}>›</span>
             </button>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
 
       {/* ⑤ 개념 복습 시작 */}
       <button
