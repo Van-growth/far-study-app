@@ -12,7 +12,8 @@ const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 
 const mainTabs = [
   { label: '홈', path: '/' },
-  { label: '📝 분석', path: '/analyze' },
+  { label: '⚡ 복습', path: '/sprint' },
+  { label: '📑 개념', path: '/concept-notes' },
 ];
 
 const MORE_PATHS = new Set<string>([...MORE_MENU_ITEMS, ADMIN_MENU_ITEM].map((t) => t.path));
@@ -25,7 +26,6 @@ interface HeaderProps {
 export default function Header({ email, onSignOut }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const dueCount = useStudyStore((s) => s.conceptDueCount);
   const todayReviewCount = useStudyStore((s) => s.todayReviewCount);
   const prevCountRef = useRef(0);
   const isScience = location.pathname === '/science';
@@ -102,22 +102,6 @@ export default function Header({ email, onSignOut }: HeaderProps) {
             {tab.label}
           </button>
         ))}
-        {/* 복습 tab — replaces 대시보드 slot */}
-        <button
-          onClick={() => navigate('/history')}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors shrink-0 ${
-            isActive('/history')
-              ? 'bg-[#4f6ef7]/10 text-[#4f6ef7]'
-              : 'text-muted hover:text-[#0f172a] hover:bg-gray-100'
-          }`}
-        >
-          🔁 복습
-          {dueCount > 0 && (
-            <span className="w-4 h-4 rounded-full text-white text-[10px] font-bold inline-flex items-center justify-center" style={{ background: '#ef4444' }}>
-              {dueCount}
-            </span>
-          )}
-        </button>
         <div ref={moreRef} className="relative">
           <button
             onClick={() => setMoreOpen((v) => !v)}

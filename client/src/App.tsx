@@ -38,7 +38,7 @@ const PANEL_DEFAULT = 340;
 const MOBILE_TABS = [
   { label: '홈', icon: '🏠', path: '/' },
   { label: '복습', icon: '⚡', path: '/sprint' },
-  { label: '개념노트', icon: '📑', path: '/concept-notes' },
+  { label: '개념', icon: '📑', path: '/concept-notes' },
   { label: '더보기', icon: '···', path: '/more' },
 ];
 
