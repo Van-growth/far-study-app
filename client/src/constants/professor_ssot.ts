@@ -14,7 +14,7 @@ EXAMPLE : 숫자 예시
 ==============================================================
 RULE    : "If an amount is zero, enter 0" 지시문 있을 때만 0 먼저
           계정과목 먼저 입력 → 숫자 틀려도 부분점수 확보
-          쉬운 항목 먼저 (Par 발행 채권, FV>AC인 AFS)
+          쉬운 항목 먼저 (Par 발행 채권, Fair Value > Amortized Cost인 Available-for-Sale)
           1문제 20~25분 배분
           증감 먼저 구하고 → DR/CR 나중에 변환
 TRIGGER : "TBS" "simulation" "journal entry"
@@ -76,36 +76,36 @@ EXAMPLE : Building $10,000 + Remodeling $2,000 → 자본화 $12,000
 // [LEASE_001] Finance vs Operating 구분 — T-B-75-90-S
 ==============================================================
 RULE    : 아래 5가지 중 하나라도 해당 → Finance Lease
-          T : Title transfer
-          B : Bargain purchase option
-          75: Lease term >= 75% of economic life
-          90: PV of payments >= 90% of asset FV
-          S : Specialized nature
+          T : Title transfer (소유권 이전)
+          B : Bargain purchase option (염가매수선택권)
+          75: Lease term이 경제적 내용연수의 75% 이상
+          90: 리스료의 현재가치(Present Value of payments)가 자산 공정가치의 90% 이상
+          S : Specialized nature (대체 용도 없는 특수 자산)
 TRIGGER : "finance lease" "operating lease" "lease classification"
 TRAP    : 5가지 중 하나만 해당해도 Finance Lease
 EXAMPLE : Lease term 8년 / Economic life 10년 → 8/10 = 80% ≥ 75% → Finance Lease
-          PV of payments $92,000 / Asset FV $100,000 → 92% ≥ 90% → Finance Lease
+          Present Value of payments $92,000 / Asset Fair Value $100,000 → 92% ≥ 90% → Finance Lease
 
 ==============================================================
 // [LEASE_002] Finance Lease 분개 3단계
 ==============================================================
-RULE    : 1단계 Inception: Dr. ROU Asset / Cr. Lease Obligation
-          Lease Obligation = PV of (Fixed Payment +/- Option/GRV)
-          Initial Direct Cost → Cash 추가 + ROU 가산
+RULE    : 1단계 Inception: Dr. Right-of-Use (ROU) Asset / Cr. Lease Obligation
+          Lease Obligation = Present Value of (Fixed Payment +/- Option / Guaranteed Residual Value)
+          Initial Direct Cost → Cash 추가 + Right-of-Use Asset 가산
           2단계 Payment: Dr. Interest Expense + Dr. Lease Obligation / Cr. Cash
           Interest = Beginning Lease Obligation × 할인율
           Annuity Due 첫 해: Dr. Lease Obligation / Cr. Cash (이자 없음)
           3단계 Depreciation: Dr. Depreciation Expense / Cr. Accumulated Depreciation
           1~2번 조건 → Useful Life 기준 / 3~5번 조건 → Lease Term 기준 (Shorter)
 TRIGGER : "finance lease" "ROU" "lease obligation" "depreciation"
-TRAP    : 할인율 = Implicit rate 우선 / 모르면 IBR
+TRAP    : 할인율 = Implicit rate 우선 / 모르면 Incremental Borrowing Rate (IBR)
 
 ==============================================================
 // [LEASE_003] Operating Lease — 비용 항상 Even out
 ==============================================================
 RULE    : 핵심: 비용을 리스기간 전체로 균등 인식 (straight-line)
-          1년 이하 단기 → Rent Expense만 (ROU/Liability 없음)
-          1년 초과 → ROU Asset + Lease Liability + Lease Expense 균등
+          1년 이하 단기 → Rent Expense만 (Right-of-Use Asset / Lease Liability 없음)
+          1년 초과 → Right-of-Use Asset + Lease Liability + Lease Expense 균등
           Lease Expense = 전체 총 납입액 / 리스기간
 TRIGGER : "operating lease" "rent expense" "straight-line" "even out"
 TRAP    : Free Rent도 전체 리스기간으로 나눔 (유상기간으로 나누면 오답)
@@ -114,11 +114,11 @@ EXAMPLE : 5년 계약 1년 무료 총 $40,000 → $40,000 / 5년 = $8,000/년
 ==============================================================
 // [LEASE_004] Lessee RVG — Commencement Date 기준
 ==============================================================
-RULE    : RVG = Commencement Date 기준으로 PV 계산에 반영
+RULE    : Residual Value Guarantee (RVG) = Commencement Date 기준으로 Present Value 계산에 반영
           Lessee가 보증한 금액만 포함 / Unguaranteed → 포함 안 함
 TRIGGER : "residual value guarantee" "RVG" "lessee"
-TRAP    : Unguaranteed RVG → Lessee 계산 제외 (2024~ Lessor 출제 없음)
-EXAMPLE : Guaranteed RVG $10,000 → Lease Payment에 PV 포함
+TRAP    : Unguaranteed Residual Value Guarantee → Lessee 계산 제외 (2024~ Lessor 출제 없음)
+EXAMPLE : Guaranteed RVG $10,000 → Lease Payment에 Present Value 포함
           Unguaranteed RVG $5,000 → Lessee 계산에서 제외
 
 ==============================================================
@@ -150,11 +150,11 @@ EXAMPLE : Finance Lease 연 납입 $10,000 / 4년
 // [REV_001] Significant Financing Component — 1년 기준
 ==============================================================
 RULE    : 1년 이하 → Practical Expedient: face value 그대로 Revenue
-          1년 초과 → PV 할인 → Revenue / 차액 = Interest Revenue 기간 배분
-          Dr. Note Receivable / Cr. Revenue(PV) / Cr. Discount on Note(차액)
+          1년 초과 → Present Value 할인 → Revenue / 차액 = Interest Revenue 기간 배분
+          Dr. Note Receivable / Cr. Revenue(Present Value) / Cr. Discount on Note(차액)
 TRIGGER : "payment due in X months/years" → 1년 기준 먼저 판단
 TRAP    : 현가표 주어져도 1년 이하면 사용 X
-          혼합문제: 6개월 note = face value / 2년 note만 PV 적용
+          혼합문제: 6개월 note = face value / 2년 note만 Present Value 적용
 
 ==============================================================
 // [REV_002] Contract Modification — 별도 계약 vs 기존 변경
@@ -177,9 +177,9 @@ EXAMPLE : 쿠폰 1,000장 발행 / 경품 1개당 쿠폰 10장 필요
           → Premium Expense = 60개 × 경품원가
 
 ==============================================================
-// [REV_004] Warranty Assurance-type — I/S 접근법
+// [REV_004] Warranty Assurance-type — Income Statement 접근법
 ==============================================================
-RULE    : 총매출 × total warranty % = Warranty Expense (I/S 접근법)
+RULE    : 총매출 × total warranty % = Warranty Expense (Income Statement 접근법)
           연도별 % 쪼개기 X → 총매출 기준 한번에
 TRIGGER : "warranty" "assurance-type" "estimated warranty"
 TRAP    : 연도별로 % 나눠 계산하면 오답
@@ -191,93 +191,93 @@ EXAMPLE : 총매출 $500,000 / Warranty % 2%
 // [INV_001] Inventory Periodic System — COGS & 방향성
 ==============================================================
 RULE    : COGS = Beginning Inventory + Purchases - Ending Inventory
-          EI ↑ → COGS ↓ (반비례) → NI ↑ → Tax ↑ (비례)
-          FIFO(EI높음→NI높음) vs LIFO(EI낮음→NI낮음→절세)
+          Ending Inventory ↑ → COGS ↓ (반비례) → Net Income ↑ → Tax ↑ (비례)
+          FIFO(Ending Inventory 높음→Net Income 높음) vs LIFO(Ending Inventory 낮음→Net Income 낮음→절세)
 TRIGGER : "periodic system" "COGS" "ending inventory"
-TRAP    : EI와 COGS는 반비례 / EI와 NI·Tax는 비례
+TRAP    : Ending Inventory와 COGS는 반비례 / Ending Inventory와 Net Income·Tax는 비례
 
 ==============================================================
 // [TAX_001] Deferred Tax — Enacted rate 사용
 ==============================================================
 RULE    : Enacted tax rate 사용 (current rate 아님)
-          Permanent: Life insurance premium / DRD → D열 0
-          NOL Carryforward → Temporary로 답
-          V/A 감소 → DTA↑ → Tax Expense↓ → NI↑
-          Tax benefit = DTA - V/A (B/S 기준)
+          Permanent: Life insurance premium / Dividends Received Deduction (DRD) → 차이 = 0
+          Net Operating Loss (NOL) Carryforward → Temporary difference로 처리
+          Valuation Allowance (V/A) 감소 → Deferred Tax Asset (DTA) ↑ → Tax Expense ↓ → Net Income ↑
+          Tax benefit = Deferred Tax Asset (DTA) - Valuation Allowance (V/A) (Balance Sheet 기준)
 TRIGGER : "deferred tax" "enacted rate" "DTA" "DTL" "NOL"
 TRAP    : Current rate 사용 금지 → 반드시 Enacted rate
 EXAMPLE : Temporary difference $100,000 / Enacted rate 25%
-          → DTL = $100,000 × 25% = $25,000
-          세율 30%→25% 변경: 기존 DTL $30,000 × (5%/30%) = $5,000 감소
+          → Deferred Tax Liability = $100,000 × 25% = $25,000
+          세율 30%→25% 변경: 기존 Deferred Tax Liability $30,000 × (5%/30%) = $5,000 감소
 
 ==============================================================
-// [EPS_001] EPS — IAC 먼저 계산
+// [EPS_001] EPS — Income Available to Common 먼저 계산
 ==============================================================
-RULE    : IAC = NI - 우선주 배당
+RULE    : Income Available to Common (IAC) = Net Income - 우선주 배당
           Cumulative preferred → declared 무관 차감
           Noncumulative preferred → declared된 것만 차감
-          주식배당 WAO → 소급 적용 (월할 아님)
-          CB Interest expense → 기초 BV × 유효이자율
+          주식배당 Weighted Average Outstanding shares (WAO) → 소급 적용 (월할 아님)
+          Convertible Bond Interest expense → 기초 Book Value × 유효이자율
           Anti-dilutive → 포함 금지
 TRIGGER : "EPS" "preferred dividend" "convertible bond" "diluted"
 TRAP    : 우선주 배당 월할 계산 X / Pretax interest → After-tax
-EXAMPLE : NI $100,000 / Cumulative preferred dividend $10,000
-          → IAC = $90,000 / WAO = 45,000주
+EXAMPLE : Net Income $100,000 / Cumulative preferred dividend $10,000
+          → Income Available to Common = $90,000 / Weighted Average Outstanding = 45,000주
           → Basic EPS = $90,000 / 45,000 = $2.00
 
 ==============================================================
 // [INVEST_001] Investments — 분류별 처리
 ==============================================================
-RULE    : FVTNI: 연말 FV → NI / 주식배당 → No entry
-          지분법: NI(+) / 배당(-) / 상각(-) / FV → No entry
-          AFS Credit Loss = Min(AC-PV of ECF, AC-FV) / FV>AC이면 0
-          HTM: FV 무시, AC-PV of ECF 전액 Credit loss
+RULE    : Fair Value Through Net Income (FVTNI): 연말 Fair Value → Net Income / 주식배당 → No entry
+          지분법: Net Income(+) / 배당(-) / 상각(-) / Fair Value → No entry
+          Available-for-Sale (AFS) Credit Loss = Min(Amortized Cost - PV of Expected Cash Flows, Amortized Cost - Fair Value) / Fair Value > Amortized Cost이면 0
+          Held-to-Maturity (HTM): Fair Value 무시, Amortized Cost - PV of Expected Cash Flows 전액 Credit loss
           Par 발행 채권 → 상각 없음, 먼저 풀기
 TRIGGER : "FVTNI" "equity method" "AFS" "HTM" "credit loss"
 TRAP    : 주식 분류변경 불가 (채권만 가능)
-EXAMPLE : 지분법: NI $50,000 × 30% = $15,000 (Dr. Investment)
+EXAMPLE : 지분법: Net Income $50,000 × 30% = $15,000 (Dr. Investment)
                   배당 $10,000 × 30% = $3,000 (Cr. Investment)
-          AFS Credit Loss: AC $100,000 / PV of ECF $85,000 / FV $90,000
+          Available-for-Sale Credit Loss: Amortized Cost $100,000 / PV of Expected Cash Flows $85,000 / Fair Value $90,000
           → Min($15,000, $10,000) = $10,000
 
 ==============================================================
 // [EQUITY_001] Equity — 주식수 카운팅 핵심
 ==============================================================
-RULE    : Small dividend (<20~25%) → 시장가 / Large → par / Stock split → No JE
-          Par value method 재발행 이익 → APIC-C/S (Gain 아님)
+RULE    : Small dividend (<20~25%) → 시장가 / Large → par value / Stock split → No Journal Entry
+          Par value method 재발행 이익 → Additional Paid-in Capital - Common Stock (APIC-CS) (Gain 아님)
           Subscription receivable → Contra-equity (Asset 아님)
           자사주 제외하고 cash dividend 계산
 TRIGGER : "stock dividend" "treasury stock" "subscription" "warrant"
 TRAP    : Subscription receivable → Asset 처리 금지
 EXAMPLE : Small stock dividend 10% / 시장가 $15 / Par $1 / 발행주식 10,000주
-          → Dr. RE $15,000 / Cr. CS(Par) $1,000 / Cr. APIC $14,000
-          Stock split 2:1 → No JE (주석만)
+          → Dr. Retained Earnings $15,000 / Cr. Common Stock(Par) $1,000 / Cr. Additional Paid-in Capital $14,000
+          Stock split 2:1 → No Journal Entry (주석만)
 
 ==============================================================
 // [CF_001] Cash Flow (간접법) — 조정 항목
 ==============================================================
-RULE    : 이자비용 → 조정 없음 (NI에 이미 반영)
-          HTM Credit loss → 비현금 +조정
-          Gain → CFO 제거 / Cash proceeds → CFI 별도
+RULE    : 이자비용 → 조정 없음 (Net Income에 이미 반영)
+          Held-to-Maturity (HTM) Credit loss → 비현금 +조정
+          Gain → Cash from Operations (CFO) 제거 / Cash proceeds → Cash from Investing (CFI) 별도
           Loan 입출금 → Netting 금지
-          지분법 이익 → CFO 차감
-          AFS 미실현이익 → 조정 없음
+          지분법 이익 → Cash from Operations (CFO) 차감
+          Available-for-Sale (AFS) 미실현이익 → 조정 없음
 TRIGGER : "cash flow" "indirect method" "operating" "investing"
-TRAP    : Gain은 CFO 제거 후 CFI 별도 / 지분법이익 차감
-EXAMPLE : NI $50,000 / Gain on sale $8,000 / Depreciation $5,000
-          → CFO = $50,000 - $8,000 + $5,000 = $47,000
-          → CFI: Proceeds from sale 별도 기재
+TRAP    : Gain은 Cash from Operations 제거 후 Cash from Investing 별도 / 지분법이익 차감
+EXAMPLE : Net Income $50,000 / Gain on sale $8,000 / Depreciation $5,000
+          → Cash from Operations = $50,000 - $8,000 + $5,000 = $47,000
+          → Cash from Investing: Proceeds from sale 별도 기재
 
 ==============================================================
 // [CHANGE_001] Accounting Changes — 변경 유형별 처리
 ==============================================================
 RULE    : Principle → Retrospective (예외: LIFO는 Prospective)
           Estimate → Prospective
-          Error → Prior period RE 수정
-          EI error → 자동조정 / 감가상각 error → 비자동조정
+          Error → Prior period Retained Earnings 수정
+          Ending Inventory error → 자동조정 / 감가상각 error → 비자동조정
 TRIGGER : "accounting change" "estimate" "error correction" "retrospective"
 TRAP    : 회계변경 정당성 없으면 Auditor 적정의견 X
-EXAMPLE : Principle 변경(FIFO→WAC) → 소급적용, 기초 RE 수정
+EXAMPLE : Principle 변경(FIFO→Weighted Average Cost) → 소급적용, 기초 Retained Earnings 수정
           Estimate 변경(내용연수 5년→8년) → 당기부터 Prospective
 
 ==============================================================
@@ -285,37 +285,37 @@ EXAMPLE : Principle 변경(FIFO→WAC) → 소급적용, 기초 RE 수정
 ==============================================================
 RULE    : Full Goodwill = 연결 / Partial Goodwill = 지분법
           내부거래 100% 제거 (지분율 무관)
-          Downstream → NCI 영향 없음
-          Upstream → NCI에 지분율만큼 영향
+          Downstream → Noncontrolling Interest (NCI) 영향 없음
+          Upstream → Noncontrolling Interest (NCI)에 지분율만큼 영향
 TRIGGER : "consolidation" "NCI" "intercompany" "goodwill"
 TRAP    : 내부거래 제거는 지분율과 무관하게 100%
 EXAMPLE : 내부 재고 거래 $20,000 (미실현이익 $5,000)
           → 지분율 무관 $5,000 전액 제거
-          Downstream: NCI 영향 없음
-          Upstream: NCI 지분율(40%)만큼 $2,000 영향
+          Downstream: Noncontrolling Interest 영향 없음
+          Upstream: Noncontrolling Interest 지분율(40%)만큼 $2,000 영향
 
 ==============================================================
 // [FV_001] Fair Value Hierarchy — Level 판단
 ==============================================================
 RULE    : Level 1: Quoted + Active + Identical 3가지 모두
           Level 3: Unobservable (내부자료 = 무조건 Level 3)
-          주된시장 없으면 → 유리한 시장 (NRV max)
+          주된시장 없으면 → 유리한 시장 (Net Realizable Value max)
 TRIGGER : "fair value" "level 1" "level 2" "level 3" "hierarchy"
 TRAP    : 내부자료 → 무조건 Level 3
 EXAMPLE : NYSE 상장주식 시가 $50 → Level 1
           비상장 채권 브로커 호가 → Level 2
-          내부 DCF 모델 사용 → Level 3
+          내부 Discounted Cash Flow (DCF) 모델 사용 → Level 3
 
 ==============================================================
 // [NFP_001] NFP — 기부수익·비용 인식
 ==============================================================
 RULE    : Board designation → quasi endowment (without restriction)
-          기부수익 Long-term restricted → CFF (CFO 아님)
+          기부수익 Long-term restricted → Cash from Financing Activities (CFF) (Cash from Operations 아님)
           "services provided" "used in operations" → Expense
 TRIGGER : "NFP" "nonprofit" "endowment" "restricted" "donation"
 TRAP    : Board designation → without restriction (외부 제약 없음)
 EXAMPLE : Board가 $100,000 지정 → Without restriction 유지 (수익 영향 없음)
-          외부 기부자 장기제한 $50,000 → CFF (CFO 아님)
+          외부 기부자 장기제한 $50,000 → Cash from Financing Activities (Cash from Operations 아님)
 
 ==============================================================
 // [PART_001] Partnership Liquidation — 순서
@@ -331,21 +331,21 @@ EXAMPLE : 자산 $100,000 매각 / 손실 $20,000 → A:B:C = 3:3:4 배분
 ==============================================================
 RULE    :
   Cash: Face Value
-  AR: NRV = AR잔액 - Allowance
-  Inventory: Lower of Cost or NRV
-    FIFO/Average: NRV / LIFO: Replacement Cost
-  AFS: FV, Unrealized G/L → OCI
-  HTM: Amortized Cost
-  PP&E: Historical Cost - Acc. Depreciation
+  AR: Net Realizable Value (NRV) = AR잔액 - Allowance
+  Inventory: Lower of Cost or Net Realizable Value (NRV)
+    FIFO/Average: Net Realizable Value / LIFO: Replacement Cost
+  Available-for-Sale (AFS): Fair Value, Unrealized G/L → Other Comprehensive Income (OCI)
+  Held-to-Maturity (HTM): Amortized Cost
+  Property, Plant & Equipment (PP&E): Historical Cost - Accumulated Depreciation
   Intangible: Cost - Amortization (잔존가치 0)
-  Bond: PV of (P+I) × Market Rate at issuance
-  PBO: BB + Service Cost + Interest + Actuarial - Benefits Paid
-  Stock Option: FV at Grant Date, Service Period 동안 비용
+  Bond: PV of (Principal + Interest) × Market Rate at issuance
+  Projected Benefit Obligation (PBO): Beginning Balance + Service Cost + Interest + Actuarial - Benefits Paid
+  Stock Option: Fair Value at Grant Date, Service Period 동안 비용
 TRIGGER : "valuation" "measurement" "lower of" "NRV" "amortized cost"
 TRAP    : US GAAP Impairment → 손상 후 회복 불가
-EXAMPLE : Inventory FIFO: Cost $100 / NRV $90 → $90 (Lower of)
-          HTM Bond: 취득가 $95,000 → FV $98,000 변동 무시 → $95,000 유지
-          PP&E: 취득 $200,000 - Acc.Dep $50,000 = BV $150,000
+EXAMPLE : Inventory FIFO: Cost $100 / Net Realizable Value $90 → $90 (Lower of)
+          Held-to-Maturity Bond: 취득가 $95,000 → Fair Value $98,000 변동 무시 → $95,000 유지
+          Property, Plant & Equipment: 취득 $200,000 - Accumulated Depreciation $50,000 = Book Value $150,000
 
 ==============================================================
 // [CONT_001] Gain Contingency — 항상 $0
@@ -393,4 +393,4 @@ TRIGGER : "annuity due" "beginning of period" "payments at beginning"
 TRAP    : Ordinary factor 그대로 사용 금지 → 반드시 변환
 EXAMPLE : PV(10%,3년) + $1 = 2.4869 + 1 = 3.4869
           또는 3.1699 × 1.1 = 3.4869
-`;
+`
