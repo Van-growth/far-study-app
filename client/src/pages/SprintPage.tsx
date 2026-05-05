@@ -90,6 +90,7 @@ async function saveTopicResult(userId: string, topicId: string, isCorrect: boole
     concept_id: null,
     topic_id: topicId,
     result: isCorrect ? 'known' : 'confused',
+    source: 'sprint',
     reviewed_at: new Date().toISOString(),
   })
 }
