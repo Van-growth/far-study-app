@@ -1,7 +1,6 @@
 export const MORE_MENU_ITEMS = [
   { label: '📊 분석', path: '/analyze' },
   { label: '❓ How to Use', path: '/how-to-use' },
-  { label: '📋 대시보드', path: '/dashboard' },
   { label: '✏️ 퀴즈', path: '/quiz?mode=interleave' },
   { label: '🏆 뱃지 & 성취', path: '/badges' },
   { label: '📈 학습 효과', path: '/learning' },

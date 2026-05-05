@@ -5,7 +5,6 @@ import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import ClaudePanel from './components/claude/ClaudePanel';
 import QuizPage from './pages/QuizPage';
-import DashboardPage from './pages/DashboardPage';
 import WrongPage from './pages/WrongPage';
 import SciencePage from './pages/SciencePage';
 import AnalyzePage from './pages/AnalyzePage';
@@ -58,7 +57,7 @@ function BottomTabBar({ email }: { email: string }) {
     return location.pathname.startsWith(path);
   };
 
-  const morePaths = ['/quiz', '/admin', '/dashboard', '/history', '/analyze'];
+  const morePaths = ['/quiz', '/admin', '/history', '/analyze'];
   const moreActive = morePaths.some((p) => location.pathname.startsWith(p));
 
   // Close more menu when viewport switches to desktop (md = 768px)
@@ -234,7 +233,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/" element={<HomePage />} />
             <Route path="/flashcard" element={<Navigate to="/" replace />} />
             <Route path="/quiz" element={<QuizPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<Navigate to="/" replace />} />
             <Route path="/wrong" element={<WrongPage />} />
             <Route path="/analyze" element={<AnalyzePage />} />
             <Route path="/replay" element={<ReplayPage />} />
