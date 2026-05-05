@@ -137,11 +137,19 @@ RULE    : Operating Lease — 3가지 핵심 계산
              → Lease Liability와 동일하게 움직임
              → 문제에서 별도 계산 없으면 Liability = ROU로 풀기
              → 별도 계산 주어지면 그걸 우선
+          Payment 완전한 분개:
+          Dr. Lease Expense              xxx  ← 균등 (I/S)
+          Dr. Lease Liability            xxx  ← 원금 상환
+              Cr. Cash                       xxx
+              Cr. Amortization—ROU Asset     xxx  ← ROU 감소
 TRIGGER : "operating lease" "rent expense" "straight-line" "even out" "lease expense"
 TRAP    : Finance Lease와 달리 ROU 상각을 별도로 계산하지 않음.
           Lease Expense 하나로 I/S 처리 끝.
           ROU 감소 = Lease Expense - Interest 부분이지만
           시험에서는 Liability = ROU로 풀면 대부분 정답.
+          Payment 분개 시 Amortization—ROU Asset 계정 누락하면 오답.
+          Lease Expense와 ROU Amortization은 별도 계정.
+          ROU Amortization = Lease Liability 상환액과 동일 금액.
 EXAMPLE : Annual lease payment $10,000 / 5년 / 이자율 6%
           Year 1 Lease Expense = $10,000 (균등, I/S 그대로)
           Year 1 Interest = Beginning Liability × 6%
