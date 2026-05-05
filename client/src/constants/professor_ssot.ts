@@ -120,15 +120,33 @@ TRIGGER : "finance lease" "ROU" "lease obligation" "depreciation"
 TRAP    : 할인율 = Implicit rate 우선 / 모르면 Incremental Borrowing Rate (IBR)
 
 ==============================================================
-// [LEASE_003] Operating Lease — 비용 항상 Even out
+// [LEASE_003] Operating Lease — 3가지 핵심 계산 (I/S 균등 / Liability / ROU)
 ==============================================================
-RULE    : 핵심: 비용을 리스기간 전체로 균등 인식 (straight-line)
-          1년 이하 단기 → Rent Expense만 (Right-of-Use Asset / Lease Liability 없음)
-          1년 초과 → Right-of-Use Asset + Lease Liability + Lease Expense 균등
-          Lease Expense = 전체 총 납입액 / 리스기간
-TRIGGER : "operating lease" "rent expense" "straight-line" "even out"
-TRAP    : Free Rent도 전체 리스기간으로 나눔 (유상기간으로 나누면 오답)
-EXAMPLE : 5년 계약 1년 무료 총 $40,000 → $40,000 / 5년 = $8,000/년
+RULE    : Operating Lease — 3가지 핵심 계산
+          ① I/S Lease Expense (항상 균등)
+             Dr. Lease Expense    xxx
+                 Cr. Cash             xxx (or Cr. Lease Liability)
+             → Straight-line으로 균등 인식
+             → 주어진 Lease Expense 그대로 I/S에 반영
+          ② Lease Liability 계산
+             → Finance Lease와 동일하게 풀기
+             → Beginning × Rate × m/12 = Interest
+             → Payment - Interest = 원금 상환
+             → Ending Liability = Beginning - 원금 상환
+          ③ ROU 잔액
+             → Lease Liability와 동일하게 움직임
+             → 문제에서 별도 계산 없으면 Liability = ROU로 풀기
+             → 별도 계산 주어지면 그걸 우선
+TRIGGER : "operating lease" "rent expense" "straight-line" "even out" "lease expense"
+TRAP    : Finance Lease와 달리 ROU 상각을 별도로 계산하지 않음.
+          Lease Expense 하나로 I/S 처리 끝.
+          ROU 감소 = Lease Expense - Interest 부분이지만
+          시험에서는 Liability = ROU로 풀면 대부분 정답.
+EXAMPLE : Annual lease payment $10,000 / 5년 / 이자율 6%
+          Year 1 Lease Expense = $10,000 (균등, I/S 그대로)
+          Year 1 Interest = Beginning Liability × 6%
+          Year 1 원금 상환 = $10,000 - Interest
+          ROU 잔액 = Lease Liability 잔액과 동일
 
 ==============================================================
 // [LEASE_004] Lessee RVG — Commencement Date 기준
