@@ -1,8 +1,5 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import useStudyStore from '../store/studyStore'
-import useClaudeStore from '../store/claudeStore'
-
-const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001'
 
 // ── Types ─────────────────────────────────────────────────────
 interface TopicRow {
@@ -19,7 +16,7 @@ interface SprintCard {
   topic: TopicRow
   question: string
   options: string[]
-  answer: string  // correct option text
+  answer: string
 }
 
 interface SprintResult {
@@ -32,7 +29,7 @@ type Phase = 'setup' | 'loading' | 'quiz' | 'result'
 type QCount = 5 | 10 | 15
 type TimerMode = 3 | 5 | 0
 
-// ── Supabase direct fetch (topics table is public read) ───────
+// ── Supabase fetch ─────────────────────────────────────────────
 import { supabase } from '../lib/supabase'
 import { DB } from '../constants/db'
 
@@ -56,15 +53,15 @@ async function loadAllTopics(): Promise<TopicRow[]> {
 }
 
 async function loadWrongTopics(userId: string): Promise<{ topicId: string; count: number }[]> {
-  const today = new Date()
-  today.setDate(today.getDate() - 30)
+  const since = new Date()
+  since.setDate(since.getDate() - 30)
   const { data, error } = await supabase
     .from(DB.TABLES.REVIEW_LOG)
     .select('topic_id')
     .eq('user_id', userId)
     .eq('result', 'confused')
     .not('topic_id', 'is', null)
-    .gte('reviewed_at', today.toISOString())
+    .gte('reviewed_at', since.toISOString())
   if (error || !data) return []
   const counts: Record<string, number> = {}
   for (const r of data as { topic_id: string }[]) {
@@ -87,13 +84,7 @@ async function loadTodaySprintCount(userId: string): Promise<number> {
   return Math.ceil((count ?? 0) / 5)
 }
 
-async function saveTopicResult(
-  userId: string,
-  topicId: string,
-  isCorrect: boolean,
-): Promise<void> {
-  const nextReview = new Date()
-  nextReview.setDate(nextReview.getDate() + (isCorrect ? 3 : 1))
+async function saveTopicResult(userId: string, topicId: string, isCorrect: boolean): Promise<void> {
   await supabase.from(DB.TABLES.REVIEW_LOG).insert({
     user_id: userId,
     concept_id: null,
@@ -103,7 +94,7 @@ async function saveTopicResult(
   })
 }
 
-// ── MCQ generation from topics data ───────────────────────────
+// ── [Task 1] MCQ — English questions ──────────────────────────
 function firstMeaningfulLine(text: string | null): string {
   if (!text) return ''
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 8)
@@ -113,10 +104,10 @@ function firstMeaningfulLine(text: string | null): string {
 function generateCard(topic: TopicRow, allTopics: TopicRow[]): SprintCard {
   const trigger = topic.triggerKeywords?.[0] ?? null
   const question = trigger
-    ? `"${trigger}"가 나올 때 올바른 처리는?`
-    : `다음 중 [${topic.topicName}] 기준으로 옳은 것은?`
+    ? `When you see "${trigger}", what is the correct treatment?`
+    : `What is the correct treatment for ${topic.topicName}?`
 
-  const correctAnswer = firstMeaningfulLine(topic.rule) || `${topic.topicName} → 교수 기준 적용`
+  const correctAnswer = firstMeaningfulLine(topic.rule) || `${topic.topicName} → apply professor SSOT rule`
 
   const distractors = allTopics
     .filter(t => t.topicId !== topic.topicId && t.rule)
@@ -127,26 +118,158 @@ function generateCard(topic: TopicRow, allTopics: TopicRow[]): SprintCard {
     .slice(0, 3)
 
   while (distractors.length < 3) {
-    distractors.push(['accrual 가능', 'expense 처리', 'capitalize 금지'][distractors.length] ?? '해당 없음')
+    distractors.push(['Accrue the full amount', 'Expense immediately', 'Capitalize and amortize'][distractors.length] ?? 'None of the above')
   }
 
   const shuffled = [correctAnswer, ...distractors].sort(() => Math.random() - 0.5)
   return { topic, question, options: shuffled, answer: correctAnswer }
 }
 
-function buildDeck(
-  allTopics: TopicRow[],
-  wrongTopicIds: string[],
-  count: number,
-): SprintCard[] {
+function buildDeck(allTopics: TopicRow[], wrongTopicIds: string[], count: number): SprintCard[] {
   const usable = allTopics.filter(t => t.rule && t.rule.length > 10)
   const wrongSet = new Set(wrongTopicIds)
-
   const wrongTopics = usable.filter(t => wrongSet.has(t.topicId))
   const otherTopics = usable.filter(t => !wrongSet.has(t.topicId)).sort(() => Math.random() - 0.5)
   const ordered = [...wrongTopics.sort(() => Math.random() - 0.5), ...otherTopics]
-
   return ordered.slice(0, count).map(topic => generateCard(topic, usable))
+}
+
+// ── [Task 3] Formatted text — Dr/Cr monospace ─────────────────
+function FormattedText({ text }: { text: string }) {
+  return (
+    <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', lineHeight: 1.75 }}>
+      {text.split('\n').map((line, i) => {
+        const trimmed = line.trimStart()
+        const isCr = trimmed.startsWith('Cr.')
+        return (
+          <div key={i} style={{ paddingLeft: isCr ? 24 : 0 }}>
+            {trimmed || ' '}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── [Task 4] TTS Overlay — Web Speech API ─────────────────────
+function TTSOverlay({ topic, onClose }: { topic: TopicRow; onClose: () => void }) {
+  const { lines, fullText, offsets } = useMemo(() => {
+    const parts: string[] = []
+    if (topic.rule) parts.push(topic.rule)
+    if (topic.trap) parts.push(topic.trap)
+    if (topic.example) parts.push(topic.example)
+
+    const rawLines = parts
+      .join('\n')
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0)
+
+    const offsets: number[] = []
+    let pos = 0
+    for (const line of rawLines) {
+      offsets.push(pos)
+      pos += line.length + 1
+    }
+
+    return { lines: rawLines, fullText: rawLines.join(' '), offsets }
+  }, [topic])
+
+  const [currentLine, setCurrentLine] = useState(0)
+
+  useEffect(() => {
+    const synth = window.speechSynthesis
+    if (!synth) { onClose(); return }
+
+    const utter = new SpeechSynthesisUtterance(fullText)
+    utter.lang = 'en-US'
+    utter.rate = 0.9
+
+    const pickVoice = () => {
+      const voices = synth.getVoices()
+      const voice =
+        voices.find(v => v.lang === 'en-US' && /samantha|victoria|zira|karen|google us/i.test(v.name)) ||
+        voices.find(v => v.lang === 'en-US') ||
+        voices.find(v => v.lang.startsWith('en'))
+      if (voice) utter.voice = voice
+    }
+
+    if (synth.getVoices().length > 0) {
+      pickVoice()
+    } else {
+      synth.addEventListener('voiceschanged', pickVoice, { once: true })
+    }
+
+    utter.onboundary = (e: SpeechSynthesisEvent) => {
+      let lineIdx = 0
+      for (let i = offsets.length - 1; i >= 0; i--) {
+        if (offsets[i] <= e.charIndex) { lineIdx = i; break }
+      }
+      setCurrentLine(lineIdx)
+    }
+
+    utter.onend = onClose
+
+    synth.speak(utter)
+    return () => { synth.cancel() }
+  }, [fullText, offsets, onClose])
+
+  // Show window of 7 lines centered on current
+  const windowSize = 7
+  const winStart = Math.max(0, Math.min(currentLine - 3, lines.length - windowSize))
+  const winEnd = Math.min(lines.length, winStart + windowSize)
+  const visibleLines = lines.slice(winStart, winEnd)
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex flex-col"
+      style={{ background: 'rgba(0,0,0,0.88)' }}
+      onClick={onClose}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-center gap-3 pt-12 pb-6 px-6">
+        <span
+          className="text-xs font-bold px-3 py-1.5 rounded-full shrink-0"
+          style={{ background: '#4f6ef7', color: 'white' }}
+        >
+          {topic.topicId}
+        </span>
+        <span className="text-white text-base font-semibold text-center leading-snug">
+          {topic.topicName}
+        </span>
+      </div>
+
+      {/* Subtitle lines */}
+      <div
+        className="flex-1 flex flex-col items-center justify-center px-8 gap-3"
+        onClick={e => e.stopPropagation()}
+      >
+        {visibleLines.map((line, i) => {
+          const absIdx = winStart + i
+          const isCurrent = absIdx === currentLine
+          return (
+            <p
+              key={absIdx}
+              className="text-center leading-relaxed transition-all duration-300 max-w-md"
+              style={{
+                color: isCurrent ? '#ffffff' : 'rgba(255,255,255,0.22)',
+                fontWeight: isCurrent ? 700 : 400,
+                fontSize: isCurrent ? '1.05rem' : '0.78rem',
+                transform: isCurrent ? 'scale(1.02)' : 'scale(1)',
+              }}
+            >
+              {line}
+            </p>
+          )
+        })}
+      </div>
+
+      {/* Footer */}
+      <div className="pb-12 text-center text-white/30 text-xs tracking-wider">
+        tap anywhere to dismiss
+      </div>
+    </div>
+  )
 }
 
 // ── Sound effects ──────────────────────────────────────────────
@@ -158,8 +281,7 @@ function playCorrect() {
       const o = ctx.createOscillator()
       const g = ctx.createGain()
       o.connect(g); g.connect(ctx.destination)
-      o.frequency.value = f
-      o.type = 'sine'
+      o.frequency.value = f; o.type = 'sine'
       g.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.1)
       g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.25)
       o.start(ctx.currentTime + i * 0.1)
@@ -199,10 +321,8 @@ function ConfettiEffect() {
           key={p.id}
           className="absolute animate-confetti"
           style={{
-            left: p.left,
-            top: -20,
-            width: p.size,
-            height: p.size,
+            left: p.left, top: -20,
+            width: p.size, height: p.size,
             background: p.color,
             borderRadius: Math.random() > 0.5 ? '50%' : '2px',
             animationDelay: p.delay,
@@ -215,9 +335,7 @@ function ConfettiEffect() {
 }
 
 // ── Progress dots ──────────────────────────────────────────────
-function ProgressDots({
-  total, current, results,
-}: { total: number; current: number; results: (boolean | null)[] }) {
+function ProgressDots({ total, current, results }: { total: number; current: number; results: (boolean | null)[] }) {
   return (
     <div className="flex gap-2 justify-center">
       {Array.from({ length: total }, (_, i) => {
@@ -229,11 +347,8 @@ function ProgressDots({
             key={i}
             className="rounded-full transition-all duration-300"
             style={{
-              width: isCurrent ? 12 : 8,
-              height: isCurrent ? 12 : 8,
-              background: done
-                ? (correct ? '#22c55e' : '#ef4444')
-                : isCurrent ? '#4f6ef7' : '#e2e8f0',
+              width: isCurrent ? 12 : 8, height: isCurrent ? 12 : 8,
+              background: done ? (correct ? '#22c55e' : '#ef4444') : isCurrent ? '#4f6ef7' : '#e2e8f0',
               boxShadow: isCurrent ? '0 0 0 3px rgba(79,110,247,0.25)' : 'none',
             }}
           />
@@ -243,69 +358,25 @@ function ProgressDots({
   )
 }
 
-// ── Timer ─────────────────────────────────────────────────────
+// ── Timer ──────────────────────────────────────────────────────
 function Timer({ seconds, unlimited }: { seconds: number; unlimited: boolean }) {
   if (unlimited) return <span className="text-xs text-muted">∞</span>
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
-  const warn = seconds < 60
   return (
     <span
       className="text-sm font-mono font-bold tabular-nums transition-colors"
-      style={{ color: warn ? '#ef4444' : '#64748b' }}
+      style={{ color: seconds < 60 ? '#ef4444' : '#64748b' }}
     >
       {m}:{s.toString().padStart(2, '0')}
     </span>
   )
 }
 
-// ── TTS hook ──────────────────────────────────────────────────
-function useTTS() {
-  const [playing, setPlaying] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-
-  const play = async (topicId: string, rule: string | null, trap: string | null) => {
-    if (playing) { audioRef.current?.pause(); setPlaying(false); return }
-    setLoading(true)
-    try {
-      const script = [rule, trap].filter(Boolean).join('\n\n')
-      const res = await fetch(`${API_URL}/api/tts/podcast`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topicId, oneLiner: rule?.split('\n')[0], trapPattern: trap }),
-      })
-      if (!res.ok) throw new Error('TTS failed')
-      const { audio_base64 } = await res.json() as { audio_base64?: string; script?: string }
-      if (!audio_base64) throw new Error('No audio')
-      const audio = new Audio(`data:audio/mp3;base64,${audio_base64}`)
-      audioRef.current = audio
-      audio.onended = () => setPlaying(false)
-      void audio.play()
-      setPlaying(true)
-    } catch {
-      /* TTS unavailable — silent fail */
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const stop = () => { audioRef.current?.pause(); setPlaying(false) }
-  return { play, stop, playing, loading }
-}
-
 // ── Setup view ────────────────────────────────────────────────
 function SetupView({
-  todayCount,
-  wrongTopics,
-  allTopics,
-  qCount,
-  setQCount,
-  timerMode,
-  setTimerMode,
-  onStart,
-  onStartFocused,
-  streak,
+  todayCount, wrongTopics, allTopics, qCount, setQCount,
+  timerMode, setTimerMode, onStart, onStartFocused, streak,
 }: {
   todayCount: number
   wrongTopics: { topicId: string; count: number }[]
@@ -321,11 +392,10 @@ function SetupView({
   const topicMap = Object.fromEntries(allTopics.map(t => [t.topicId, t.topicName]))
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-[#0f172a]">⚡ 스프린트</h1>
-          <p className="text-xs text-muted mt-0.5">5분 안에 교수님 SSOT 정복</p>
+          <p className="text-xs text-muted mt-0.5">Professor SSOT — MCQ drill</p>
         </div>
         <div className="text-right">
           <div className="text-2xl font-black text-[#4f6ef7]">{streak}</div>
@@ -333,7 +403,6 @@ function SetupView({
         </div>
       </div>
 
-      {/* Stats row */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-white rounded-2xl p-4 shadow-card border border-border text-center">
           <div className="text-3xl font-black text-[#0f172a]">{todayCount}</div>
@@ -345,7 +414,6 @@ function SetupView({
         </div>
       </div>
 
-      {/* Settings */}
       <div className="bg-white rounded-2xl p-4 shadow-card border border-border space-y-4">
         <div>
           <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">문제 수</div>
@@ -387,7 +455,6 @@ function SetupView({
         </div>
       </div>
 
-      {/* Start button */}
       <button
         onClick={onStart}
         className="w-full py-4 rounded-2xl text-white font-bold text-base shadow-lg active:scale-95 transition-transform"
@@ -396,12 +463,9 @@ function SetupView({
         스프린트 시작 ⚡
       </button>
 
-      {/* Wrong topics */}
       {wrongTopics.length > 0 && (
         <div className="bg-white rounded-2xl p-4 shadow-card border border-border">
-          <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
-            🎯 오답 토픽 집중 훈련
-          </div>
+          <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">🎯 오답 토픽 집중 훈련</div>
           <div className="space-y-2">
             {wrongTopics.slice(0, 8).map(({ topicId, count }) => (
               <button
@@ -410,20 +474,12 @@ function SetupView({
                 className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 transition-colors text-left"
               >
                 <div className="flex items-center gap-2">
-                  <span
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: '#fee2e2', color: '#ef4444' }}
-                  >
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#fee2e2', color: '#ef4444' }}>
                     {topicId}
                   </span>
-                  <span className="text-sm text-[#0f172a]">
-                    {topicMap[topicId] ?? topicId}
-                  </span>
+                  <span className="text-sm text-[#0f172a]">{topicMap[topicId] ?? topicId}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-[#ef4444] font-bold">{count}회 오답</span>
-                  <span className="text-xs text-muted">→</span>
-                </div>
+                <span className="text-xs text-[#ef4444] font-bold">{count}회 오답</span>
               </button>
             ))}
           </div>
@@ -433,15 +489,10 @@ function SetupView({
   )
 }
 
-// ── Quiz view ─────────────────────────────────────────────────
+// ── [Task 2 + 3] Quiz view ────────────────────────────────────
 function QuizView({
-  deck,
-  currentIdx,
-  results,
-  timeLeft,
-  unlimited,
-  onAnswer,
-  onNext,
+  deck, currentIdx, results, timeLeft, unlimited,
+  onAnswer, onNext, onOpenTTS,
 }: {
   deck: SprintCard[]
   currentIdx: number
@@ -450,6 +501,7 @@ function QuizView({
   unlimited: boolean
   onAnswer: (option: string) => void
   onNext: () => void
+  onOpenTTS: (topic: TopicRow) => void
 }) {
   const card = deck[currentIdx]
   const answered = results[currentIdx] !== null && results[currentIdx] !== undefined
@@ -457,7 +509,6 @@ function QuizView({
   const [selected, setSelected] = useState<string | null>(null)
   const [cardAnim, setCardAnim] = useState('')
 
-  // Reset selection when question changes
   useEffect(() => { setSelected(null); setCardAnim('') }, [currentIdx])
 
   const handleSelect = (opt: string) => {
@@ -474,7 +525,7 @@ function QuizView({
 
   return (
     <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
-      {/* Header: dots + timer */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <ProgressDots total={deck.length} current={currentIdx} results={results} />
         <Timer seconds={timeLeft} unlimited={unlimited} />
@@ -482,10 +533,7 @@ function QuizView({
 
       {/* topic_id badge */}
       <div className="flex items-center gap-2">
-        <span
-          className="text-[11px] font-bold px-2.5 py-1 rounded-full"
-          style={{ background: '#eff6ff', color: '#4f6ef7' }}
-        >
+        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#eff6ff', color: '#4f6ef7' }}>
           {card.topic.topicId}
         </span>
         <span className="text-xs text-muted truncate">{card.topic.topicName}</span>
@@ -498,35 +546,54 @@ function QuizView({
       >
         {/* Flash overlays */}
         {answered && isCorrect && (
-          <div
-            className="absolute inset-0 rounded-2xl animate-greenFlash pointer-events-none"
-            style={{ background: 'rgba(34,197,94,0.15)' }}
-          />
+          <div className="absolute inset-0 rounded-2xl animate-greenFlash pointer-events-none" style={{ background: 'rgba(34,197,94,0.15)' }} />
         )}
         {answered && !isCorrect && (
-          <div
-            className="absolute inset-0 rounded-2xl animate-redFlash pointer-events-none"
-            style={{ background: 'rgba(239,68,68,0.12)' }}
-          />
+          <div className="absolute inset-0 rounded-2xl animate-redFlash pointer-events-none" style={{ background: 'rgba(239,68,68,0.12)' }} />
         )}
 
         <p className="text-sm font-medium text-[#0f172a] leading-relaxed">{card.question}</p>
 
-        {/* Feedback after wrong */}
-        {answered && !isCorrect && (
-          <div className="mt-3 pt-3 border-t border-red-100 space-y-1.5">
+        {/* [Task 2] Full feedback — always shown on both correct and wrong */}
+        {answered && (
+          <div className="mt-4 pt-3 border-t border-gray-100 space-y-2 animate-fadeIn">
+            {/* Correct indicator */}
+            <div className="text-xs font-semibold" style={{ color: isCorrect ? '#15803d' : '#b91c1c' }}>
+              {isCorrect ? '✓ Correct!' : '✗ Incorrect'}
+            </div>
+
+            {/* RULE */}
             {card.topic.rule && (
-              <div className="text-xs">
-                <span className="font-bold text-[#4f6ef7]">RULE</span>
-                <span className="text-[#0f172a] ml-1">{firstMeaningfulLine(card.topic.rule)}</span>
+              <div className="rounded-xl p-3" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                <div className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1.5">RULE</div>
+                <FormattedText text={card.topic.rule} />
               </div>
             )}
+
+            {/* TRAP */}
             {card.topic.trap && (
-              <div className="text-xs">
-                <span className="font-bold text-[#ef4444]">TRAP</span>
-                <span className="text-muted ml-1">{firstMeaningfulLine(card.topic.trap)}</span>
+              <div className="rounded-xl p-3" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+                <div className="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1.5">TRAP ⚠️</div>
+                <FormattedText text={card.topic.trap} />
               </div>
             )}
+
+            {/* EXAMPLE */}
+            {card.topic.example && (
+              <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">EXAMPLE</div>
+                <FormattedText text={card.topic.example} />
+              </div>
+            )}
+
+            {/* TTS button */}
+            <button
+              onClick={() => onOpenTTS(card.topic)}
+              className="w-full py-2 rounded-xl text-xs font-bold transition-colors"
+              style={{ background: '#eff6ff', color: '#4f6ef7' }}
+            >
+              🎧 Listen
+            </button>
           </div>
         )}
       </div>
@@ -537,9 +604,7 @@ function QuizView({
           const label = optionLabels[i] ?? String(i + 1)
           const isSelected = selected === opt
           const isAnswer = opt === card.answer
-          let bg = '#fff'
-          let border = '#e2e8f0'
-          let textColor = '#0f172a'
+          let bg = '#fff', border = '#e2e8f0', textColor = '#0f172a'
           if (answered) {
             if (isAnswer) { bg = '#f0fdf4'; border = '#22c55e'; textColor = '#15803d' }
             else if (isSelected && !isAnswer) { bg = '#fef2f2'; border = '#ef4444'; textColor = '#b91c1c' }
@@ -554,9 +619,7 @@ function QuizView({
               className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all active:scale-[0.98]"
               style={{ background: bg, border: `1.5px solid ${border}`, color: textColor }}
             >
-              <span className="font-bold mr-2" style={{ color: answered && isAnswer ? '#15803d' : 'inherit' }}>
-                {label}.
-              </span>
+              <span className="font-bold mr-2">{label}.</span>
               {opt}
             </button>
           )
@@ -570,25 +633,26 @@ function QuizView({
           className="w-full py-3.5 rounded-2xl text-white font-bold animate-slideUp"
           style={{ background: isCorrect ? '#22c55e' : '#4f6ef7' }}
         >
-          {currentIdx + 1 >= deck.length ? '결과 보기 →' : '다음 문제 →'}
+          {currentIdx + 1 >= deck.length ? 'See Results →' : 'Next →'}
         </button>
       )}
     </div>
   )
 }
 
-// ── Result view ───────────────────────────────────────────────
-function ResultItem({ result, idx }: { result: SprintResult; idx: number }) {
+// ── [Task 2 + 3 + 4] Result item ──────────────────────────────
+function ResultItem({
+  result, onOpenTTS,
+}: {
+  result: SprintResult
+  onOpenTTS: (topic: TopicRow) => void
+}) {
   const [open, setOpen] = useState(false)
-  const { play, stop, playing, loading } = useTTS()
   const { card } = result
 
   return (
     <div className="bg-white rounded-xl border border-border overflow-hidden">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3 p-3.5 text-left"
-      >
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center gap-3 p-3.5 text-left">
         <span
           className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
           style={{
@@ -600,10 +664,7 @@ function ResultItem({ result, idx }: { result: SprintResult; idx: number }) {
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span
-              className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
-              style={{ background: '#eff6ff', color: '#4f6ef7' }}
-            >
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ background: '#eff6ff', color: '#4f6ef7' }}>
               {card.topic.topicId}
             </span>
             <span className="text-xs text-muted truncate">{card.topic.topicName}</span>
@@ -615,62 +676,45 @@ function ResultItem({ result, idx }: { result: SprintResult; idx: number }) {
 
       {open && (
         <div className="px-4 pb-4 pt-1 border-t border-border space-y-3 animate-fadeIn">
-          {/* Selected vs correct */}
           {!result.isCorrect && result.selected && (
             <div className="text-xs">
-              <span className="text-[#ef4444] font-semibold">선택: </span>
+              <span className="text-[#ef4444] font-semibold">Selected: </span>
               <span className="text-muted">{result.selected}</span>
             </div>
           )}
           <div className="text-xs">
-            <span className="text-[#22c55e] font-semibold">정답: </span>
+            <span className="text-[#22c55e] font-semibold">Correct: </span>
             <span className="text-[#0f172a]">{card.answer}</span>
           </div>
 
-          {/* RULE */}
           {card.topic.rule && (
-            <div className="bg-blue-50 rounded-xl p-3">
-              <div className="text-[10px] font-bold text-[#4f6ef7] uppercase tracking-wider mb-1">RULE</div>
-              <pre className="text-xs text-[#0f172a] whitespace-pre-wrap font-sans leading-relaxed">
-                {card.topic.rule}
-              </pre>
+            <div className="rounded-xl p-3" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+              <div className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1.5">RULE</div>
+              <FormattedText text={card.topic.rule} />
             </div>
           )}
 
-          {/* TRAP */}
           {card.topic.trap && (
-            <div className="bg-red-50 rounded-xl p-3">
-              <div className="text-[10px] font-bold text-[#ef4444] uppercase tracking-wider mb-1">TRAP ⚠️</div>
-              <pre className="text-xs text-muted whitespace-pre-wrap font-sans leading-relaxed">
-                {card.topic.trap}
-              </pre>
+            <div className="rounded-xl p-3" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+              <div className="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1.5">TRAP ⚠️</div>
+              <FormattedText text={card.topic.trap} />
             </div>
           )}
 
-          {/* EXAMPLE */}
           {card.topic.example && (
-            <div className="bg-gray-50 rounded-xl p-3">
-              <div className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1">EXAMPLE</div>
-              <pre className="text-xs text-[#0f172a] whitespace-pre-wrap font-sans leading-relaxed">
-                {card.topic.example}
-              </pre>
+            <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">EXAMPLE</div>
+              <FormattedText text={card.topic.example} />
             </div>
           )}
 
-          {/* Action buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => playing ? stop() : void play(card.topic.topicId, card.topic.rule, card.topic.trap)}
-              disabled={loading}
-              className="flex-1 py-2 rounded-xl text-xs font-bold transition-colors"
-              style={{
-                background: playing ? '#fee2e2' : '#eff6ff',
-                color: playing ? '#ef4444' : '#4f6ef7',
-              }}
-            >
-              {loading ? '로딩...' : playing ? '⏹ 정지' : '🎧 음성듣기'}
-            </button>
-          </div>
+          <button
+            onClick={() => onOpenTTS(card.topic)}
+            className="w-full py-2 rounded-xl text-xs font-bold transition-colors"
+            style={{ background: '#eff6ff', color: '#4f6ef7' }}
+          >
+            🎧 Listen
+          </button>
         </div>
       )}
     </div>
@@ -678,17 +722,14 @@ function ResultItem({ result, idx }: { result: SprintResult; idx: number }) {
 }
 
 function ResultView({
-  results,
-  elapsedSec,
-  maxStreak,
-  onRetry,
-  onBack,
+  results, elapsedSec, maxStreak, onRetry, onBack, onOpenTTS,
 }: {
   results: SprintResult[]
   elapsedSec: number
   maxStreak: number
   onRetry: () => void
   onBack: () => void
+  onOpenTTS: (topic: TopicRow) => void
 }) {
   const correct = results.filter(r => r.isCorrect).length
   const total = results.length
@@ -698,7 +739,6 @@ function ResultView({
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
-      {/* Score card */}
       <div
         className="rounded-2xl p-6 text-center text-white shadow-lg"
         style={{ background: correct >= total * 0.8 ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'linear-gradient(135deg, #4f6ef7, #7c3aed)' }}
@@ -706,41 +746,39 @@ function ResultView({
         <div className="text-5xl font-black mb-1">
           {correct}<span className="text-2xl opacity-70">/{total}</span>
         </div>
-        <div className="text-white/80 text-sm mb-3">{pct}% 정답률</div>
+        <div className="text-white/80 text-sm mb-3">{pct}% correct</div>
         <div className="flex justify-center gap-6 text-sm">
           <div className="text-center">
             <div className="font-bold">🔥 {maxStreak}</div>
-            <div className="text-white/70 text-xs">최고 연속</div>
+            <div className="text-white/70 text-xs">best streak</div>
           </div>
           <div className="text-center">
             <div className="font-bold">⏱ {elapsedMin}:{elapsedS.toString().padStart(2, '0')}</div>
-            <div className="text-white/70 text-xs">소요 시간</div>
+            <div className="text-white/70 text-xs">time</div>
           </div>
         </div>
       </div>
 
-      {/* Question review */}
       <div className="space-y-2">
-        <div className="text-xs font-semibold text-muted uppercase tracking-wider px-1">문제 리뷰</div>
+        <div className="text-xs font-semibold text-muted uppercase tracking-wider px-1">Review</div>
         {results.map((r, i) => (
-          <ResultItem key={i} result={r} idx={i} />
+          <ResultItem key={i} result={r} onOpenTTS={onOpenTTS} />
         ))}
       </div>
 
-      {/* Actions */}
       <div className="flex gap-3 pb-6">
         <button
           onClick={onBack}
           className="flex-1 py-3.5 rounded-2xl text-sm font-bold border border-border bg-white text-[#64748b]"
         >
-          대시보드
+          Back
         </button>
         <button
           onClick={onRetry}
           className="flex-2 py-3.5 px-6 rounded-2xl text-white font-bold"
           style={{ background: 'linear-gradient(135deg, #4f6ef7, #7c3aed)', flex: 2 }}
         >
-          다시 {total}문제 ⚡
+          Retry {total}Q ⚡
         </button>
       </div>
     </div>
@@ -765,44 +803,34 @@ export default function SprintPage() {
 
   const [timeLeft, setTimeLeft] = useState(0)
   const [elapsedSec, setElapsedSec] = useState(0)
-  const [startTime, setStartTime] = useState<number>(0)
 
   const [streak, setStreak] = useState(0)
   const [maxStreak, setMaxStreak] = useState(0)
   const [showConfetti, setShowConfetti] = useState(false)
 
+  // [Task 4] TTS overlay
+  const [ttsOverlayTopic, setTtsOverlayTopic] = useState<TopicRow | null>(null)
+
   const userId = useStudyStore((s) => s.userId)
   const storeStreak = useStudyStore((s) => s.streakDays)
-  const openPanel = useClaudeStore((s) => s.openPanel)
 
-  // Load setup data
-  useEffect(() => {
-    loadAllTopics().then(setAllTopics)
-  }, [])
+  useEffect(() => { loadAllTopics().then(setAllTopics) }, [])
 
   useEffect(() => {
     if (!userId || phase !== 'setup') return
-    Promise.all([
-      loadWrongTopics(userId),
-      loadTodaySprintCount(userId),
-    ]).then(([wt, cnt]) => {
+    Promise.all([loadWrongTopics(userId), loadTodaySprintCount(userId)]).then(([wt, cnt]) => {
       setWrongTopics(wt)
       setTodayCount(cnt)
     })
   }, [userId, phase])
 
-  // Timer countdown
   useEffect(() => {
     if (phase !== 'quiz' || timerMode === 0) return
     if (timeLeft <= 0) { setPhase('result'); return }
-    const id = setInterval(() => {
-      setTimeLeft(t => t - 1)
-      setElapsedSec(e => e + 1)
-    }, 1000)
+    const id = setInterval(() => { setTimeLeft(t => t - 1); setElapsedSec(e => e + 1) }, 1000)
     return () => clearInterval(id)
   }, [phase, timeLeft, timerMode])
 
-  // Elapsed timer (unlimited mode)
   useEffect(() => {
     if (phase !== 'quiz' || timerMode !== 0) return
     const id = setInterval(() => setElapsedSec(e => e + 1), 1000)
@@ -827,7 +855,6 @@ export default function SprintPage() {
     setMaxStreak(0)
     setTimeLeft(timerMode * 60)
     setElapsedSec(0)
-    setStartTime(Date.now())
     setPhase('quiz')
   }, [allTopics, wrongTopics, qCount, timerMode])
 
@@ -856,14 +883,9 @@ export default function SprintPage() {
     newSelected[currentIdx] = option
     setSelected(newSelected)
 
-    setSprintResults(prev => [
-      ...prev,
-      { card, selected: option, isCorrect },
-    ])
+    setSprintResults(prev => [...prev, { card, selected: option, isCorrect }])
 
-    if (userId) {
-      void saveTopicResult(userId, card.topic.topicId, isCorrect)
-    }
+    if (userId) void saveTopicResult(userId, card.topic.topicId, isCorrect)
   }, [deck, currentIdx, results, selected, streak, userId])
 
   const handleNext = useCallback(() => {
@@ -875,10 +897,6 @@ export default function SprintPage() {
     }
   }, [currentIdx, deck.length])
 
-  const handleRetry = () => {
-    setPhase('setup')
-  }
-
   if (phase === 'loading') {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -887,47 +905,57 @@ export default function SprintPage() {
     )
   }
 
-  if (phase === 'setup') {
-    return (
-      <SetupView
-        todayCount={todayCount}
-        wrongTopics={wrongTopics}
-        allTopics={allTopics}
-        qCount={qCount}
-        setQCount={setQCount}
-        timerMode={timerMode}
-        setTimerMode={setTimerMode}
-        onStart={() => launchSprint()}
-        onStartFocused={(tid) => launchSprint(tid)}
-        streak={storeStreak}
-      />
-    )
-  }
-
-  if (phase === 'quiz') {
-    return (
-      <>
-        {showConfetti && <ConfettiEffect />}
-        <QuizView
-          deck={deck}
-          currentIdx={currentIdx}
-          results={results}
-          timeLeft={timeLeft}
-          unlimited={timerMode === 0}
-          onAnswer={handleAnswer}
-          onNext={handleNext}
-        />
-      </>
-    )
-  }
-
   return (
-    <ResultView
-      results={sprintResults}
-      elapsedSec={elapsedSec}
-      maxStreak={maxStreak}
-      onRetry={handleRetry}
-      onBack={handleRetry}
-    />
+    <>
+      {/* [Task 4] TTS overlay */}
+      {ttsOverlayTopic && (
+        <TTSOverlay
+          topic={ttsOverlayTopic}
+          onClose={() => setTtsOverlayTopic(null)}
+        />
+      )}
+
+      {phase === 'setup' && (
+        <SetupView
+          todayCount={todayCount}
+          wrongTopics={wrongTopics}
+          allTopics={allTopics}
+          qCount={qCount}
+          setQCount={setQCount}
+          timerMode={timerMode}
+          setTimerMode={setTimerMode}
+          onStart={() => launchSprint()}
+          onStartFocused={(tid) => launchSprint(tid)}
+          streak={storeStreak}
+        />
+      )}
+
+      {phase === 'quiz' && (
+        <>
+          {showConfetti && <ConfettiEffect />}
+          <QuizView
+            deck={deck}
+            currentIdx={currentIdx}
+            results={results}
+            timeLeft={timeLeft}
+            unlimited={timerMode === 0}
+            onAnswer={handleAnswer}
+            onNext={handleNext}
+            onOpenTTS={setTtsOverlayTopic}
+          />
+        </>
+      )}
+
+      {phase === 'result' && (
+        <ResultView
+          results={sprintResults}
+          elapsedSec={elapsedSec}
+          maxStreak={maxStreak}
+          onRetry={() => setPhase('setup')}
+          onBack={() => setPhase('setup')}
+          onOpenTTS={setTtsOverlayTopic}
+        />
+      )}
+    </>
   )
 }
