@@ -73,6 +73,25 @@ EXAMPLE : Building $10,000 + Remodeling $2,000 → 자본화 $12,000
           3월 1일(Ready for Use) 이후 비용 → 즉시 Expense
 
 ==============================================================
+// [LEASE_000] Lease Definition — Pre-conditions — 2 conditions required for a contract to contain a lease
+==============================================================
+RULE    : A contract contains a lease only if BOTH conditions are met:
+          ① Identified Asset
+             - Specific asset must be identified
+             - Supplier must NOT have substantive substitution rights
+          ② Right to Control (during period of use)
+             - Right to obtain substantially all economic benefits
+             - Right to direct how and for what purpose asset is used
+TRIGGER : "lease or not" "identified asset" "right to control" "substitution rights" "contains a lease"
+TRAP    : If supplier has substantive right to substitute
+          the asset → NOT a lease (treated as service contract).
+          Must check BOTH conditions — one alone is not enough.
+EXAMPLE : ① Office suite 301 specifically identified → Lease ✓
+             "Any available office" → NOT a lease ✗
+          ② Lessee decides when/how to use equipment → Control ✓
+             Supplier controls usage → NOT a lease ✗
+
+==============================================================
 // [LEASE_001] Finance vs Operating 구분 — T-B-75-90-S
 ==============================================================
 RULE    : 아래 5가지 중 하나라도 해당 → Finance Lease

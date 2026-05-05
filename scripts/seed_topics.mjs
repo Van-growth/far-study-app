@@ -81,7 +81,9 @@ function parseSSOT() {
 
     // 필드 파싱: RULE / TRIGGER / TRAP / EXAMPLE
     // 각 필드는 "FIELDNAME : 값" 으로 시작하고, 다음 필드 또는 끝까지 이어짐
-    const fieldRegex = /^(RULE|TRIGGER|TRAP|EXAMPLE)\s*:\s*([\s\S]*?)(?=\n(?:RULE|TRIGGER|TRAP|EXAMPLE)\s*:|$)/gm
+    // ⚠️ m 플래그 제거: m 플래그 + $ 조합 시 $ 가 줄 끝에도 매치돼 멀티라인 첫 줄만 캡처되는 버그 방지
+    // (?:^|\n) 으로 줄 시작을 명시, $ 는 문자열 끝에만 매치하도록 m 플래그 없음
+    const fieldRegex = /(?:^|\n)(RULE|TRIGGER|TRAP|EXAMPLE)\s*:\s*([\s\S]*?)(?=\n(?:RULE|TRIGGER|TRAP|EXAMPLE)\s*:|$)/g
     let fm
     while ((fm = fieldRegex.exec(body)) !== null) {
       const [, field, rawVal] = fm
