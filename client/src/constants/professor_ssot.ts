@@ -73,6 +73,38 @@ EXAMPLE : Building $10,000 + Remodeling $2,000 → 자본화 $12,000
           3월 1일(Ready for Use) 이후 비용 → 즉시 Expense
 
 ==============================================================
+// [INT_004] Total Interest — Quick Calculation — 전체 기간 총 이자를 가장 빠르게 구하는 방법
+==============================================================
+RULE    : Total Interest (Quick Formula)
+          = Total Cash Payments - Beginning Principal (PV)
+
+          Interest Expense (더 냄):
+          Total Cash Out - Loan/Lease/Bond PV = Total Interest Expense
+
+          Interest Income (더 받음):
+          Total Cash In - Note/Bond PV = Total Interest Income/Revenue
+
+          적용 가능:
+          - Operating Lease → Interest Expense
+          - Finance Lease → Interest Expense
+          - Note Payable → Interest Expense
+          - Bond Payable → Interest Expense
+          - Note Receivable → Interest Income
+          - Significant Financing → Interest Revenue
+TRIGGER : "total interest" "interest over the life" "total interest expense" "interest income" "over the lease term"
+TRAP    : 납입 주기 확인 필수 (월/분기/반기/연간)
+          → 전체 납입 횟수 먼저 계산 후 Total Cash 산출
+          Bond 할인발행: Cash < Face Value → 차액도 Interest Expense
+          Bond 할증발행: Cash > Face Value → 차액은 Interest Expense 차감
+EXAMPLE : Lease PV $218,116 / 반기 납입 $30,000 / 3년
+          Total Cash = $30,000 × 6회 = $180,000
+          Total Interest = $180,000 - $218,116 = ...
+          → 납입액 합계가 PV보다 작으면 확인 필요
+
+          Note Receivable PV $8,573 / 만기 수령 $10,000
+          Total Interest Income = $10,000 - $8,573 = $1,427
+
+==============================================================
 // [LEASE_000] Lease Definition — Pre-conditions — 2 conditions required for a contract to contain a lease
 ==============================================================
 RULE    : A contract contains a lease only if BOTH conditions are met:
