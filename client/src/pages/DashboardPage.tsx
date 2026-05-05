@@ -182,7 +182,7 @@ export default function DashboardPage() {
       {criticalTopics.length > 0 && (
         <div className="w-full max-w-xs flex flex-col gap-1.5">
           <span className="text-xs font-semibold" style={{ color: '#dc2626' }}>
-            🔴 집중 필요 — 스프린트 + 플래시카드 모두 오답
+            🔴 집중 필요 (스프린트+개념 동시 취약)
           </span>
           {criticalTopics.map((t, i) => (
             <button
@@ -207,7 +207,16 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ⑤ 스프린트 시작 */}
+      {/* ⑤ 개념 복습 시작 */}
+      <button
+        onClick={() => navigate('/concept-notes')}
+        className="w-full max-w-xs py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-lg transition-opacity hover:opacity-80 active:opacity-60"
+        style={{ background: 'white', border: '2px solid #4f6ef7', color: '#4f6ef7' }}
+      >
+        📑 개념 복습 시작
+      </button>
+
+      {/* ⑥ 스프린트 시작 */}
       <button
         onClick={() => navigate('/sprint')}
         className="w-full max-w-xs py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-white text-lg transition-opacity hover:opacity-90 active:opacity-80"
