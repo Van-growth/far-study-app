@@ -76,13 +76,71 @@ function pickDeck(allTopics: TopicRow[], tabKey: string): TopicRow[] {
   return [...source].sort(() => Math.random() - 0.5).slice(0, MAX_CARDS)
 }
 
-// ── Sub-components (Sprint 동일 스타일) ────────────────────────
-function FormattedText({ text }: { text: string }) {
+// ── Sub-components ─────────────────────────────────────────────
+
+function RuleText({ text }: { text: string }) {
+  const lines = text.split('\n').map(l => l.trimStart()).filter(l => l.length > 0)
   return (
-    <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', lineHeight: 1.75 }}>
+    <div style={{ lineHeight: 1.8, fontSize: 14 }}>
+      {lines.map((line, i) => {
+        const isJournal = line.startsWith('Dr.') || line.startsWith('Cr.')
+        const isCr = line.startsWith('Cr.')
+        if (isJournal) {
+          return (
+            <div key={i} style={{ fontFamily: 'monospace', fontSize: 13, paddingLeft: isCr ? 16 : 0 }}>
+              {line}
+            </div>
+          )
+        }
+        return (
+          <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+            <span style={{ color: '#22c55e', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>•</span>
+            <span>{line}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function TrapText({ text }: { text: string }) {
+  const lines = text.split('\n').map(l => l.trimStart()).filter(l => l.length > 0)
+  return (
+    <div style={{ lineHeight: 1.8, fontSize: 14 }}>
+      {lines.map((line, i) => (
+        <div key={i} style={{ fontWeight: i === 0 ? 700 : 400 }}>{line}</div>
+      ))}
+    </div>
+  )
+}
+
+function ExampleText({ text }: { text: string }) {
+  return (
+    <div style={{ lineHeight: 1.8, fontSize: 14 }}>
       {text.split('\n').map((line, i) => {
-        const t = line.trimStart()
-        return <div key={i} style={{ paddingLeft: t.startsWith('Cr.') ? 24 : 0 }}>{t || ' '}</div>
+        const trimmed = line.trimStart()
+        const isJournal = trimmed.startsWith('Dr.') || trimmed.startsWith('Cr.')
+        const isCr = trimmed.startsWith('Cr.')
+        if (isJournal) {
+          return (
+            <div key={i} style={{ fontFamily: 'monospace', fontSize: 13, paddingLeft: isCr ? 16 : 0 }}>
+              {trimmed}
+            </div>
+          )
+        }
+        // Highlight numbers (integers and decimals, possibly with commas)
+        const parts = trimmed.split(/(\$?[\d,]+(?:\.\d+)?%?)/)
+        return (
+          <div key={i}>
+            {parts.map((part, j) =>
+              /^\$?[\d,]+(?:\.\d+)?%?$/.test(part) && /\d/.test(part) ? (
+                <span key={j} style={{ fontWeight: 600, color: '#534AB7', fontFamily: 'monospace' }}>{part}</span>
+              ) : (
+                <span key={j}>{part}</span>
+              )
+            )}
+          </div>
+        )
       })}
     </div>
   )
@@ -249,9 +307,9 @@ export default function ConceptNotesPage() {
                 </div>
 
                 {/* Card */}
-                <div className="bg-white rounded-2xl p-5 shadow-card border border-border">
+                <div className="bg-white rounded-2xl shadow-card border border-border" style={{ padding: 24 }}>
                   {/* Front: topic name */}
-                  <p className="text-lg font-bold text-[#0f172a] leading-snug mb-4">
+                  <p className="leading-snug" style={{ fontSize: 22, fontWeight: 600, color: '#0f172a', marginBottom: 16 }}>
                     {topic?.topicName}
                   </p>
 
@@ -268,26 +326,26 @@ export default function ConceptNotesPage() {
 
                   {/* Revealed: RULE + TRAP + Next */}
                   {revealed && topic && (
-                    <div className="space-y-3 animate-fadeIn">
+                    <div className="animate-fadeIn" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                       {topic.rule && (
                         <div className="rounded-xl p-3"
                           style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
                           <div className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1.5">RULE</div>
-                          <FormattedText text={topic.rule} />
+                          <RuleText text={topic.rule} />
                         </div>
                       )}
                       {topic.trap && (
                         <div className="rounded-xl p-3"
                           style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
                           <div className="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1.5">TRAP ⚠️</div>
-                          <FormattedText text={topic.trap} />
+                          <TrapText text={topic.trap} />
                         </div>
                       )}
                       {topic.example && (
                         <div className="rounded-xl p-3"
                           style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                           <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">EXAMPLE</div>
-                          <FormattedText text={topic.example} />
+                          <ExampleText text={topic.example} />
                         </div>
                       )}
                       <button

@@ -37,8 +37,8 @@ const PANEL_DEFAULT = 340;
 // reachable through the nav (intentional per the 2026-04 repositioning).
 const MOBILE_TABS = [
   { label: '홈', icon: '🏠', path: '/' },
-  { label: '스프린트', icon: '⚡', path: '/sprint' },
-  { label: 'AI 튜터', icon: '🤖', path: '/tutor' },
+  { label: '복습', icon: '⚡', path: '/sprint' },
+  { label: '개념노트', icon: '📑', path: '/concept-notes' },
   { label: '더보기', icon: '···', path: '/more' },
 ];
 
@@ -53,8 +53,7 @@ function BottomTabBar({ email }: { email: string }) {
   const isPanelOpen = useClaudeStore((s) => s.isOpen);
 
   const isActive = (path: string) => {
-    if (path === '/tutor') return isPanelOpen;
-    if (path === '/') return location.pathname === '/' && !isPanelOpen;
+    if (path === '/') return location.pathname === '/';
     if (path.startsWith('/quiz')) return location.pathname === '/quiz';
     return location.pathname.startsWith(path);
   };
@@ -78,6 +77,13 @@ function BottomTabBar({ email }: { email: string }) {
             className="absolute top-[100px] right-3 bg-white rounded-xl shadow-lg border border-border py-1 min-w-[160px]"
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              onClick={() => { navigate('/'); openPanel(); setShowMore(false); }}
+              className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors"
+            >
+              🤖 AI 튜터
+            </button>
+            <div className="border-t border-border my-1" />
             {[
               ...MORE_MENU_ITEMS,
               ...(isAdmin ? [ADMIN_MENU_ITEM] : []),
@@ -133,7 +139,6 @@ function BottomTabBar({ email }: { email: string }) {
               key={tab.path}
               onClick={() => {
                 if (tab.path === '/more') { setShowMore(!showMore); return; }
-                if (tab.path === '/tutor') { navigate('/'); openPanel(); setShowMore(false); return; }
                 navigate(tab.path);
                 setShowMore(false);
               }}
