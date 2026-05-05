@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import useStudyStore from '../store/studyStore'
 
 // ── Types ─────────────────────────────────────────────────────
@@ -788,6 +789,9 @@ function ResultView({
 
 // ── Main SprintPage ────────────────────────────────────────────
 export default function SprintPage() {
+  const [searchParams] = useSearchParams()
+  const deepLinkTopicId = searchParams.get('topic_id')
+
   const [phase, setPhase] = useState<Phase>('setup')
   const [qCount, setQCount] = useState<QCount>(5)
   const [timerMode, setTimerMode] = useState<TimerMode>(5)
@@ -858,6 +862,13 @@ export default function SprintPage() {
     setElapsedSec(0)
     setPhase('quiz')
   }, [allTopics, wrongTopics, qCount, timerMode])
+
+  const deepLinkLaunched = useRef(false)
+  useEffect(() => {
+    if (!deepLinkTopicId || allTopics.length === 0 || deepLinkLaunched.current) return
+    deepLinkLaunched.current = true
+    launchSprint(deepLinkTopicId)
+  }, [deepLinkTopicId, allTopics, launchSprint])
 
   const handleAnswer = useCallback((option: string) => {
     const card = deck[currentIdx]

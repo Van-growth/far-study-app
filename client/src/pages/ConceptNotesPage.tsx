@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { DB } from '../constants/db'
 import useStudyStore from '../store/studyStore'
@@ -162,6 +163,9 @@ function ProgressDots({ total, current, results }: {
 
 // ── Main ───────────────────────────────────────────────────────
 export default function ConceptNotesPage() {
+  const [searchParams] = useSearchParams()
+  const deepLinkTopicId = searchParams.get('topic_id')
+
   const userId = useStudyStore((s) => s.userId)
   const [allTopics, setAllTopics] = useState<TopicRow[]>([])
   const [activeTabKey, setActiveTabKey] = useState<string | null>(null)
@@ -173,6 +177,21 @@ export default function ConceptNotesPage() {
   const [confusedItems, setConfusedItems] = useState<TopicRow[]>([])
 
   useEffect(() => { loadTopics().then(setAllTopics) }, [])
+
+  const deepLinkLaunched = useRef(false)
+  useEffect(() => {
+    if (!deepLinkTopicId || allTopics.length === 0 || deepLinkLaunched.current) return
+    const topic = allTopics.find(t => t.topicId === deepLinkTopicId)
+    if (!topic) return
+    deepLinkLaunched.current = true
+    setActiveTabKey(topic.topicId)
+    setDeck([topic])
+    setIndex(0)
+    setRevealed(false)
+    setResults([null])
+    setConfusedItems([])
+    setPhase('quiz')
+  }, [deepLinkTopicId, allTopics])
 
   const startQuiz = (tabKey: string) => {
     const tab = CATEGORY_TABS.find(t => t.key === tabKey)

@@ -192,7 +192,7 @@ export default function DashboardPage() {
           weakTopics.map((t, i) => (
             <button
               key={t.topicId}
-              onClick={() => navigate('/sprint')}
+              onClick={() => navigate(`/sprint?topic_id=${t.topicId}`)}
               className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-left w-full transition-opacity hover:opacity-80 active:opacity-60"
               style={{ background: 'white', border: '1.5px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
             >
@@ -228,7 +228,7 @@ export default function DashboardPage() {
           flashWeakTopics.map((t, i) => (
             <button
               key={t.topicId}
-              onClick={() => navigate('/concept-notes')}
+              onClick={() => navigate(`/concept-notes?topic_id=${t.topicId}`)}
               className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-left w-full transition-opacity hover:opacity-80 active:opacity-60"
               style={{ background: '#eff6ff', border: '1.5px solid #93c5fd', boxShadow: '0 1px 4px rgba(59,130,246,0.08)' }}
             >
@@ -264,7 +264,7 @@ export default function DashboardPage() {
           criticalTopics.map((t, i) => (
             <button
               key={t.topicId}
-              onClick={() => navigate('/sprint')}
+              onClick={() => navigate(`/sprint?topic_id=${t.topicId}`)}
               className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-left w-full transition-opacity hover:opacity-80 active:opacity-60"
               style={{ background: '#fef2f2', border: '1.5px solid #fca5a5', boxShadow: '0 1px 4px rgba(239,68,68,0.08)' }}
             >
