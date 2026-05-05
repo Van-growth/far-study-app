@@ -19,6 +19,7 @@ import LearningEffectPage from './pages/LearningEffectPage';
 import HowToUsePage from './pages/HowToUsePage';
 import BadgesPage from './pages/BadgesPage';
 import HistoryPage from './pages/HistoryPage';
+import SprintPage from './pages/SprintPage';
 import DailyBriefingModal from './components/DailyBriefingModal';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
@@ -36,8 +37,8 @@ const PANEL_DEFAULT = 340;
 // reachable through the nav (intentional per the 2026-04 repositioning).
 const MOBILE_TABS = [
   { label: '홈', icon: '🏠', path: '/' },
-  { label: '분석', icon: '📝', path: '/analyze' },
-  { label: '복습', icon: '🔁', path: '/history' },
+  { label: '스프린트', icon: '⚡', path: '/sprint' },
+  { label: 'AI 튜터', icon: '🤖', path: '/tutor' },
   { label: '더보기', icon: '···', path: '/more' },
 ];
 
@@ -47,6 +48,7 @@ function BottomTabBar({ email }: { email: string }) {
   const [showMore, setShowMore] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
   const isAdmin = email.toLowerCase() === ADMIN_EMAIL;
+  const openPanel = useClaudeStore((s) => s.openPanel);
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -54,7 +56,7 @@ function BottomTabBar({ email }: { email: string }) {
     return location.pathname.startsWith(path);
   };
 
-  const morePaths = ['/quiz', '/admin', '/dashboard'];
+  const morePaths = ['/quiz', '/admin', '/dashboard', '/history', '/analyze'];
   const moreActive = morePaths.some((p) => location.pathname.startsWith(p));
 
   // Close more menu when viewport switches to desktop (md = 768px)
@@ -128,6 +130,7 @@ function BottomTabBar({ email }: { email: string }) {
               key={tab.path}
               onClick={() => {
                 if (tab.path === '/more') { setShowMore(!showMore); return; }
+                if (tab.path === '/tutor') { navigate('/'); openPanel(); setShowMore(false); return; }
                 navigate(tab.path);
                 setShowMore(false);
               }}
@@ -233,6 +236,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/valuation" element={<ValuationPage />} />
             <Route path="/concept-notes" element={<ConceptNotesPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/sprint" element={<SprintPage />} />
             <Route path="/badges" element={<BadgesPage />} />
             {email.toLowerCase() === ADMIN_EMAIL && (
               <Route path="/admin" element={<AdminPage email={email} />} />

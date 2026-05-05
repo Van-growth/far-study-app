@@ -23,6 +23,7 @@ export const DB = {
     USER_STATS: 'user_stats',
     REVIEW_LOG: 'review_log',
     TUTOR_SESSIONS: 'tutor_sessions',
+    TOPICS: 'topics',
   },
   RPC: {
     CONCEPT_STATS_INCREMENT: 'concept_stats_increment',
