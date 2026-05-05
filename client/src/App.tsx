@@ -18,7 +18,7 @@ import HomePage from './pages/HomePage';
 import LearningEffectPage from './pages/LearningEffectPage';
 import HowToUsePage from './pages/HowToUsePage';
 import BadgesPage from './pages/BadgesPage';
-import HistoryPage from './pages/HistoryPage';
+
 import SprintPage from './pages/SprintPage';
 import DailyBriefingModal from './components/DailyBriefingModal';
 
@@ -50,8 +50,11 @@ function BottomTabBar({ email }: { email: string }) {
   const isAdmin = email.toLowerCase() === ADMIN_EMAIL;
   const openPanel = useClaudeStore((s) => s.openPanel);
 
+  const isPanelOpen = useClaudeStore((s) => s.isOpen);
+
   const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/';
+    if (path === '/tutor') return isPanelOpen;
+    if (path === '/') return location.pathname === '/' && !isPanelOpen;
     if (path.startsWith('/quiz')) return location.pathname === '/quiz';
     return location.pathname.startsWith(path);
   };
@@ -235,7 +238,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/how-to-use" element={<HowToUsePage />} />
             <Route path="/valuation" element={<ValuationPage />} />
             <Route path="/concept-notes" element={<ConceptNotesPage />} />
-            <Route path="/history" element={<HistoryPage />} />
+            <Route path="/history" element={<Navigate to="/sprint" replace />} />
             <Route path="/sprint" element={<SprintPage />} />
             <Route path="/badges" element={<BadgesPage />} />
             {email.toLowerCase() === ADMIN_EMAIL && (

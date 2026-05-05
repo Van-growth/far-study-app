@@ -83,3 +83,16 @@ FAR Study App은 단순 공부 앱이 아닌 AI 학습 코치를 지향합니다
 - /go, /re 등 커맨드는 시스템 프롬프트에 명시적으로 정의
 - 커맨드 거부 응답 절대 금지 — 커맨드 감지 시 무조건 정해진 포맷으로 실행
 - 커맨드 정의 변경 시 SSOT 파일(prompts/)만 수정, 인라인 중복 작성 금지
+
+## 9. professor_ssot.ts 개념 추가 규칙
+professor_ssot.ts에 새 개념 추가할 때 반드시 아래 구조 사용:
+```
+// [topic_id] 토픽명 — 한 줄 핵심
+// RULE    : 판단 기준 또는 공식
+// TRIGGER : 이 단어 보이면 이 규칙 적용
+// TRAP    : 함정 포인트 (없으면 생략)
+// EXAMPLE : 숫자 예시 (있을 때만)
+```
+
+topic_id 형식: [카테고리_번호] (예: INT_001, REV_001)
+카테고리: TBS/PPE/INT/LEASE/REV/INV/TAX/EPS/INVEST/EQUITY/CF/CHANGE/CONSOL/FV/NFP/PART/VAL/CONT/INTANG/SW/ANNUITY
