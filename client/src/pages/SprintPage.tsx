@@ -96,34 +96,67 @@ async function saveTopicResult(userId: string, topicId: string, isCorrect: boole
   })
 }
 
-// ── [Task 1] MCQ — English questions ──────────────────────────
+// ── [Task 1] MCQ — scenario-based questions ───────────────────
 function firstMeaningfulLine(text: string | null): string {
   if (!text) return ''
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 8)
   return lines[0] ?? ''
 }
 
-function generateCard(topic: TopicRow, allTopics: TopicRow[]): SprintCard {
-  const trigger = topic.triggerKeywords?.[0] ?? null
-  const question = trigger
-    ? `When you see "${trigger}", what is the correct treatment?`
-    : `What is the correct treatment for ${topic.topicName}?`
+function buildQuestion(topic: TopicRow): string {
+  if (topic.example) {
+    // Use the setup part of the example (before →) as the scenario
+    const setup = topic.example.split('→')[0].trim().replace(/\.$/, '')
+    return `${setup}. What is the correct accounting treatment?`
+  }
+  return `${topic.topicName} — which of the following statements is correct?`
+}
 
-  const correctAnswer = firstMeaningfulLine(topic.rule) || `${topic.topicName} → apply professor SSOT rule`
+function generateCard(topic: TopicRow): SprintCard {
+  const question = buildQuestion(topic)
 
-  const distractors = allTopics
-    .filter(t => t.topicId !== topic.topicId && t.rule)
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 3)
-    .map(t => firstMeaningfulLine(t.rule))
-    .filter(d => d && d !== correctAnswer)
-    .slice(0, 3)
+  // Correct: summary (one_sentence) preferred; fall back to first rule sentence
+  const correctAnswer = (topic.summary && topic.summary.length <= 140)
+    ? topic.summary
+    : firstMeaningfulLine(topic.rule) || topic.topicName
 
-  while (distractors.length < 3) {
-    distractors.push(['Accrue the full amount', 'Expense immediately', 'Capitalize and amortize'][distractors.length] ?? 'None of the above')
+  // Build 3 distractors from the SAME topic only
+  const distractors: string[] = []
+
+  // Distractor 1: trap (describes the common wrong approach)
+  const trapLine = firstMeaningfulLine(topic.trap)
+  if (trapLine && trapLine !== correctAnswer && trapLine.length <= 140) {
+    distractors.push(trapLine)
   }
 
-  const shuffled = [correctAnswer, ...distractors].sort(() => Math.random() - 0.5)
+  // Distractors 2-3: other sentences from rule (plausible but partial)
+  if (topic.rule) {
+    const sentences = topic.rule
+      .replace(/\n/g, ' ')
+      .split(/(?<=[.]) +/)
+      .map(s => s.trim())
+      .filter(s => s.length > 20 && s.length <= 140 && s !== correctAnswer)
+    for (const s of sentences) {
+      if (distractors.length >= 3) break
+      if (!distractors.includes(s)) distractors.push(s)
+    }
+  }
+
+  // Fallbacks — topic-agnostic but exam-realistic
+  const fallbacks = [
+    'Expense immediately; do not capitalize.',
+    'Recognize in other comprehensive income (OCI).',
+    'Record at fair value; remeasure each reporting date.',
+    'No entry required until cash is received or paid.',
+    'Defer recognition until the asset is disposed of.',
+  ]
+  for (const fb of fallbacks) {
+    if (distractors.length >= 3) break
+    if (fb !== correctAnswer && !distractors.includes(fb)) distractors.push(fb)
+  }
+  while (distractors.length < 3) distractors.push('None of the above.')
+
+  const shuffled = [correctAnswer, ...distractors.slice(0, 3)].sort(() => Math.random() - 0.5)
   return { topic, question, options: shuffled, answer: correctAnswer }
 }
 
@@ -133,7 +166,7 @@ function buildDeck(allTopics: TopicRow[], wrongTopicIds: string[], count: number
   const wrongTopics = usable.filter(t => wrongSet.has(t.topicId))
   const otherTopics = usable.filter(t => !wrongSet.has(t.topicId)).sort(() => Math.random() - 0.5)
   const ordered = [...wrongTopics.sort(() => Math.random() - 0.5), ...otherTopics]
-  return ordered.slice(0, count).map(topic => generateCard(topic, usable))
+  return ordered.slice(0, count).map(topic => generateCard(topic))
 }
 
 // ── [Task 3] Formatted text — Dr/Cr monospace ─────────────────
@@ -149,6 +182,24 @@ function FormattedText({ text }: { text: string }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function hasJournalContent(text: string): boolean {
+  return /\bDr\.\s|\bCr\.\s/.test(text)
+}
+
+function OptionText({ text }: { text: string }) {
+  if (!hasJournalContent(text)) return <span>{text}</span>
+  const lines = text.split(/,\s*(?=Dr\.|Cr\.)/).map(l => l.trim())
+  return (
+    <div style={{ fontFamily: 'monospace', fontSize: '0.72rem', lineHeight: 1.85 }}>
+      {lines.map((line, i) => (
+        <div key={i} style={{ paddingLeft: line.startsWith('Cr.') ? 20 : 0 }}>
+          {line}
+        </div>
+      ))}
     </div>
   )
 }
@@ -622,7 +673,7 @@ function QuizView({
               style={{ background: bg, border: `1.5px solid ${border}`, color: textColor }}
             >
               <span className="font-bold mr-2">{label}.</span>
-              {opt}
+              <OptionText text={opt} />
             </button>
           )
         })}
