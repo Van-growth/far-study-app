@@ -24,8 +24,6 @@ interface FlashResult {
 type Phase = 'menu' | 'quiz' | 'result'
 
 // ── Constants ──────────────────────────────────────────────────
-const MAX_CARDS = 5
-
 const CATEGORY_TABS = [
   { key: 'Assets',          icon: '🏗️', cats: ['PPE', 'INT_CAP', 'LEASE', 'INV', 'INVEST', 'INTANG', 'SW', 'IMP'] },
   { key: 'Income & Equity', icon: '📈', cats: ['REV', 'EPS', 'EQUITY', 'CF', 'CHANGE', 'CONSOL'] },
@@ -71,7 +69,7 @@ async function saveFlashResult(userId: string, topicId: string, result: 'known' 
 function pickDeck(allTopics: TopicRow[], cats: string[]): TopicRow[] {
   const pool = allTopics.filter(t => cats.includes(t.category))
   const source = pool.length > 0 ? pool : allTopics
-  return [...source].sort(() => Math.random() - 0.5).slice(0, MAX_CARDS)
+  return [...source].sort(() => Math.random() - 0.5)
 }
 
 // ── Sub-components ─────────────────────────────────────────────
@@ -112,20 +110,28 @@ function TrapText({ text }: { text: string }) {
 }
 
 function ExampleText({ text }: { text: string }) {
+  // Expand comma-separated journal entries (e.g. "Dr. X, Cr. Y") into separate lines
+  const lines = text.split('\n').flatMap(line => {
+    const t = line.trimStart()
+    if (/\bDr\.\s|\bCr\.\s/.test(t)) {
+      return t.split(/,\s*(?=Dr\.|Cr\.)/).map(l => l.trim())
+    }
+    return [t]
+  }).filter(l => l.length > 0)
+
   return (
     <div style={{ lineHeight: 1.8, fontSize: 14 }}>
-      {text.split('\n').map((line, i) => {
-        const trimmed = line.trimStart()
-        const isJournal = trimmed.startsWith('Dr.') || trimmed.startsWith('Cr.')
-        const isCr = trimmed.startsWith('Cr.')
+      {lines.map((line, i) => {
+        const isJournal = line.startsWith('Dr.') || line.startsWith('Cr.')
+        const isCr = line.startsWith('Cr.')
         if (isJournal) {
           return (
-            <div key={i} style={{ fontFamily: 'monospace', fontSize: 13, paddingLeft: isCr ? 16 : 0 }}>
-              {trimmed}
+            <div key={i} style={{ fontFamily: 'monospace', fontSize: 13, paddingLeft: isCr ? 20 : 0 }}>
+              {line}
             </div>
           )
         }
-        const parts = trimmed.split(/(\$?[\d,]+(?:\.\d+)?%?)/)
+        const parts = line.split(/(\$?[\d,]+(?:\.\d+)?%?)/)
         return (
           <div key={i}>
             {parts.map((part, j) =>
@@ -266,7 +272,7 @@ export default function ConceptNotesPage() {
           <div className="text-center space-y-3 px-6">
             <div className="text-4xl">📑</div>
             <p className="text-sm font-semibold text-[#0f172a]">카테고리를 선택해 플래시카드를 시작하세요</p>
-            <p className="text-xs text-muted">최대 {MAX_CARDS}장 랜덤</p>
+            <p className="text-xs text-muted">카테고리 전체 랜덤 순서</p>
           </div>
         </div>
       )}
@@ -359,7 +365,7 @@ export default function ConceptNotesPage() {
                       </div>
                     )}
                     <p className="text-center text-xs font-medium" style={{ color: '#94a3b8' }}>
-                      아래 버튼으로 평가해주세요 ↓
+                      Tap below to rate ↓
                     </p>
                   </div>
                 )}
@@ -451,7 +457,7 @@ export default function ConceptNotesPage() {
                 className="py-3.5 px-6 rounded-2xl text-white font-bold"
                 style={{ background: 'linear-gradient(135deg, #4f6ef7, #7c3aed)', flex: 2 }}
               >
-                다시 {MAX_CARDS}장 ⚡
+                다시 {deck.length}장 ⚡
               </button>
             </div>
           </div>
