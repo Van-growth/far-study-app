@@ -104,11 +104,7 @@ function firstMeaningfulLine(text: string | null): string {
 }
 
 function buildQuestion(topic: TopicRow): string {
-  if (topic.example) {
-    // Use the setup part of the example (before →) as the scenario
-    const setup = topic.example.split('→')[0].trim().replace(/\.$/, '')
-    return `${setup}. What is the correct accounting treatment?`
-  }
+  if (topic.example) return topic.example
   return `${topic.topicName} — which of the following statements is correct?`
 }
 
@@ -160,13 +156,18 @@ function generateCard(topic: TopicRow): SprintCard {
   return { topic, question, options: shuffled, answer: correctAnswer }
 }
 
-function buildDeck(allTopics: TopicRow[], wrongTopicIds: string[], count: number): SprintCard[] {
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+function buildDeck(allTopics: TopicRow[], count: number): SprintCard[] {
   const usable = allTopics.filter(t => t.rule && t.rule.length > 10)
-  const wrongSet = new Set(wrongTopicIds)
-  const wrongTopics = usable.filter(t => wrongSet.has(t.topicId))
-  const otherTopics = usable.filter(t => !wrongSet.has(t.topicId)).sort(() => Math.random() - 0.5)
-  const ordered = [...wrongTopics.sort(() => Math.random() - 0.5), ...otherTopics]
-  return ordered.slice(0, count).map(topic => generateCard(topic))
+  return shuffle(usable).slice(0, count).map(topic => generateCard(topic))
 }
 
 // ── [Task 3] Formatted text — Dr/Cr monospace ─────────────────
@@ -231,6 +232,11 @@ function TTSOverlay({ topic, onClose }: { topic: TopicRow; onClose: () => void }
   const [currentLine, setCurrentLine] = useState(0)
 
   useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  useEffect(() => {
     const synth = window.speechSynthesis
     if (!synth) { onClose(); return }
 
@@ -275,8 +281,8 @@ function TTSOverlay({ topic, onClose }: { topic: TopicRow; onClose: () => void }
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col"
-      style={{ background: 'rgba(0,0,0,0.88)' }}
+      className="fixed inset-0 flex flex-col"
+      style={{ background: 'rgba(0,0,0,0.97)', zIndex: 9999 }}
       onClick={onClose}
     >
       {/* Header */}
@@ -893,13 +899,13 @@ export default function SprintPage() {
     return () => clearInterval(id)
   }, [phase, timerMode])
 
+  const closeTTS = useCallback(() => setTtsOverlayTopic(null), [])
+
   const launchSprint = useCallback((focusTopicId?: string) => {
     if (allTopics.length === 0) return
-    const wrongIds = wrongTopics.map(w => w.topicId)
     const newDeck = buildDeck(
       focusTopicId ? allTopics.filter(t => t.topicId === focusTopicId) : allTopics,
-      wrongIds,
-      focusTopicId ? Math.min(qCount, allTopics.filter(t => t.topicId === focusTopicId).length * 5) : qCount,
+      focusTopicId ? Math.min(qCount, 5) : qCount,
     )
     if (newDeck.length === 0) return
     setDeck(newDeck)
@@ -912,7 +918,7 @@ export default function SprintPage() {
     setTimeLeft(timerMode * 60)
     setElapsedSec(0)
     setPhase('quiz')
-  }, [allTopics, wrongTopics, qCount, timerMode])
+  }, [allTopics, qCount, timerMode])
 
   const deepLinkLaunched = useRef(false)
   useEffect(() => {
@@ -974,7 +980,7 @@ export default function SprintPage() {
       {ttsOverlayTopic && (
         <TTSOverlay
           topic={ttsOverlayTopic}
-          onClose={() => setTtsOverlayTopic(null)}
+          onClose={closeTTS}
         />
       )}
 
