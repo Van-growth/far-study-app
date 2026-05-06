@@ -8,7 +8,10 @@ import useStudyStore from '../store/studyStore'
 interface TopicRow {
   topicId: string
   topicName: string
+  category: string
+  summary: string | null
   rule: string | null
+  triggerKeywords: string[] | null
   trap: string | null
   example: string | null
 }
@@ -24,24 +27,29 @@ type Phase = 'menu' | 'quiz' | 'result'
 const MAX_CARDS = 5
 
 const CATEGORY_TABS = [
-  { key: 'Asset vs. Liability', icon: '⚖️', cats: ['PPE', 'LEASE', 'INV', 'INVEST', 'EQUITY', 'INTANG', 'SW', 'CONT'] },
-  { key: 'Valuation',           icon: '💰', cats: ['TAX', 'CF', 'CHANGE', 'CONSOL', 'NFP', 'VAL'] },
-  { key: 'Financial Ratios',    icon: '📊', cats: ['EPS', 'INT', 'ANNUITY', 'REV', 'PART'] },
-  { key: 'Required Disclosures',icon: '📢', cats: ['TBS'] },
+  { key: 'Assets',          icon: '🏗️', cats: ['PPE', 'INT_CAP', 'LEASE', 'INV', 'INVEST', 'INTANG', 'SW', 'IMP'] },
+  { key: 'Income & Equity', icon: '📈', cats: ['REV', 'EPS', 'EQUITY', 'CF', 'CHANGE', 'CONSOL'] },
+  { key: 'Debt & Instr.',   icon: '🔗', cats: ['BOND', 'DER', 'SBC', 'BC', 'VAL'] },
+  { key: 'Tax & Pension',   icon: '💼', cats: ['TAX', 'PEN', 'COMP'] },
+  { key: 'Gov & NFP',       icon: '🏛️', cats: ['GOV', 'NFP', 'TBS'] },
+  { key: 'Other Topics',    icon: '📚', cats: ['INT', 'INT_REP', 'RATIO', 'DISC', 'FC', 'RE', 'PART', 'CONT', 'FASB'] },
 ]
 
 // ── Supabase ───────────────────────────────────────────────────
 async function loadTopics(): Promise<TopicRow[]> {
   const { data, error } = await supabase
     .from(DB.TABLES.TOPICS)
-    .select('topic_id, topic_name, rule, trap, example')
+    .select('topic_id, topic_name, category, summary, rule, trigger_keywords, trap, example')
     .eq('exam_section', 'FAR')
     .order('topic_id')
   if (error || !data) return []
   return (data as Record<string, unknown>[]).map(r => ({
     topicId: String(r.topic_id ?? ''),
     topicName: String(r.topic_name ?? ''),
+    category: String(r.category ?? ''),
+    summary: r.summary ? String(r.summary) : null,
     rule: r.rule ? String(r.rule) : null,
+    triggerKeywords: Array.isArray(r.trigger_keywords) ? (r.trigger_keywords as string[]) : null,
     trap: r.trap ? String(r.trap) : null,
     example: r.example ? String(r.example) : null,
   }))
@@ -60,12 +68,8 @@ async function saveFlashResult(userId: string, topicId: string, result: 'known' 
 }
 
 // ── Helpers ────────────────────────────────────────────────────
-function categoryOf(topicId: string): string {
-  return topicId.split('_')[0]
-}
-
 function pickDeck(allTopics: TopicRow[], cats: string[]): TopicRow[] {
-  const pool = allTopics.filter(t => cats.includes(categoryOf(t.topicId)))
+  const pool = allTopics.filter(t => cats.includes(t.category))
   const source = pool.length > 0 ? pool : allTopics
   return [...source].sort(() => Math.random() - 0.5).slice(0, MAX_CARDS)
 }
@@ -290,9 +294,15 @@ export default function ConceptNotesPage() {
 
               {/* 카드 */}
               <div className="bg-white rounded-2xl shadow-card border border-border" style={{ padding: 24 }}>
-                <p className="leading-snug" style={{ fontSize: 22, fontWeight: 600, color: '#0f172a', marginBottom: 16 }}>
+                <p className="leading-snug" style={{ fontSize: 22, fontWeight: 600, color: '#0f172a', marginBottom: topic?.summary ? 8 : 16 }}>
                   {topic?.topicName}
                 </p>
+
+                {topic?.summary && !revealed && (
+                  <p className="text-sm text-[#475569] mb-4" style={{ lineHeight: 1.6 }}>
+                    {topic.summary}
+                  </p>
+                )}
 
                 {!revealed && (
                   <button
@@ -306,11 +316,32 @@ export default function ConceptNotesPage() {
 
                 {revealed && topic && (
                   <div className="animate-fadeIn" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {topic.summary && (
+                      <div className="rounded-xl p-3"
+                        style={{ background: '#f5f3ff', border: '1px solid #ddd6fe' }}>
+                        <div className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#7c3aed' }}>KEY POINT</div>
+                        <div style={{ lineHeight: 1.7, fontSize: 14, color: '#3b0764' }}>{topic.summary}</div>
+                      </div>
+                    )}
                     {topic.rule && (
                       <div className="rounded-xl p-3"
                         style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
                         <div className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1.5">RULE</div>
                         <RuleText text={topic.rule} />
+                      </div>
+                    )}
+                    {topic.triggerKeywords && topic.triggerKeywords.length > 0 && (
+                      <div className="rounded-xl p-3"
+                        style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
+                        <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: '#92400e' }}>TRIGGER WORDS</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {topic.triggerKeywords.map((kw, i) => (
+                            <span key={i} className="text-xs px-2 py-0.5 rounded-full font-medium"
+                              style={{ background: '#fef3c7', color: '#78350f' }}>
+                              {kw}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
                     {topic.trap && (

@@ -1,5 +1,5 @@
 import useClaudeStore, { AnalyzeContext, ReviewCardContext } from '../store/claudeStore';
-import { PROFESSOR_SSOT } from '../constants/professor_ssot';
+import { PROFESSOR_SSOT_V2_TEXT } from '../constants/professor_ssot_v2';
 
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
@@ -219,7 +219,7 @@ const SYSTEM_PROMPT = `너는 USCPA FAR 시험을 같이 공부하는 친한 선
 - PV = Present Value / FV = Fair Value / BV = Book Value
 - OCI = Other Comprehensive Income / PL = Profit & Loss
 - Impairment: US GAAP → 손상 후 회복 불가`
-+ `\n\n${PROFESSOR_SSOT}`;
++ `\n\n## FAR Topic Reference (170 cards)\n\n${PROFESSOR_SSOT_V2_TEXT}`;
 
 const ALPHA = ['A', 'B', 'C', 'D'];
 
