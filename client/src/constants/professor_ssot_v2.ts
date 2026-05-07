@@ -337,6 +337,17 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
     example: "Sales $500,000 / warranty rate 2% → Warranty Expense = $10,000 (not $5K yr1 + $5K yr2)",
   },
 
+  // ── Migration 031 ──────────────────────────────────────────────────────────
+  {
+    topic_id: "INV_004",
+    card_name: "Dollar Value LIFO — layer calculation step by step",
+    rule: "Step 1: Convert ending inventory at current-year cost to base-year cost (÷ current price index). Step 2: Compare to prior base-year balance to find the real quantity change. Step 3: If increased → new layer at current-year cost (× current index). If decreased → peel off most recent layers first (LIFO order). Step 4: Sum all surviving layers at their original layer cost = DV LIFO ending inventory.",
+    trigger: "dollar value LIFO | DV LIFO | price index | base year | layer | LIFO layer | inventory pool",
+    trap: "Never convert layers using the current index — each layer stays at the index of the year it was created. Peeling off layers goes newest-first (LIFO). A decrease in base-year dollars means quantity dropped, not price.",
+    one_sentence: "DV LIFO = stack layers in base-year dollars; each layer locked at its own year's index; peel newest first on decrease.",
+    example: "Base year inventory $100,000 (index 1.00) = Base Layer $100,000\nYear 1: EI at cost $126,000 ÷ index 1.05 = $120,000 base → increase $20,000 → Year 1 layer = $20,000 × 1.05 = $21,000\nYear 2: EI at cost $110,400 ÷ index 1.15 = $96,000 base → decrease $24,000 → peel Year 1 layer fully ($20,000) + $4,000 from Base\nDV LIFO EI = Base $96,000 × 1.00 = $96,000\n\nLayer stack (Base 하단 고정, 신규 레이어 위로 적층, 감소 시 위부터 제거):\n[Year 1 layer $21,000] ← 감소 시 먼저 제거\n[Base layer $100,000] ← 항상 하단 고정",
+  },
+
   // ── INVEST ─────────────────────────────────────────────────────────────────
   {
     topic_id: "INVEST_001",
