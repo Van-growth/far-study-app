@@ -1605,6 +1605,27 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
     one_sentence: "FASB changes GAAP exclusively through Accounting Standards Updates (ASUs), which amend the Codification — no other form of FASB pronouncement has been issued since 2009.",
     example: "FASB wants to change lease accounting → issues ASU 2016-02 → amends ASC 842 in the Codification → entities adopt by the effective date",
   },
+
+  // ── Migration 030 ──────────────────────────────────────────────────────────
+  // ── CASH ───────────────────────────────────────────────────────────────────
+  {
+    topic_id: "CASH_001",
+    card_name: "Bank Reconciliation — balance test at one point in time",
+    rule: "Bank Reconciliation reconciles Book balance and Bank balance to a single Adjusted balance at one date. Book side: add DIT, deduct OC, adjust NSF/service charges/errors. Bank side: add DIT, deduct OC, adjust bank errors. Both sides must arrive at the same Adjusted balance.",
+    trigger: "bank reconciliation | book balance | bank balance | outstanding checks | deposits in transit | NSF | service charge",
+    trap: "DIT and OC appear on opposite sides: DIT is added to Book (not yet recorded by bank) and deducted from Bank (not yet cleared); OC is deducted from Book (already recorded) and deducted from Bank (not yet cleared). Do not mix up which side each adjustment belongs to.",
+    one_sentence: "Bank Rec = reconcile Book and Bank to one Adjusted balance at a single date.",
+    example: "Book $22,100 + DIT $5,150 − OC $6,300 = Adjusted $20,950 | Bank $23,250 + DIT $5,150 − OC $6,300 = Adjusted $20,950 ✓ (single date)",
+  },
+  {
+    topic_id: "CASH_002",
+    card_name: "Proof of Cash — 4-column test of transactions between two dates",
+    rule: "Proof of Cash extends Bank Rec to 4 columns: Beg Balance / Receipts / Disbursements / End Balance. Each column is reconciled independently. Prior-period DIT clears in current Receipts column; prior-period OC clears in current Disbursements column. Current-period DIT/OC appear as reconciling items in their respective columns and carry into End Balance column. Solve order: ① sketch Beg and End Bank Rec first → ② fill in middle Receipts/Disbursements columns.",
+    trigger: "proof of cash | 4-column | two-period | test of transactions | beginning and ending reconciliation",
+    trap: "Prior-period OC does not clear in full automatically — only the portion actually paid in the current period clears in Disbursements; the remaining unpaid balance carries into End OC. Do not assume all prior OC is paid. Always build both endpoint Bank Recs first before filling the middle columns — skipping this step causes placement errors.",
+    one_sentence: "Proof of Cash = 4-column Bank Rec that tracks how DIT and OC flow between two dates; build endpoint Recs first, then fill the middle.",
+    example: "Given: Bank 3/31 23,250 | Receipts 29,200 | Disbursements 24,800 | Bank 4/30 27,650 / Prior DIT 5,150 (cleared Apr) / Prior OC 6,300 (3,200 cleared Apr; 3,100 remain) / Current OC 6,300\n\n| | Beg (3/31) | Receipts | Disbursements | End (4/30) |\n|---|---|---|---|---|\n| Bank | 23,250 | 29,200 | 24,800 | 27,650 |\n| DIT prior | +5,150 | (5,150) | | |\n| OC prior | (6,300) | | +3,200 | (3,100) |\n| OC current | | | (6,300) | (3,200) |\n| Adjusted | 22,100 | 24,050 | 21,700 | 24,450 |\n| Book | 22,100 | 24,050 | 21,700 | 24,450 |",
+  },
 ];
 
 export const PROFESSOR_SSOT_V2_TEXT: string = PROFESSOR_SSOT_V2.map(t =>
