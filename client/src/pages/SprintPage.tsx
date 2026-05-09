@@ -31,7 +31,7 @@ interface SprintResult {
 
 type Phase = 'setup' | 'quiz' | 'result'
 type QCount = 5 | 10 | 15
-type TimerMode = 3 | 5 | 0
+type TimerMode = 'auto' | 0
 
 // ── Data fetch ────────────────────────────────────────────────
 async function loadFromQuestionBank(): Promise<BankQuestion[]> {
@@ -458,18 +458,21 @@ function SetupView({
         <div>
           <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">타이머</div>
           <div className="flex gap-2">
-            {([3, 5, 0] as TimerMode[]).map(m => (
+            {([
+              { mode: 'auto' as TimerMode, label: `자동 (${Math.min(15, Math.max(1, qCount))}분)` },
+              { mode: 0 as TimerMode, label: '제한없음' },
+            ]).map(({ mode, label }) => (
               <button
-                key={m}
-                onClick={() => setTimerMode(m)}
+                key={String(mode)}
+                onClick={() => setTimerMode(mode)}
                 className="flex-1 py-2 rounded-xl text-sm font-bold transition-all"
                 style={{
-                  background: timerMode === m ? '#4f6ef7' : '#f8fafc',
-                  color: timerMode === m ? '#fff' : '#64748b',
-                  border: `1.5px solid ${timerMode === m ? '#4f6ef7' : '#e2e8f0'}`,
+                  background: timerMode === mode ? '#4f6ef7' : '#f8fafc',
+                  color: timerMode === mode ? '#fff' : '#64748b',
+                  border: `1.5px solid ${timerMode === mode ? '#4f6ef7' : '#e2e8f0'}`,
                 }}
               >
-                {m === 0 ? '제한없음' : `${m}분`}
+                {label}
               </button>
             ))}
           </div>
@@ -768,7 +771,7 @@ export default function SprintPage() {
 
   const [phase, setPhase] = useState<Phase>('setup')
   const [qCount, setQCount] = useState<QCount>(5)
-  const [timerMode, setTimerMode] = useState<TimerMode>(5)
+  const [timerMode, setTimerMode] = useState<TimerMode>('auto')
 
   const [allBank, setAllBank] = useState<BankQuestion[]>([])
   const [wrongTopics, setWrongTopics] = useState<{ topicId: string; count: number }[]>([])
@@ -828,7 +831,7 @@ export default function SprintPage() {
     setCurrentIdx(0)
     setStreak(0)
     setMaxStreak(0)
-    setTimeLeft(timerMode * 60)
+    setTimeLeft(timerMode === 0 ? 0 : Math.min(15, Math.max(1, qCount)) * 60)
     setElapsedSec(0)
     setPhase('quiz')
   }, [allBank, qCount, timerMode])
