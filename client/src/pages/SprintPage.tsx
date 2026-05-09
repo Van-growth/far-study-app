@@ -664,7 +664,7 @@ function ResultItem({
               {card.topicId}
             </span>
           </div>
-          <p className="text-xs text-[#0f172a] truncate">{card.questionText}</p>
+          <p className="text-xs text-[#0f172a] leading-relaxed">{card.questionText}</p>
         </div>
         <span className="text-muted text-sm shrink-0">{open ? '▲' : '▼'}</span>
       </button>
