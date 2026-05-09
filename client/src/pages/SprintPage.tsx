@@ -1,55 +1,58 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import useStudyStore from '../store/studyStore'
+import { supabase } from '../lib/supabase'
+import { DB } from '../constants/db'
 
 // ── Types ─────────────────────────────────────────────────────
-interface TopicRow {
+interface BankQuestion {
+  questionId: string
   topicId: string
-  topicName: string
-  summary: string | null
-  rule: string | null
-  trap: string | null
-  example: string | null
-  triggerKeywords: string[] | null
-}
-
-interface SprintCard {
-  topic: TopicRow
-  question: string
+  areaId: string | null
+  questionText: string
   options: string[]
-  answer: string
+  correctIndex: number
+  contextBackground: string | null
+  contextTrigger: string | null
+  ruleTitle: string | null
+  ruleItems: string[] | null
+  trigger: string | null
+  trap: string | null
+  speed: string | null
 }
 
 interface SprintResult {
-  card: SprintCard
+  card: BankQuestion
   selected: string | null
   isCorrect: boolean
 }
 
-type Phase = 'setup' | 'loading' | 'quiz' | 'result'
+type Phase = 'setup' | 'quiz' | 'result'
 type QCount = 5 | 10 | 15
 type TimerMode = 3 | 5 | 0
 
-// ── Supabase fetch ─────────────────────────────────────────────
-import { supabase } from '../lib/supabase'
-import { DB } from '../constants/db'
-
-async function loadAllTopics(): Promise<TopicRow[]> {
+// ── Data fetch ────────────────────────────────────────────────
+async function loadFromQuestionBank(): Promise<BankQuestion[]> {
   const { data, error } = await supabase
-    .from('topics')
-    .select('topic_id, topic_name, summary, rule, trap, example, trigger_keywords')
-    .eq('exam_section', 'FAR')
+    .from('question_bank')
+    .select('question_id, topic_id, area_id, question_text, options, correct_index, context_background, context_trigger, rule_title, rule_items, trigger, trap, speed')
+    .in('source', [1, 2])
+    .eq('is_banned', false)
   if (error || !data) return []
   return (data as Record<string, unknown>[]).map(r => ({
+    questionId: String(r.question_id ?? ''),
     topicId: String(r.topic_id ?? ''),
-    topicName: String(r.topic_name ?? ''),
-    summary: r.summary ? String(r.summary) : null,
-    rule: r.rule ? String(r.rule) : null,
+    areaId: r.area_id ? String(r.area_id) : null,
+    questionText: String(r.question_text ?? ''),
+    options: Array.isArray(r.options) ? (r.options as unknown[]).map(String) : [],
+    correctIndex: Number(r.correct_index ?? 0),
+    contextBackground: r.context_background ? String(r.context_background) : null,
+    contextTrigger: r.context_trigger ? String(r.context_trigger) : null,
+    ruleTitle: r.rule_title ? String(r.rule_title) : null,
+    ruleItems: Array.isArray(r.rule_items) ? (r.rule_items as unknown[]).map(String) : null,
+    trigger: r.trigger ? String(r.trigger) : null,
     trap: r.trap ? String(r.trap) : null,
-    example: r.example ? String(r.example) : null,
-    triggerKeywords: Array.isArray(r.trigger_keywords)
-      ? (r.trigger_keywords as unknown[]).map(String)
-      : null,
+    speed: r.speed ? String(r.speed) : null,
   }))
 }
 
@@ -96,66 +99,6 @@ async function saveTopicResult(userId: string, topicId: string, isCorrect: boole
   })
 }
 
-// ── [Task 1] MCQ — scenario-based questions ───────────────────
-function firstMeaningfulLine(text: string | null): string {
-  if (!text) return ''
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 8)
-  return lines[0] ?? ''
-}
-
-function buildQuestion(topic: TopicRow): string {
-  if (topic.example) return topic.example
-  return `${topic.topicName} — which of the following statements is correct?`
-}
-
-function generateCard(topic: TopicRow): SprintCard {
-  const question = buildQuestion(topic)
-
-  // Correct: summary (one_sentence) preferred; fall back to first rule sentence
-  const correctAnswer = (topic.summary && topic.summary.length <= 140)
-    ? topic.summary
-    : firstMeaningfulLine(topic.rule) || topic.topicName
-
-  // Build 3 distractors from the SAME topic only
-  const distractors: string[] = []
-
-  // Distractor 1: trap (describes the common wrong approach)
-  const trapLine = firstMeaningfulLine(topic.trap)
-  if (trapLine && trapLine !== correctAnswer && trapLine.length <= 140) {
-    distractors.push(trapLine)
-  }
-
-  // Distractors 2-3: other sentences from rule (plausible but partial)
-  if (topic.rule) {
-    const sentences = topic.rule
-      .replace(/\n/g, ' ')
-      .split(/(?<=[.]) +/)
-      .map(s => s.trim())
-      .filter(s => s.length > 20 && s.length <= 140 && s !== correctAnswer)
-    for (const s of sentences) {
-      if (distractors.length >= 3) break
-      if (!distractors.includes(s)) distractors.push(s)
-    }
-  }
-
-  // Fallbacks — topic-agnostic but exam-realistic
-  const fallbacks = [
-    'Expense immediately; do not capitalize.',
-    'Recognize in other comprehensive income (OCI).',
-    'Record at fair value; remeasure each reporting date.',
-    'No entry required until cash is received or paid.',
-    'Defer recognition until the asset is disposed of.',
-  ]
-  for (const fb of fallbacks) {
-    if (distractors.length >= 3) break
-    if (fb !== correctAnswer && !distractors.includes(fb)) distractors.push(fb)
-  }
-  while (distractors.length < 3) distractors.push('None of the above.')
-
-  const shuffled = [correctAnswer, ...distractors.slice(0, 3)].sort(() => Math.random() - 0.5)
-  return { topic, question, options: shuffled, answer: correctAnswer }
-}
-
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -165,28 +108,55 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-function buildDeck(allTopics: TopicRow[], count: number): SprintCard[] {
-  const usable = allTopics.filter(t => t.rule && t.rule.length > 10)
-  return shuffle(usable).slice(0, count).map(topic => generateCard(topic))
-}
-
-// ── [Task 3] Formatted text — Dr/Cr monospace ─────────────────
-function FormattedText({ text }: { text: string }) {
+// ── Structured feedback ───────────────────────────────────────
+function StructuredFeedback({ card }: { card: BankQuestion }) {
   return (
-    <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', lineHeight: 1.75 }}>
-      {text.split('\n').map((line, i) => {
-        const trimmed = line.trimStart()
-        const isCr = trimmed.startsWith('Cr.')
-        return (
-          <div key={i} style={{ paddingLeft: isCr ? 24 : 0 }}>
-            {trimmed || ' '}
-          </div>
-        )
-      })}
+    <div className="space-y-2">
+      {card.contextBackground && (
+        <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">CONTEXT</div>
+          <div className="text-xs leading-relaxed">{card.contextBackground}</div>
+          {card.contextTrigger && (
+            <div className="text-xs text-gray-400 mt-1">→ {card.contextTrigger}</div>
+          )}
+        </div>
+      )}
+      {card.ruleTitle && (
+        <div className="rounded-xl p-3" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+          <div className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1.5">RULE</div>
+          <div className="text-xs font-semibold mb-1">{card.ruleTitle}</div>
+          {card.ruleItems && card.ruleItems.length > 0 && (
+            <ul className="text-xs space-y-0.5 leading-relaxed">
+              {card.ruleItems.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {card.trigger && (
+        <div className="rounded-xl p-3" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
+          <div className="text-[10px] font-bold text-purple-700 uppercase tracking-wider mb-1.5">TRIGGER</div>
+          <div className="text-[0.72rem] font-mono leading-relaxed">{card.trigger}</div>
+        </div>
+      )}
+      {card.trap && (
+        <div className="rounded-xl p-3" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+          <div className="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1.5">TRAP ⚠️</div>
+          <div className="text-xs whitespace-pre-line leading-relaxed">{card.trap}</div>
+        </div>
+      )}
+      {card.speed && (
+        <div className="rounded-xl p-3" style={{ background: '#eff6ff', border: '1px solid #c7d2fe' }}>
+          <div className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-1.5">SPEED</div>
+          <div className="text-xs">{card.speed}</div>
+        </div>
+      )}
     </div>
   )
 }
 
+// ── Formatted text (Dr/Cr) ────────────────────────────────────
 function hasJournalContent(text: string): boolean {
   return /\bDr\.\s|\bCr\.\s/.test(text)
 }
@@ -205,13 +175,14 @@ function OptionText({ text }: { text: string }) {
   )
 }
 
-// ── [Task 4] TTS Overlay — Web Speech API ─────────────────────
-function TTSOverlay({ topic, onClose }: { topic: TopicRow; onClose: () => void }) {
+// ── TTS Overlay ───────────────────────────────────────────────
+function TTSOverlay({ card, onClose }: { card: BankQuestion; onClose: () => void }) {
   const { lines, fullText, offsets } = useMemo(() => {
     const parts: string[] = []
-    if (topic.rule) parts.push(topic.rule)
-    if (topic.trap) parts.push(topic.trap)
-    if (topic.example) parts.push(topic.example)
+    if (card.ruleTitle) parts.push(card.ruleTitle)
+    if (card.ruleItems) parts.push(...card.ruleItems)
+    if (card.trap) parts.push(card.trap)
+    if (card.speed) parts.push(card.speed)
 
     const rawLines = parts
       .join('\n')
@@ -225,9 +196,8 @@ function TTSOverlay({ topic, onClose }: { topic: TopicRow; onClose: () => void }
       offsets.push(pos)
       pos += line.length + 1
     }
-
     return { lines: rawLines, fullText: rawLines.join(' '), offsets }
-  }, [topic])
+  }, [card])
 
   const [currentLine, setCurrentLine] = useState(0)
 
@@ -268,12 +238,10 @@ function TTSOverlay({ topic, onClose }: { topic: TopicRow; onClose: () => void }
     }
 
     utter.onend = onClose
-
     synth.speak(utter)
     return () => { synth.cancel() }
   }, [fullText, offsets, onClose])
 
-  // Show window of 7 lines centered on current
   const windowSize = 7
   const winStart = Math.max(0, Math.min(currentLine - 3, lines.length - windowSize))
   const winEnd = Math.min(lines.length, winStart + windowSize)
@@ -285,20 +253,18 @@ function TTSOverlay({ topic, onClose }: { topic: TopicRow; onClose: () => void }
       style={{ background: 'rgba(0,0,0,0.97)', zIndex: 9999 }}
       onClick={onClose}
     >
-      {/* Header */}
       <div className="flex items-center justify-center gap-3 pt-12 pb-6 px-6">
         <span
           className="text-xs font-bold px-3 py-1.5 rounded-full shrink-0"
           style={{ background: '#4f6ef7', color: 'white' }}
         >
-          {topic.topicId}
+          {card.topicId}
         </span>
         <span className="text-white text-base font-semibold text-center leading-snug">
-          {topic.topicName}
+          {card.ruleTitle ?? card.topicId}
         </span>
       </div>
 
-      {/* Subtitle lines */}
       <div
         className="flex-1 flex flex-col items-center justify-center px-8 gap-3"
         onClick={e => e.stopPropagation()}
@@ -323,7 +289,6 @@ function TTSOverlay({ topic, onClose }: { topic: TopicRow; onClose: () => void }
         })}
       </div>
 
-      {/* Footer */}
       <div className="pb-12 text-center text-white/30 text-xs tracking-wider">
         tap anywhere to dismiss
       </div>
@@ -434,12 +399,11 @@ function Timer({ seconds, unlimited }: { seconds: number; unlimited: boolean }) 
 
 // ── Setup view ────────────────────────────────────────────────
 function SetupView({
-  todayCount, wrongTopics, allTopics, qCount, setQCount,
+  todayCount, wrongTopics, qCount, setQCount,
   timerMode, setTimerMode, onStart, onStartFocused, streak,
 }: {
   todayCount: number
   wrongTopics: { topicId: string; count: number }[]
-  allTopics: TopicRow[]
   qCount: QCount
   setQCount: (n: QCount) => void
   timerMode: TimerMode
@@ -448,13 +412,12 @@ function SetupView({
   onStartFocused: (tid: string) => void
   streak: number
 }) {
-  const topicMap = Object.fromEntries(allTopics.map(t => [t.topicId, t.topicName]))
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-[#0f172a]">⚡ 스프린트</h1>
-          <p className="text-xs text-muted mt-0.5">Professor SSOT — MCQ drill</p>
+          <p className="text-xs text-muted mt-0.5">Question Bank — MCQ drill</p>
         </div>
         <div className="text-right">
           <div className="text-2xl font-black text-[#4f6ef7]">{streak}</div>
@@ -532,12 +495,9 @@ function SetupView({
                 onClick={() => onStartFocused(topicId)}
                 className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 transition-colors text-left"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#fee2e2', color: '#ef4444' }}>
-                    {topicId}
-                  </span>
-                  <span className="text-sm text-[#0f172a]">{topicMap[topicId] ?? topicId}</span>
-                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#fee2e2', color: '#ef4444' }}>
+                  {topicId}
+                </span>
                 <span className="text-xs text-[#ef4444] font-bold">{count}회 오답</span>
               </button>
             ))}
@@ -548,19 +508,19 @@ function SetupView({
   )
 }
 
-// ── [Task 2 + 3] Quiz view ────────────────────────────────────
+// ── Quiz view (inline) ────────────────────────────────────────
 function QuizView({
   deck, currentIdx, results, timeLeft, unlimited,
   onAnswer, onNext, onOpenTTS,
 }: {
-  deck: SprintCard[]
+  deck: BankQuestion[]
   currentIdx: number
   results: (boolean | null)[]
   timeLeft: number
   unlimited: boolean
   onAnswer: (option: string) => void
   onNext: () => void
-  onOpenTTS: (topic: TopicRow) => void
+  onOpenTTS: (card: BankQuestion) => void
 }) {
   const card = deck[currentIdx]
   const answered = results[currentIdx] !== null && results[currentIdx] !== undefined
@@ -573,7 +533,7 @@ function QuizView({
   const handleSelect = (opt: string) => {
     if (selected !== null) return
     setSelected(opt)
-    const correct = opt === card.answer
+    const correct = opt === card.options[card.correctIndex]
     setCardAnim(correct ? 'animate-cardBounce' : 'animate-shake')
     onAnswer(opt)
   }
@@ -584,26 +544,21 @@ function QuizView({
 
   return (
     <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <ProgressDots total={deck.length} current={currentIdx} results={results} />
         <Timer seconds={timeLeft} unlimited={unlimited} />
       </div>
 
-      {/* topic_id badge */}
       <div className="flex items-center gap-2">
         <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: '#eff6ff', color: '#4f6ef7' }}>
-          {card.topic.topicId}
+          {card.topicId}
         </span>
-        <span className="text-xs text-muted truncate">{card.topic.topicName}</span>
       </div>
 
-      {/* Question card */}
       <div
         className={`bg-white rounded-2xl p-5 shadow-card border border-border relative overflow-hidden ${cardAnim}`}
         onAnimationEnd={() => setCardAnim('')}
       >
-        {/* Flash overlays */}
         {answered && isCorrect && (
           <div className="absolute inset-0 rounded-2xl animate-greenFlash pointer-events-none" style={{ background: 'rgba(34,197,94,0.15)' }} />
         )}
@@ -611,51 +566,18 @@ function QuizView({
           <div className="absolute inset-0 rounded-2xl animate-redFlash pointer-events-none" style={{ background: 'rgba(239,68,68,0.12)' }} />
         )}
 
-        <p className="text-sm font-medium text-[#0f172a] leading-relaxed">{card.question}</p>
+        <p className="text-sm font-medium text-[#0f172a] leading-relaxed">{card.questionText}</p>
 
-        {/* [Task 2] Full feedback — always shown on both correct and wrong */}
         {answered && (
           <div className="mt-4 pt-3 border-t border-gray-100 space-y-2 animate-fadeIn">
-            {/* Correct indicator */}
             <div className="text-xs font-semibold" style={{ color: isCorrect ? '#15803d' : '#b91c1c' }}>
               {isCorrect ? '✓ Correct!' : '✗ Incorrect'}
             </div>
 
-            {/* RULE */}
-            {card.topic.rule && (
-              <div className="rounded-xl p-3" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                <div className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1.5">RULE</div>
-                <FormattedText text={card.topic.rule} />
-              </div>
-            )}
+            <StructuredFeedback card={card} />
 
-            {/* TRIGGER */}
-            {card.topic.triggerKeywords && card.topic.triggerKeywords.length > 0 && (
-              <div className="rounded-xl p-3" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
-                <div className="text-[10px] font-bold text-purple-700 uppercase tracking-wider mb-1.5">TRIGGER</div>
-                <div className="text-[0.72rem] font-mono leading-relaxed">{card.topic.triggerKeywords.join(' | ')}</div>
-              </div>
-            )}
-
-            {/* TRAP */}
-            {card.topic.trap && (
-              <div className="rounded-xl p-3" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
-                <div className="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1.5">TRAP ⚠️</div>
-                <FormattedText text={card.topic.trap} />
-              </div>
-            )}
-
-            {/* EXAMPLE */}
-            {card.topic.example && (
-              <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">EXAMPLE</div>
-                <FormattedText text={card.topic.example} />
-              </div>
-            )}
-
-            {/* TTS button */}
             <button
-              onClick={() => onOpenTTS(card.topic)}
+              onClick={() => onOpenTTS(card)}
               className="w-full py-2 rounded-xl text-xs font-bold transition-colors"
               style={{ background: '#eff6ff', color: '#4f6ef7' }}
             >
@@ -665,12 +587,11 @@ function QuizView({
         )}
       </div>
 
-      {/* Options */}
       <div className="space-y-2.5">
         {card.options.map((opt, i) => {
           const label = optionLabels[i] ?? String(i + 1)
           const isSelected = selected === opt
-          const isAnswer = opt === card.answer
+          const isAnswer = opt === card.options[card.correctIndex]
           let bg = '#fff', border = '#e2e8f0', textColor = '#0f172a'
           if (answered) {
             if (isAnswer) { bg = '#f0fdf4'; border = '#22c55e'; textColor = '#15803d' }
@@ -693,7 +614,6 @@ function QuizView({
         })}
       </div>
 
-      {/* Next button */}
       {answered && (
         <button
           onClick={onNext}
@@ -707,12 +627,12 @@ function QuizView({
   )
 }
 
-// ── [Task 2 + 3 + 4] Result item ──────────────────────────────
+// ── Result item ───────────────────────────────────────────────
 function ResultItem({
   result, onOpenTTS,
 }: {
   result: SprintResult
-  onOpenTTS: (topic: TopicRow) => void
+  onOpenTTS: (card: BankQuestion) => void
 }) {
   const [open, setOpen] = useState(false)
   const { card } = result
@@ -732,11 +652,10 @@ function ResultItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ background: '#eff6ff', color: '#4f6ef7' }}>
-              {card.topic.topicId}
+              {card.topicId}
             </span>
-            <span className="text-xs text-muted truncate">{card.topic.topicName}</span>
           </div>
-          <p className="text-xs text-[#0f172a] truncate">{card.question}</p>
+          <p className="text-xs text-[#0f172a] truncate">{card.questionText}</p>
         </div>
         <span className="text-muted text-sm shrink-0">{open ? '▲' : '▼'}</span>
       </button>
@@ -751,39 +670,13 @@ function ResultItem({
           )}
           <div className="text-xs">
             <span className="text-[#22c55e] font-semibold">Correct: </span>
-            <span className="text-[#0f172a]">{card.answer}</span>
+            <span className="text-[#0f172a]">{card.options[card.correctIndex]}</span>
           </div>
 
-          {card.topic.rule && (
-            <div className="rounded-xl p-3" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-              <div className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1.5">RULE</div>
-              <FormattedText text={card.topic.rule} />
-            </div>
-          )}
-
-          {card.topic.triggerKeywords && card.topic.triggerKeywords.length > 0 && (
-            <div className="rounded-xl p-3" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
-              <div className="text-[10px] font-bold text-purple-700 uppercase tracking-wider mb-1.5">TRIGGER</div>
-              <div className="text-[0.72rem] font-mono leading-relaxed">{card.topic.triggerKeywords.join(' | ')}</div>
-            </div>
-          )}
-
-          {card.topic.trap && (
-            <div className="rounded-xl p-3" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
-              <div className="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1.5">TRAP ⚠️</div>
-              <FormattedText text={card.topic.trap} />
-            </div>
-          )}
-
-          {card.topic.example && (
-            <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">EXAMPLE</div>
-              <FormattedText text={card.topic.example} />
-            </div>
-          )}
+          <StructuredFeedback card={card} />
 
           <button
-            onClick={() => onOpenTTS(card.topic)}
+            onClick={() => onOpenTTS(card)}
             className="w-full py-2 rounded-xl text-xs font-bold transition-colors"
             style={{ background: '#eff6ff', color: '#4f6ef7' }}
           >
@@ -803,7 +696,7 @@ function ResultView({
   maxStreak: number
   onRetry: () => void
   onBack: () => void
-  onOpenTTS: (topic: TopicRow) => void
+  onOpenTTS: (card: BankQuestion) => void
 }) {
   const correct = results.filter(r => r.isCorrect).length
   const total = results.length
@@ -868,15 +761,14 @@ export default function SprintPage() {
   const [qCount, setQCount] = useState<QCount>(5)
   const [timerMode, setTimerMode] = useState<TimerMode>(5)
 
-  const [allTopics, setAllTopics] = useState<TopicRow[]>([])
+  const [allBank, setAllBank] = useState<BankQuestion[]>([])
   const [wrongTopics, setWrongTopics] = useState<{ topicId: string; count: number }[]>([])
   const [todayCount, setTodayCount] = useState(0)
 
-  const [deck, setDeck] = useState<SprintCard[]>([])
+  const [deck, setDeck] = useState<BankQuestion[]>([])
   const [currentIdx, setCurrentIdx] = useState(0)
   const [results, setResults] = useState<(boolean | null)[]>([])
   const [sprintResults, setSprintResults] = useState<SprintResult[]>([])
-  const [selected, setSelected] = useState<string[]>([])
 
   const [timeLeft, setTimeLeft] = useState(0)
   const [elapsedSec, setElapsedSec] = useState(0)
@@ -885,13 +777,12 @@ export default function SprintPage() {
   const [maxStreak, setMaxStreak] = useState(0)
   const [showConfetti, setShowConfetti] = useState(false)
 
-  // [Task 4] TTS overlay
-  const [ttsOverlayTopic, setTtsOverlayTopic] = useState<TopicRow | null>(null)
+  const [ttsCard, setTtsCard] = useState<BankQuestion | null>(null)
 
   const userId = useStudyStore((s) => s.userId)
   const storeStreak = useStudyStore((s) => s.streakDays)
 
-  useEffect(() => { loadAllTopics().then(setAllTopics) }, [])
+  useEffect(() => { loadFromQuestionBank().then(setAllBank) }, [])
 
   useEffect(() => {
     if (!userId || phase !== 'setup') return
@@ -914,18 +805,15 @@ export default function SprintPage() {
     return () => clearInterval(id)
   }, [phase, timerMode])
 
-  const closeTTS = useCallback(() => setTtsOverlayTopic(null), [])
+  const closeTTS = useCallback(() => setTtsCard(null), [])
 
   const launchSprint = useCallback((focusTopicId?: string) => {
-    if (allTopics.length === 0) return
-    const newDeck = buildDeck(
-      focusTopicId ? allTopics.filter(t => t.topicId === focusTopicId) : allTopics,
-      focusTopicId ? Math.min(qCount, 5) : qCount,
-    )
+    if (allBank.length === 0) return
+    const pool = focusTopicId ? allBank.filter(b => b.topicId === focusTopicId) : allBank
+    const newDeck = shuffle(pool).slice(0, focusTopicId ? Math.min(qCount, 5) : qCount)
     if (newDeck.length === 0) return
     setDeck(newDeck)
     setResults(new Array(newDeck.length).fill(null))
-    setSelected([])
     setSprintResults([])
     setCurrentIdx(0)
     setStreak(0)
@@ -933,19 +821,19 @@ export default function SprintPage() {
     setTimeLeft(timerMode * 60)
     setElapsedSec(0)
     setPhase('quiz')
-  }, [allTopics, qCount, timerMode])
+  }, [allBank, qCount, timerMode])
 
   const deepLinkLaunched = useRef(false)
   useEffect(() => {
-    if (!deepLinkTopicId || allTopics.length === 0 || deepLinkLaunched.current) return
+    if (!deepLinkTopicId || allBank.length === 0 || deepLinkLaunched.current) return
     deepLinkLaunched.current = true
     launchSprint(deepLinkTopicId)
-  }, [deepLinkTopicId, allTopics, launchSprint])
+  }, [deepLinkTopicId, allBank, launchSprint])
 
   const handleAnswer = useCallback((option: string) => {
     const card = deck[currentIdx]
     if (!card) return
-    const isCorrect = option === card.answer
+    const isCorrect = option === card.options[card.correctIndex]
 
     if (isCorrect) {
       playCorrect()
@@ -962,15 +850,10 @@ export default function SprintPage() {
     const newResults = [...results]
     newResults[currentIdx] = isCorrect
     setResults(newResults)
-
-    const newSelected = [...selected]
-    newSelected[currentIdx] = option
-    setSelected(newSelected)
-
     setSprintResults(prev => [...prev, { card, selected: option, isCorrect }])
 
-    if (userId) void saveTopicResult(userId, card.topic.topicId, isCorrect)
-  }, [deck, currentIdx, results, selected, streak, userId])
+    if (userId) void saveTopicResult(userId, card.topicId, isCorrect)
+  }, [deck, currentIdx, results, streak, userId])
 
   const handleNext = useCallback(() => {
     setShowConfetti(false)
@@ -981,29 +864,16 @@ export default function SprintPage() {
     }
   }, [currentIdx, deck.length])
 
-  if (phase === 'loading') {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="w-8 h-8 border-3 border-[#4f6ef7] border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
-  }
-
   return (
     <>
-      {/* [Task 4] TTS overlay */}
-      {ttsOverlayTopic && (
-        <TTSOverlay
-          topic={ttsOverlayTopic}
-          onClose={closeTTS}
-        />
+      {ttsCard && (
+        <TTSOverlay card={ttsCard} onClose={closeTTS} />
       )}
 
       {phase === 'setup' && (
         <SetupView
           todayCount={todayCount}
           wrongTopics={wrongTopics}
-          allTopics={allTopics}
           qCount={qCount}
           setQCount={setQCount}
           timerMode={timerMode}
@@ -1025,7 +895,7 @@ export default function SprintPage() {
             unlimited={timerMode === 0}
             onAnswer={handleAnswer}
             onNext={handleNext}
-            onOpenTTS={setTtsOverlayTopic}
+            onOpenTTS={setTtsCard}
           />
         </>
       )}
@@ -1037,7 +907,7 @@ export default function SprintPage() {
           maxStreak={maxStreak}
           onRetry={() => setPhase('setup')}
           onBack={() => setPhase('setup')}
-          onOpenTTS={setTtsOverlayTopic}
+          onOpenTTS={setTtsCard}
         />
       )}
     </>
