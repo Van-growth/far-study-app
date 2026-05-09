@@ -147,7 +147,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
       if (q.trigger) parts.push(`\n**TRIGGER**\n${q.trigger}`);
       if (q.trap) parts.push(`\n**TRAP ⚠️**\n${q.trap}`);
       if (q.speed) parts.push(`\n**SPEED**\n${q.speed}`);
-      parts.push(`\n위 구조를 기반으로 이 개념을 가르쳐줘. 왜 정답인지, 함정은 무엇인지, 30초 안에 풀 수 있는 방법까지 설명해줘.`);
+      parts.push(`\n위 구조를 기반으로 이 개념을 가르쳐줘. 왜 정답인지, 함정은 무엇인지까지 설명해줘.\nSPEED(30초 풀이법) 섹션은 반드시 **1단계** / **2단계** 형식으로 각 단계를 줄바꿈해서 마크다운 볼드 처리할 것.`);
       return parts.join('\n');
     }
     const eq = reviewCardContext?.exampleQuestion;
@@ -264,8 +264,8 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
 
   return (
     <div
-      className={`flex flex-col bg-white ${modal ? 'h-full' : 'border-l border-border'}`}
-      style={{ width: '100%', height: '100%', overflow: 'hidden' }}
+      className={`flex flex-col ${modal ? 'h-full' : 'border-l border-border'}`}
+      style={{ width: '100%', height: '100%', overflow: 'hidden', background: 'transparent' }}
     >
       {/* Header */}
       <div className="shrink-0 border-b border-border">
@@ -391,8 +391,8 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
 
       {/* Input */}
       <div
-        className="shrink-0 border-t border-border p-3 bg-white"
-        style={{ paddingBottom: modal ? 'calc(12px + env(safe-area-inset-bottom, 0px))' : 12 }}
+        className="shrink-0 border-t border-border p-3"
+        style={{ background: 'transparent', paddingBottom: modal ? 'calc(12px + env(safe-area-inset-bottom, 0px))' : 12 }}
       >
         <div className="flex items-end gap-2 rounded-xl px-3 py-2" style={{ border: '1.5px solid #e2e8f0', background: '#f8fafc' }}>
           <textarea
