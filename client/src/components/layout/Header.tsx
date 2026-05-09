@@ -159,7 +159,7 @@ export default function Header({ email, onSignOut }: HeaderProps) {
               border: `1px solid ${isPanelOpen ? '#4f6ef7' : '#c7d2fe'}`,
             }}
           >
-            💬 <span className="hidden md:inline">Claude</span>
+            💬 <span className="hidden md:inline">Charlie</span>
           </button>
         )}
 

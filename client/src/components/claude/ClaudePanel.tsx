@@ -183,6 +183,12 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
 5. 기억 트리거 (30초 안에 떠올릴 수 있는 키워드/이미지)`;
   };
 
+  const triggerSlash = (cmd: '/go' | '/qu' | '/re') => {
+    if (isLoading) return;
+    const msg = cmd === '/re' ? buildReCommand() : cmd === '/qu' ? buildQuCommand() : (SLASH_COMMANDS[cmd] ?? cmd);
+    sendMessage(msg);
+  };
+
   const handleSend = () => {
     const t = input.trim();
     if (!t || isLoading) return;
@@ -228,7 +234,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <span>💬</span>
-            <p className="font-semibold text-sm text-[#0f172a]">Claude 튜터</p>
+            <p className="font-semibold text-sm text-[#0f172a]">Charlie</p>
             {(isLoading || contextLoading) && <div className="w-3 h-3 border-2 border-[#4f6ef7] border-t-transparent rounded-full animate-spin" />}
             {contextLoading && <span className="text-[10px] text-[#94a3b8]">학습 현황 로딩 중</span>}
           </div>
@@ -350,6 +356,24 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
         className="shrink-0 border-t border-border p-3"
         style={{ background: 'transparent', paddingBottom: modal ? 'calc(12px + env(safe-area-inset-bottom, 0px))' : 12 }}
       >
+        {/* Quick command buttons */}
+        <div className="flex gap-2 mb-2">
+          {([
+            { label: '풀이', cmd: '/go' as const },
+            { label: '분석', cmd: '/qu' as const },
+            { label: '복습', cmd: '/re' as const },
+          ]).map(({ label, cmd }) => (
+            <button
+              key={cmd}
+              onClick={() => triggerSlash(cmd)}
+              disabled={isLoading}
+              className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 hover:opacity-80"
+              style={{ background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe' }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="flex items-end gap-2 rounded-xl px-3 py-2" style={{ border: '1.5px solid #e2e8f0', background: '#f8fafc' }}>
           <textarea
             ref={taRef}
@@ -357,7 +381,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
             onChange={(e) => setInput(e.target.value)}
             onInput={autoResize}
             onKeyDown={handleKey}
-            placeholder="질문 입력… /re /qu /go"
+            placeholder="질문 입력..."
             disabled={isLoading}
             rows={1}
             className="flex-1 bg-transparent text-sm text-[#0f172a] resize-none outline-none placeholder:text-muted leading-relaxed disabled:opacity-50"

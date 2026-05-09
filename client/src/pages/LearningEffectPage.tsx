@@ -60,7 +60,7 @@ const BECKER_STEPS = [
 const APP_STEPS = [
   { n: 1, text: 'MCQ 풀기' },
   { n: 2, text: '한국어 구조화 해설 + 도식 + 함정 + 정답 접근법' },
-  { n: 3, text: 'Claude 튜터 질문 (문제 컨텍스트 인식 상태)' },
+  { n: 3, text: 'Charlie 질문 (문제 컨텍스트 인식 상태)' },
   { n: 4, text: '자가진단 + AI 평가 → 오개념 즉시 교정' },
   { n: 5, text: '데이터 누적 → 비슷한 유형 자동 재출제' },
 ];
