@@ -629,6 +629,14 @@ function QuizView({
               </div>
             )}
 
+            {/* TRIGGER */}
+            {card.topic.triggerKeywords && card.topic.triggerKeywords.length > 0 && (
+              <div className="rounded-xl p-3" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
+                <div className="text-[10px] font-bold text-purple-700 uppercase tracking-wider mb-1.5">TRIGGER</div>
+                <div className="text-[0.72rem] font-mono leading-relaxed">{card.topic.triggerKeywords.join(' | ')}</div>
+              </div>
+            )}
+
             {/* TRAP */}
             {card.topic.trap && (
               <div className="rounded-xl p-3" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
@@ -750,6 +758,13 @@ function ResultItem({
             <div className="rounded-xl p-3" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
               <div className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1.5">RULE</div>
               <FormattedText text={card.topic.rule} />
+            </div>
+          )}
+
+          {card.topic.triggerKeywords && card.topic.triggerKeywords.length > 0 && (
+            <div className="rounded-xl p-3" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
+              <div className="text-[10px] font-bold text-purple-700 uppercase tracking-wider mb-1.5">TRIGGER</div>
+              <div className="text-[0.72rem] font-mono leading-relaxed">{card.topic.triggerKeywords.join(' | ')}</div>
             </div>
           )}
 

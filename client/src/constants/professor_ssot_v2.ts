@@ -4,9 +4,31 @@ export interface TopicCard {
   rule: string;
   trigger: string;
   trap: string;
-  one_sentence: string;
-  example: string;
+  one_sentence?: string;
+  example?: string;
+  // structured explanation fields (question_bank Migration 034와 동일)
+  context_background?: string;  // 경제적 실질 배경
+  context_trigger?: string;     // → 회계처리 필요해지는 상황
+  rule_title?: string;          // RULE 제목
+  rule_items?: string[];        // ① ② ... 규칙 항목 배열
+  speed?: string;               // SPEED 한 줄 풀이
 }
+
+export const EXPLANATION_TEMPLATE = `CONTEXT:
+{context_background}
+
+→ {context_trigger}
+
+RULE: {rule_title}
+① {rule_1}
+② {rule_2}
+
+TRIGGER: {trigger}
+
+TRAP: {trap}
+
+SPEED:
+{speed}`;
 
 export const PROFESSOR_SSOT_V2: TopicCard[] = [
 
@@ -1322,6 +1344,21 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
     trap: "Depreciation stops the moment the asset is classified as held for sale.",
     one_sentence: "Held-for-sale assets: lower of CV or (FV minus selling costs); stop depreciating immediately.",
     example: "CV $200,000 / FV $185,000 / selling costs $5,000 → lower of $200K vs $180K → report at $180,000",
+  },
+  {
+    topic_id: "IMP_006",
+    card_name: "CCA impairment — two-step test",
+    context_background: "기업이 ERP·HR·회계 같은 클라우드 소프트웨어 도입 시 implementation 비용을 자산으로 capitalize함. 계약 갱신 안 하거나 사업 축소되면 그 자산이 실제로 벌어올 현금이 장부금액보다 적어지는 상황 발생",
+    context_trigger: "impairment test 필요",
+    rule: "Step 1: Carrying amount > Undiscounted CF → impairment 존재 / Step 2: Fair Value로 write-down (ASC 350-40)",
+    rule_title: "CCA impairment 2-step (ASC 350-40)",
+    rule_items: [
+      "① Carrying amount > Undiscounted CF → impairment 존재",
+      "② Fair Value로 write-down",
+    ],
+    trigger: "'cloud computing arrangement' + 'impairment' 동시 등장",
+    trap: "Undiscounted CF를 write-down 금액으로 착각\n→ Step 1 판단용일 뿐, 실제 write-down 기준은 Fair Value",
+    speed: "Carrying > Undiscounted CF? → Yes → 정답은 Fair Value 숫자",
   },
 
   // ── PEN ────────────────────────────────────────────────────────────────────

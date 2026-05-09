@@ -474,6 +474,68 @@ function TrapCalcTable({ rows }: { rows: TrapCalcRow[] }) {
   );
 }
 
+// ── Structured explanation renderer (question_bank Migration 034) ─
+function StructuredExplanationView({ item }: { item: QuizItemWithContext }) {
+  const { context_background, context_trigger, rule_title, rule_items, trigger, trap, speed, exp } = item;
+  const hasStructured = !!(context_background || rule_title || trap || speed);
+
+  if (!hasStructured) {
+    return (
+      <div className="text-sm text-[#0f172a] leading-relaxed">
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MD_COMPONENTS as never}>
+          {exp}
+        </ReactMarkdown>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      {context_background && (
+        <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">CONTEXT</div>
+          <div className="text-[0.72rem] font-mono leading-relaxed">{context_background}</div>
+          {context_trigger && (
+            <div className="text-[0.72rem] font-mono leading-relaxed mt-1 text-gray-600">→ {context_trigger}</div>
+          )}
+        </div>
+      )}
+      {rule_title && (
+        <div className="rounded-xl p-3" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+          <div className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1.5">
+            RULE: {rule_title}
+          </div>
+          {rule_items && rule_items.length > 0 && (
+            <div className="flex flex-col gap-0.5">
+              {rule_items.map((line, i) => (
+                <div key={i} className="text-[0.72rem] font-mono leading-relaxed">{line}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {trigger && (
+        <div className="rounded-xl p-3" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
+          <div className="text-[10px] font-bold text-purple-700 uppercase tracking-wider mb-1.5">TRIGGER</div>
+          <div className="text-[0.72rem] font-mono leading-relaxed">{trigger}</div>
+        </div>
+      )}
+      {trap && (
+        <div className="rounded-xl p-3" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+          <div className="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1.5">TRAP ⚠️</div>
+          <div className="text-[0.72rem] font-mono leading-relaxed whitespace-pre-line">{trap}</div>
+        </div>
+      )}
+      {speed && (
+        <div className="rounded-xl p-3" style={{ background: '#eff6ff', border: '1px solid #c7d2fe' }}>
+          <div className="text-[10px] font-bold text-[#4f6ef7] uppercase tracking-wider mb-1.5">SPEED</div>
+          <div className="text-[0.72rem] font-mono leading-relaxed">{speed}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Shared markdown component map for exp/concept-card blocks.
 // Tight spacing, small table that scrolls horizontally if it overflows.
 const MD_COMPONENTS = {
@@ -546,6 +608,14 @@ export interface QuizItemWithContext {
   /** 내부 태그 — concept_stats 누적. stem/exp에는 노출 안 됨. */
   sourceConcepts?: string[];
   sourceTrap?: string | null;
+  // question_bank structured explanation columns (Migration 034)
+  context_background?: string | null;
+  context_trigger?: string | null;
+  rule_title?: string | null;
+  rule_items?: string[] | null;
+  trigger?: string | null;
+  trap?: string | null;
+  speed?: string | null;
 }
 
 export interface QuizResult {
@@ -1175,11 +1245,7 @@ export default function QuizView({
               </button>
               {expOpen && (
                 <div className="px-4 pb-4 pt-1" style={{ background: '#f8faff' }}>
-                  <div className="text-sm text-[#0f172a] leading-relaxed">
-                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MD_COMPONENTS as never}>
-                      {current.exp}
-                    </ReactMarkdown>
-                  </div>
+                  <StructuredExplanationView item={current} />
                   <FeedbackButtons
                     messageId={`quiz-exp-${current.topicId}-${currentIdx}`}
                     messagePreview={current.exp}
