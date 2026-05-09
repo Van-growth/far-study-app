@@ -2,7 +2,6 @@ import { useRef, useEffect, useState, KeyboardEvent } from 'react';
 import useClaudeStore from '../../store/claudeStore';
 import useStudyStore from '../../store/studyStore';
 import { useClaudeChat, TutorDbContext } from '../../hooks/useClaudeChat';
-import { fetchRelatedExtractions } from '../../lib/db';
 import { getTopicById } from '../../data/far-topics';
 import MessageBubble, { TypingBubble } from './MessageBubble';
 
@@ -184,52 +183,9 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
 5. 기억 트리거 (30초 안에 떠올릴 수 있는 키워드/이미지)`;
   };
 
-  const handleKbCommand = async () => {
-    const topicId = reviewCardContext?.topicId ?? null;
-    const topicLabel = reviewCardContext?.topicTags[0] ?? reviewCardContext?.topicLabel ?? topicId ?? '현재 토픽';
-    useClaudeStore.getState().addMessage({ role: 'user', content: '/kb' });
-    if (!userId || !topicId) {
-      useClaudeStore.getState().addMessage({ role: 'assistant', content: '복습 탭에서 카드를 먼저 선택한 후 /kb를 사용해주세요.' });
-      return;
-    }
-    const items = await fetchRelatedExtractions(userId, topicId, '', 20);
-    if (items.length === 0) {
-      useClaudeStore.getState().addMessage({ role: 'assistant', content: `**${topicLabel}** 관련 분석 기록이 없어요.` });
-      return;
-    }
-    const seen = new Set<string>();
-    const conceptList: string[] = [];
-    for (const item of items) {
-      for (const c of item.concepts) {
-        if (!seen.has(c)) { seen.add(c); conceptList.push(c); }
-      }
-    }
-    const lines = [`**📚 ${topicLabel} 개념 모음** (분석 ${items.length}개 기준)\n`];
-    conceptList.slice(0, 20).forEach((c) => lines.push(`- ${c}`));
-    useClaudeStore.getState().addMessage({ role: 'assistant', content: lines.join('\n') });
-  };
-
   const handleSend = () => {
     const t = input.trim();
     if (!t || isLoading) return;
-    if (t === '/kb') {
-      setInput('');
-      if (taRef.current) taRef.current.style.height = 'auto';
-      handleKbCommand();
-      return;
-    }
-    if (t === '/en') {
-      setInput('');
-      if (taRef.current) taRef.current.style.height = 'auto';
-      const lastScript = useClaudeStore.getState().lastTtsScript;
-      if (!lastScript) {
-        useClaudeStore.getState().addMessage({ role: 'user', content: '/en' });
-        useClaudeStore.getState().addMessage({ role: 'assistant', content: '🔊 먼저 팟캐스트를 재생한 후 /en을 사용해주세요.' });
-        return;
-      }
-      sendMessage(`/en — 아래 팟캐스트 스크립트를 한국어로 해설해줘:\n\n${lastScript}`);
-      return;
-    }
     const isSlash = t === '/re' || t === '/qu' || t in SLASH_COMMANDS;
     const { text: correctedText, corrected } = isSlash ? { text: t, corrected: false } : correctTypos(t);
     const message = t === '/re' ? buildReCommand() : t === '/qu' ? buildQuCommand() : (SLASH_COMMANDS[t] ?? correctedText);
@@ -401,7 +357,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
             onChange={(e) => setInput(e.target.value)}
             onInput={autoResize}
             onKeyDown={handleKey}
-            placeholder="질문 입력… /re /qu /go /kb /en"
+            placeholder="질문 입력… /re /qu /go"
             disabled={isLoading}
             rows={1}
             className="flex-1 bg-transparent text-sm text-[#0f172a] resize-none outline-none placeholder:text-muted leading-relaxed disabled:opacity-50"
