@@ -44,6 +44,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const topic = currentTopicId ? getTopicById(currentTopicId) : null;
   const analyzeContext = useClaudeStore((s) => s.analyzeContext);
   const reviewCardContext = useClaudeStore((s) => s.reviewCardContext);
+  const activeBankQuestion = useClaudeStore((s) => s.activeBankQuestion);
   const pendingQuiz = useClaudeStore((s) => s.pendingQuiz);
   const isOpen = useClaudeStore((s) => s.isOpen);
 
@@ -125,8 +126,32 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   };
 
   const buildQuCommand = (): string => {
+    const q = activeBankQuestion;
+    if (q) {
+      const parts: string[] = [];
+      parts.push(`[${q.topicId}] 문제 구조 분석\n`);
+      parts.push(`**Q.** ${q.questionText}\n`);
+      const optLabels = ['A', 'B', 'C', 'D'];
+      parts.push(q.options.map((o, i) => `${optLabels[i] ?? i + 1}. ${o}`).join('\n'));
+      parts.push(`→ 정답: ${optLabels[q.correctIndex] ?? q.correctIndex}. ${q.options[q.correctIndex]}\n`);
+      if (q.contextBackground) {
+        parts.push(`**CONTEXT**\n${q.contextBackground}`);
+        if (q.contextTrigger) parts.push(`→ ${q.contextTrigger}`);
+      }
+      if (q.ruleTitle) {
+        parts.push(`\n**RULE: ${q.ruleTitle}**`);
+        if (q.ruleItems && q.ruleItems.length > 0) {
+          parts.push(q.ruleItems.map(item => `• ${item}`).join('\n'));
+        }
+      }
+      if (q.trigger) parts.push(`\n**TRIGGER**\n${q.trigger}`);
+      if (q.trap) parts.push(`\n**TRAP ⚠️**\n${q.trap}`);
+      if (q.speed) parts.push(`\n**SPEED**\n${q.speed}`);
+      parts.push(`\n위 구조를 기반으로 이 개념을 가르쳐줘. 왜 정답인지, 함정은 무엇인지, 30초 안에 풀 수 있는 방법까지 설명해줘.`);
+      return parts.join('\n');
+    }
     const eq = reviewCardContext?.exampleQuestion;
-    if (!eq) return '현재 복습 카드에 예시 문제 데이터가 없습니다. (/qu 사용 불가)';
+    if (!eq) return '현재 펼쳐진 문제가 없습니다. 스프린트 결과에서 문제를 먼저 펼친 후 /qu를 사용해주세요.';
     const optLines = eq.options.join('\n');
     const expl = typeof eq.explanation === 'string'
       ? eq.explanation
@@ -267,6 +292,14 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
                   ? `${analyzeContext.topicId}${analyzeContext.topicLabel ? ` · ${analyzeContext.topicLabel}` : ''}`
                   : '분석 중'}
               </span>
+            </span>
+          </div>
+        ) : activeBankQuestion ? (
+          <div className="px-4 pb-2">
+            <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: '#faf5ff', color: '#6b21a8' }}>
+              📋 스프린트 리뷰:{' '}
+              <span className="font-semibold text-[#0f172a]">{activeBankQuestion.topicId}</span>
+              <span className="ml-1.5 opacity-60 font-normal">/qu로 문제 분석</span>
             </span>
           </div>
         ) : reviewCardContext ? (

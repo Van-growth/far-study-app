@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import useStudyStore from '../store/studyStore'
+import useClaudeStore from '../store/claudeStore'
 import { supabase } from '../lib/supabase'
 import { DB } from '../constants/db'
 import QuizCalculator from '../components/quiz/QuizCalculator'
@@ -638,9 +639,19 @@ function ResultItem({
   const [open, setOpen] = useState(false)
   const { card } = result
 
+  const handleToggle = () => {
+    const next = !open
+    setOpen(next)
+    if (next) {
+      useClaudeStore.getState().setActiveBankQuestion(card)
+    } else {
+      useClaudeStore.getState().setActiveBankQuestion(null)
+    }
+  }
+
   return (
     <div className="bg-white rounded-xl border border-border overflow-hidden">
-      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center gap-3 p-3.5 text-left">
+      <button onClick={handleToggle} className="w-full flex items-center gap-3 p-3.5 text-left">
         <span
           className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
           style={{

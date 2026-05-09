@@ -1,6 +1,21 @@
 import { create } from 'zustand';
 import type { ExampleQuestion } from '../lib/db';
 
+export interface ActiveBankQuestion {
+  questionId: string;
+  topicId: string;
+  questionText: string;
+  options: string[];
+  correctIndex: number;
+  contextBackground: string | null;
+  contextTrigger: string | null;
+  ruleTitle: string | null;
+  ruleItems: string[] | null;
+  trigger: string | null;
+  trap: string | null;
+  speed: string | null;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -49,6 +64,7 @@ interface ClaudeStore {
   pendingQuiz: PendingQuizContext | null;
   analyzeContext: AnalyzeContext | null;
   reviewCardContext: ReviewCardContext | null;
+  activeBankQuestion: ActiveBankQuestion | null;
   lastTtsScript: string | null;
 
   togglePanel: () => void;
@@ -61,6 +77,7 @@ interface ClaudeStore {
   setPendingQuiz: (ctx: PendingQuizContext | null) => void;
   setAnalyzeContext: (ctx: AnalyzeContext | null) => void;
   setReviewCardContext: (ctx: ReviewCardContext | null) => void;
+  setActiveBankQuestion: (q: ActiveBankQuestion | null) => void;
   setMessageFeedback: (id: string, fb: 'up' | 'down' | null) => void;
   setLastTtsScript: (s: string | null) => void;
 }
@@ -72,6 +89,7 @@ const useClaudeStore = create<ClaudeStore>((set) => ({
   pendingQuiz: null,
   analyzeContext: null,
   reviewCardContext: null,
+  activeBankQuestion: null,
   lastTtsScript: null,
 
   togglePanel: () => set((s) => ({ isOpen: !s.isOpen })),
@@ -80,6 +98,7 @@ const useClaudeStore = create<ClaudeStore>((set) => ({
   setPendingQuiz: (ctx) => set({ pendingQuiz: ctx }),
   setAnalyzeContext: (ctx) => set({ analyzeContext: ctx }),
   setReviewCardContext: (ctx) => set({ reviewCardContext: ctx }),
+  setActiveBankQuestion: (q) => set({ activeBankQuestion: q }),
   setLastTtsScript: (s) => set({ lastTtsScript: s }),
   setMessageFeedback: (id, fb) =>
     set((s) => ({
