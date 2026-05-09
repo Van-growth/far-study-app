@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import useStudyStore from '../store/studyStore'
 import { supabase } from '../lib/supabase'
 import { DB } from '../constants/db'
+import QuizCalculator from '../components/quiz/QuizCalculator'
 
 // ── Types ─────────────────────────────────────────────────────
 interface BankQuestion {
@@ -778,6 +779,7 @@ export default function SprintPage() {
   const [showConfetti, setShowConfetti] = useState(false)
 
   const [ttsCard, setTtsCard] = useState<BankQuestion | null>(null)
+  const [calcOpen, setCalcOpen] = useState(false)
 
   const userId = useStudyStore((s) => s.userId)
   const storeStreak = useStudyStore((s) => s.streakDays)
@@ -869,6 +871,19 @@ export default function SprintPage() {
       {ttsCard && (
         <TTSOverlay card={ttsCard} onClose={closeTTS} />
       )}
+
+      {/* 계산기 FAB — quiz/result 단계에서만 표시 */}
+      {phase !== 'setup' && !calcOpen && (
+        <button
+          onClick={() => setCalcOpen(true)}
+          className="fixed bottom-6 right-4 z-40 w-11 h-11 rounded-full shadow-lg flex items-center justify-center text-lg transition-transform active:scale-90"
+          style={{ background: '#4f6ef7', color: 'white' }}
+          title="계산기"
+        >
+          🧮
+        </button>
+      )}
+      <QuizCalculator open={calcOpen} onClose={() => setCalcOpen(false)} />
 
       {phase === 'setup' && (
         <SetupView
