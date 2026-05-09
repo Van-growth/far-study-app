@@ -1,5 +1,6 @@
 export interface TopicCard {
   topic_id: string;
+  sub_category_id: string;
   card_name: string;
   rule: string;
   trigger: string;
@@ -35,6 +36,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── PPE ────────────────────────────────────────────────────────────────────
   {
     topic_id: "PPE_001",
+    sub_category_id: "U3_PPE",
     card_name: "What goes into Land cost",
     rule: "Land cost includes purchase price, title fees, legal fees, survey costs, demolition of existing structures, grading, and back-filling. Deduct scrap proceeds from demolition.",
     trigger: "land purchase | demolition | grading | survey | title fees",
@@ -44,6 +46,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "PPE_002",
+    sub_category_id: "U3_PPE",
     card_name: "Land vs Land Improvements — how to split",
     rule: "Land Improvements (parking lots, fences, landscaping, sprinklers) are separate from Land if they are replaceable and independent of the project. They depreciate; Land does not.",
     trigger: "parking lot | fence | landscaping | sprinkler | land improvements",
@@ -53,6 +56,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "PPE_003",
+    sub_category_id: "U3_PPE",
     card_name: "Demolition cost — where does it go",
     rule: "Demolition cost is added to Land cost, not expensed, regardless of timing relative to construction.",
     trigger: "demolition | tear down | remove existing building | razed",
@@ -62,6 +66,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "PPE_004",
+    sub_category_id: "U3_PPE",
     card_name: "Transaction costs on asset purchase",
     rule: "Transaction costs on individual asset purchases (legal fees, installation, shipping) are capitalized as part of asset cost.",
     trigger: "legal fee | installation | shipping | individual asset | standalone purchase",
@@ -71,6 +76,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "PPE_005",
+    sub_category_id: "U3_PPE",
     card_name: "Transaction costs on business acquisition",
     rule: "Transaction costs in a business combination (legal fees, investment banker, due diligence) are expensed as incurred, never added to goodwill.",
     trigger: "M&A | business combination | acquisition | investment banker | due diligence",
@@ -82,6 +88,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── INT_CAP ────────────────────────────────────────────────────────────────
   {
     topic_id: "INT_CAP_001",
+    sub_category_id: "U3_PPE",
     card_name: "Interest capitalization — when does it stop",
     rule: "Capitalize interest from acquisition/construction start until the asset is ready for its intended use. Once ready for use, all subsequent interest is expensed immediately.",
     trigger: "interest capitalization | ready for use | construction period | substantially complete",
@@ -91,6 +98,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INT_CAP_002",
+    sub_category_id: "U3_PPE",
     card_name: "Purchased asset — can you capitalize interest",
     rule: "US GAAP: only assets under self-construction qualify for interest capitalization; purchased ready-to-use assets do not. IFRS: any qualifying asset (including purchased) may qualify.",
     trigger: "purchased asset | US GAAP | IFRS | qualifying asset | off-the-shelf",
@@ -102,6 +110,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── LEASE ──────────────────────────────────────────────────────────────────
   {
     topic_id: "LEASE_001",
+    sub_category_id: "U4_LEASE",
     card_name: "Is this contract a lease or not",
     rule: "A contract contains a lease only if BOTH: (1) Identified Asset — specific asset identified and supplier cannot substitute; (2) Right to Control — lessee obtains substantially all economic benefits AND directs how/for what purpose the asset is used.",
     trigger: "identified asset | right to control | substitution rights | contains a lease",
@@ -111,6 +120,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_002",
+    sub_category_id: "U4_LEASE",
     card_name: "Finance or Operating — how to classify",
     rule: "Any one of five criteria → Finance Lease: (T) Title transfers; (B) Bargain purchase option; (75) Lease term ≥ 75% of economic life; (90) PV of payments ≥ 90% of fair value; (S) Specialized asset with no alternative use.",
     trigger: "finance lease | operating lease | lease classification | 75% | 90%",
@@ -120,6 +130,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_003",
+    sub_category_id: "U4_LEASE",
     card_name: "Finance lease — initial measurement on Day 1",
     rule: "Lease Obligation = PV of (fixed payments + bargain purchase option / guaranteed residual value). ROU Asset = Lease Obligation + initial direct costs.",
     trigger: "day 1 | initial measurement | ROU asset | lease obligation | inception | commencement",
@@ -129,6 +140,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_004",
+    sub_category_id: "U4_LEASE",
     card_name: "Finance lease — initial direct costs",
     rule: "Initial direct costs (legal fees, broker commissions paid by lessee) are added to the ROU Asset on Day 1 and amortized over the lease term.",
     trigger: "initial direct costs | broker commission | legal fees | lessee costs",
@@ -138,6 +150,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_005",
+    sub_category_id: "U4_LEASE",
     card_name: "Finance lease — interest expense each period",
     rule: "Interest Expense = Beginning Lease Obligation × discount rate × (months/12). For Annuity Due, no interest on the first payment since it occurs at inception.",
     trigger: "interest expense | lease obligation | beginning balance | discount rate",
@@ -147,6 +160,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_006",
+    sub_category_id: "U4_LEASE",
     card_name: "Finance lease — depreciation period (which life to use)",
     rule: "Title transfer or bargain purchase option (T or B criteria) → depreciate over useful life. All other criteria (75%, 90%, Specialized) → depreciate over lease term.",
     trigger: "depreciation | useful life | lease term | which period | shorter of",
@@ -156,6 +170,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_007",
+    sub_category_id: "U4_LEASE",
     card_name: "Finance lease — journal entry at payment",
     rule: "Dr. Interest Expense (Beginning × rate) + Dr. Lease Obligation (remainder) / Cr. Cash. For Annuity Due Year 1: Dr. Lease Obligation / Cr. Cash only (no interest).",
     trigger: "payment | lease obligation | cash | interest expense | journal entry | finance lease",
@@ -165,6 +180,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_008",
+    sub_category_id: "U4_LEASE",
     card_name: "Operating lease — expense each period",
     rule: "Lease Expense = straight-line over the lease term. If payments vary (e.g., free rent, step-ups), average them across the full term.",
     trigger: "operating lease | lease expense | straight-line | even | uniform | flat",
@@ -174,6 +190,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_009",
+    sub_category_id: "U4_LEASE",
     card_name: "Operating lease — liability balance calculation",
     rule: "Calculate operating lease liability with effective interest method: Beginning × rate = interest; actual payment − interest = principal reduction; ending = beginning − principal.",
     trigger: "operating lease liability | balance | ending balance | ROU asset balance",
@@ -183,6 +200,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_010",
+    sub_category_id: "U4_LEASE",
     card_name: "Operating lease — journal entry at payment",
     rule: "Dr. Lease Expense (straight-line amount) + Dr. Lease Liability (principal portion) / Cr. Cash (actual payment) + Cr. Amortization—ROU Asset (same as principal).",
     trigger: "operating lease | journal entry | payment | ROU amortization | full entry",
@@ -192,6 +210,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_011",
+    sub_category_id: "U4_LEASE",
     card_name: "Residual value guarantee — include in liability or not",
     rule: "Include the lessee's guaranteed residual value in PV calculation for Lease Obligation. Unguaranteed residual value is excluded from the lessee's calculation.",
     trigger: "residual value guarantee | RVG | guaranteed | unguaranteed | lessee",
@@ -201,6 +220,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_012",
+    sub_category_id: "U4_LEASE",
     card_name: "Current vs noncurrent split on Balance Sheet (principal only)",
     rule: "Current portion of lease liability = principal to be repaid within the next 12 months (interest excluded). Noncurrent = remaining principal beyond 12 months.",
     trigger: "current portion | noncurrent | balance sheet | split | next 12 months",
@@ -210,6 +230,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_013",
+    sub_category_id: "U4_LEASE",
     card_name: "Leasehold improvement — how many years to depreciate",
     rule: "Depreciate leasehold improvements over the shorter of (1) remaining lease term or (2) useful life of the improvement. If renewal is probable, include renewal period in remaining lease term.",
     trigger: "leasehold improvement | shorter of | lease term | useful life",
@@ -219,6 +240,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_014",
+    sub_category_id: "U4_LEASE",
     card_name: "Renewal option — does it extend the lease term",
     rule: "Include renewal period in the lease term if exercise is reasonably certain (probable). If not probable, exclude it from the lease term for both ROU and liability calculations.",
     trigger: "renewal option | probable | reasonably certain | lease term | extension",
@@ -228,6 +250,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "LEASE_015",
+    sub_category_id: "U4_LEASE",
     card_name: "Finance vs Operating — expense pattern over time",
     rule: "Finance lease: higher expense early (interest larger when balance is high), lower expense later. Operating lease: flat expense each period. Total lifetime expense is the same.",
     trigger: "expense pattern | compare | total expense | finance vs operating | front-loaded",
@@ -239,6 +262,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── INT ────────────────────────────────────────────────────────────────────
   {
     topic_id: "INT_001",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_name: "Interest expense formula (lease / bond / note — all same)",
     rule: "Interest Expense = Beginning balance × effective rate × (months/12). Applies to bonds, lease liabilities, and notes payable.",
     trigger: "interest expense | beginning balance | effective rate | carrying value",
@@ -248,6 +272,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INT_002",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_name: "Journal entry at payment (lease / note — same structure)",
     rule: "Dr. Interest Expense (beginning × rate) + Dr. Note/Lease Liability (principal portion) / Cr. Cash (payment). Structure is identical for notes payable and finance leases.",
     trigger: "payment | note payable | lease liability | journal entry | cash paid",
@@ -257,6 +282,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INT_003",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_name: "Total interest expense over full term — quick calc",
     rule: "Total Interest Expense = Total Cash Payments − Beginning Principal (PV of loan/bond/lease). Count all payments by frequency (monthly, quarterly, semi-annual, annual).",
     trigger: "total interest | over the life | over the term | lifetime interest expense",
@@ -266,6 +292,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INT_004",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_name: "Total interest income over full term — quick calc",
     rule: "Total Interest Income = Total Cash Receipts − Beginning Principal (PV of receivable/investment at inception).",
     trigger: "total interest income | note receivable | interest over life | interest earned",
@@ -275,6 +302,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INT_005",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_name: "Annuity due present value — how to convert",
     rule: "Method 1 (preferred on exam): PV(ordinary annuity, n−1 periods) + 1 payment. Method 2: PV(ordinary annuity, n periods) × (1 + r). Use Method 1 when tables are provided — avoids decimals.",
     trigger: "annuity due | beginning of period | payments at start | annuity due factor",
@@ -286,6 +314,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── INV ────────────────────────────────────────────────────────────────────
   {
     topic_id: "INV_001",
+    sub_category_id: "U3_INVENTORY",
     card_name: "COGS formula — periodic system",
     rule: "COGS = Beginning Inventory + Purchases − Ending Inventory.",
     trigger: "COGS | periodic | beginning inventory | purchases | ending inventory",
@@ -295,6 +324,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INV_002",
+    sub_category_id: "U3_INVENTORY",
     card_name: "Ending inventory up — what happens to net income",
     rule: "Higher ending inventory → lower COGS → higher gross profit → higher net income → higher taxes. Ending inventory and COGS are inversely related.",
     trigger: "ending inventory | COGS | net income | overstated | understated",
@@ -304,6 +334,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INV_003",
+    sub_category_id: "U3_INVENTORY",
     card_name: "FIFO vs LIFO — tax and income impact",
     rule: "Rising prices: FIFO → higher ending inventory → higher net income → higher taxes. LIFO → lower ending inventory → lower net income → lower taxes. LIFO not permitted under IFRS.",
     trigger: "FIFO | LIFO | rising prices | tax | net income | inventory method",
@@ -315,6 +346,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── REV ────────────────────────────────────────────────────────────────────
   {
     topic_id: "REV_001",
+    sub_category_id: "U2_REVENUE_RECOGNITION",
     card_name: "Payment due over 1 year — present value required",
     rule: "If payment is due more than 1 year after sale, discount to PV. Revenue = PV of cash flows; difference between face and PV = Interest Revenue recognized over time.",
     trigger: "payment due in X years | financing component | note receivable | long-term payment",
@@ -324,6 +356,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "REV_002",
+    sub_category_id: "U2_REVENUE_RECOGNITION",
     card_name: "Payment due within 1 year — face value, no discounting",
     rule: "If payment is due within 1 year, use the practical expedient — record revenue at face value, no present value calculation required.",
     trigger: "6 months | within 1 year | practical expedient | no discounting | short-term",
@@ -333,6 +366,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "REV_003",
+    sub_category_id: "U2_REVENUE_RECOGNITION",
     card_name: "Contract modification — separate contract or not",
     rule: "Separate contract if BOTH: (1) adds distinct new goods/services AND (2) price increase reflects standalone selling price. If either condition fails → modify the original contract.",
     trigger: "modification | scope change | price change | additional goods | separate contract",
@@ -342,6 +376,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "REV_004",
+    sub_category_id: "U2_REVENUE_RECOGNITION",
     card_name: "Premium coupon — how to calculate expense",
     rule: "Premium Expense = (coupons issued × expected redemption rate) ÷ coupons per prize × prize cost. Base on number of prizes expected, not number of coupons issued.",
     trigger: "premium coupon | redemption | prize | coupon | coupon expense",
@@ -351,6 +386,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "REV_005",
+    sub_category_id: "U2_REVENUE_RECOGNITION",
     card_name: "Warranty expense — how to calculate",
     rule: "Warranty Expense = total sales × total warranty rate. Do not split the rate by year — apply the full percentage in the year of sale.",
     trigger: "warranty | assurance-type | estimated warranty expense | warranty rate",
@@ -358,10 +394,42 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
     one_sentence: "Warranty expense = total sales × total warranty percentage, all recognized in the year of sale.",
     example: "Sales $500,000 / warranty rate 2% → Warranty Expense = $10,000 (not $5K yr1 + $5K yr2)",
   },
+  {
+    topic_id: "REV_006",
+    sub_category_id: "U2_REVENUE_RECOGNITION",
+    card_name: "Incremental Costs of Obtaining a Contract — CAC 자산화 실무 맥락",
+    rule: `[핵심 원칙 — ASC 340-40]
+Incremental costs = 계약 없었으면 발생 안 했을 비용 → Capitalize
+Commissions → 계약 체결 시에만 발생 → Capitalize
+Salaries     → 계약 여부와 무관 → Expense
+Advertising  → 특정 계약과 직접 연결 안 됨 → Expense
+Practical expedient: 1년 이하 계약은 expense 처리 허용
+
+[실무 분개 흐름] 커미션 $3,600 / 2년 계약
+① 계약 체결 시: Dr. Deferred Commission Asset $3,600 / Cr. Accrued Commission Payable $3,600
+② 실제 지급 시: Dr. Accrued Commission Payable $3,600 / Cr. Cash $3,600
+③ 매월 상각 시: Dr. Commission Expense $150 / Cr. Deferred Commission Asset $150
+   ($3,600 ÷ 24개월 = $150/월 → Revenue와 비용 정확히 매칭)
+
+[규모별 중요성]
+소규모: materiality 낮음 → practical expedient → 즉시 expense 처리
+대규모: 커미션 금액 큼 → 자산화로 Revenue-Cost 매칭 / CAC 정확히 추적 가능
+
+[Capital Allocator 관점]
+Deferred Commission 자산 규모 큰 SaaS 기업 분석 시 단기 이익이 부풀려져 있을 수 있음
+Adjusted CAC로 다시 계산해야 진짜 LTV:CAC 나옴
+Salesforce·HubSpot 10-K에 Deferred Commission 수백억 달러
+Series B+ 감사 시 핵심 검토 항목`,
+    trigger: "incremental costs | commissions | salaries | advertising | capitalize | contract costs | CAC | deferred commission | ASC 340-40",
+    trap: "Salaries·Advertising을 커미션과 함께 capitalize 실수 → 계약 없어도 발생하면 무조건 Expense. 커미션 전액 expense 처리 시 계약 많이 딴 달 이익↓ → '영업 과지출' 잘못된 판단 가능.",
+    one_sentence: "계약 없었으면 발생 안 했을 비용(커미션)만 자산화 — 급여·광고비는 항상 즉시 expense.",
+    example: "Commissions $3,600 → Capitalize (2년 상각 $150/월) / Salaries $18,000 → Expense / Advertising $3,000 → Expense",
+  },
 
   // ── Migration 031 ──────────────────────────────────────────────────────────
   {
     topic_id: "INV_004",
+    sub_category_id: "U3_INVENTORY",
     card_name: "Dollar Value LIFO — layer calculation step by step",
     rule: "Step 1: Convert ending inventory at current-year cost to base-year cost (÷ current price index). Step 2: Compare to prior base-year balance to find the real quantity change. Step 3: If increased → new layer at current-year cost (× current index). If decreased → peel off most recent layers first (LIFO order). Step 4: Sum all surviving layers at their original layer cost = DV LIFO ending inventory.",
     trigger: "dollar value LIFO | DV LIFO | price index | base year | layer | LIFO layer | inventory pool",
@@ -373,6 +441,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── INVEST ─────────────────────────────────────────────────────────────────
   {
     topic_id: "INVEST_001",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Trading securities — where does unrealized gain/loss go",
     rule: "Trading securities (FVTNI): mark to fair value each period; unrealized gains and losses go to Net Income, not OCI.",
     trigger: "trading securities | FVTNI | unrealized gain | mark to market | fair value through income",
@@ -382,6 +451,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INVEST_002",
+    sub_category_id: "U5_EQUITY_METHOD",
     card_name: "Equity method — how carrying value moves",
     rule: "Equity method: +% of investee net income; −% of dividends received; −amortization of excess fair value. Fair value changes → no entry.",
     trigger: "equity method | significant influence | 20% | carrying value | equity income",
@@ -391,6 +461,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INVEST_003",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Available-for-sale — where does unrealized gain/loss go",
     rule: "AFS securities: mark to fair value each period; unrealized gains/losses go to OCI, not Net Income. Realized gains/losses go to Net Income when sold.",
     trigger: "available-for-sale | AFS | OCI | unrealized | other comprehensive income",
@@ -400,6 +471,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INVEST_004",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Available-for-sale — how much credit loss to recognize",
     rule: "AFS Credit Loss = MIN of: (1) Amortized Cost − PV of expected cash flows; (2) Amortized Cost − Fair Value. If Fair Value > Amortized Cost → credit loss = $0.",
     trigger: "AFS | credit loss | expected cash flows | fair value | allowance for credit loss",
@@ -409,6 +481,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INVEST_005",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Held-to-maturity — does fair value change matter",
     rule: "HTM securities are carried at amortized cost. Changes in fair value are ignored entirely.",
     trigger: "held-to-maturity | HTM | fair value | amortized cost | no adjustment",
@@ -418,6 +491,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INVEST_006",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Held-to-maturity — credit loss calculation",
     rule: "HTM Credit Loss = Amortized Cost − PV of expected cash flows. Unlike AFS, the fair value floor does not apply — full PV shortfall goes to credit loss.",
     trigger: "HTM | held-to-maturity | credit loss | expected cash flows | full amount",
@@ -429,6 +503,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── VAL ────────────────────────────────────────────────────────────────────
   {
     topic_id: "VAL_001",
+    sub_category_id: "U2_FAIR_VALUE",
     card_name: "Cash and receivables — measurement basis",
     rule: "Cash at face value. Accounts receivable at net realizable value (NRV) = gross AR − allowance for doubtful accounts.",
     trigger: "cash | accounts receivable | NRV | allowance | net realizable value",
@@ -438,6 +513,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "VAL_002",
+    sub_category_id: "U2_FAIR_VALUE",
     card_name: "Inventory — measurement basis",
     rule: "Inventory at lower of cost or net realizable value (LCNRV). FIFO/Average: NRV = selling price − costs to complete/sell. LIFO: compare to replacement cost.",
     trigger: "inventory | lower of cost | NRV | LCNRV | write-down",
@@ -447,6 +523,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "VAL_003",
+    sub_category_id: "U2_FAIR_VALUE",
     card_name: "PP&E — measurement basis",
     rule: "PP&E at historical cost minus accumulated depreciation (book value). No upward revaluation under US GAAP. Impairment can reduce below book value.",
     trigger: "PP&E | property plant equipment | book value | carrying value | historical cost",
@@ -456,6 +533,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "VAL_004",
+    sub_category_id: "U2_FAIR_VALUE",
     card_name: "Intangibles — measurement basis",
     rule: "Finite-life intangibles: cost minus accumulated amortization (residual value = zero). Indefinite-life: cost, no amortization, test for impairment annually.",
     trigger: "intangible | patent | trademark | amortization | indefinite life | finite life",
@@ -465,6 +543,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "VAL_005",
+    sub_category_id: "U2_FAIR_VALUE",
     card_name: "Bonds — measurement basis",
     rule: "Bonds recorded at PV of all future cash flows discounted at market rate at issuance. Carried at amortized cost using the effective interest method over the life of the bond.",
     trigger: "bond | discount | premium | amortized cost | carrying value | bond payable",
@@ -474,6 +553,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "VAL_006",
+    sub_category_id: "U2_FAIR_VALUE",
     card_name: "Fair value hierarchy — how to determine the level",
     rule: "Level 1: quoted prices in active markets for identical assets/liabilities. Level 2: other observable inputs. Level 3: unobservable inputs (internal models, estimates).",
     trigger: "fair value | level 1 | level 2 | level 3 | hierarchy | observable | unobservable",
@@ -483,6 +563,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "VAL_007",
+    sub_category_id: "U2_FAIR_VALUE",
     card_name: "Internal estimates — which level does that put you in",
     rule: "Any valuation using unobservable inputs (company's own assumptions, internal DCF models) automatically classifies as Level 3.",
     trigger: "internal | own assumptions | unobservable | DCF model | management estimate",
@@ -494,6 +575,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── TAX ────────────────────────────────────────────────────────────────────
   {
     topic_id: "TAX_001",
+    sub_category_id: "U5_INCOME_TAX",
     card_name: "Deferred tax — which tax rate to use",
     rule: "Use the enacted tax rate for the period the deferred tax will reverse, not the current period rate.",
     trigger: "deferred tax | enacted rate | tax rate change | DTA | DTL",
@@ -503,6 +585,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "TAX_002",
+    sub_category_id: "U5_INCOME_TAX",
     card_name: "Permanent vs temporary difference",
     rule: "Temporary differences reverse over time → create DTA or DTL. Permanent differences never reverse → no deferred tax (e.g., tax-exempt interest, life insurance premiums, dividends received deduction).",
     trigger: "permanent difference | temporary difference | tax-exempt | DRD | life insurance | NOL",
@@ -512,6 +595,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "TAX_003",
+    sub_category_id: "U5_INCOME_TAX",
     card_name: "Net operating loss — how to carry forward",
     rule: "NOL is a temporary difference. Record DTA = NOL × enacted rate. Add a valuation allowance if more likely than not that the DTA will not be realized.",
     trigger: "net operating loss | NOL | carryforward | deferred tax asset | tax loss",
@@ -521,6 +605,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "TAX_004",
+    sub_category_id: "U5_INCOME_TAX",
     card_name: "Valuation allowance — effect on deferred tax asset",
     rule: "Valuation allowance reduces DTA when more likely than not that some portion will not be realized. Decreasing VA → DTA increases → Tax Expense decreases → Net Income increases.",
     trigger: "valuation allowance | VA | more likely than not | deferred tax asset | release",
@@ -532,6 +617,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── EPS ────────────────────────────────────────────────────────────────────
   {
     topic_id: "EPS_001",
+    sub_category_id: "U1_EPS",
     card_name: "Income available to common — preferred dividend deduction",
     rule: "Income Available to Common (IAC) = Net Income − preferred dividends declared (or accrued). This is the numerator in Basic EPS.",
     trigger: "EPS | income available to common | preferred dividend | numerator | basic EPS",
@@ -541,6 +627,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "EPS_002",
+    sub_category_id: "U1_EPS",
     card_name: "Cumulative preferred dividend — deduct declared or not",
     rule: "Cumulative preferred: deduct the annual dividend whether or not declared. Noncumulative preferred: deduct only amounts actually declared.",
     trigger: "cumulative preferred | noncumulative | dividend | deduct | declared",
@@ -550,6 +637,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "EPS_003",
+    sub_category_id: "U1_EPS",
     card_name: "Weighted average shares — how to calculate",
     rule: "Weight each share change by the fraction of the year outstanding. New issuances → months remaining ÷ 12. Repurchases → reduce by months held ÷ 12.",
     trigger: "weighted average | shares outstanding | issued | repurchased | months outstanding",
@@ -559,6 +647,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "EPS_004",
+    sub_category_id: "U1_EPS",
     card_name: "Stock dividend and split — retroactive adjustment",
     rule: "Stock dividends and splits are applied retroactively as if they occurred at the beginning of the earliest period presented. No monthly weighting.",
     trigger: "stock dividend | stock split | retroactive | prior period | restate shares",
@@ -568,6 +657,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "EPS_005",
+    sub_category_id: "U1_EPS",
     card_name: "Diluted EPS — convertible bond effect",
     rule: "If-converted method: add back after-tax interest savings (beginning CV × effective rate × (1 − tax rate)) to numerator; add converted shares to denominator.",
     trigger: "diluted EPS | convertible bond | if-converted | interest add-back | diluted",
@@ -577,6 +667,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "EPS_006",
+    sub_category_id: "U1_EPS",
     card_name: "Anti-dilutive securities — include or exclude",
     rule: "If including a security would increase EPS (diluted EPS > basic EPS), it is anti-dilutive → exclude it from diluted EPS.",
     trigger: "anti-dilutive | diluted EPS | exclude | higher EPS | increase EPS",
@@ -588,6 +679,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── EQUITY ─────────────────────────────────────────────────────────────────
   {
     topic_id: "EQUITY_001",
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
     card_name: "Small stock dividend — market value basis",
     rule: "Small stock dividend (<20–25%): debit Retained Earnings at market value per share; credit Common Stock at par; credit APIC for the remainder.",
     trigger: "small stock dividend | less than 20% | market value | retained earnings",
@@ -597,6 +689,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "EQUITY_002",
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
     card_name: "Large stock dividend — par value basis",
     rule: "Large stock dividend (≥20–25%): debit Retained Earnings at par value only; credit Common Stock at par.",
     trigger: "large stock dividend | more than 25% | par value | retained earnings",
@@ -606,6 +699,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "EQUITY_003",
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
     card_name: "Stock split — journal entry or not",
     rule: "A stock split changes par value per share and increases number of shares but requires no journal entry — memo note only.",
     trigger: "stock split | 2-for-1 | no entry | memo | journal entry",
@@ -615,6 +709,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "EQUITY_004",
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
     card_name: "Treasury stock reissuance — where does the gain go",
     rule: "Reissue above cost: excess → APIC—Treasury Stock (not a gain). Reissue below cost: debit APIC—TS (to extent available), then Retained Earnings.",
     trigger: "treasury stock | reissued | above cost | below cost | gain | APIC",
@@ -624,6 +719,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "EQUITY_005",
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
     card_name: "Subscription receivable — asset or contra-equity",
     rule: "Subscription receivable (amounts owed by shareholders for stock subscriptions) is a contra-equity account, not an asset.",
     trigger: "subscription receivable | stock subscription | amount owed | contra-equity",
@@ -635,6 +731,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── CF ─────────────────────────────────────────────────────────────────────
   {
     topic_id: "CF_001",
+    sub_category_id: "U5_CASH_FLOWS",
     card_name: "Gain on disposal — how to treat in operating activities",
     rule: "Gain on sale of assets: subtract the gain from CFO (non-cash operating adjustment). The actual cash proceeds go to Investing Activities separately.",
     trigger: "gain on sale | disposal | indirect method | cash flow from operations",
@@ -644,6 +741,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "CF_002",
+    sub_category_id: "U5_CASH_FLOWS",
     card_name: "Equity method income — how to treat in operating activities",
     rule: "Equity method income is non-cash → deduct from CFO under indirect method. Actual dividends received from the investee = cash → add to CFO.",
     trigger: "equity method | investee income | operating activities | equity earnings",
@@ -653,6 +751,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "CF_003",
+    sub_category_id: "U5_CASH_FLOWS",
     card_name: "Unrealized gain/loss — adjust or not",
     rule: "AFS unrealized G/L goes to OCI (not NI) → no cash flow adjustment needed. Trading security unrealized G/L goes to NI → it is non-cash → adjust in CFO.",
     trigger: "unrealized gain | unrealized loss | AFS | trading | indirect method | OCI",
@@ -662,6 +761,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "CF_004",
+    sub_category_id: "U5_CASH_FLOWS",
     card_name: "Loan receipts and payments — can you net them",
     rule: "Loan receipts and loan repayments cannot be netted — each must be reported gross.",
     trigger: "loan | netting | gross | cash flow | borrow | repay",
@@ -673,6 +773,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── CHANGE ─────────────────────────────────────────────────────────────────
   {
     topic_id: "CHANGE_001",
+    sub_category_id: "U2_ACCOUNTING_CHANGES",
     card_name: "Change in accounting principle — retrospective",
     rule: "A change in accounting principle is applied retrospectively: restate all prior periods as if the new principle was always used. Adjust beginning retained earnings of the earliest period presented.",
     trigger: "accounting principle | retrospective | restate | prior period | principle change",
@@ -682,6 +783,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "CHANGE_002",
+    sub_category_id: "U2_ACCOUNTING_CHANGES",
     card_name: "Change in estimate — prospective",
     rule: "A change in accounting estimate is applied prospectively: adjust current and future periods only. No restatement of prior periods.",
     trigger: "change in estimate | prospective | useful life | residual value | estimate change",
@@ -691,6 +793,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "CHANGE_003",
+    sub_category_id: "U2_ACCOUNTING_CHANGES",
     card_name: "Error correction — prior period retained earnings",
     rule: "Prior period errors are corrected by restating prior financial statements and adjusting beginning retained earnings of the earliest period presented.",
     trigger: "error correction | prior period | restatement | retained earnings | correction",
@@ -700,6 +803,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "CHANGE_004",
+    sub_category_id: "U2_ACCOUNTING_CHANGES",
     card_name: "Ending inventory error — does it self-correct",
     rule: "Ending inventory errors are counterbalancing (self-correcting): the error reverses in the following year. Depreciation errors are non-counterbalancing and require explicit correction.",
     trigger: "inventory error | self-correcting | counterbalancing | depreciation error | automatic",
@@ -711,6 +815,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── CONSOL ─────────────────────────────────────────────────────────────────
   {
     topic_id: "CONSOL_001",
+    sub_category_id: "U5_CONSOLIDATED_FS",
     card_name: "Intercompany transaction — eliminate 100% regardless of ownership",
     rule: "All intercompany transactions (sales, loans, dividends) are eliminated 100% in consolidation, regardless of the parent's ownership percentage.",
     trigger: "intercompany | eliminate | consolidation | related party | parent-subsidiary",
@@ -720,6 +825,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "CONSOL_002",
+    sub_category_id: "U5_CONSOLIDATED_FS",
     card_name: "Downstream sale — does NCI get affected",
     rule: "Downstream sale (parent sells to subsidiary): unrealized profit is attributed entirely to the parent. NCI is not affected.",
     trigger: "downstream | parent to subsidiary | NCI | intercompany profit | downstream sale",
@@ -729,6 +835,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "CONSOL_003",
+    sub_category_id: "U5_CONSOLIDATED_FS",
     card_name: "Upstream sale — does NCI get affected",
     rule: "Upstream sale (subsidiary sells to parent): unrealized profit elimination is shared proportionally between parent and NCI based on NCI's ownership percentage.",
     trigger: "upstream | subsidiary to parent | NCI | proportional | upstream sale",
@@ -740,6 +847,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── NFP ────────────────────────────────────────────────────────────────────
   {
     topic_id: "NFP_001",
+    sub_category_id: "U6_NFP_FINANCIAL_REPORTING",
     card_name: "Board-designated funds — with or without restriction",
     rule: "Board-designated (quasi-endowment) funds are self-imposed restrictions. They remain 'without donor restriction' because the board can reverse the designation at any time.",
     trigger: "board designated | quasi-endowment | self-imposed | board restriction",
@@ -749,6 +857,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "NFP_002",
+    sub_category_id: "U6_NFP_FINANCIAL_REPORTING",
     card_name: "Long-term restricted donation — which cash flow category",
     rule: "Cash received from long-term restricted contributions (endowments) goes to Cash from Financing Activities (CFF), not Operating Activities.",
     trigger: "restricted donation | long-term | endowment | financing activities | NFP cash flow",
@@ -758,6 +867,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "NFP_003",
+    sub_category_id: "U6_NFP_FINANCIAL_REPORTING",
     card_name: "Net asset classification — with vs without restriction",
     rule: "NFP net assets have two classes: (1) with donor restriction (time or purpose restrictions imposed by donors), (2) without donor restriction. Both appear on the Statement of Financial Position.",
     trigger: "net assets | with restriction | without restriction | donor | NFP balance sheet",
@@ -767,6 +877,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "NFP_004",
+    sub_category_id: "U6_NFP_FINANCIAL_REPORTING",
     card_name: "Contributed services — when to recognize",
     rule: "Recognize contributed services if: (1) they create or enhance a nonfinancial asset, OR (2) require specialized skills, provided by professionals with those skills, and would otherwise be purchased.",
     trigger: "contributed services | volunteer | donated services | recognize | specialized skills",
@@ -776,6 +887,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "NFP_005",
+    sub_category_id: "U6_NFP_FINANCIAL_REPORTING",
     card_name: "Conditional vs unconditional promise to give",
     rule: "Unconditional promise: recognize as revenue when pledge is received. Conditional promise: recognize only when the condition is substantially met.",
     trigger: "pledge | promise to give | conditional | unconditional | contribution",
@@ -785,6 +897,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "NFP_006",
+    sub_category_id: "U6_NFP_FINANCIAL_REPORTING",
     card_name: "Underwater endowment — how to present",
     rule: "Underwater endowment (fair value < original gift amount) is presented within net assets with donor restriction. The deficiency stays in 'with restriction' unless donor permits otherwise.",
     trigger: "underwater | endowment | fair value below | original gift | deficiency",
@@ -794,6 +907,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "NFP_007",
+    sub_category_id: "U6_NFP_FINANCIAL_REPORTING",
     card_name: "Statement of functional expenses — when required",
     rule: "Voluntary health and welfare organizations must present a separate statement of functional expenses (program vs. management vs. fundraising). All other NFPs must present expense information by nature and function (in statements or notes).",
     trigger: "functional expenses | program services | management | fundraising | VHW | voluntary health",
@@ -805,6 +919,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── CONT ───────────────────────────────────────────────────────────────────
   {
     topic_id: "CONT_001",
+    sub_category_id: "U4_CONTINGENCIES",
     card_name: "Gain contingency — how much to accrue",
     rule: "Gain contingencies are never accrued regardless of probability. Disclose in notes only if probable. Accrual answer = $0.",
     trigger: "gain contingency | contingent gain | accrual | probable gain",
@@ -814,6 +929,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "CONT_002",
+    sub_category_id: "U4_CONTINGENCIES",
     card_name: "Loss contingency — when to accrue",
     rule: "Accrue a loss contingency when BOTH: (1) probable that a liability has been incurred, AND (2) amount can be reasonably estimated.",
     trigger: "loss contingency | probable | estimable | accrue | contingent liability",
@@ -825,6 +941,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── INTANG ─────────────────────────────────────────────────────────────────
   {
     topic_id: "INTANG_001",
+    sub_category_id: "U3_INTANGIBLES",
     card_name: "Patent defense — win the lawsuit",
     rule: "Successfully defending a patent: capitalize defense costs by adding to the existing Patent account. Amortize over the remaining life of the patent.",
     trigger: "patent | successfully defended | win | legal defense | patent lawsuit",
@@ -834,6 +951,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INTANG_002",
+    sub_category_id: "U3_INTANGIBLES",
     card_name: "Patent defense — lose the lawsuit",
     rule: "Losing a patent defense: expense all legal defense costs immediately. The patent itself may also require write-off if its value is impaired.",
     trigger: "patent | lost | lose lawsuit | defense costs | expense",
@@ -845,6 +963,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── SW ─────────────────────────────────────────────────────────────────────
   {
     topic_id: "SW_001",
+    sub_category_id: "U3_INTANGIBLES",
     card_name: "Software to be sold — amortization amount",
     rule: "Amortize at MAX of: (1) ratio method = current revenues ÷ total projected revenues × carrying value; (2) straight-line over remaining economic life.",
     trigger: "software to be sold | amortization | ratio method | economic life | MAX",
@@ -856,6 +975,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── PART ───────────────────────────────────────────────────────────────────
   {
     topic_id: "PART_001",
+    sub_category_id: "U5_PARTNERSHIPS",
     card_name: "Partnership liquidation — order of payments",
     rule: "Order: (1) settle liabilities to outside creditors, (2) repay partner loans/advances, (3) distribute remaining capital to partners per capital balances.",
     trigger: "partnership | liquidation | dissolution | creditors | capital | order",
@@ -867,6 +987,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── TBS ────────────────────────────────────────────────────────────────────
   {
     topic_id: "TBS_001",
+    sub_category_id: "U1_BALANCE_SHEET",
     card_name: "TBS strategy — how to approach simulation questions",
     rule: "Enter account names first (secures partial credit even if amounts are wrong). Do easy items first (par bonds, FV > amortized cost on AFS). Enter 0 only when instructed. Budget 20–25 minutes per TBS.",
     trigger: "TBS | simulation | task-based | journal entry | enter | zero",
@@ -878,6 +999,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── RATIO ──────────────────────────────────────────────────────────────────
   {
     topic_id: "RATIO_001",
+    sub_category_id: "U2_RATIO_ANALYSIS",
     card_name: "Current ratio — what goes in numerator and denominator",
     rule: "Current Ratio = Current Assets ÷ Current Liabilities.",
     trigger: "current ratio | liquidity | current assets | current liabilities",
@@ -887,6 +1009,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "RATIO_002",
+    sub_category_id: "U2_RATIO_ANALYSIS",
     card_name: "Quick ratio — what to exclude from current assets",
     rule: "Quick Ratio = (Cash + Short-term investments + Net receivables) ÷ Current Liabilities. Excludes inventory and prepaid expenses.",
     trigger: "quick ratio | acid-test | inventory excluded | liquid assets | prepaid",
@@ -896,6 +1019,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "RATIO_003",
+    sub_category_id: "U2_RATIO_ANALYSIS",
     card_name: "Debt-to-equity ratio — how to calculate",
     rule: "Debt-to-Equity = Total Liabilities ÷ Total Stockholders' Equity.",
     trigger: "debt-to-equity | leverage | financial risk | total liabilities | equity",
@@ -905,6 +1029,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "RATIO_004",
+    sub_category_id: "U2_RATIO_ANALYSIS",
     card_name: "Return on assets — net income or operating income",
     rule: "Return on Assets (ROA) = Net Income ÷ Average Total Assets. Use average assets (beginning + ending ÷ 2).",
     trigger: "return on assets | ROA | net income | total assets | efficiency",
@@ -914,6 +1039,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "RATIO_005",
+    sub_category_id: "U2_RATIO_ANALYSIS",
     card_name: "Return on equity — which equity figure to use",
     rule: "Return on Equity (ROE) = Net Income ÷ Average Stockholders' Equity. Use average equity (beginning + ending ÷ 2).",
     trigger: "return on equity | ROE | stockholders equity | net income",
@@ -923,6 +1049,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "RATIO_006",
+    sub_category_id: "U2_RATIO_ANALYSIS",
     card_name: "Inventory turnover — and days in inventory",
     rule: "Inventory Turnover = COGS ÷ Average Inventory. Days in Inventory = 365 ÷ Inventory Turnover.",
     trigger: "inventory turnover | days in inventory | COGS | average inventory",
@@ -932,6 +1059,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "RATIO_007",
+    sub_category_id: "U2_RATIO_ANALYSIS",
     card_name: "Receivables turnover — and days outstanding",
     rule: "Receivables Turnover = Net Credit Sales ÷ Average Accounts Receivable. Days Sales Outstanding = 365 ÷ Receivables Turnover.",
     trigger: "receivables turnover | days sales outstanding | DSO | collection period | AR",
@@ -941,6 +1069,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "RATIO_008",
+    sub_category_id: "U2_RATIO_ANALYSIS",
     card_name: "Asset turnover — how to interpret",
     rule: "Asset Turnover = Net Sales ÷ Average Total Assets. Higher ratio = more efficient use of assets to generate sales.",
     trigger: "asset turnover | efficiency | sales | total assets",
@@ -950,6 +1079,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "RATIO_009",
+    sub_category_id: "U2_RATIO_ANALYSIS",
     card_name: "Gross profit margin vs net profit margin",
     rule: "Gross Profit Margin = Gross Profit ÷ Net Sales. Net Profit Margin = Net Income ÷ Net Sales.",
     trigger: "gross margin | net margin | profit margin | gross profit | net income",
@@ -959,6 +1089,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "RATIO_010",
+    sub_category_id: "U2_RATIO_ANALYSIS",
     card_name: "Interest coverage ratio",
     rule: "Interest Coverage = EBIT ÷ Interest Expense. Measures ability to service debt.",
     trigger: "interest coverage | times interest earned | EBIT | interest expense",
@@ -970,6 +1101,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── DISC ───────────────────────────────────────────────────────────────────
   {
     topic_id: "DISC_001",
+    sub_category_id: "U2_NOTES_TO_FS",
     card_name: "Subsequent events — recognize or disclose only",
     rule: "Recognized: condition existed at balance sheet date → adjust the financial statements. Disclosure-only: new condition arose after the balance sheet date → note disclosure only.",
     trigger: "subsequent event | after balance sheet date | recognize | disclose | type 1 | type 2",
@@ -979,6 +1111,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "DISC_002",
+    sub_category_id: "U2_NOTES_TO_FS",
     card_name: "Related party transactions — what must be disclosed",
     rule: "Disclose: nature of relationship, description of transactions, dollar amounts, amounts due to/from related parties, and any terms that differ from arm's length.",
     trigger: "related party | disclosure | transactions | arm's length | related party note",
@@ -988,6 +1121,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "DISC_003",
+    sub_category_id: "U2_NOTES_TO_FS",
     card_name: "Segment reporting — when is a segment reportable",
     rule: "Reportable if any ONE of: (1) revenue ≥ 10% of combined revenue; (2) profit/loss ≥ 10% of larger of total profit or total loss; (3) assets ≥ 10% of total assets. Additionally, disclosed segments must cover ≥ 75% of external revenue.",
     trigger: "segment reporting | reportable segment | 10% | 75% | operating segment",
@@ -997,6 +1131,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "DISC_004",
+    sub_category_id: "U2_NOTES_TO_FS",
     card_name: "Going concern — when to disclose",
     rule: "Disclose substantial doubt when conditions raise significant doubt about the entity's ability to continue for 12 months from the financial statement issuance date. Describe conditions and management's plans.",
     trigger: "going concern | substantial doubt | 12 months | doubt | mitigation",
@@ -1006,6 +1141,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "DISC_005",
+    sub_category_id: "U2_NOTES_TO_FS",
     card_name: "Commitments and contingencies — disclosure threshold",
     rule: "Disclose loss contingencies when loss is at least reasonably possible (even without accrual). Accrual requires probable + estimable.",
     trigger: "reasonably possible | commitment | contingency | disclosure threshold | possible",
@@ -1015,6 +1151,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "DISC_006",
+    sub_category_id: "U2_NOTES_TO_FS",
     card_name: "Fair value disclosure — what levels require description",
     rule: "Level 3 disclosures require: quantitative info about unobservable inputs, valuation techniques, beginning-to-ending balance reconciliation, and transfers between levels.",
     trigger: "Level 3 | fair value disclosure | unobservable | valuation technique | roll-forward",
@@ -1024,6 +1161,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "DISC_007",
+    sub_category_id: "U2_NOTES_TO_FS",
     card_name: "Earnings per share — what must appear on face of income statement",
     rule: "Basic and diluted EPS must appear on the face of the income statement (not just notes) for public companies. Required for: income from continuing operations and net income at minimum.",
     trigger: "EPS disclosure | face of income statement | basic EPS | diluted EPS | public company",
@@ -1035,6 +1173,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── FC ─────────────────────────────────────────────────────────────────────
   {
     topic_id: "FC_001",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Foreign currency transaction — which rate to use at transaction date",
     rule: "Record foreign currency transactions at the spot rate on the transaction date.",
     trigger: "foreign currency | transaction date | spot rate | initial recording | purchase foreign",
@@ -1044,6 +1183,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "FC_002",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Foreign currency transaction — which rate to use at year end",
     rule: "Monetary items (receivables, payables, cash) remeasure at the current spot rate at each balance sheet date. Nonmonetary items (inventory, PP&E) stay at the historical rate.",
     trigger: "year-end | balance sheet date | remeasure | current rate | monetary items",
@@ -1053,6 +1193,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "FC_003",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Foreign currency gain/loss — where does it go",
     rule: "Foreign currency transaction gains and losses (from remeasuring monetary items) go to Net Income, not OCI.",
     trigger: "foreign currency gain | foreign currency loss | transaction gain | transaction loss",
@@ -1062,6 +1203,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "FC_004",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Functional currency — how to determine",
     rule: "The functional currency is the currency of the primary economic environment where the entity operates — generally where it generates and spends cash.",
     trigger: "functional currency | primary economic environment | cash flows | local currency",
@@ -1071,6 +1213,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "FC_005",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Translation vs remeasurement — when to use which",
     rule: "Functional currency = local currency → translate using the current rate method. Functional currency ≠ local currency (= reporting currency) → remeasure using the temporal method.",
     trigger: "translation | remeasurement | current rate | temporal | functional currency | method",
@@ -1080,6 +1223,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "FC_006",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Translation adjustment — where does it go",
     rule: "Translation adjustment (from current rate method for foreign subsidiaries) goes to Other Comprehensive Income (OCI) as Cumulative Translation Adjustment (CTA).",
     trigger: "translation adjustment | CTA | OCI | foreign subsidiary | current rate method",
@@ -1089,6 +1233,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "FC_007",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Remeasurement gain/loss — where does it go",
     rule: "Remeasurement gain or loss (from the temporal method) goes directly to Net Income, not OCI.",
     trigger: "remeasurement | temporal method | gain/loss | net income | remeasurement gain",
@@ -1100,6 +1245,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── GOV ────────────────────────────────────────────────────────────────────
   {
     topic_id: "GOV_001",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Government funds — which basis of accounting",
     rule: "Governmental funds: modified accrual. Proprietary and fiduciary funds: full accrual. Government-wide statements: full accrual.",
     trigger: "governmental fund | modified accrual | full accrual | basis of accounting | government",
@@ -1109,6 +1255,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_002",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Governmental vs proprietary funds — difference",
     rule: "Governmental funds: modified accrual + current financial resources focus. Proprietary funds: full accrual + economic resources focus.",
     trigger: "governmental fund | proprietary fund | current financial resources | economic resources",
@@ -1118,6 +1265,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_003",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "General fund — what goes in here",
     rule: "The General Fund accounts for all financial resources not required to be reported in another fund. It is the primary operating fund. Only one General Fund per government.",
     trigger: "general fund | operating fund | primary fund | catch-all",
@@ -1127,6 +1275,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_004",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Capital projects fund — when to use",
     rule: "Capital Projects Fund accounts for resources for major capital facility acquisition or construction. Bond proceeds for construction go here.",
     trigger: "capital projects | construction | major facilities | bond proceeds | infrastructure",
@@ -1136,6 +1285,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_005",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Debt service fund — when to use",
     rule: "Debt Service Fund accumulates resources for payment of general long-term debt principal and interest.",
     trigger: "debt service | principal payment | interest payment | bond repayment | general long-term debt",
@@ -1145,6 +1295,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_006",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Enterprise fund — when to use",
     rule: "Enterprise Fund (proprietary) accounts for activities that charge fees to external users to cover costs — utilities, airports, toll roads.",
     trigger: "enterprise fund | fee for service | utility | user charges | proprietary fund",
@@ -1154,6 +1305,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_007",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Modified accrual — revenue recognition rule",
     rule: "Revenue recognized when measurable AND available. Available = collectible within the current period or soon enough after year-end to pay current liabilities (generally 60 days).",
     trigger: "modified accrual | revenue | measurable | available | 60 days | property tax",
@@ -1163,6 +1315,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_008",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Modified accrual — expenditure recognition rule",
     rule: "Expenditures recognized when a current fund liability is incurred. No depreciation on capital assets in governmental funds.",
     trigger: "modified accrual | expenditure | liability incurred | current resources | depreciation",
@@ -1172,6 +1325,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_009",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Encumbrance — what it is and when to record",
     rule: "Record an encumbrance when a purchase order is issued to reserve budget authority. Reverse when goods arrive and record the actual expenditure.",
     trigger: "encumbrance | purchase order | reserve | commitment | budget authority",
@@ -1181,6 +1335,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_010",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Budget entry — how to record at start of year",
     rule: "At year-start: Dr. Estimated Revenues, Cr. Appropriations, plug with Budgetary Fund Balance. Surplus budget → credit BFB; deficit budget → debit BFB. Reverse at year-end.",
     trigger: "budget entry | estimated revenues | appropriations | budgetary | year-start",
@@ -1190,6 +1345,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_011",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Government-wide statements vs fund statements",
     rule: "Government-wide: full accrual, include capital assets and long-term liabilities, aggregate by governmental and business-type activities. Fund statements: detail by individual fund with varied accounting basis.",
     trigger: "government-wide | fund statements | statement of net position | CAFR | aggregate",
@@ -1199,6 +1355,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_012",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Reconciliation — why fund balance differs from net position",
     rule: "Differences arise from: (1) governmental funds exclude capital assets and long-term liabilities; (2) modified accrual defers items recognized under full accrual; (3) Internal Service Fund net assets may be added.",
     trigger: "reconciliation | fund balance | net position | difference | explain",
@@ -1208,6 +1365,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_013",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Infrastructure assets — modified approach",
     rule: "Governments may use the modified approach for infrastructure: maintain at a prescribed condition level, expense all maintenance as incurred, no depreciation recorded.",
     trigger: "infrastructure | modified approach | roads | bridges | condition level | no depreciation",
@@ -1217,6 +1375,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_014",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Special revenue fund — when to use",
     rule: "Special Revenue Fund accounts for proceeds from specific revenue sources restricted or committed to specific purposes other than capital projects or debt service.",
     trigger: "special revenue | restricted grant | specific purpose | dedicated tax | earmarked",
@@ -1226,6 +1385,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "GOV_015",
+    sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Permanent fund — when to use",
     rule: "Permanent Fund accounts for resources legally restricted so that only earnings (not principal) may be used to support government programs.",
     trigger: "permanent fund | principal restricted | earnings only | endowment | government",
@@ -1237,6 +1397,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── BOND ───────────────────────────────────────────────────────────────────
   {
     topic_id: "BOND_001",
+    sub_category_id: "U4_BONDS",
     card_name: "Bond issued at discount — carrying value over time",
     rule: "Discount bond carrying value starts below face value and increases each period as the discount is amortized, reaching face value at maturity.",
     trigger: "bond discount | issued below par | carrying value | amortize discount",
@@ -1246,6 +1407,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "BOND_002",
+    sub_category_id: "U4_BONDS",
     card_name: "Bond issued at premium — carrying value over time",
     rule: "Premium bond carrying value starts above face value and decreases each period as the premium is amortized, reaching face value at maturity.",
     trigger: "bond premium | issued above par | carrying value | amortize premium",
@@ -1255,6 +1417,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "BOND_003",
+    sub_category_id: "U4_BONDS",
     card_name: "Bond interest expense — effective interest method",
     rule: "Interest Expense = beginning carrying value × effective (market) rate. Cash paid = face value × coupon rate. Discount amortization = Interest Expense − Cash paid. Premium amortization = Cash paid − Interest Expense.",
     trigger: "effective interest | bond interest expense | carrying value | market rate | coupon rate",
@@ -1264,6 +1427,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "BOND_004",
+    sub_category_id: "U4_BONDS",
     card_name: "Bond retirement before maturity — gain or loss",
     rule: "Gain/Loss on early retirement = Carrying value − Cash paid to retire. Gain if CV > cash paid; loss if cash paid > CV. Both go to Net Income.",
     trigger: "early retirement | bond repurchase | extinguishment | gain on retirement | loss on retirement",
@@ -1273,6 +1437,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "BOND_005",
+    sub_category_id: "U4_BONDS",
     card_name: "Debt issuance costs — where does it go",
     rule: "Debt issuance costs are a direct deduction from the face value of the debt (contra-liability), not a separate asset. Amortized over the debt's life using the effective interest method.",
     trigger: "debt issuance costs | underwriter fees | bond issue costs | contra-liability",
@@ -1282,6 +1447,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "BOND_006",
+    sub_category_id: "U4_BONDS",
     card_name: "Convertible bond — how to record at issuance",
     rule: "US GAAP: record entire proceeds as liability (no equity split). IFRS: bifurcate into debt component (at PV) and equity component (residual).",
     trigger: "convertible bond | issuance | equity component | debt component | bifurcate",
@@ -1291,6 +1457,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "BOND_007",
+    sub_category_id: "U4_TROUBLED_DEBT",
     card_name: "Troubled debt restructuring — how to measure gain",
     rule: "If total future cash flows under new terms < carrying value → immediate gain = CV − total undiscounted future cash flows; new carrying value = total future cash flows; no interest expense going forward. If total future flows ≥ CV → no gain (reduce effective rate only).",
     trigger: "troubled debt restructuring | TDR | creditor | modification | restructure | gain",
@@ -1302,6 +1469,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── IMP ────────────────────────────────────────────────────────────────────
   {
     topic_id: "IMP_001",
+    sub_category_id: "U3_PPE",
     card_name: "PP&E impairment — when to test and how to measure",
     rule: "Test when triggering events suggest impairment. Step 1 (recoverability): CV > undiscounted future cash flows → impaired. Step 2 (measurement): Impairment loss = CV − fair value.",
     trigger: "impairment | PP&E | recoverable | triggering event | undiscounted | carrying value",
@@ -1311,6 +1479,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "IMP_002",
+    sub_category_id: "U3_PPE",
     card_name: "PP&E impairment — can you reverse under US GAAP",
     rule: "Under US GAAP, impairment losses on PP&E cannot be reversed. No write-up permitted even if fair value subsequently recovers.",
     trigger: "impairment reversal | write-up | US GAAP | recovery | PP&E",
@@ -1320,6 +1489,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "IMP_003",
+    sub_category_id: "U3_PPE",
     card_name: "Goodwill impairment — one step test",
     rule: "Compare carrying value of reporting unit (including goodwill) to its fair value. If CV > FV → impairment loss = CV − FV, capped at carrying value of goodwill.",
     trigger: "goodwill impairment | reporting unit | fair value | one-step | carrying value",
@@ -1329,6 +1499,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "IMP_004",
+    sub_category_id: "U3_PPE",
     card_name: "Intangible with indefinite life — impairment test timing",
     rule: "Intangible assets with indefinite useful lives are tested for impairment at least annually and whenever triggering events occur. Not amortized.",
     trigger: "indefinite life | intangible | annual impairment | no amortization | trade name",
@@ -1338,6 +1509,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "IMP_005",
+    sub_category_id: "U3_PPE",
     card_name: "Asset held for sale — how to measure",
     rule: "Classify as held for sale → measure at lower of: (a) carrying value, or (b) fair value less costs to sell. Stop depreciating immediately upon classification.",
     trigger: "held for sale | fair value less costs | classify | stop depreciation | disposal group",
@@ -1347,6 +1519,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "IMP_006",
+    sub_category_id: "U3_PPE",
     card_name: "CCA impairment — two-step test",
     context_background: "기업이 ERP·HR·회계 같은 클라우드 소프트웨어 도입 시 implementation 비용을 자산으로 capitalize함. 계약 갱신 안 하거나 사업 축소되면 그 자산이 실제로 벌어올 현금이 장부금액보다 적어지는 상황 발생",
     context_trigger: "impairment test 필요",
@@ -1364,6 +1537,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── PEN ────────────────────────────────────────────────────────────────────
   {
     topic_id: "PEN_001",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_name: "Pension expense components — what is included",
     rule: "Net Periodic Pension Cost = service cost + interest cost − expected return on plan assets + amortization of prior service cost + amortization of net actuarial loss.",
     trigger: "pension expense | net periodic pension cost | NPPC | components",
@@ -1373,6 +1547,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "PEN_002",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_name: "Service cost — where does it go",
     rule: "Service cost is always classified as operating expense. All other pension components (interest, expected return, amortizations) are classified as non-operating.",
     trigger: "service cost | pension | operating | non-operating | component separation",
@@ -1382,6 +1557,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "PEN_003",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_name: "Interest cost — how to calculate",
     rule: "Pension interest cost = beginning Projected Benefit Obligation (PBO) × discount rate.",
     trigger: "interest cost | pension | PBO | discount rate | beginning PBO",
@@ -1391,6 +1567,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "PEN_004",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_name: "Expected return on plan assets — effect on expense",
     rule: "Expected return on plan assets reduces net pension cost. Expected return = beginning fair value of plan assets × expected long-term rate of return.",
     trigger: "expected return | plan assets | reduce pension | long-term rate | expected",
@@ -1400,6 +1577,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "PEN_005",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_name: "Actuarial gain/loss — where does it go",
     rule: "Actuarial gains and losses are recorded in OCI initially. They are amortized into net pension cost in future periods using the corridor method (or faster if elected).",
     trigger: "actuarial gain | actuarial loss | OCI | corridor | amortization | experience",
@@ -1409,6 +1587,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "PEN_006",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_name: "Prior service cost — where does it go",
     rule: "Prior service cost (from plan amendments) is initially recorded in OCI, then amortized into pension expense over the remaining service period of affected employees.",
     trigger: "prior service cost | plan amendment | OCI | amortization | PSC",
@@ -1418,6 +1597,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "PEN_007",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_name: "Funded status — how to present on balance sheet",
     rule: "Funded status = Fair value of plan assets − PBO. Overfunded → net pension asset. Underfunded → net pension liability. Report the net amount on the balance sheet.",
     trigger: "funded status | pension | balance sheet | plan assets | PBO | net pension",
@@ -1427,6 +1607,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "PEN_008",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_name: "Projected benefit obligation — how it moves",
     rule: "PBO roll-forward: Beginning PBO + service cost + interest cost + actuarial losses − actuarial gains − benefits paid = Ending PBO.",
     trigger: "PBO | projected benefit obligation | roll-forward | beginning | ending | change",
@@ -1438,6 +1619,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── SBC ────────────────────────────────────────────────────────────────────
   {
     topic_id: "SBC_001",
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
     card_name: "Stock option — when to measure fair value",
     rule: "Measure the fair value of employee stock options at the grant date. Do not remeasure after grant date for employee options.",
     trigger: "stock option | grant date | fair value | measurement date | option expense",
@@ -1447,6 +1629,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "SBC_002",
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
     card_name: "Stock option — how to recognize expense over time",
     rule: "Total compensation = grant-date fair value × number of options expected to vest. Recognize ratably (straight-line) over the service/vesting period.",
     trigger: "stock option expense | vesting period | service period | compensation expense | straight-line",
@@ -1456,6 +1639,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "SBC_003",
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
     card_name: "Stock option forfeited — how to adjust expense",
     rule: "When options are forfeited (employee leaves before vesting), reverse the compensation expense previously recognized for those forfeited options.",
     trigger: "forfeiture | forfeit | options lapse | reverse expense | compensation",
@@ -1467,6 +1651,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── BC ─────────────────────────────────────────────────────────────────────
   {
     topic_id: "BC_001",
+    sub_category_id: "U5_CONSOLIDATED_FS",
     card_name: "Goodwill — how to calculate at acquisition",
     rule: "Goodwill = Consideration transferred + FV of NCI + FV of previously held interest − FV of net identifiable assets (assets − liabilities).",
     trigger: "goodwill | acquisition | business combination | fair value of net assets",
@@ -1476,6 +1661,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "BC_002",
+    sub_category_id: "U5_CONSOLIDATED_FS",
     card_name: "Bargain purchase — what happens when fair value exceeds price",
     rule: "Bargain purchase: FV of net identifiable assets > total consideration. Excess is recognized immediately as a gain in net income.",
     trigger: "bargain purchase | gain | net identifiable assets | excess | negative goodwill",
@@ -1485,6 +1671,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "BC_003",
+    sub_category_id: "U5_CONSOLIDATED_FS",
     card_name: "Acquisition method — how to record identifiable assets",
     rule: "Under the acquisition method, all identifiable assets and liabilities are recorded at fair value at the acquisition date. Book values of the target are irrelevant.",
     trigger: "acquisition method | identifiable assets | fair value | purchase accounting | book value",
@@ -1494,6 +1681,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "BC_004",
+    sub_category_id: "U5_CONSOLIDATED_FS",
     card_name: "Contingent consideration — how to record",
     rule: "Measure contingent consideration (earnout) at fair value at acquisition date; include in total consideration. Post-acquisition FV changes go to net income (not goodwill).",
     trigger: "contingent consideration | earnout | fair value | acquisition | post-acquisition change",
@@ -1503,6 +1691,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "BC_005",
+    sub_category_id: "U5_CONSOLIDATED_FS",
     card_name: "In-process research and development — capitalize or expense",
     rule: "IPR&D acquired in a business combination → capitalize as an intangible asset at FV. Internally developed R&D → expense as incurred.",
     trigger: "in-process R&D | IPR&D | acquired R&D | business combination | research development",
@@ -1514,6 +1703,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── DER ────────────────────────────────────────────────────────────────────
   {
     topic_id: "DER_001",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Fair value hedge — where does gain/loss go",
     rule: "Fair value hedge: both the derivative gain/loss AND the offsetting hedged item gain/loss go to current net income. The hedged item's carrying value is adjusted.",
     trigger: "fair value hedge | hedged item | derivative | gain/loss | income | offset",
@@ -1523,6 +1713,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "DER_002",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Cash flow hedge — where does gain/loss go",
     rule: "Cash flow hedge: effective portion of derivative gain/loss → OCI (deferred). Ineffective portion → net income immediately.",
     trigger: "cash flow hedge | OCI | effective portion | ineffective | deferred hedge",
@@ -1532,6 +1723,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "DER_003",
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
     card_name: "Hedge effectiveness — what happens if ineffective portion",
     rule: "Any ineffective portion of any hedge goes immediately to net income. Hedge must be 'highly effective' both prospectively and retrospectively to qualify for hedge accounting.",
     trigger: "ineffective | hedge effectiveness | income | testing | highly effective",
@@ -1543,6 +1735,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── RE ─────────────────────────────────────────────────────────────────────
   {
     topic_id: "RE_001",
+    sub_category_id: "U3_PPE",
     card_name: "Investment property — cost model vs fair value model",
     rule: "US GAAP: investment property at cost less accumulated depreciation (no fair value option). IFRS: entities may elect the fair value model with changes through income.",
     trigger: "investment property | fair value model | cost model | IFRS | rental property",
@@ -1552,6 +1745,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "RE_002",
+    sub_category_id: "U3_PPE",
     card_name: "Real estate sales — when to recognize revenue",
     rule: "Real estate revenue follows the standard five-step revenue model. For point-in-time sales, control typically passes at closing.",
     trigger: "real estate sales | revenue recognition | closing | control transfer | property sale",
@@ -1563,6 +1757,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── INT_REP ────────────────────────────────────────────────────────────────
   {
     topic_id: "INT_REP_001",
+    sub_category_id: "U1_BALANCE_SHEET",
     card_name: "Interim period — discrete vs integral view",
     rule: "US GAAP uses the integral view — each interim period is part of the annual period. Annual estimates (bonuses, taxes) are allocated proportionally across quarters.",
     trigger: "interim | quarterly | discrete | integral | quarterly report | allocation",
@@ -1572,6 +1767,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INT_REP_002",
+    sub_category_id: "U1_BALANCE_SHEET",
     card_name: "Income tax expense — how to estimate each quarter",
     rule: "Estimate the annual effective tax rate (ETR) at the start of each quarter. Apply ETR to year-to-date income; record cumulative tax expense each quarter.",
     trigger: "interim income tax | effective tax rate | quarterly | ETR | estimate",
@@ -1581,6 +1777,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "INT_REP_003",
+    sub_category_id: "U1_BALANCE_SHEET",
     card_name: "Inventory loss — recognize in interim or defer",
     rule: "Permanent inventory write-downs to LCM must be recognized immediately in the interim period. Temporary declines expected to recover by year-end may be deferred.",
     trigger: "interim | inventory loss | LCM | temporary decline | permanent decline | defer",
@@ -1592,6 +1789,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── VAL (continued) ────────────────────────────────────────────────────────
   {
     topic_id: "VAL_008",
+    sub_category_id: "U2_FAIR_VALUE",
     card_name: "Cost approach — when to use and how it works",
     rule: "Cost approach estimates fair value as the amount required to replace the asset's service capacity (replacement cost), adjusted for physical deterioration, functional obsolescence, and economic obsolescence.",
     trigger: "cost approach | replacement cost | reproduction cost | obsolescence | depreciated replacement",
@@ -1601,6 +1799,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "VAL_009",
+    sub_category_id: "U2_FAIR_VALUE",
     card_name: "Market approach — when to use and how it works",
     rule: "Market approach uses prices and other relevant information from actual market transactions involving identical or comparable assets/liabilities. Includes guideline public company method and comparable transaction method.",
     trigger: "market approach | comparable | guideline company | transaction multiples | market price",
@@ -1610,6 +1809,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "VAL_010",
+    sub_category_id: "U2_FAIR_VALUE",
     card_name: "Income approach — when to use and how it works",
     rule: "Income approach converts expected future cash flows (or income) to a single present value using a discount rate that reflects current market expectations and the risk of those cash flows. Includes DCF and capitalization of earnings methods.",
     trigger: "income approach | DCF | discounted cash flow | capitalization | discount rate | present value",
@@ -1619,6 +1819,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "VAL_011",
+    sub_category_id: "U2_FAIR_VALUE",
     card_name: "Which valuation approach to pick — principal market first",
     rule: "Fair value is measured in the principal market (highest volume and activity). If no principal market, use the most advantageous market. The valuation approach that maximizes observable inputs is preferred: Level 1 (market) > Level 2 (market/income) > Level 3 (income/cost). Multiple approaches may be used and weighted.",
     trigger: "principal market | most advantageous market | approach selection | which approach | observable inputs",
@@ -1628,6 +1829,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "COMP_001",
+    sub_category_id: "U4_PAYABLES",
     card_name: "Compensated absences — current rate method",
     rule: "Accrue vacation liability using the current-year wage rate for ALL days — both days earned this year and carryover days from prior years. Carryover balances are remeasured at the new rate each period.",
     trigger: "compensated absences | vacation accrual | current rate | sick leave | paid time off",
@@ -1637,6 +1839,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "COMP_002",
+    sub_category_id: "U4_PAYABLES",
     card_name: "Compensated absences — vested benefit method",
     rule: "Accrue only the incremental change in liability when wage rates change. Beginning liability stays at the old rate; only the rate increase is applied to the carryover balance. New days earned are accrued at the current rate.",
     trigger: "compensated absences | vested benefit method | vacation accrual | incremental | rate increase",
@@ -1646,6 +1849,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "FASB_001",
+    sub_category_id: "U2_NOTES_TO_FS",
     card_name: "How FASB communicates changes to existing GAAP",
     rule: "FASB issues Accounting Standards Updates (ASUs) to amend the Accounting Standards Codification (ASC). ASUs are the only mechanism for changing US GAAP since the Codification became authoritative in 2009. They apply to nonissuer, nongovernmental entities.",
     trigger: "FASB | Accounting Standards Update | ASU | Codification | ASC | GAAP update | FASB statement",
@@ -1658,6 +1862,7 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   // ── CASH ───────────────────────────────────────────────────────────────────
   {
     topic_id: "CASH_001",
+    sub_category_id: "U3_CASH",
     card_name: "Bank Reconciliation — balance test at one point in time",
     rule: "Bank Reconciliation reconciles Book balance and Bank balance to a single Adjusted balance at one date. Book side: add DIT, deduct OC, adjust NSF/service charges/errors. Bank side: add DIT, deduct OC, adjust bank errors. Both sides must arrive at the same Adjusted balance.",
     trigger: "bank reconciliation | book balance | bank balance | outstanding checks | deposits in transit | NSF | service charge",
@@ -1667,12 +1872,63 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
   },
   {
     topic_id: "CASH_002",
+    sub_category_id: "U3_CASH",
     card_name: "Proof of Cash — 4-column test of transactions between two dates",
     rule: "Proof of Cash extends Bank Rec to 4 columns: Beg Balance / Receipts / Disbursements / End Balance. Each column is reconciled independently. Prior-period DIT clears in current Receipts column; prior-period OC clears in current Disbursements column. Current-period DIT/OC appear as reconciling items in their respective columns and carry into End Balance column. Solve order: ① sketch Beg and End Bank Rec first → ② fill in middle Receipts/Disbursements columns.",
     trigger: "proof of cash | 4-column | two-period | test of transactions | beginning and ending reconciliation",
     trap: "Prior-period OC does not clear in full automatically — only the portion actually paid in the current period clears in Disbursements; the remaining unpaid balance carries into End OC. Do not assume all prior OC is paid. Always build both endpoint Bank Recs first before filling the middle columns — skipping this step causes placement errors.",
     one_sentence: "Proof of Cash = 4-column Bank Rec that tracks how DIT and OC flow between two dates; build endpoint Recs first, then fill the middle.",
     example: "Given: Bank 3/31 23,250 | Receipts 29,200 | Disbursements 24,800 | Bank 4/30 27,650 / Prior DIT 5,150 (cleared Apr) / Prior OC 6,300 (3,200 cleared Apr; 3,100 remain) / Current OC 6,300\n\n| | Beg (3/31) | Receipts | Disbursements | End (4/30) |\n|---|---|---|---|---|\n| Bank | 23,250 | 29,200 | 24,800 | 27,650 |\n| DIT prior | +5,150 | (5,150) | | |\n| OC prior | (6,300) | | +3,200 | (3,100) |\n| OC current | | | (6,300) | (3,200) |\n| Adjusted | 22,100 | 24,050 | 21,700 | 24,450 |\n| Book | 22,100 | 24,050 | 21,700 | 24,450 |",
+  },
+  {
+    topic_id: "IS_001",
+    sub_category_id: "U1_INCOME_STATEMENT",
+    card_name: "Net Income vs OCI 구분",
+    rule: "Net Income = Revenues - Operating expenses - Income tax expense. OCI 항목(Foreign currency translation adjustment, unrealized G/L on AFS, pension adjustments 등)은 Net income 계산에서 제외. Net income → retained earnings. OCI → Accumulated OCI (equity).",
+    trigger: "net income | OCI | other comprehensive income | foreign currency translation | comprehensive income",
+    trap: "Foreign currency translation adjustment는 'net of tax'라고 표시되어 있어도 Net income 항목이 아님 → OCI로 처리. OCI는 Net income에 가산도 차감도 하지 않음 — 계산 자체에서 제외.",
+    one_sentence: "OCI 항목은 Net income 계산에서 완전히 제외 — Comprehensive income에만 포함.",
+    example: "Revenues $120,000 − Operating exp $75,000 − Tax $15,000 = Net Income $30,000 / Foreign currency adj $6,000 → OCI only (not in Net Income)",
+  },
+  {
+    topic_id: "ARO_001",
+    sub_category_id: "U4_CONTINGENCIES",
+    card_name: "ARO 변동 인식 — 자산 완전 감가상각 후",
+    rule: "감가상각 중: ARO 변동 → 자산 carrying amount 조정 (Dr. Asset / Cr. ARO). 완전 감가상각 후: carrying amount = $0 → 자산에 얹을 곳 없음 → 전액 P&L 직행 (Dr. Loss / Cr. ARO). 실제 철거 시: ARO vs 실제 비용 차이 → gain/loss. decommissioning liability = ARO (동일 개념).",
+    trigger: "asset retirement obligation | ARO | decommissioning | dismantling | fully depreciated | retirement obligation revised",
+    trap: "완전 감가상각 후 ARO 증가를 자산 조정으로 처리하는 실수. carrying amount = $0이면 무조건 P&L. 증가/감소 구분 없이 모두 profit or loss.",
+    one_sentence: "완전 감가상각 후 ARO 변동은 자산 조정 불가 → 전액 P&L.",
+    example: "Asset fully depreciated / ARO revised up $20,000 → Dr. Loss $20,000 / Cr. ARO $20,000 (not asset adjustment)",
+  },
+  {
+    topic_id: "ACE_001",
+    sub_category_id: "U2_ACCOUNTING_CHANGES",
+    card_name: "Accounting Changes & Error Corrections — 4가지 구분",
+    rule: "① Change in Estimate → Prospective (당기+미래, 소급X) — 예: warranty, 감가상각 내용연수. ② Change in Accounting Principle → Retrospective (net of tax, 소급) — 예: FIFO→LIFO. ③ Change in Reporting Entity → Retrospective (모든 과거 재무제표 재작성). ④ Error Correction → Restatement (소급+재무제표 재작성) — 예: 계산 실수, 현금주의→발생주의.",
+    trigger: "change in estimate | change in principle | error correction | restatement | retrospective | prospective | warranty estimate | depreciation method",
+    trap: "감가상각법·내용연수 변경 = Change in Estimate (Prospective) — Change in Principle 아님. 현금주의→발생주의 = Error Correction (Restatement) — GAAP 의무사항 위반이므로. net of tax 처리는 Change in Principle만 해당.",
+    one_sentence: "새 정보로 추정치 업데이트 = Prospective / 회계원칙 변경 = Retrospective / 과거 잘못 = Restatement.",
+    example: "Warranty $150→$165 per unit (new experience) → Change in Estimate → Year 2 continuing operations, no restatement",
+  },
+  {
+    topic_id: "PPE_006",
+    sub_category_id: "U3_PPE",
+    card_name: "DDB to SL switch — depreciation method change",
+    rule: "DDB 기간: 2 × (1/내용연수) × Book Value. SL 전환 시: (Book Value at switch − Salvage Value) ÷ 잔여내용연수. DDB는 salvage value 무시, SL 전환 후에는 반드시 차감.",
+    trigger: "double-declining balance | DDB | switch to straight-line | SL | depreciation method change | remaining life",
+    trap: "SL 전환 시 original cost나 original useful life 사용하는 실수 — 반드시 전환 시점 Book Value ÷ 잔여내용연수 사용. DDB 기간에는 salvage value 무시하지만 SL 전환 후에는 (BV − Salvage) 사용.",
+    one_sentence: "DDB→SL 전환 시: original cost 아닌 전환 시점 Book Value ÷ 잔여내용연수.",
+    example: "Equipment $200,000 / 5yr / no salvage | Yr1 DDB: 2/5×$200K=$80K (BV $120K) | Yr2 DDB: 2/5×$120K=$48K (BV $72K) | Yr3 SL: $72K÷3=$24K | Accum. Dep. = $152,000",
+  },
+  {
+    topic_id: "ADJ_001",
+    sub_category_id: "U2_ADJUSTING_ENTRIES",
+    card_name: "Prepaid Rent — adjusting entry (quarterly basis)",
+    rule: "월 임차료 = 총액 ÷ 계약개월수. 분기 기장 시 이미 처리된 금액 확인 후 제외. 경과 기간 × 월 임차료 = adjusting entry 금액. Dr. Rent Expense / Cr. Prepaid Rent.",
+    trigger: "prepaid rent | adjusting entry | quarterly | calendar year-end | rent expense | journal entries posted quarterly",
+    trap: "Sep 30 분기 기장(0.5개월)을 무시하고 전체 경과 기간 계상하는 실수 → 중복 계상. Prepaid(자산) 감소 = Credit. 계약 시작일이 분기 중간이면 첫 분기 처리 기간 반드시 확인.",
+    one_sentence: "Prepaid 조정 = 경과 기간 × 월 임차료 — 분기 기장분 이미 처리된 것 빼고 계산.",
+    example: "$54,000 / 18개월 = $3,000/월 | Sep 15~Sep 30 분기 기장: 0.5개월 $1,500 처리됨 | Dec 31 조정: 3개월 × $3,000 = $9,000 → Dr. Rent Expense $9,000 / Cr. Prepaid Rent $9,000",
   },
 ];
 

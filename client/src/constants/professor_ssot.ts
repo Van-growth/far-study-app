@@ -42,6 +42,51 @@ EXAMPLE : 기계 $50,000 + 설치비 $3,000 → Asset $53,000 (Capitalize)
           M&A legal fee $5,000 → Acquisition Expense $5,000 (즉시 Expense)
 
 ==============================================================
+// [PPE_ARO_LINK] PPE 원가 포함 항목 — Demolition vs ARO 연결
+==============================================================
+RULE    : Demolition (취득 목적 철거) → 즉시 자산 원가 capitalize (ARO 아님)
+          Decommissioning/Dismantling → ARO(PV) 부채 인식 후 자산 원가에 포함
+          둘 다 자산 원가에 포함되지만 인식 방법이 다름
+
+          [ARO 전체 흐름] 설비 $1,000,000 / ARO PV $100,000 / 내용연수 10년
+
+          ① 취득 시
+             Dr. Asset (설비)              $1,100,000
+                 Cr. Cash                             $1,000,000
+                 Cr. ARO (부채)                         $100,000
+             → 자산 원가 = $1,100,000 (설비 + ARO 합산)
+
+          ② 감가상각 중 (매년)
+             감가상각: $1,100,000 ÷ 10년 = $110,000/년
+             Dr. Depreciation Expense      $110,000
+                 Cr. Accumulated Depreciation         $110,000
+             ARO accretion (매년 이자처럼 unwinding):
+             Dr. Accretion Expense         $X
+                 Cr. ARO                              $X
+             ARO 변동 발생 시 → 자산 carrying amount 조정:
+             Dr. Asset                     $XX
+                 Cr. ARO                              $XX
+
+          ③ 완전 감가상각 후 (carrying amount = $0)
+             ARO 변동 → 얹을 자산 없음 → 전액 P&L 직행
+             Dr. Loss (P&L)                $20,000
+                 Cr. ARO                              $20,000
+
+          ④ 실제 철거 시 (예상 ARO $120,000 vs 실제 $130,000)
+             Dr. ARO                       $120,000
+             Dr. Loss                       $10,000
+                 Cr. Cash                             $130,000
+             → 실제비용 < ARO = gain / 실제비용 > ARO = loss
+
+TRIGGER : "decommissioning" "dismantling" "asset retirement obligation" "ARO"
+          "decommissioning liability" (= ARO, 동일 개념)
+TRAP    : Demolition과 Decommissioning 혼동 — 둘 다 자산 원가 포함이지만 인식 방법 다름
+          Demolition → 자산 원가 직접 capitalize
+          Decommissioning → ARO(부채) 경유 후 자산에 포함
+          감가상각 중 ARO 변동 → 자산 조정 / 완전 감가상각 후 → P&L 직행 (혼동 주의)
+CROSS   : PPE_001 (원가 결정·capitalization) / ARO_001_Q1 (완전 감가상각 후 변동 처리) / INT_003 (건설 중 이자 자본화)
+
+==============================================================
 // [INT_001] Interest Expense — Bond/Lease/Note 모두 동일 공식
 ==============================================================
 RULE    : Beginning Obligation × Effective Rate × m/12 = Interest Expense
@@ -263,6 +308,32 @@ TRAP    : 연도별로 % 나눠 계산하면 오답
 EXAMPLE : 총매출 $500,000 / Warranty % 2%
           → Warranty Expense = $500,000 × 2% = $10,000
           (1년차 1%, 2년차 1% 쪼개기 X → 총 2% 한번에)
+
+==============================================================
+// [REV_006] Incremental Costs of Obtaining a Contract — CAC 자산화
+==============================================================
+RULE    : Incremental costs = 계약 없었으면 발생 안 했을 비용만 → Capitalize
+          Commissions → 계약 시에만 발생 → Incremental → Capitalize
+          Salaries     → 계약 여부 무관하게 발생 → Non-incremental → Expense
+          Advertising  → 특정 계약에 직접 연결 안 됨 → Non-incremental → Expense
+          Practical Expedient: 계약 기간 1년 이하 → Capitalize 대신 즉시 Expense 허용
+TRIGGER : "incremental costs" "commissions" "salaries" "advertising" "capitalize"
+TRAP    : Salaries·Advertising을 커미션과 함께 capitalize 실수
+          → 계약 없어도 발생하면 무조건 Expense
+EXAMPLE : Commissions $3,600 → Capitalize / Salaries $18,000 → Expense / Advertising $3,000 → Expense
+
+[실무 맥락 — CAC 자산화]
+① 규모별 중요성
+   - 소규모: materiality 낮음 → Practical Expedient (1년 이하 expense 허용)
+   - 대규모: 커미션 금액 큼 → 자산화로 Revenue-Cost 매칭 정확히
+② 실무 분개 흐름
+   - 계약 시: Dr. Deferred Commission Asset / Cr. Accrued Payable
+   - 지급 시: Dr. Accrued Payable / Cr. Cash
+   - 상각 시: Dr. Commission Expense / Cr. Deferred Commission Asset
+③ LTV:CAC 연결
+   - 자산화 → 계약 기간 상각 → 단위 경제학 정확히 측정
+   - Salesforce·HubSpot 10-K에 Deferred Commission 수백억 달러
+   - Series B+ 감사 시 핵심 검토 항목
 
 ==============================================================
 // [INV_001] Inventory Periodic System — COGS & 방향성

@@ -90,7 +90,15 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('status','?'\\), d.get\\('id','?'\\)\\)\")",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('id','no id'\\), d.get\\('status','no status'\\)\\)\")",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('deploy:', d.get\\('id'\\), '|', d.get\\('status'\\)\\)\")",
-      "Bash(Remove-Item *)"
+      "Bash(Remove-Item *)",
+      "Bash(dir -Recurse -Filter \"ConceptNote*\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -First 20)",
+      "Bash(python -c ' *)",
+      "Bash(xxd)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\)[0]; print\\('status:', d['deploy']['status']\\); print\\('createdAt:', d['deploy']['createdAt']\\); print\\('commitMsg:', d['deploy'].get\\('commit',{}\\).get\\('message',''\\)[:80]\\)\")",
+      "Bash(Select-Object Name)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d[0]['deploy']['status'], d[0]['deploy']['commit']['message'][:60]\\) if d else print\\('no deploys'\\)\")",
+      "Bash(grep -v \"//\")"
     ]
   }
 }
