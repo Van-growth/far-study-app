@@ -118,9 +118,6 @@ function StructuredFeedback({ card }: { card: BankQuestion }) {
         <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
           <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">CONTEXT</div>
           <div className="text-xs leading-relaxed">{card.contextBackground}</div>
-          {card.contextTrigger && (
-            <div className="text-xs text-gray-400 mt-1">→ {card.contextTrigger}</div>
-          )}
         </div>
       )}
       {card.ruleTitle && (
