@@ -234,7 +234,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <span>💬</span>
-            <p className="font-semibold text-sm text-[#0f172a]">Charlie</p>
+            <p className="font-semibold text-sm text-[#0f172a]">Harry</p>
             {(isLoading || contextLoading) && <div className="w-3 h-3 border-2 border-[#4f6ef7] border-t-transparent rounded-full animate-spin" />}
             {contextLoading && <span className="text-[10px] text-[#94a3b8]">학습 현황 로딩 중</span>}
           </div>
@@ -360,7 +360,6 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
         <div className="flex gap-2 mb-2">
           {([
             { label: '풀이', cmd: '/go' as const },
-            { label: '분석', cmd: '/qu' as const },
             { label: '복습', cmd: '/re' as const },
           ]).map(({ label, cmd }) => (
             <button
@@ -373,6 +372,15 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
               {label}
             </button>
           ))}
+          <button
+            onClick={() => triggerSlash('/qu')}
+            disabled={isLoading || !activeBankQuestion}
+            title={!activeBankQuestion ? '스프린트 리뷰에서 문제 펼친 후 사용하세요' : undefined}
+            className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-30 hover:opacity-80"
+            style={{ background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe' }}
+          >
+            분석
+          </button>
         </div>
         <div className="flex items-end gap-2 rounded-xl px-3 py-2" style={{ border: '1.5px solid #e2e8f0', background: '#f8fafc' }}>
           <textarea
