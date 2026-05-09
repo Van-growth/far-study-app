@@ -140,8 +140,8 @@ export default function HomePage() {
 
   return (
     <div
-      className="flex flex-col items-center justify-center px-5 gap-4"
-      style={{ height: 'calc(100dvh - 98px)', overflow: 'hidden' }}
+      className="flex flex-col items-center justify-start px-5 gap-4 pt-5 pb-8"
+      style={{ minHeight: 'calc(100dvh - 98px)', overflowY: 'auto' }}
     >
       {/* ① D-Day */}
       <div className="text-center">
