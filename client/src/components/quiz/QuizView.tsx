@@ -529,7 +529,7 @@ function StructuredExplanationView({ item }: { item: QuizItemWithContext }) {
       {speed && (
         <div className="rounded-xl p-3" style={{ background: '#eff6ff', border: '1px solid #c7d2fe' }}>
           <div className="text-[10px] font-bold text-[#4f6ef7] uppercase tracking-wider mb-1.5">SPEED</div>
-          <div className="text-[0.72rem] font-mono leading-relaxed">{speed}</div>
+          <div className="text-[0.72rem] font-mono leading-relaxed whitespace-pre-line">{speed}</div>
         </div>
       )}
     </div>

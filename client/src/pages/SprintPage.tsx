@@ -151,7 +151,7 @@ function StructuredFeedback({ card }: { card: BankQuestion }) {
       {card.speed && (
         <div className="rounded-xl p-3" style={{ background: '#eff6ff', border: '1px solid #c7d2fe' }}>
           <div className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-1.5">SPEED</div>
-          <div className="text-xs">{card.speed}</div>
+          <div className="text-xs whitespace-pre-line leading-relaxed">{card.speed}</div>
         </div>
       )}
     </div>
