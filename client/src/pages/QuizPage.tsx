@@ -52,12 +52,14 @@ function getAreaColor(topicId: string, areaId: string | null): string {
 }
 
 // ── Data fetch ─────────────────────────────────────────────────
-async function loadFromQuestionBank(): Promise<BankQuestion[]> {
-  const { data, error } = await supabase
+async function loadFromQuestionBank(topicId?: string | null): Promise<BankQuestion[]> {
+  let query = supabase
     .from('question_bank')
     .select('question_id, topic_id, area_id, question_text, options, correct_index, context_background, context_trigger, rule_title, rule_items, trigger, trap, speed')
     .in('source', [1, 2])
     .eq('is_banned', false)
+  if (topicId) query = query.eq('topic_id', topicId)
+  const { data, error } = await query
   if (error || !data) return []
   return (data as Record<string, unknown>[]).map(r => ({
     questionId: String(r.question_id ?? ''),
@@ -184,13 +186,12 @@ export default function QuizPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [todayStats, setTodayStats] = useState<{ count: number; correct: number } | null>(null);
 
-  // Load question bank on mount, re-filter when topicId changes.
+  // Load question bank on mount; topicId filter applied at DB query level.
   useEffect(() => {
     setLoading(true);
-    loadFromQuestionBank()
+    loadFromQuestionBank(topicId)
       .then(all => {
-        const filtered = topicId ? all.filter(b => b.topicId === topicId) : all;
-        setDeck(shuffle(filtered));
+        setDeck(shuffle(all));
         setDeckIdx(0);
         setLoading(false);
       })
