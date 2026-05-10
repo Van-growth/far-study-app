@@ -285,7 +285,6 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
             <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: '#faf5ff', color: '#6b21a8' }}>
               📋 스프린트 리뷰:{' '}
               <span className="font-semibold text-[#0f172a]">{activeBankQuestion.topicId}</span>
-              <span className="ml-1.5 opacity-60 font-normal">/qu로 문제 분석</span>
             </span>
           </div>
         ) : reviewCardContext ? (
