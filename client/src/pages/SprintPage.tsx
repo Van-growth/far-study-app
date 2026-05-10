@@ -1,5 +1,8 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 import useStudyStore from '../store/studyStore'
 import useClaudeStore from '../store/claudeStore'
 import { supabase } from '../lib/supabase'
@@ -110,6 +113,29 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
+const MONO_MD_COMPONENTS = {
+  p: ({ children }: { children?: React.ReactNode }) => (
+    <p className="text-[0.72rem] font-mono leading-relaxed mb-1 last:mb-0">{children}</p>
+  ),
+  strong: ({ children }: { children?: React.ReactNode }) => (
+    <strong className="font-bold">{children}</strong>
+  ),
+  em: ({ children }: { children?: React.ReactNode }) => <em className="italic">{children}</em>,
+  ul: ({ children }: { children?: React.ReactNode }) => (
+    <ul className="list-disc ml-4 my-0.5 flex flex-col gap-0">{children}</ul>
+  ),
+  ol: ({ children }: { children?: React.ReactNode }) => (
+    <ol className="list-decimal ml-4 my-0.5 flex flex-col gap-0">{children}</ol>
+  ),
+  li: ({ children }: { children?: React.ReactNode }) => (
+    <li className="text-[0.72rem] font-mono leading-relaxed">{children}</li>
+  ),
+  code: ({ children }: { children?: React.ReactNode }) => (
+    <code className="px-0.5 rounded text-[0.68rem] font-mono bg-black/5">{children}</code>
+  ),
+  pre: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+}
+
 // ── Structured feedback ───────────────────────────────────────
 function StructuredFeedback({ card }: { card: BankQuestion }) {
   return (
@@ -117,7 +143,9 @@ function StructuredFeedback({ card }: { card: BankQuestion }) {
       {card.contextBackground && (
         <div className="rounded-xl p-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
           <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">CONTEXT</div>
-          <div className="text-xs leading-relaxed">{card.contextBackground}</div>
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MONO_MD_COMPONENTS as never}>
+            {card.contextBackground}
+          </ReactMarkdown>
         </div>
       )}
       {card.ruleTitle && (
@@ -136,19 +164,25 @@ function StructuredFeedback({ card }: { card: BankQuestion }) {
       {card.trigger && (
         <div className="rounded-xl p-3" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
           <div className="text-[10px] font-bold text-purple-700 uppercase tracking-wider mb-1.5">TRIGGER</div>
-          <div className="text-[0.72rem] font-mono leading-relaxed">{card.trigger}</div>
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MONO_MD_COMPONENTS as never}>
+            {card.trigger}
+          </ReactMarkdown>
         </div>
       )}
       {card.trap && (
         <div className="rounded-xl p-3" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
           <div className="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1.5">TRAP ⚠️</div>
-          <div className="text-xs whitespace-pre-line leading-relaxed">{card.trap}</div>
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MONO_MD_COMPONENTS as never}>
+            {card.trap}
+          </ReactMarkdown>
         </div>
       )}
       {card.speed && (
         <div className="rounded-xl p-3" style={{ background: '#eff6ff', border: '1px solid #c7d2fe' }}>
           <div className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-1.5">SPEED</div>
-          <div className="text-xs whitespace-pre-line leading-relaxed">{card.speed}</div>
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MONO_MD_COMPONENTS as never}>
+            {card.speed}
+          </ReactMarkdown>
         </div>
       )}
     </div>
