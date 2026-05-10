@@ -7,6 +7,7 @@ export interface ActiveBankQuestion {
   questionText: string;
   options: string[];
   correctIndex: number;
+  explanation: string | null;
   contextBackground: string | null;
   contextTrigger: string | null;
   ruleTitle: string | null;

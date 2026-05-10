@@ -112,8 +112,17 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
     setIsAtBottom(atBottom);
   };
 
-  const SLASH_COMMANDS: Record<string, string> = {
-    '/go': `현재 문제를 아래 순서로 설명해줘:
+  const buildGoCommand = (): string => {
+    const q = activeBankQuestion;
+    if (!q) return '현재 펼쳐진 문제가 없습니다. 스프린트 결과에서 문제를 먼저 펼친 후 /go를 사용해주세요.';
+    const optLabels = ['A', 'B', 'C', 'D'];
+    const parts: string[] = [];
+    parts.push(`[${q.topicId}] 풀이 해설\n`);
+    parts.push(`**Q.** ${q.questionText}\n`);
+    parts.push(q.options.map((o, i) => `${optLabels[i] ?? i + 1}. ${o}`).join('\n'));
+    parts.push(`→ 정답: ${optLabels[q.correctIndex] ?? q.correctIndex}. ${q.options[q.correctIndex]}\n`);
+    if (q.explanation) parts.push(`**EXPLANATION**\n${q.explanation}\n`);
+    parts.push(`위 문제를 아래 순서로 설명해줘:
 1. 문제 한 줄씩 해석 - 형식: [영어 원문 전체] → [한국어 해석]. 반드시 영어 원문 전체를 한 글자도 생략하지 말고 그대로 표시할 것. 요약·축약·"..." 처리 절대 금지.
 2. 핵심 질문 해석 (what is asked) - 형식: [영어 원문] → [한국어 해석]
 3. 정답 간략 설명
@@ -121,7 +130,8 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
 5. 함정(trap) 포인트 설명
 6. 실전 단축 풀이법 (30초 안에 푸는 방법)
 
-**반드시 6개 항목 모두 빠짐없이 출력할 것. 어떤 항목도 생략하거나 축약하지 말 것.**`,
+**반드시 6개 항목 모두 빠짐없이 출력할 것. 어떤 항목도 생략하거나 축약하지 말 것.**`);
+    return parts.join('\n');
   };
 
   const buildQuCommand = (): string => {
@@ -185,7 +195,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
 
   const triggerSlash = (cmd: '/go' | '/qu' | '/re') => {
     if (isLoading) return;
-    const msg = cmd === '/re' ? buildReCommand() : cmd === '/qu' ? buildQuCommand() : (SLASH_COMMANDS[cmd] ?? cmd);
+    const msg = cmd === '/re' ? buildReCommand() : cmd === '/qu' ? buildQuCommand() : buildGoCommand();
     sendMessage(msg);
   };
 
@@ -206,9 +216,9 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const handleSend = () => {
     const t = input.trim();
     if (!t || isLoading) return;
-    const isSlash = t === '/re' || t === '/qu' || t in SLASH_COMMANDS;
+    const isSlash = t === '/re' || t === '/qu' || t === '/go';
     const { text: correctedText, corrected } = isSlash ? { text: t, corrected: false } : correctTypos(t);
-    const message = t === '/re' ? buildReCommand() : t === '/qu' ? buildQuCommand() : (SLASH_COMMANDS[t] ?? correctedText);
+    const message = t === '/re' ? buildReCommand() : t === '/qu' ? buildQuCommand() : t === '/go' ? buildGoCommand() : correctedText;
     sendMessage(message, corrected);
     setInput('');
     if (taRef.current) taRef.current.style.height = 'auto';

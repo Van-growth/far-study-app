@@ -17,6 +17,7 @@ interface BankQuestion {
   questionText: string
   options: string[]
   correctIndex: number
+  explanation: string | null
   contextBackground: string | null
   contextTrigger: string | null
   ruleTitle: string | null
@@ -40,7 +41,7 @@ type TimerMode = 'auto' | 0
 async function loadFromQuestionBank(): Promise<BankQuestion[]> {
   const { data, error } = await supabase
     .from('question_bank')
-    .select('question_id, topic_id, area_id, question_text, options, correct_index, context_background, context_trigger, rule_title, rule_items, trigger, trap, speed')
+    .select('question_id, topic_id, area_id, question_text, options, correct_index, explanation, context_background, context_trigger, rule_title, rule_items, trigger, trap, speed')
     .in('source', [1, 2])
     .eq('is_banned', false)
   if (error || !data) return []
@@ -51,6 +52,7 @@ async function loadFromQuestionBank(): Promise<BankQuestion[]> {
     questionText: String(r.question_text ?? ''),
     options: Array.isArray(r.options) ? (r.options as unknown[]).map(String) : [],
     correctIndex: Number(r.correct_index ?? 0),
+    explanation: r.explanation ? String(r.explanation) : null,
     contextBackground: r.context_background ? String(r.context_background) : null,
     contextTrigger: r.context_trigger ? String(r.context_trigger) : null,
     ruleTitle: r.rule_title ? String(r.rule_title) : null,
