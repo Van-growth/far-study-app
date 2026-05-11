@@ -752,6 +752,32 @@ Series B+ 감사 시 핵심 검토 항목`,
     ],
     speed: "① 주체 확인 → Cedar(발행자) B/S ② 항목 확인 → common stock → par × shares ③ $5 × 1,000 = $5,000",
   },
+  // [EQUITY_007] Stock Split + Cash Dividend — Shares and Dividend Calculation
+  // RULE    : Split 후 주식 수 기준으로 배당 계산 / FV는 cash dividend 무관
+  // TRIGGER : "2-for-1 stock split" + "cash dividend per share" → split 후 주식 수 먼저
+  // TRAP    : pre-split 주식 수($50K) / FV 포함($850K·$950K)
+  {
+    topic_id: "EQUITY_007",
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
+    card_name: "Stock Split + Cash Dividend — Shares and Dividend Calculation",
+    rule: "Stock split: 주식 수만 증가, 순자산 변화 없음, 분개 없음(memo only). Cash dividend = split 후 주식 수 × 주당 배당금. Split 시 FV → cash dividend 계산 무관 (small stock dividend용). EPS 계산 시 stock split·stock dividend는 소급 적용(retroactive) — 기초부터 전체 기간에 적용. 반면 신주 발행은 월할 적용(weighted average).",
+    trigger: '"2-for-1 stock split" + "cash dividend per share" → split 후 주식 수 먼저 계산\nSplit 시 FV 제시 → cash dividend 계산에서 무시 (small stock dividend용 함정)\nEPS + stock split → 소급 적용 (기초부터 전체 기간 / 신주 발행과 반대)',
+    trap: "TRAP 1: $50,000 (C) → pre-split 주식 수(100,000) × $0.50. Split 반영 누락\nTRAP 2: $850,000 (D) → FV $80을 계산에 포함. Split 시 FV는 cash dividend와 무관\nTRAP 3: $950,000 (A) → FV + cash dividend 혼합 계산. FV는 dividend 계산에 절대 불포함\n공통 함정: Split 시 FV를 보고 계산에 포함하려는 충동 → FV는 small stock dividend용, cash dividend와 무관",
+    one_sentence: "Cash dividend = split 후 주식 수 × 주당 배당금; split 시 FV는 무관.",
+    example: "100,000주 × 2-for-1 split = 200,000주 / $0.50 × 200,000 = $100,000 dividends",
+    context_background: "Stock split(주식 분할)은 주식 수만 늘리고 주당 액면가를 낮추는 것으로, 주주의 총 지분 가치나 회사의 순자산에는 아무런 변화가 없다. 분개도 없고 재무제표 금액도 변하지 않는다 — memo entry만 한다.\n\n[Cash dividend 계산]\nSplit 이후 늘어난 주식 수를 기준으로 계산. Split 시점의 공정가치(FV)는 cash dividend 계산과 무관. FV는 small stock dividend(시가 기준 RE 차감)에서만 사용하는 개념이다.\n\n[소급 적용 — EPS에서 특히 중요]\nStock split과 stock dividend는 EPS 계산 시 소급 적용(retroactive)한다 — 기초(beginning of year)부터 전체 기간에 적용된 것처럼 처리. 비교 재무제표의 과거 EPS도 재계산 필요.\n\n반면 신주 발행은 소급 적용하지 않고 발행일부터 월할 계산(weighted average)한다.\n\n이벤트별 처리 방식:\n- Stock split / Stock dividend → 소급 적용 (기초부터 전체 기간)\n- 신주 발행 → 월할 적용 (발행일부터만)\n- 자사주 매입 → 월할 적용 (매입일부터 차감)",
+    context_trigger: '"2-for-1 stock split" + "cash dividend" → split 후 주식 수 기준 / FV 무시\nEPS + stock split → 소급 적용 확인',
+    rule_title: "Stock Split 처리 원칙",
+    rule_items: [
+      "Stock split: 주식 수 증가 / 순자산 불변 / 분개 없음(memo only)",
+      "Cash dividend = split 후 주식 수 × 주당 배당금",
+      "Split 시 FV → cash dividend 계산 무관 (small stock dividend용)",
+      "EPS 계산: stock split·stock dividend → 소급 적용 (기초부터 전체 기간)",
+      "EPS 계산: 신주 발행 → 월할 적용 (발행일부터만)",
+      "EPS 계산: 자사주 매입 → 월할 적용 (매입일부터 차감)",
+    ],
+    speed: "① 2-for-1 split → 주식 수: 100,000 × 2 = 200,000주\n② Cash dividend: 200,000 × $0.50 = $100,000 → B\n③ FV $80 → 무시 (cash dividend 계산 무관)\n④ C 소거: pre-split 주식 수 / D·A 소거: FV 포함 오류",
+  },
 
   // ── CF ─────────────────────────────────────────────────────────────────────
   {
@@ -825,6 +851,58 @@ Series B+ 감사 시 핵심 검토 항목`,
     one_sentence: "US GAAP: 이자(수취·지급)·배당 수취 = CFO / 배당 지급만 CFF.",
     speed: "CFO: 이자 수취 ✓ / 이자 지급 ✓ / 배당 수취 ✓\nCFF: 배당 지급 ✓ (유일한 예외)",
     context_background: "[왜 배당 지급만 CFF인가]\n이자와 배당 수취는 내 투자·영업의 수익 → CFO.\n이자 지급은 영업 관련 비용 → CFO.\n배당 지급은 주주에게 자본을 돌려주는 행위 → 자본 조달·환원 = CFF.\n\n[대출 원금 vs 이자 분리]\n남에게 빌려준 원금 지급 → CFI outflow\n그 대출의 이자 수취 → CFO inflow\n원금과 이자가 다른 섹션으로 분리되는 것이 핵심.\n\n[IFRS와의 차이]\nIFRS는 이자·배당 수취·지급 모두 선택권 부여(CFO 또는 CFI/CFF).\nUS GAAP은 위 분류가 고정. 시험에서 별도 언급 없으면 US GAAP 적용.",
+  },
+
+  // [CF_007] SCF Indirect Method — Supplemental Disclosure Requirements
+  // RULE    : Supplemental = Interest paid + Income taxes paid 2개만 / 나머지는 본문 line item
+  // TRIGGER : "indirect method" + "supplemental disclosure" → Interest + Tax만
+  // TRAP    : Capital exp(A) / 전체 합산(C) / Dividends 포함(D)
+  {
+    topic_id: "CF_007",
+    sub_category_id: "U5_CASH_FLOWS",
+    card_name: "SCF Indirect Method — Supplemental Disclosure Requirements",
+    rule: "간접법(indirect method) SCF에서 supplemental disclosure 필수 항목 = Interest paid + Income taxes paid 2개만. 이유: 간접법 본문은 변동분(delta)만 보여줘서 실제 납부액이 불명확 → GAAP이 별도 공시 요구. Capital expenditures(CFI line item) / lease payments(CFF line item) / dividends paid(CFF line item)는 이미 본문에 표시 → supplemental 불필요.",
+    trigger: '"indirect method" + "supplemental disclosure" → Interest paid + Income taxes paid 합산\n나머지 항목(capital expenditures / lease payments / dividends paid) → 본문 line item → 공시 불필요\n직접법(direct method)은 본문에 직접 표시 → supplemental disclosure 불필요',
+    trap: "TRAP 1: $1,125,000 (A) → Capital expenditures + Capital lease payments 포함. 둘 다 CFI·CFF 본문 line item — supplemental 불필요\nTRAP 2: $1,870,000 (C) → 5개 항목 전부 합산. Supplemental은 오직 Interest + Tax 2개만\nTRAP 3: $745,000 (D) → Dividends paid $200,000 포함. Dividends paid = CFF 본문 line item → supplemental 불필요\n공통 함정: '현금 지출이면 다 공시해야 한다'는 착각 → 간접법 본문에 이미 나오는 항목은 추가 공시 불필요",
+    one_sentence: "Indirect method supplemental disclosure = Interest paid + Income taxes paid 2개만; 나머지는 본문 line item.",
+    example: "Income taxes paid $325,000 + Net interest payments $220,000 = $545,000 / Capital exp·lease payments·dividends → 본문 line item → 제외",
+    context_background: "간접법(indirect method)으로 SCF를 작성할 때, 본문에 직접 나타나지 않는 두 가지 현금 지출이 있다 — 이자 지급(interest paid)과 법인세 납부(income taxes paid). 간접법 본문은 순이익에서 시작해 변동분(delta)으로 조정하는 구조라 실제 납부액이 얼마인지 본문만 봐서는 알 수 없다. 예: Accrued Tax BI $50K → EI $30K이면 변동분 $20K만 보일 뿐, 실제 납부액은 역산해야 함. GAAP은 이 정보를 반드시 제공하도록 별도 supplemental disclosure를 요구한다. 반면 직접법(direct method)은 본문에 'Cash paid for interest $220,000' 형태로 직접 표시되므로 추가 공시 불필요.",
+    context_trigger: '"indirect method" + "supplemental disclosure" → Interest paid + Income taxes paid만 해당 / 나머지 항목은 본문 확인',
+    rule_title: "Indirect Method Supplemental Disclosure — 포함 vs 제외",
+    rule_items: [
+      "필수 공시: Cash paid for interest (이자 실제 납부액)",
+      "필수 공시: Cash paid for income taxes (법인세 실제 납부액)",
+      "제외: Capital expenditures → CFI 본문 line item으로 이미 표시",
+      "제외: Capital/finance lease payments → CFF 본문 line item으로 이미 표시",
+      "제외: Dividends paid → CFF 본문 line item으로 이미 표시",
+      "직접법은 본문에 직접 표시 → supplemental disclosure 자체가 불필요",
+    ],
+    speed: "① 'indirect method' + 'supplemental disclosure' 확인\n② 공식: Interest paid + Income taxes paid만\n③ $325,000 + $220,000 = $545,000 → B\n④ 나머지 3개 항목 전부 소거: 본문 line item",
+  },
+
+  // [CF_008] Indirect Method CFO — Three-Category Adjustment
+  // RULE    : ①비현금 +가산 ②투자재무손익 제거 ③운전자본 증감 / Capital exp → CFI 무시
+  // TRIGGER : net income + depreciation + gain on sale + operating activities
+  // TRAP    : gain 차감 누락($33K) / fixed asset decrease 차감($29K) / depreciation 차감($19K)
+  {
+    topic_id: "CF_008",
+    sub_category_id: "U5_CASH_FLOWS",
+    card_name: "Indirect Method CFO — Three-Category Adjustment",
+    rule: "간접법 CFO 3가지 조정: ①비현금(Depreciation·Amortization → +가산) ②투자재무손익(Gain → −차감 / Loss → +가산, CFI·CFF에서 처리) ③운전자본(AR↑→−, AP↑→+, Inventory↑→−). Capital expenditures·고정자산 증감 → CFI 항목 → CFO 완전 제외.",
+    trigger: '"net income" + depreciation + gain on sale + "operating activities" → 간접법 CFO 3가지 조정\nDepreciation → ①비현금 → +가산\nGain on sale → ②투자손익 → −차감 (CFI에서 처리)\nCapital expenditures / fixed asset changes → CFI → 무시',
+    trap: "TRAP 1: $33,000 (A) → gain 차감 누락. Depreciation만 더하고 끝낸 오류\nTRAP 2: $29,250 (C) → gain 대신 fixed asset decrease $3,750 차감. 고정자산 증감은 CFI 항목 — CFO 무관\nTRAP 3: $19,500 (D) → depreciation을 차감. 비현금 비용은 반드시 가산\n공통 함정: Capital expenditures를 CFO에 포함하는 실수 → CFI 전용",
+    one_sentence: "CFO = NI + Depreciation − Gain on sale ± 운전자본변동; capital exp·자산증감은 CFI.",
+    example: "NI $20,000 + Dep $13,000 − Gain $1,250 = CFO $31,750 / Capital exp $12,500 → CFI (CFO 무관)",
+    context_background: "간접법(indirect method) CFO는 순이익에서 시작해 3가지 유형을 조정한다.\n\n① 비현금 항목(Non-cash items)\n현금 유출 없이 비용 처리된 항목 → 다시 더하기\n- Depreciation / Amortization → +가산\n- Stock compensation expense → +가산\n\n② 투자·재무 활동 손익(Gain/Loss on investing or financing)\nCFI·CFF에서 처리되는 손익이 NI에 포함돼 있으면 → CFO에서 제거\n- Gain on sale of assets → −차감 (실제 현금은 CFI에)\n- Loss on sale of assets → +가산 (실제 현금은 CFI에)\n\n③ 운전자본 변동(Working capital changes)\nAR·AP·Inventory 등 유동자산·유동부채 증감\n- AR 증가 → −차감 (팔았지만 현금 못 받음)\n- AP 증가 → +가산 (비용 인식했지만 현금 안 냄)\n- Inventory 증가 → −차감 (현금 나갔지만 비용 아직 아님)\n\n이 문제에서는 ①②만 적용. Capital expenditures·fixed asset changes는 CFI 항목이라 CFO 계산에서 완전히 제외.",
+    context_trigger: '"net income" + depreciation + gain/loss + operating activities → 3가지 조정 카테고리 적용',
+    rule_title: "간접법 CFO 3가지 조정 카테고리",
+    rule_items: [
+      "① 비현금: Depreciation·Amortization·Stock comp → +가산",
+      "② 투자재무손익: Gain → −차감 / Loss → +가산 (CFI에서 별도 처리)",
+      "③ 운전자본: AR↑→− / AP↑→+ / Inventory↑→−",
+      "Capital expenditures·고정자산 증감 → CFI 전용 → CFO 계산 완전 제외",
+    ],
+    speed: "① NI $20,000 시작\n② Depreciation $13,000 → 비현금 → +$13,000\n③ Gain $1,250 → CFI 처리 → −$1,250\n④ Fixed assets·Capital exp → CFI → 무시\n⑤ CFO = $20,000 + $13,000 − $1,250 = $31,750 → B",
   },
 
   // ── CHANGE ─────────────────────────────────────────────────────────────────
@@ -972,17 +1050,77 @@ Series B+ 감사 시 핵심 검토 항목`,
     one_sentence: "All NFPs: functional expense disclosure required; voluntary health and welfare: must use a separate statement.",
     example: "Meals-on-Wheels (VHW): separate statement showing program $800K / G&A $100K / Fundraising $50K",
   },
+  {
+    topic_id: "NFP_008",
+    sub_category_id: "U6_NFP_FINANCIAL_REPORTING",
+    card_name: "NFP Financial Statements — Statement of Activities",
+    rule: "The statement of activities is the NFP equivalent of a commercial income statement. It reports revenues, expenses, gains, and losses by net asset class (with vs. without donor restriction). NFPs do NOT prepare a statement of comprehensive income.",
+    trigger: '"revenues and expenses" + NFP/voluntary health and welfare → Statement of Activities\n"ongoing revenues and expenses" = 기간 손익 = 상업 I/S의 NFP 버전',
+    trap: "TRAP 1: Statement of Financial Position → NFP의 B/S(자산·부채·순자산 시점 보고) — revenues/expenses와 무관\nTRAP 2: Statement of Cash Flows → 현금 유입·유출만 보고, 수익·비용 개념 아님\nTRAP 3: Statement of Comprehensive Income → NFP는 이 재무제표 자체를 작성하지 않음 (영리기업 전용)",
+    one_sentence: "NFP의 수익·비용 = Statement of Activities (상업 I/S와 동일 역할).",
+    example: "Voluntary health org revenues $2M / expenses $1.8M → Statement of Activities shows $200K increase in net assets",
+    context_background: "NFP(비영리조직)도 상업 기업처럼 한 기간 동안 얼마를 벌고 얼마를 썼는지 보여주는 재무제표가 필요하다. 상업 기업에서는 이 역할을 Income Statement(손익계산서)가 담당하지만, NFP에는 I/S가 없다. 대신 Statement of Activities가 동일한 역할을 수행한다 — 수익(revenues), 비용(expenses), 이익/손실(gains/losses)을 보고하며, 순자산(net assets)이 기간 중 얼마나 변동했는지를 보여준다. 특히 Voluntary Health and Welfare Organization(자발적 보건복지단체)은 별도의 Statement of Functional Expenses도 요구되는 만큼, 재무제표 구조를 명확히 아는 것이 시험에서 핵심이다.",
+    context_trigger: '"revenues and expenses" + voluntary health and welfare / NFP → Statement of Activities',
+    rule_title: "NFP 재무제표 — 수익·비용 보고",
+    rule_items: [
+      "Statement of Activities = NFP의 I/S 역할: revenues, expenses, gains, losses 보고",
+      "순자산 변동(change in net assets)을 with/without donor restriction으로 구분 표시",
+      "Statement of Financial Position = NFP의 B/S: 자산·부채·순자산 시점 보고 (수익·비용 아님)",
+      "Statement of Cash Flows = 현금 유입·유출 보고 (수익·비용 아님)",
+      "Statement of Comprehensive Income = NFP는 작성하지 않음 (영리기업 전용)",
+      "Voluntary Health and Welfare org 추가 요구: Statement of Functional Expenses 별도 작성",
+    ],
+    speed: "① 'revenues and expenses' 키워드 확인\n② NFP 맥락 → I/S 역할을 하는 재무제표 찾기\n③ NFP I/S = Statement of Activities → 정답 B\n④ D 소거: NFP는 Comprehensive Income 없음 → 1초 컷",
+  },
+  // [NFP_009] NFP Donated Assets — Initial Recognition at Fair Value
+  // RULE    : 기부 자산 최초 인식 = 기부일 공정가치 / Donor's basis 수령자와 무관
+  // TRIGGER : "shares of stock received" + NFP → 기부일 FV / Donor's basis → 즉시 소거
+  // TRAP    : Donor's basis(B) / Average(C) / End of year FV(D) — 후속 측정과 최초 인식 혼동
+  {
+    topic_id: "NFP_009",
+    sub_category_id: "U6_NFP_FINANCIAL_REPORTING",
+    card_name: "NFP Donated Assets — Initial Recognition at Fair Value",
+    rule: "NFP가 주식 등 자산을 기부받을 때 최초 인식 = 기부일 공정가치(fair value on date of donation). Donor's basis(기부자 취득원가)는 수령 NFP와 무관 — 기부자 세무신고용 개념. 이후 시장성 유가증권은 매 결산일 공정가치로 재평가하지만, 최초 인식은 반드시 기부일 FV.",
+    trigger: '"shares of stock" + "received" + NFP → fair value on the date of donation\n"donated assets" / "contributed assets" + NFP → 기부일 공정가치로 인식\nDonor\'s basis 언급 → 수령자 입장에서 무관 → 즉시 소거',
+    trap: "TRAP 1: Donor's basis (B) → 기부자의 취득원가. 수령 NFP 입장에서 완전히 무관. 기부자 세무신고용 개념\nTRAP 2: Average of donor's basis and FV (C) → 존재하지 않는 규칙. Donor's basis 자체가 irrelevant\nTRAP 3: Fair value at end of year (D) → 후속 측정(subsequent measurement)과 최초 인식 혼동. 초기 인식 = 기부일 FV / 결산일 재평가는 별개",
+    one_sentence: "NFP 기부 자산 최초 인식 = 기부일 공정가치; Donor's basis는 수령자와 무관.",
+    example: "기부자가 $10에 취득한 주식을 기부일 시가 $100에 기부 → NFP 장부: $100 (donor's basis $10 무시)",
+    context_background: "NFP가 주식이나 자산을 기부받을 때 얼마로 장부에 올려야 할까? 기부자 입장에서는 오래 전에 $10에 산 주식을 기부할 수 있고, 기부 시점 시가는 $100일 수 있다. NFP는 기부받은 시점의 공정가치(fair value on date of donation)로 기록한다. 기부자의 원가(donor's basis)는 기부자의 세무 신고에 관련된 개념이지, 수령 기관의 장부 금액과는 무관하다. 이후 시장성 있는 유가증권은 매 결산일마다 공정가치로 재평가되지만, 최초 인식은 반드시 기부일 기준 공정가치다.",
+    context_trigger: '"shares of stock received as donation" + NFP → 기부일 FV 인식 / Donor\'s basis → 수령자 무관',
+    rule_title: "NFP 기부 자산 최초 인식 기준",
+    rule_items: [
+      "기부 자산 최초 인식 = 기부일 공정가치(fair value on date of donation)",
+      "Donor's basis(기부자 취득원가)는 수령 NFP 장부와 무관 — 기부자 세무신고용",
+      "최초 인식 이후: 시장성 유가증권 → 매 결산일 공정가치로 후속 재평가",
+      "최초 인식(기부일 FV)과 후속 측정(결산일 FV)은 별개 개념",
+    ],
+    speed: "① NFP + 기부 자산 수령 → 기부일 공정가치\n② Donor's basis 언급 → 수령자와 무관 → B·C 즉시 소거\n③ End of year → 후속 측정 개념 혼동 → D 소거\n④ 정답 A",
+  },
 
   // ── CONT ───────────────────────────────────────────────────────────────────
   {
     topic_id: "CONT_001",
     sub_category_id: "U4_CONTINGENCIES",
     card_name: "Gain contingency — how much to accrue",
-    rule: "Gain contingencies are never accrued regardless of probability. Disclose in notes only if probable. Accrual answer = $0.",
-    trigger: "gain contingency | contingent gain | accrual | probable gain",
-    trap: "High probability and large amount do not change the rule — gain contingency accrual is always $0.",
-    one_sentence: "Gain contingency accrual = $0 always; conservatism prohibits recognizing gains before realization.",
-    example: "Lawsuit outcome likely favorable, potential gain $500,000 → accrue $0 (disclose in notes only)",
+    rule: "Gain contingencies are never accrued regardless of probability or estimability. Recognition timing = When realized only. Disclose in notes if probable. Accrual answer = $0. Loss contingency 비교: Probable + Estimable → accrue. Remote + Guarantee → disclose (예외).",
+    trigger: '"plaintiff" + "favorable outcome" + "probable" → Gain contingency → accrual 불가, notes disclosure만\n"high probability" + "reasonably estimate" 조합이 나와도 → gain이면 accrual $0\nLoss contingency 규칙(probable + estimable → accrue)과 반드시 구분',
+    trap: "TRAP 1: B (gain contingency for estimated amount) → 금액 추정 가능해도 gain contingency accrual 절대 불가\nTRAP 2: C (no reporting required) → probable이면 note disclosure 의무 있음. 아무것도 안 하는 건 오답\nTRAP 3: D (minimum estimated amount) → B와 같은 오류. 'minimum' 붙여도 gain accrual 불가\n공통 함정: Loss contingency 규칙(probable + estimable → accrue)을 gain에 그대로 적용하는 실수",
+    one_sentence: "Gain contingency accrual = $0 always; probable이면 notes disclosure 필수.",
+    example: "Lawsuit outcome likely favorable, potential gain $500,000 → accrue $0 / probable → disclose in notes",
+    context_background: "회계의 보수주의(conservatism) 원칙은 이익은 실현될 때까지 인식하지 말고, 손실은 가능성이 보이는 즉시 인식하라는 비대칭 원칙이다. Gain contingency(이익 우발상황)는 이 원칙의 대표적 적용 사례다 — 승소 가능성이 아무리 높고 금액 추정이 가능해도 실제로 판결이 나기 전까지는 이익을 장부에 올릴 수 없다.\n\n단, 공시(disclosure) 규칙은 별도로 적용된다. Probable이면 notes에 disclosure 의무가 있다 — 금액과 성격을 주석에 기재해야 한다. Reasonably possible이면 disclosure 선택, Remote이면 원칙적으로 불필요하다.\n\n정리하면: Gain contingency = accrual 절대 불가 + probable이면 notes disclosure 필수.\n\n반면 Loss contingency는 accrual·disclosure 기준이 다르다:\nProbable + Estimable → Accrual ✅ / Disclosure ✅\nProbable + Not Estimable → Accrual ❌ / Disclosure ✅\nReasonably Possible → Accrual ❌ / Disclosure ✅\nRemote → Accrual ❌ / Disclosure ❌ (원칙)\nRemote + Guarantee → Accrual ❌ / Disclosure ✅ (예외)\n\n특히 Guarantee(타인 채무 보증)는 Remote여도 공시 의무가 있다 — 보증 규모가 재무제표 이용자에게 중요한 정보이기 때문이다.",
+    context_trigger: '"plaintiff" + "favorable outcome" → Gain contingency 확인 → accrual $0 / probable → notes disclosure',
+    rule_title: "Gain vs Loss Contingency 처리 기준",
+    rule_items: [
+      "Gain contingency 인식 시점 = When realized (실현 시점) — 유일한 인식 조건",
+      "Gain contingency: 확률·금액 무관 accrual 절대 불가 → $0",
+      "Gain contingency: Probable → notes disclosure 필수",
+      "Loss contingency: Probable + Estimable → accrual + disclosure",
+      "Loss contingency: Probable + Not Estimable → disclosure만",
+      "Loss contingency: Reasonably Possible → disclosure만",
+      "Loss contingency: Remote → 원칙적 불필요",
+      "Loss contingency: Remote + Guarantee → disclosure 필수 (예외)",
+    ],
+    speed: "① 'plaintiff' + 'favorable outcome' → Gain contingency 확인\n② Gain contingency → accrual 무조건 $0, 보수주의 원칙\n③ Probable → note disclosure 의무 → A\n④ B·D 소거: accrual 형태는 모두 불가 / C 소거: probable이면 disclosure 필요",
   },
   {
     topic_id: "CONT_002",
@@ -1393,10 +1531,10 @@ Series B+ 감사 시 핵심 검토 항목`,
     sub_category_id: "U6_GOVERNMENTAL_OVERVIEW",
     card_name: "Governmental vs proprietary funds — difference",
     rule: "Governmental funds: modified accrual + current financial resources focus. Proprietary funds: full accrual + economic resources focus.",
-    trigger: "governmental fund | proprietary fund | current financial resources | economic resources",
-    trap: "Proprietary funds account for business-like activities; governmental funds account for tax-supported activities.",
-    one_sentence: "Governmental = modified accrual + current resources; proprietary = full accrual + economic resources.",
-    example: "Water utility (enterprise) → full accrual + economic resources; General Fund → modified accrual + current resources",
+    trigger: "governmental fund | measurement focus | primary focus | current financial resources | modified accrual\nproprietary fund → economic resources (반대 방향 확인용)",
+    trap: "TRAP 1: Cash flows and balances (A) → Proprietary fund 측정 초점. Governmental fund는 현금만이 아닌 current financial resources(단기 수취채권 포함) 대상\nTRAP 2: Capital maintenance (B) → Proprietary fund. 기업처럼 자본 유지 여부를 측정하는 개념\nTRAP 3: Income determination (D) → Proprietary fund. 순이익 계산은 기업형 펀드의 목적\n공통 함정: 오답 3개(A·B·D)가 모두 Proprietary fund 특성 — governmental fund와 혼동",
+    one_sentence: "Governmental fund = Current financial resources focus (modified accrual); Proprietary fund = Economic resources focus (full accrual).",
+    example: "General Fund B/S: Cash + Tax Receivable + Due from Other Funds (장기 자산·부채 없음) / Enterprise Fund: 장기 자산·감가상각·장기 부채 모두 포함",
   },
   {
     topic_id: "GOV_003",
@@ -2251,6 +2389,32 @@ Series B+ 감사 시 핵심 검토 항목`,
     one_sentence: "renew 보이면 → 기존 prepaid 전액 expense 확정 + 신규 납부액은 경과월만 expense / 나머지 Prepaid.",
     example: "신규 $14,400(36개월) 납부 시 전액 expense 오류 → 수정: 기존 잔액 $600 전액 expense + $14,400÷36=$400 expense + $14,000 Prepaid 환원. 최종: Expense $1,000 / Prepaid $14,000.",
   },
+  // [ADJ_003] Cash Paid for Operating Expenses — Accrual to Cash Conversion
+  // RULE    : Cash Paid = Expense − ΔAccrued Liability + ΔPrepaid
+  // TRIGGER : "debits to operating expenses" + prepaid/accrued 잔액 → 역산 공식
+  // TRAP    : Prepaid↑ 빼기($83K) / Accrued↑ 더하기($117K) / 둘 다 반대($107K)
+  {
+    topic_id: "ADJ_003",
+    sub_category_id: "U2_ADJUSTING_ENTRIES",
+    card_name: "Cash Paid for Operating Expenses — Accrual to Cash Conversion",
+    rule: "Cash Paid = Operating Expense − ΔAccrued Liability + ΔPrepaid. Accrued Liability ↑ = 비용 인식했지만 현금 미지출 → 빼기. Prepaid ↑ = 현금 먼저 냈지만 비용 미인식 → 더하기. SCF indirect method 조정과 동일 구조.",
+    trigger: '"debits to operating expenses" + prepaid / accrued liabilities 잔액 → 역산 공식 적용\nCash Paid = Expense − ΔAccrued Liability + ΔPrepaid\nAccrued Liability ↑ → 비용은 인식됐지만 현금 미지출 → 빼기\nPrepaid ↑ → 현금은 나갔지만 비용 미인식 → 더하기',
+    trap: "TRAP 1: $83,000 (A) → Prepaid 증가를 빼기로 처리. Prepaid ↑ = 현금 먼저 냈다 → 더해야 함\nTRAP 2: $117,000 (C) → Accrued Liability 증가를 더하기로 처리. Accrued ↑ = 현금 아직 안 냈다 → 빼야 함\nTRAP 3: $107,000 (D) → 두 항목 부호 완전히 반대 적용. 각 항목의 경제적 의미 혼동\n공통 함정: Prepaid와 Accrued의 방향 혼동 → T/A로 확인: Prepaid Dr증가=현금 지출 / Accrued Cr증가=현금 미지출",
+    one_sentence: "Cash Paid = Expense − ΔAccrued Liability + ΔPrepaid; Accrued↑ 빼고 Prepaid↑ 더하기.",
+    example: "Expense $100K / Accrued +$12K / Prepaid +$5K → Cash Paid = $100K − $12K + $5K = $93K",
+    context_background: "발생주의(accrual basis) 회계에서 비용은 현금 지급 시점과 다를 수 있다. Operating Expense(I/S)는 발생주의 기준이므로 실제 현금 지급액을 구하려면 두 가지 계정을 조정해야 한다. Accrued Liability(미지급비용)가 증가했다는 것은 비용을 I/S에 이미 올렸지만 현금은 아직 내지 않았다는 뜻이고, Prepaid Expense(선급비용)가 증가했다는 것은 현금을 먼저 냈지만 아직 비용으로 인식하지 않은 금액이 늘었다는 뜻이다. 이 역산 로직은 SCF(간접법) indirect method에서 Operating Activities 조정과 동일한 사고 구조다.",
+    context_trigger: '"debits to operating expenses" + prepaid/accrued 잔액 변동 → Cash Paid 역산 공식',
+    rule_title: "발생주의 비용 → 현금 지급액 역산 공식",
+    rule_items: [
+      "Cash Paid = Operating Expense − ΔAccrued Liability + ΔPrepaid",
+      "Accrued Liability ↑: I/S 비용 인식 but 현금 미지출 → 실제 현금 지급은 그만큼 적음 → 빼기",
+      "Accrued Liability ↓: 과거 인식 비용을 이번에 현금으로 냄 → 실제 지급은 그만큼 많음 → 더하기",
+      "Prepaid ↑: 현금 먼저 지급 but I/S 비용 미인식 → 실제 현금 지급은 그만큼 많음 → 더하기",
+      "Prepaid ↓: 과거 선급액이 이번에 비용화 → 현금 추가 지출 없음 → 빼기",
+      "이 조정 구조는 SCF indirect method Operating Activities 조정과 완전히 동일",
+    ],
+    speed: "① Operating Expense $100,000 확인\n② Accrued Liability $8K→$20K = +$12K → 현금 안 냈으니 빼기 → $100K − $12K = $88K\n③ Prepaid $5K→$10K = +$5K → 현금 먼저 냈으니 더하기 → $88K + $5K = $93K → B\n④ 오답 체크: A=$83K(prepaid 빼기), C=$117K(accrued 더하기), D=$107K(둘 다 반대)",
+  },
   // [GOV_016] Fund accounting — definition and scope
   // RULE    : Fund = 목적별 자기완결적 회계단위 / 물리적 분리 불필요 / Equity 없음 → Fund Balance
   // TRIGGER : "fund accounting" + "self-balancing" + "segregated for the purpose" + "Fund Balance"
@@ -2314,6 +2478,57 @@ Series B+ 감사 시 핵심 검토 항목`,
     one_sentence: "Rising prices + FIFO→LIFO = Ending Inventory↓ + Net Income↓; 물가 하락기면 방향 완전히 반대.",
     speed: "물가 상승기 FIFO → LIFO 전환:\n최근 비싼 원가 → COGS ↑ → Net Income ↓\n오래된 싼 원가 → Ending Inventory ↓\n답: Decrease / Decrease",
     context_background: "[왜 FIFO vs LIFO가 중요한가]\n재고 원가 흐름 가정(cost flow assumption)은 실제 물건의 이동과 무관하게 원가를 어떻게 배분하느냐의 문제다. 물가 상승기에 이 선택은 재무제표에 큰 영향을 미친다.\n\n[물가 상승기 FIFO vs LIFO 비교]\n- COGS에 배분되는 원가: FIFO=오래된(싼) 원가 / LIFO=최근(비싼) 원가\n- Ending Inventory: FIFO=최근(비싼) 원가→높음 / LIFO=오래된(싼) 원가→낮음\n- COGS: FIFO=낮음 / LIFO=높음\n- Net Income: FIFO=높음 / LIFO=낮음\n- 세금 부담: FIFO=높음 / LIFO=낮음(절세 효과)\n\n[실무에서 LIFO로 바꾸는 이유]\n물가 상승기에 LIFO를 선택하면 COGS가 높아져 과세소득이 줄어들고 세금을 절감할 수 있다. US GAAP에서는 상장기업 포함 모두 LIFO 사용이 허용되며, 실제로 ExxonMobil, Walmart 같은 대형 상장기업도 인플레이션 시기 절세 목적으로 LIFO를 유지해왔다. 단, LIFO를 사용하는 기업은 LIFO Reserve(FIFO 기준 재고와의 차이)를 공시해야 하며, 이를 통해 재무제표 이용자가 FIFO 기준으로 재환산할 수 있다.\n\n[FIFO → LIFO 전환 시 변화]\n- Ending Inventory: FIFO(비싼 재고) → LIFO(싼 재고) → 감소\n- COGS: 싼 원가 → 비싼 원가 → 증가 → Net Income 감소\n\n[물가 하락기라면 방향이 완전히 반대]\n- Ending Inventory: 감소 → 증가\n- COGS: 증가 → 감소\n- Net Income: 감소 → 증가",
+  },
+
+  // [INV_005] LIFO Perpetual vs Periodic — COGS Calculation
+  // RULE    : Perpetual = 판매 시점 재고 스냅샷 기준 / Periodic = 기간 전체 매입 합산 후 기말 LIFO
+  // TRIGGER : 'LIFO' + 'perpetual' → 판매일별 독립 계산 / $910 = Periodic 오답
+  // TRAP    : Mar 30 매입분 COGS 포함(Periodic 혼동) / Mar 27 판매 시 $55 층 재사용(이미 소진)
+  {
+    topic_id: "INV_005",
+    sub_category_id: "U3_INVENTORY",
+    card_name: "LIFO Perpetual vs Periodic — COGS Calculation",
+    rule: "LIFO Perpetual: 판매가 발생하는 그 시점의 재고 구성 기준으로 COGS 확정. 판매 이후 매입분은 해당 판매의 COGS에 절대 포함 안 됨. LIFO Periodic: 기간 전체 매입을 합산한 뒤 기말에 한꺼번에 LIFO 적용 → 미래 매입분까지 COGS에 반영됨.",
+    trigger: "'LIFO' + 'perpetual' → 판매 시점별 재고 스냅샷 기준으로 층별 독립 계산\n날짜가 있는 거래 표 + 'perpetual' → 판매일 기준 그 시점 재고만 보기\n오답 $910 = LIFO Periodic → 물가 상승 시 Perpetual < Periodic 검증 포인트",
+    trap: "TRAP 1: $910 (A) → LIFO Periodic 결과. Mar 30 매입($65) 판매 이후임에도 전체 풀에 포함. Perpetual에서는 판매 이후 매입은 해당 판매 COGS에 절대 불포함\nTRAP 2: Mar 27 판매 시 Mar 4 매입분($55) 재사용 오류. Mar 12 판매로 $55 재고 전량 소진됨 — 판매 시점 재고 스냅샷 별도 추적 필수\nTRAP 3: 각 판매일 층 순서 혼동. 판매마다 독립적으로 그 시점 재고를 재구성해야 함",
+    one_sentence: "LIFO Perpetual = 판매 시점 재고만 보고 COGS 확정; 판매 후 매입분은 그 판매의 COGS에 포함 불가.",
+    example: "Mar 12 판매: BI $50(10) + Mar4 $55(6) → LIFO: 6×$55+2×$50 = $430\nMar 27 판매: BI $50(8) + Mar20 $60(9) → LIFO: 7×$60 = $420\nTotal COGS = $850",
+    context_background: "재고 원가 계산에서 Perpetual(계속기록법)과 Periodic(실지재고조사법)의 결과가 달라지는 이유는 '언제 LIFO를 적용하느냐'에 있다. Perpetual은 판매가 발생하는 그 시점의 재고 구성을 기준으로 COGS를 확정한다 — 즉 그 순간까지 들어온 물건 중 가장 나중에 매입한 것부터 판다. 반면 Periodic은 기간 전체의 매입을 합산한 뒤 기말에 한꺼번에 LIFO를 적용하므로, 아직 일어나지 않은 미래 매입까지 COGS에 반영된다. 실무에서 Perpetual은 POS 시스템·바코드 스캔으로 판매 즉시 재고를 차감하는 대형 유통사(Walmart, Home Depot 등)가 채택한다. 이 차이를 시험에서는 같은 데이터로 두 방법을 비교하는 형태로 출제한다.",
+    context_trigger: "'LIFO' + 'perpetual inventory system' → 판매 시점별 독립 계산 / 오답 $910 = Periodic 혼동 검증",
+    rule_title: "LIFO Perpetual COGS 계산 순서",
+    rule_items: [
+      "판매 시점마다 그 시점까지의 재고 구성을 별도로 파악",
+      "각 판매에서 가장 최근 매입층부터 COGS 배분 (LIFO 순서)",
+      "판매 이후 발생한 매입분은 해당 판매의 COGS에 포함 불가",
+      "각 판매별 COGS 합산 = Total COGS",
+      "LIFO Periodic: 기간 전체 매입 합산 → 기말 일괄 LIFO → 물가 상승 시 Perpetual보다 높게 나옴",
+    ],
+    speed: "① 'LIFO + perpetual' 확인 → 판매 시점별 독립 계산\n② Mar 12 판매: 직전 재고 = BI $50(10) + Mar4 $55(6) → LIFO: 6×$55 + 2×$50 = $430\n③ Mar 27 판매: 직전 재고 = BI $50(8) + Mar20 $60(9) → LIFO: 7×$60 = $420\n④ Total COGS = $430 + $420 = $850 → B\n⑤ $910 보이면 Periodic 오답 — Perpetual은 물가 상승 시 항상 이보다 낮음",
+  },
+  // [INV_006] LCNRV — NRV Calculation for FIFO Inventory
+  // RULE    : FIFO → NRV = SP − processing costs / LIFO → RC 기준 LCM (Ceiling·Floor)
+  // TRIGGER : "FIFO" + "lower of cost and NRV" → NRV = SP − processing costs
+  // TRAP    : Cost 그대로($70K) / SP+costs($83K) / SP만($75K) / RC·profit margin 포함
+  {
+    topic_id: "INV_006",
+    sub_category_id: "U3_INVENTORY",
+    card_name: "LCNRV — NRV Calculation for FIFO Inventory",
+    rule: "FIFO/Average cost → LCNRV: NRV = SP − Further processing costs. Cost vs NRV 비교 → 낮은 쪽 보고. LIFO/Average cost → LCM: Market = RC (단 Ceiling=NRV / Floor=NRV−Normal profit 범위 내). RC·Normal profit margin → FIFO LCNRV에서 함정 데이터.",
+    trigger: '"FIFO" + "lower of cost and net realizable value" → NRV = SP − further processing costs\nReplacement cost 제시 → FIFO이므로 무시 (LIFO였으면 사용)\nNormal profit margin 제시 → FIFO LCNRV에서 무시 (LIFO LCM floor 계산용)',
+    trap: "TRAP 1: $70,000 (A) → Cost 그대로 보고. NRV < Cost이므로 write-down 필요\nTRAP 2: $83,000 (B) → SP + processing costs로 잘못 계산. NRV는 SP 빼기 processing costs\nTRAP 3: $75,000 (C) → SP를 NRV로 사용. Further processing costs $8,000 차감 누락\n공통 함정: RC($65,000)·profit margin(30%) 계산 포함 → LIFO였으면 쓸 숫자를 FIFO 문제에 넣은 함정",
+    one_sentence: "FIFO LCNRV: NRV = SP − processing costs; RC·profit margin은 LIFO용 함정 데이터.",
+    example: "Cost $70,000 / SP $75,000 / processing $8,000 → NRV $67,000 / LCNRV = MIN($70K, $67K) = $67,000",
+    context_background: "재고 자산은 원가(cost)보다 실제로 받을 수 있는 금액이 낮아지면 낮은 쪽으로 write-down해야 한다. 단, 어떤 재고 방법을 쓰느냐에 따라 비교 대상 자체가 달라진다.\n\n[FIFO / Average cost → LCNRV 적용]\n- NRV = Selling Price − Further processing costs\n- 비교: Cost vs NRV → 낮은 쪽 보고\n- Replacement cost / Normal profit margin → 무관, 함정 데이터\n\n[LIFO / Average cost → LCM 적용 (구 GAAP)]\n- Market = Replacement Cost (단, Ceiling·Floor 범위 내)\n- Ceiling = NRV / Floor = NRV − Normal profit margin\n- Market이 Ceiling 초과 → Ceiling 사용 / Floor 미만 → Floor 사용\n- 비교: Cost vs Market → 낮은 쪽 보고\n\n이 문제는 FIFO이므로 NRV = $75,000 − $8,000 = $67,000만 비교하면 끝. $65,000(RC)과 30%(profit margin)은 LIFO였으면 쓸 숫자를 집어넣은 함정이다.",
+    context_trigger: '"FIFO" + "lower of cost and NRV" + replacement cost + normal profit margin 동시 제시 → RC·margin 둘 다 LIFO용 함정',
+    rule_title: "재고 방법별 valuation 비교 기준",
+    rule_items: [
+      "FIFO/Average cost → LCNRV: NRV = SP − Further processing costs",
+      "LIFO/Average cost → LCM: Market = RC (Ceiling·Floor 범위 내)",
+      "LIFO LCM Ceiling = NRV / Floor = NRV − Normal profit margin",
+      "Replacement cost → FIFO 문제에서 함정 데이터, LIFO에서만 사용",
+      "Normal profit margin → FIFO 문제에서 함정 데이터, LIFO floor 계산에서만 사용",
+    ],
+    speed: "① FIFO + LCNRV 확인 → NRV = SP − processing costs\n② NRV = $75,000 − $8,000 = $67,000\n③ LCNRV = MIN($70,000, $67,000) = $67,000 → D\n④ RC $65,000·profit margin 30% → 즉시 무시 (LIFO용 함정)",
   },
 
   // ── CASH (Cash & Cash Equivalents) ─────────────────────────────────────────
