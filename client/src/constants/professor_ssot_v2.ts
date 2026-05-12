@@ -2132,6 +2132,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     one_sentence: "Pick the approach that uses the most observable inputs; principal market takes priority over most advantageous market.",
     example: "Listed equity → market approach (Level 1) preferred over DCF; illiquid private asset with no comparables → income or cost approach (Level 3)",
   },
+
+  // [VAL_012] Fair Value — Most Advantageous Market and Transaction Costs
+  // RULE    : No principal market → Net 비교 → 최고 Net 시장 선택 → FV = quoted price (TC 미차감)
+  // TRIGGER : 'no principal market' → Net 비교 → FV = quoted price
+  // TRAP    : quoted price로 비교(TC 미차감) / Net을 FV로 보고
+  {
+    topic_id: "VAL_012",
+    sub_category_id: "U2_FAIR_VALUE",
+    card_name: "Fair Value — Most Advantageous Market and Transaction Costs",
+    rule: "Principal market 없을 때 → Most advantageous market = TC 차감 후 Net이 가장 높은 시장. Fair value = 해당 시장의 quoted price (TC 미차감). TC는 시장 선택 기준에만 사용, FV 보고에는 미포함.",
+    trigger: "'no principal market' → Net 비교로 시장 선택 → FV = 선택된 시장의 quoted price",
+    trap: "Quoted price 높은 시장 선택 함정: TC 차감 전 금액으로 비교 → 오류\nNet을 FV로 보고하는 함정: TC 차감한 값을 fair value로 사용 → 오류",
+    one_sentence: "Most advantageous market = Net 최고 시장; FV = 그 시장의 quoted price (TC 빼지 않음).",
+    speed: "각 시장 Net 계산 → Net 최고 시장 선택 → FV = 해당 시장 quoted price",
+    context_background: "Principal market 없을 때 most advantageous market을 선택한다. 선택 기준은 TC 차감 후 Net이 가장 높은 시장이지만, 보고하는 fair value는 quoted price 그대로다.",
+  },
+
   {
     topic_id: "COMP_001",
     sub_category_id: "U4_PAYABLES",
