@@ -546,6 +546,52 @@ function StructuredExplanationView({ item }: { item: QuizItemWithContext }) {
   );
 }
 
+// Detect financial data blocks and convert them to markdown bullet lists for
+// mobile readability. Handles three formats found in question_bank:
+//   1. "Label: $amount"  (CF_008, CASH_001)
+//   2. "Label   $amount" (RATIO_004)
+//   3. Space-aligned columns, amounts without $, continuation lines (IS_001)
+function formatFinancialQuestion(text: string): string {
+  return text
+    .split(/\n\n/)
+    .map(block => {
+      const rawLines = block.split('\n');
+      const trimmedLines = rawLines.filter(l => l.trim());
+      if (trimmedLines.length < 3) return block;
+
+      // Pattern 1 — "Label: $amount"
+      if (trimmedLines.filter(l => /:\s*\$/.test(l)).length >= 3) {
+        return trimmedLines.map(l => `- ${l.trim()}`).join('\n');
+      }
+
+      // Pattern 2 — "Label   $amount" (space-aligned with $)
+      if (trimmedLines.filter(l => /\S.*\s{2,}\$[\d,.()\-]+/.test(l)).length >= 2) {
+        return trimmedLines
+          .map(l => `- ${l.trim().replace(/\s{2,}(\$)/, ': $')}`)
+          .join('\n');
+      }
+
+      // Pattern 3 — space-aligned columns, amounts may lack $ (IS_001)
+      if (trimmedLines.filter(l => /\S.*\s{2,}[\d,.()\-]+\s*$/.test(l)).length >= 3) {
+        const joined: string[] = [];
+        for (const line of rawLines) {
+          if (!line.trim()) continue;
+          if (/^\s+\S/.test(line) && joined.length > 0) {
+            joined[joined.length - 1] += ' ' + line.trim();
+          } else {
+            joined.push(line);
+          }
+        }
+        return joined
+          .map(l => `- ${l.trim().replace(/\s{2,}(\$?)/, ': $1')}`)
+          .join('\n');
+      }
+
+      return block;
+    })
+    .join('\n\n');
+}
+
 // Shared markdown component map for exp/concept-card blocks.
 // Tight spacing, small table that scrolls horizontally if it overflows.
 const MD_COMPONENTS = {
@@ -1211,7 +1257,7 @@ export default function QuizView({
         <div className="flex items-start justify-between gap-2">
           <div className="text-sm font-medium text-[#0f172a] leading-relaxed flex-1 min-w-0">
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MD_COMPONENTS as never}>
-              {current.q}
+              {formatFinancialQuestion(current.q)}
             </ReactMarkdown>
           </div>
           <button
