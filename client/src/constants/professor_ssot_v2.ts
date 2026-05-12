@@ -678,6 +678,22 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "Convertible preferred with large dividend rate: including it raises EPS → anti-dilutive → exclude",
   },
 
+  // [EPS_007] Contingent Shares — Basic EPS Inclusion Date
+  // RULE    : 조건 충족일부터 Basic EPS 가중평균 산입 / diluted only 아님
+  // TRIGGER : 'agreed to issue X shares for each [조건]' → 충족일 기준 월할 계산
+  // TRAP    : 총합산(D) / diluted only 착각(A) / 단순 평균(B)
+  {
+    topic_id: "EPS_007",
+    sub_category_id: "U1_EPS",
+    card_name: "Contingent Shares — Basic EPS Inclusion Date",
+    rule: "Contingent shares = 조건 충족일부터 Basic EPS 가중평균에 포함. 각 조건 충족일 기준으로 연말까지 월수 계산. Diluted EPS 전용이 아님.",
+    trigger: "'agreed to issue X shares for each [조건]' → 조건 충족일(개점일·달성일)부터 weighted average 기산",
+    trap: "D형 함정: 가중평균 없이 총 주식수만 합산 (2,000)\nA형 함정: contingent shares = diluted only라고 착각 → Basic EPS에도 조건 충족 시 포함\nB형 함정: 단순 평균 오류 (1,250)",
+    one_sentence: "Contingent shares: 조건 충족일부터 연말까지 weighted average → Basic EPS 분모에 포함.",
+    speed: "May 1: 1,000 × 8/12 = 333⅓ / Sep 1: 누적 2,000 × 4/12 = 666⅔ / 합계 = 1,000",
+    context_background: "M&A 계약에서 특정 조건 달성 시 추가 주식을 약정하는 경우, 조건 충족일 이전에는 주주로서의 실질적 권리가 없으므로 충족일부터만 Basic EPS 가중평균에 산입한다.",
+  },
+
   // ── EQUITY ─────────────────────────────────────────────────────────────────
   {
     topic_id: "EQUITY_001",
