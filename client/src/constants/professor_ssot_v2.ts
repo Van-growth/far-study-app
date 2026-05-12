@@ -2565,6 +2565,22 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[이 문제가 묻는 것]\nDebt Modification TDR에서 Debtor가 Gain을 인식해야 하는지 판단할 때, Carrying Amount와 무엇을 비교해야 하는가?\n\n[왜 'solely modification'이 중요한가]\nTDR에서 Gain/Loss 계산 방식은 유형별로 완전히 다르다:\n① Asset Transfer only: 자산 FV vs 자산 CA → Loss/Gain on Transfer + 부채 CA vs 자산 FV → Gain on Restructuring\n② Debt Modification only: Carrying Amount vs Total Future Cash Payments (PV 없음)\n③ 혼합 (Asset + Modification): Asset Transfer 처리 먼저 → 남은 부채에 Modification 규칙 적용\n\n문제에서 'solely modification'이라고 못 박은 이유: Asset Transfer가 섞이면 계산 방식이 달라지므로 순수한 조건 변경 케이스임을 명확히 한 것이다.\n\n[Debtor vs Creditor 정리]\n- Debtor (채무자): 돈 빌린 쪽. 조건 완화 받는 쪽. Gain 인식 주체.\n- Creditor (채권자): 돈 빌려준 쪽. 손해 감수하는 쪽.\n\n[Gain 인식 판단 기준]\nCarrying Amount of Debt vs Total Future Cash Payments (이자 + 원금 전부, 할인 없음)\n① CA > Total FCF → Gain 인식 (차액을 즉시 I/S에 인식)\n② CA ≤ Total FCF → Gain 없음 (새 조건으로 이자비용 재계산)\n\n[숫자 예시 — Gain 발생]\nCA $100,000 / 조건 변경 후 원금 $80,000 + 이자 $7,200 = Total FCF $87,200\nGain = $100,000 - $87,200 = $12,800 → 즉시 I/S 인식\n\n[숫자 예시 — Gain 없음]\nCA $100,000 / 원금 $95,000 + 이자 $8,550 = Total FCF $103,550\n$100,000 - $103,550 = -$3,550 → Gain 없음, 새 조건으로 이자 재계산\n\n[왜 PV가 아니라 Total Future Cash Payments인가]\nTDR Debt Modification에서는 할인(discounting) 없이 명목 금액(nominal amount)을 비교한다. Creditor가 이미 손해를 감수한 상황에서 추가로 할인까지 적용하면 Gain이 과대계상될 수 있기 때문이다.",
   },
 
+  // [INT_007] Crypto Assets — Classification and Measurement
+  // RULE    : Crypto = indefinite-lived intangible (ASC 350-60) / FV each period / ΔFV → net income
+  // TRIGGER : 'crypto assets' → indefinite-lived intangible + FV each period + changes to net income
+  // TRAP    : indefinite life + acquisition cost only (B) / finite life 자체 불가 (A, C)
+  {
+    topic_id: "INT_007",
+    sub_category_id: "U3_INTANGIBLES",
+    card_name: "Crypto Assets — Classification and Measurement",
+    rule: "Crypto assets = indefinite-lived intangible asset (ASC 350-60). 매 보고기간 말 fair value로 측정. FV 변동액 → current period net income. Useful life 추정 불가 → finite life 분류 불가.",
+    trigger: "'crypto assets' 등장 → indefinite-lived intangible + fair value each reporting period + changes to net income",
+    trap: "B형 함정: indefinite life는 맞지만 acquisition cost only라고 착각 — ASC 350-60은 FV remeasurement 요구\nA/C형 함정: useful life 추정 불가 → finite life 분류 자체 불성립",
+    one_sentence: "Crypto = indefinite-lived intangible; FV each period; changes → net income.",
+    speed: "Crypto → indefinite-lived / FV each period / ΔFV → net income (not OCI)",
+    context_background: "암호화폐는 유형자산도 금융상품도 아닌 무형자산으로 분류(ASC 350-60). Useful life 추정 불가 → indefinite-lived. 매 보고기간 말 FV 측정 후 변동액을 당기 net income에 인식.",
+  },
+
   // [INT_006] Intangibles — Patent Capitalization vs Expense
   // RULE    : R&D → expense / Registration legal fees → capitalize / Successfully defend → capitalize / Unsuccessfully defend → expense
   // TRIGGER : 'successfully defend' → capitalize / 'research and development' → expense (특허 나왔어도)
