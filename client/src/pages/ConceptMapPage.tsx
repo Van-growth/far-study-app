@@ -1,100 +1,163 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { PROFESSOR_SSOT_V2, TopicCard } from '../constants/professor_ssot_v2';
 
-// ── Unit metadata ─────────────────────────────────────────────
-const UNIT_META: Record<string, { label: string; color: string }> = {
-  U1: { label: 'U1 · Financial Reporting', color: '#4f6ef7' },
-  U2: { label: 'U2 · Select Transactions', color: '#7c3aed' },
-  U3: { label: 'U3 · Balance Sheet Accounts', color: '#0891b2' },
-  U4: { label: 'U4 · Liabilities', color: '#d97706' },
-  U5: { label: 'U5 · Advanced Topics', color: '#16a34a' },
-  U6: { label: 'U6 · Government & NFP', color: '#dc2626' },
-};
+// ── Static structure ──────────────────────────────────────────
 
-function getUnitKey(sub_category_id: string): string {
-  return sub_category_id.split('_')[0];
+const UNITS: {
+  key: string;
+  label: string;
+  color: string;
+  subCats: { id: string; label: string }[];
+}[] = [
+  {
+    key: 'U1',
+    label: 'Financial Reporting',
+    color: '#4f6ef7',
+    subCats: [
+      { id: 'U1_BALANCE_SHEET', label: 'Balance Sheet' },
+      { id: 'U1_EPS', label: 'EPS' },
+      { id: 'U1_INCOME_STATEMENT', label: 'Income Statement' },
+      { id: 'U1_STOCKHOLDERS_EQUITY', label: 'Stockholders Equity' },
+    ],
+  },
+  {
+    key: 'U2',
+    label: 'Select Transactions',
+    color: '#7c3aed',
+    subCats: [
+      { id: 'U2_ACCOUNTING_CHANGES', label: 'Accounting Changes' },
+      { id: 'U2_ADJUSTING_ENTRIES', label: 'Adjusting Entries' },
+      { id: 'U2_FAIR_VALUE', label: 'Fair Value' },
+      { id: 'U2_NOTES_TO_FS', label: 'Notes to FS' },
+      { id: 'U2_RATIO_ANALYSIS', label: 'Ratio Analysis' },
+      { id: 'U2_RATIO_VARIANCE', label: 'Ratio Variance' },
+      { id: 'U2_REVENUE_RECOGNITION', label: 'Revenue Recognition' },
+      { id: 'U2_SPECIAL_PURPOSE_FRAMEWORKS', label: 'Special Purpose' },
+    ],
+  },
+  {
+    key: 'U3',
+    label: 'Balance Sheet Accounts',
+    color: '#0891b2',
+    subCats: [
+      { id: 'U3_CASH', label: 'Cash' },
+      { id: 'U3_INTANGIBLES', label: 'Intangibles' },
+      { id: 'U3_INVENTORY', label: 'Inventory' },
+      { id: 'U3_PPE', label: 'PPE' },
+      { id: 'U3_TRADE_RECEIVABLES', label: 'Trade Receivables' },
+    ],
+  },
+  {
+    key: 'U4',
+    label: 'Liabilities',
+    color: '#d97706',
+    subCats: [
+      { id: 'U4_BONDS', label: 'Bonds' },
+      { id: 'U4_CONTINGENCIES', label: 'Contingencies' },
+      { id: 'U4_LEASE', label: 'Lease' },
+      { id: 'U4_LONG_TERM_LIABILITIES', label: 'Long-term Liabilities' },
+      { id: 'U4_PAYABLES', label: 'Payables' },
+      { id: 'U4_TROUBLED_DEBT', label: 'Troubled Debt' },
+    ],
+  },
+  {
+    key: 'U5',
+    label: 'Advanced Topics',
+    color: '#16a34a',
+    subCats: [
+      { id: 'U5_CASH_FLOWS', label: 'Cash Flows' },
+      { id: 'U5_CONSOLIDATED_FS', label: 'Consolidated FS' },
+      { id: 'U5_EQUITY_METHOD', label: 'Equity Method' },
+      { id: 'U5_FINANCIAL_INSTRUMENTS', label: 'Financial Instruments' },
+      { id: 'U5_INCOME_TAX', label: 'Income Tax' },
+      { id: 'U5_PARTNERSHIPS', label: 'Partnerships' },
+    ],
+  },
+  {
+    key: 'U6',
+    label: 'Government & NFP',
+    color: '#dc2626',
+    subCats: [
+      { id: 'U6_GOVERNMENTAL_FUND', label: 'Governmental Fund' },
+      { id: 'U6_GOVERNMENTAL_OVERVIEW', label: 'Governmental Overview' },
+      { id: 'U6_NFP_FINANCIAL_REPORTING', label: 'NFP Financial Reporting' },
+    ],
+  },
+];
+
+const UNIT_BY_SUBCAT = new Map<string, (typeof UNITS)[0]>(
+  UNITS.flatMap((u) => u.subCats.map((s) => [s.id, u]))
+);
+
+// ── Helpers ───────────────────────────────────────────────────
+
+const LS_KEY = 'far-concept-map-learned';
+
+function loadLearned(): Set<string> {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
 }
 
-function formatSubCatLabel(sub_category_id: string): string {
-  return sub_category_id
-    .split('_')
-    .slice(1)
-    .map((p) => p.charAt(0) + p.slice(1).toLowerCase())
-    .join(' ');
+function saveLearned(set: Set<string>) {
+  localStorage.setItem(LS_KEY, JSON.stringify([...set]));
 }
 
-function highlight(text: string | undefined, query: string): React.ReactNode {
+function hl(text: string | undefined, q: string): React.ReactNode {
   if (!text) return '';
-  if (!query.trim()) return text;
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`(${escaped})`, 'gi');
-  const parts = text.split(regex);
-  return parts.map((part, i) =>
-    regex.test(part) ? (
-      <mark key={i} className="bg-yellow-200 text-yellow-900 rounded px-0.5">
-        {part}
+  if (!q) return text;
+  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return parts.map((p, i) =>
+    p.toLowerCase() === q.toLowerCase() ? (
+      <mark key={i} style={{ background: '#fef08a', color: '#713f12', borderRadius: 2, padding: '0 1px' }}>
+        {p}
       </mark>
     ) : (
-      part
+      p
     )
   );
 }
 
-interface GroupedData {
-  [unitKey: string]: { [subCatId: string]: TopicCard[] };
+// ── Card type badge ───────────────────────────────────────────
+
+const TYPE_BADGE: Record<string, { bg: string; color: string; label: string }> = {
+  calculation: { bg: '#dbeafe', color: '#1d4ed8', label: 'calculation' },
+  concept:     { bg: '#dcfce7', color: '#166534', label: 'concept' },
+  conditional: { bg: '#fef3c7', color: '#92400e', label: 'conditional' },
+};
+
+// ── Index cards by subcat ─────────────────────────────────────
+
+const CARDS_BY_SUBCAT = new Map<string, TopicCard[]>();
+for (const card of PROFESSOR_SSOT_V2) {
+  const arr = CARDS_BY_SUBCAT.get(card.sub_category_id) ?? [];
+  arr.push(card);
+  CARDS_BY_SUBCAT.set(card.sub_category_id, arr);
 }
 
-const LS_KEY = 'far-concept-map-learned';
-
 // ── Main page ─────────────────────────────────────────────────
+
 export default function ConceptMapPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSubCat, setSelectedSubCat] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<string>('U1_BALANCE_SHEET');
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(
-    new Set(Object.keys(UNIT_META))
+    new Set(UNITS.map((u) => u.key))
   );
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
-  const [learnedTopics, setLearnedTopics] = useState<Set<string>>(() => {
-    try {
-      const stored = localStorage.getItem(LS_KEY);
-      return stored ? new Set(JSON.parse(stored)) : new Set();
-    } catch {
-      return new Set();
-    }
-  });
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [learned, setLearned] = useState<Set<string>>(loadLearned);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem(LS_KEY, JSON.stringify([...learnedTopics]));
-  }, [learnedTopics]);
+  useEffect(() => { saveLearned(learned); }, [learned]);
 
-  const grouped = useMemo<GroupedData>(() => {
-    const result: GroupedData = {};
-    for (const card of PROFESSOR_SSOT_V2) {
-      const unit = getUnitKey(card.sub_category_id);
-      if (!result[unit]) result[unit] = {};
-      if (!result[unit][card.sub_category_id]) result[unit][card.sub_category_id] = [];
-      result[unit][card.sub_category_id].push(card);
-    }
-    return result;
-  }, []);
-
-  // Set initial sub-cat selection
-  useEffect(() => {
-    if (!selectedSubCat) {
-      const firstUnit = Object.keys(UNIT_META).find((u) => grouped[u]);
-      if (firstUnit) {
-        const firstSub = Object.keys(grouped[firstUnit])[0];
-        if (firstSub) setSelectedSubCat(firstSub);
-      }
-    }
-  }, [grouped, selectedSubCat]);
-
-  const isSearching = searchQuery.trim().length > 0;
+  const isSearching = search.trim().length > 0;
 
   const displayCards = useMemo(() => {
     if (isSearching) {
-      const q = searchQuery.toLowerCase();
+      const q = search.toLowerCase();
       return PROFESSOR_SSOT_V2.filter(
         (c) =>
           c.card_name.toLowerCase().includes(q) ||
@@ -104,272 +167,360 @@ export default function ConceptMapPage() {
           c.one_sentence?.toLowerCase().includes(q)
       );
     }
-    if (!selectedSubCat) return [];
-    const unit = getUnitKey(selectedSubCat);
-    return grouped[unit]?.[selectedSubCat] ?? [];
-  }, [searchQuery, selectedSubCat, grouped, isSearching]);
+    return CARDS_BY_SUBCAT.get(selected) ?? [];
+  }, [search, selected, isSearching]);
 
-  const toggleUnit = (unit: string) => {
+  const toggleUnit = useCallback((key: string) => {
     setExpandedUnits((prev) => {
       const next = new Set(prev);
-      next.has(unit) ? next.delete(unit) : next.add(unit);
+      next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
-  };
+  }, []);
 
-  const toggleCard = (topicId: string) => {
+  const toggleCard = useCallback((id: string) => {
     setExpandedCards((prev) => {
       const next = new Set(prev);
-      next.has(topicId) ? next.delete(topicId) : next.add(topicId);
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
-  };
+  }, []);
 
-  const toggleLearned = (topicId: string, e: React.MouseEvent) => {
+  const toggleLearned = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setLearnedTopics((prev) => {
+    setLearned((prev) => {
       const next = new Set(prev);
-      next.has(topicId) ? next.delete(topicId) : next.add(topicId);
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
-  };
+  }, []);
 
-  const selectSubCat = (subCatId: string) => {
-    setSelectedSubCat(subCatId);
-    setSearchQuery('');
-    setMobileNavOpen(false);
-  };
+  const selectSubCat = useCallback((id: string) => {
+    setSelected(id);
+    setSearch('');
+    setMobileOpen(false);
+  }, []);
 
-  // Total stats
-  const totalAll = PROFESSOR_SSOT_V2.length;
-  const learnedAll = PROFESSOR_SSOT_V2.filter((c) => learnedTopics.has(c.topic_id)).length;
+  // Unit completion counts
+  const unitStats = useMemo(() => {
+    return UNITS.map((u) => {
+      let total = 0;
+      let done = 0;
+      for (const s of u.subCats) {
+        const cards = CARDS_BY_SUBCAT.get(s.id) ?? [];
+        total += cards.length;
+        done += cards.filter((c) => learned.has(c.topic_id)).length;
+      }
+      return { key: u.key, total, done };
+    });
+  }, [learned]);
+
+  // Selected subcat info for header
+  const selectedUnit = UNIT_BY_SUBCAT.get(selected);
+  const selectedLabel = UNITS.flatMap((u) => u.subCats).find((s) => s.id === selected)?.label ?? '';
+  const selectedCards = CARDS_BY_SUBCAT.get(selected) ?? [];
+  const selectedDone = selectedCards.filter((c) => learned.has(c.topic_id)).length;
 
   return (
-    <div className="flex h-full min-h-0 overflow-hidden">
-      {/* ── Left Tree Nav (desktop) ───────────────────────────── */}
-      <aside className="hidden md:flex flex-col w-56 lg:w-64 shrink-0 bg-white border-r border-border overflow-hidden">
-        <div className="px-3 py-2.5 border-b border-border shrink-0">
-          <p className="text-[11px] font-semibold text-muted uppercase tracking-wider">
-            🗺️ Concept Map
-          </p>
-          <p className="text-[10px] text-muted mt-0.5">
-            {learnedAll}/{totalAll} 완료
-          </p>
-        </div>
-        <nav className="flex-1 overflow-y-auto py-1">
-          {Object.keys(UNIT_META).map((unitKey) => {
-            const unitData = grouped[unitKey];
-            if (!unitData) return null;
-            const meta = UNIT_META[unitKey];
-            const isExpanded = expandedUnits.has(unitKey);
-            const subCats = Object.keys(unitData).sort();
-            const totalUnit = subCats.reduce((a, s) => a + unitData[s].length, 0);
-            const learnedUnit = subCats.reduce(
-              (a, s) => a + unitData[s].filter((c) => learnedTopics.has(c.topic_id)).length,
-              0
-            );
-            const pct = totalUnit > 0 ? Math.round((learnedUnit / totalUnit) * 100) : 0;
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: '#f0f4f8' }}>
 
-            return (
-              <div key={unitKey}>
-                {/* Unit row */}
-                <button
-                  onClick={() => toggleUnit(unitKey)}
-                  className="w-full flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 transition-colors text-left group"
-                >
-                  <span className="text-[9px] text-muted w-3">{isExpanded ? '▾' : '▸'}</span>
-                  <span className="flex-1 text-[11px] font-bold truncate" style={{ color: meta.color }}>
-                    {meta.label}
-                  </span>
-                  <span className="text-[9px] text-muted shrink-0">{pct}%</span>
-                </button>
+      {/* ── Search bar ─────────────────────────────────────── */}
+      <div style={{
+        flexShrink: 0,
+        background: 'white',
+        borderBottom: '1px solid #e2e8f0',
+        padding: '10px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+      }}>
+        {/* Mobile nav toggle */}
+        <button
+          className="md:hidden"
+          onClick={() => setMobileOpen((v) => !v)}
+          style={{
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: '5px 10px',
+            border: '1px solid #e2e8f0',
+            borderRadius: 8,
+            background: '#f8fafc',
+            fontSize: 12,
+            color: '#374151',
+            cursor: 'pointer',
+          }}
+        >
+          <span>☰</span>
+          <span style={{ maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {isSearching ? '검색 중' : selectedLabel}
+          </span>
+        </button>
 
-                {/* Sub-category rows */}
-                {isExpanded &&
-                  subCats.map((subCatId) => {
-                    const cards = unitData[subCatId];
-                    const learned = cards.filter((c) => learnedTopics.has(c.topic_id)).length;
-                    const isSelected = selectedSubCat === subCatId && !isSearching;
-
-                    return (
-                      <button
-                        key={subCatId}
-                        onClick={() => selectSubCat(subCatId)}
-                        className="w-full flex items-center justify-between px-4 py-1.5 hover:bg-gray-50 transition-colors text-left"
-                        style={{
-                          background: isSelected ? meta.color + '12' : undefined,
-                          borderLeft: isSelected
-                            ? `3px solid ${meta.color}`
-                            : '3px solid transparent',
-                        }}
-                      >
-                        <span
-                          className="text-[12px] truncate"
-                          style={{
-                            color: isSelected ? meta.color : '#374151',
-                            fontWeight: isSelected ? 600 : 400,
-                          }}
-                        >
-                          {formatSubCatLabel(subCatId)}
-                        </span>
-                        <span className="text-[10px] text-muted ml-1 shrink-0">
-                          {learned}/{cards.length}
-                        </span>
-                      </button>
-                    );
-                  })}
-              </div>
-            );
-          })}
-        </nav>
-      </aside>
-
-      {/* ── Right Content ─────────────────────────────────────── */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-        {/* Top bar: search + mobile nav toggle */}
-        <div className="shrink-0 bg-white border-b border-border px-3 py-2 flex items-center gap-2">
-          {/* Mobile nav toggle */}
-          <button
-            className="md:hidden flex items-center gap-1 text-[12px] border border-border rounded-lg px-2 py-1.5 shrink-0 text-[#374151] bg-gray-50"
-            onClick={() => setMobileNavOpen((v) => !v)}
-          >
-            <span className="text-[11px]">☰</span>
-            <span className="max-w-[100px] truncate">
-              {selectedSubCat ? formatSubCatLabel(selectedSubCat) : '단원 선택'}
-            </span>
-          </button>
-
-          {/* Search input */}
-          <div className="flex-1 relative">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[13px] pointer-events-none">
-              🔍
-            </span>
-            <input
-              type="text"
-              placeholder="card_name · trigger · rule 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-[12px] border border-border rounded-lg outline-none focus:border-primary transition-colors"
-            />
-          </div>
-          {searchQuery && (
+        {/* Search input */}
+        <div style={{ flex: 1, position: 'relative' }}>
+          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, pointerEvents: 'none' }}>
+            🔍
+          </span>
+          <input
+            type="text"
+            placeholder="card_name · trigger · rule · trap 검색..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: '100%',
+              paddingLeft: 32,
+              paddingRight: search ? 32 : 12,
+              paddingTop: 7,
+              paddingBottom: 7,
+              fontSize: 13,
+              border: '1px solid #e2e8f0',
+              borderRadius: 8,
+              outline: 'none',
+              background: '#f8fafc',
+              boxSizing: 'border-box',
+            }}
+            onFocus={(e) => { e.target.style.borderColor = '#4f6ef7'; e.target.style.background = 'white'; }}
+            onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; e.target.style.background = '#f8fafc'; }}
+          />
+          {search && (
             <button
-              onClick={() => setSearchQuery('')}
-              className="text-muted text-[12px] px-1 shrink-0 hover:text-[#0f172a]"
+              onClick={() => setSearch('')}
+              style={{
+                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 14,
+              }}
             >
               ✕
             </button>
           )}
         </div>
+      </div>
 
-        {/* Mobile nav dropdown */}
-        {mobileNavOpen && (
-          <div className="md:hidden shrink-0 bg-white border-b border-border overflow-y-auto max-h-56 z-20">
-            {Object.keys(UNIT_META).map((unitKey) => {
-              const unitData = grouped[unitKey];
-              if (!unitData) return null;
-              const meta = UNIT_META[unitKey];
+      {/* ── Body ───────────────────────────────────────────── */}
+      <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
+
+        {/* ── Sidebar (desktop) ────────────────────────────── */}
+        <aside
+          className="hidden md:flex"
+          style={{
+            flexDirection: 'column',
+            width: 220,
+            flexShrink: 0,
+            background: 'white',
+            borderRight: '1px solid #e2e8f0',
+            overflow: 'hidden',
+          }}
+        >
+          <div style={{ padding: '10px 12px 6px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
+              🗺️ Concept Map
+            </p>
+          </div>
+          <nav style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
+            {UNITS.map((unit) => {
+              const stats = unitStats.find((s) => s.key === unit.key)!;
+              const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+              const isOpen = expandedUnits.has(unit.key);
+
               return (
-                <div key={unitKey}>
-                  <div
-                    className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider"
-                    style={{ color: meta.color, background: meta.color + '0d' }}
+                <div key={unit.key}>
+                  {/* Unit header */}
+                  <button
+                    onClick={() => toggleUnit(unit.key)}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '7px 12px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                   >
-                    {meta.label}
-                  </div>
-                  {Object.keys(unitData)
-                    .sort()
-                    .map((subCatId) => {
-                      const cards = unitData[subCatId];
-                      const learned = cards.filter((c) => learnedTopics.has(c.topic_id)).length;
-                      const isSelected = selectedSubCat === subCatId;
-                      return (
-                        <button
-                          key={subCatId}
-                          onClick={() => selectSubCat(subCatId)}
-                          className="w-full flex items-center justify-between px-5 py-1.5 text-[12px] hover:bg-gray-50 transition-colors"
-                          style={{
-                            color: isSelected ? meta.color : '#374151',
-                            fontWeight: isSelected ? 600 : 400,
-                          }}
-                        >
-                          <span>{formatSubCatLabel(subCatId)}</span>
-                          <span className="text-muted text-[10px]">
-                            {learned}/{cards.length}
-                          </span>
-                        </button>
-                      );
-                    })}
+                    <span style={{ fontSize: 9, color: '#94a3b8', width: 10, flexShrink: 0 }}>
+                      {isOpen ? '▾' : '▸'}
+                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: unit.color, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      [{unit.key}] {unit.label}
+                    </span>
+                    <span style={{ fontSize: 10, color: '#94a3b8', flexShrink: 0 }}>{pct}%</span>
+                  </button>
+
+                  {/* Sub-categories */}
+                  {isOpen && unit.subCats.map((sub) => {
+                    const cards = CARDS_BY_SUBCAT.get(sub.id) ?? [];
+                    const done = cards.filter((c) => learned.has(c.topic_id)).length;
+                    const isActive = selected === sub.id && !isSearching;
+
+                    return (
+                      <button
+                        key={sub.id}
+                        onClick={() => selectSubCat(sub.id)}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '5px 12px 5px 26px',
+                          background: isActive ? unit.color + '12' : 'none',
+                          borderLeft: isActive ? `3px solid ${unit.color}` : '3px solid transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                        }}
+                        onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = '#f8fafc'; }}
+                        onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'none'; }}
+                      >
+                        <span style={{
+                          fontSize: 12,
+                          color: isActive ? unit.color : '#374151',
+                          fontWeight: isActive ? 600 : 400,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          flex: 1,
+                        }}>
+                          {sub.label}
+                        </span>
+                        <span style={{ fontSize: 10, color: '#94a3b8', flexShrink: 0, marginLeft: 4 }}>
+                          {done}/{cards.length}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               );
             })}
-          </div>
-        )}
+          </nav>
+        </aside>
 
-        {/* Sub-category header / Search header */}
-        {isSearching ? (
-          <div className="shrink-0 px-4 py-2 bg-yellow-50 border-b border-yellow-200 flex items-center justify-between">
-            <span className="text-[12px] text-yellow-800 font-medium">
-              🔍 "{searchQuery}" 검색 결과
-            </span>
-            <span className="text-[12px] text-yellow-700">{displayCards.length}개</span>
-          </div>
-        ) : selectedSubCat ? (
-          <div
-            className="shrink-0 px-4 py-2 border-b border-border flex items-center justify-between"
-            style={{
-              background: (UNIT_META[getUnitKey(selectedSubCat)]?.color ?? '#4f6ef7') + '08',
-            }}
-          >
-            <div>
-              <span className="text-[10px] text-muted">
-                {UNIT_META[getUnitKey(selectedSubCat)]?.label}
-              </span>
-              <h2 className="text-[14px] font-bold text-[#0f172a]">
-                {formatSubCatLabel(selectedSubCat)}
-              </h2>
-            </div>
-            <div className="text-right">
-              <p className="text-[11px] text-muted">
-                {displayCards.filter((c) => learnedTopics.has(c.topic_id)).length}/
-                {displayCards.length}
-              </p>
-              <p className="text-[10px] text-muted">완료</p>
-            </div>
-          </div>
-        ) : null}
+        {/* ── Main content ─────────────────────────────────── */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        {/* Card list */}
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
-          {displayCards.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-muted">
-              <span className="text-4xl mb-3">📭</span>
-              <p className="text-[13px]">
-                {isSearching ? '검색 결과가 없어요' : '좌측에서 단원을 선택하세요'}
-              </p>
+          {/* Mobile nav dropdown */}
+          {mobileOpen && (
+            <div
+              className="md:hidden"
+              style={{
+                flexShrink: 0,
+                background: 'white',
+                borderBottom: '1px solid #e2e8f0',
+                maxHeight: 240,
+                overflowY: 'auto',
+              }}
+            >
+              {UNITS.map((unit) => (
+                <div key={unit.key}>
+                  <div style={{ padding: '6px 12px 4px', fontSize: 10, fontWeight: 700, color: unit.color, background: unit.color + '0d', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    [{unit.key}] {unit.label}
+                  </div>
+                  {unit.subCats.map((sub) => {
+                    const cards = CARDS_BY_SUBCAT.get(sub.id) ?? [];
+                    const done = cards.filter((c) => learned.has(c.topic_id)).length;
+                    const isActive = selected === sub.id;
+                    return (
+                      <button
+                        key={sub.id}
+                        onClick={() => selectSubCat(sub.id)}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '5px 12px 5px 20px',
+                          background: isActive ? unit.color + '10' : 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontSize: 12, color: isActive ? unit.color : '#374151', fontWeight: isActive ? 600 : 400 }}>
+                          {sub.label}
+                        </span>
+                        <span style={{ fontSize: 10, color: '#94a3b8' }}>{done}/{cards.length}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           )}
 
-          {displayCards.map((card) => (
-            <TopicCardItem
-              key={card.topic_id}
-              card={card}
-              isExpanded={expandedCards.has(card.topic_id)}
-              isLearned={learnedTopics.has(card.topic_id)}
-              searchQuery={searchQuery}
-              onToggle={() => toggleCard(card.topic_id)}
-              onToggleLearned={(e) => toggleLearned(card.topic_id, e)}
-            />
-          ))}
+          {/* Content header */}
+          {isSearching ? (
+            <div style={{ flexShrink: 0, padding: '8px 16px', background: '#fefce8', borderBottom: '1px solid #fde68a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 12, color: '#92400e', fontWeight: 500 }}>
+                🔍 "{search}" 검색 결과
+              </span>
+              <span style={{ fontSize: 12, color: '#78350f' }}>{displayCards.length}개</span>
+            </div>
+          ) : (
+            <div style={{
+              flexShrink: 0,
+              padding: '8px 16px',
+              background: 'white',
+              borderBottom: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+              <div>
+                <p style={{ fontSize: 10, color: '#94a3b8', margin: 0 }}>
+                  [{selectedUnit?.key}] {selectedUnit?.label}
+                </p>
+                <p style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                  {selectedLabel}
+                </p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: selectedDone === selectedCards.length && selectedCards.length > 0 ? '#22c55e' : '#64748b', margin: 0 }}>
+                  {selectedDone}/{selectedCards.length}
+                </p>
+                <p style={{ fontSize: 10, color: '#94a3b8', margin: 0 }}>완료</p>
+              </div>
+            </div>
+          )}
+
+          {/* Card list */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 24px' }}>
+            {displayCards.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', color: '#94a3b8' }}>
+                <span style={{ fontSize: 36, marginBottom: 12 }}>📭</span>
+                <p style={{ fontSize: 13, margin: 0 }}>
+                  {isSearching ? '검색 결과가 없어요' : '카드가 없어요'}
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {displayCards.map((card) => (
+                  <CardItem
+                    key={card.topic_id}
+                    card={card}
+                    isExpanded={expandedCards.has(card.topic_id)}
+                    isLearned={learned.has(card.topic_id)}
+                    searchQuery={isSearching ? search : ''}
+                    onToggle={() => toggleCard(card.topic_id)}
+                    onToggleLearned={(e) => toggleLearned(card.topic_id, e)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Topic Card Item ───────────────────────────────────────────
+// ── Card component ────────────────────────────────────────────
 
-interface TopicCardItemProps {
+interface CardItemProps {
   card: TopicCard;
   isExpanded: boolean;
   isLearned: boolean;
@@ -378,162 +529,171 @@ interface TopicCardItemProps {
   onToggleLearned: (e: React.MouseEvent) => void;
 }
 
-const CARD_TYPE_STYLE: Record<string, { bg: string; color: string }> = {
-  calculation: { bg: '#dbeafe', color: '#1d4ed8' },
-  conditional: { bg: '#fef3c7', color: '#92400e' },
-  concept: { bg: '#f0fdf4', color: '#166534' },
-};
-
-function TopicCardItem({
-  card,
-  isExpanded,
-  isLearned,
-  searchQuery,
-  onToggle,
-  onToggleLearned,
-}: TopicCardItemProps) {
-  const unitColor = UNIT_META[getUnitKey(card.sub_category_id)]?.color ?? '#4f6ef7';
-  const typeStyle = card.card_type ? CARD_TYPE_STYLE[card.card_type] : null;
+function CardItem({ card, isExpanded, isLearned, searchQuery, onToggle, onToggleLearned }: CardItemProps) {
+  const badge = card.card_type ? TYPE_BADGE[card.card_type] : null;
+  const leftColor = isLearned ? '#22c55e' : '#e2e8f0';
 
   return (
-    <div
-      className="bg-white rounded-xl border transition-all"
-      style={{
-        borderLeft: `3px solid ${isLearned ? '#22c55e' : unitColor}`,
-        borderColor: isLearned ? '#bbf7d0' : undefined,
-        opacity: isLearned && !isExpanded ? 0.75 : 1,
-      }}
-    >
-      {/* Header — always visible */}
+    <div style={{
+      background: 'white',
+      borderRadius: 10,
+      border: '1px solid #e2e8f0',
+      borderLeft: `3px solid ${leftColor}`,
+      overflow: 'hidden',
+      transition: 'border-color 0.2s',
+    }}>
+      {/* ── Card header ── */}
       <button
         onClick={onToggle}
-        className="w-full text-left px-3 py-2.5 flex items-start gap-2"
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 10,
+          padding: '11px 12px',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
       >
-        <div className="flex-1 min-w-0">
-          {/* Meta row */}
-          <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-            <span className="text-[10px] text-muted font-mono">{card.topic_id}</span>
-            {typeStyle && (
-              <span
-                className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
-                style={{ background: typeStyle.bg, color: typeStyle.color }}
-              >
-                {card.card_type}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Topic ID + badge row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 10, color: '#94a3b8', fontFamily: 'monospace', fontWeight: 500 }}>
+              {card.topic_id}
+            </span>
+            {badge && (
+              <span style={{
+                fontSize: 9,
+                padding: '1px 6px',
+                borderRadius: 99,
+                fontWeight: 600,
+                background: badge.bg,
+                color: badge.color,
+              }}>
+                {badge.label}
               </span>
             )}
           </div>
-          {/* Title */}
-          <p className="text-[13px] font-semibold text-[#0f172a] leading-snug">
-            {highlight(card.card_name, searchQuery)}
+          {/* Card name */}
+          <p style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', margin: 0, lineHeight: 1.4 }}>
+            {hl(card.card_name, searchQuery)}
           </p>
-          {/* One-liner */}
+          {/* One-sentence summary */}
           {card.one_sentence && (
-            <p className="text-[11px] text-muted mt-0.5 leading-snug">
-              {highlight(card.one_sentence, searchQuery)}
+            <p style={{ fontSize: 11, color: '#64748b', margin: '3px 0 0', lineHeight: 1.4 }}>
+              {hl(card.one_sentence, searchQuery)}
             </p>
           )}
         </div>
 
         {/* Right controls */}
-        <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, marginTop: 2 }}>
           <button
             onClick={onToggleLearned}
-            className="text-[10px] px-2 py-0.5 rounded-full border transition-all"
-            style={
-              isLearned
-                ? { background: '#f0fdf4', borderColor: '#86efac', color: '#166534' }
-                : { background: 'white', borderColor: '#e2e8f0', color: '#94a3b8' }
-            }
+            style={{
+              fontSize: 10,
+              padding: '3px 8px',
+              borderRadius: 99,
+              border: `1px solid ${isLearned ? '#86efac' : '#e2e8f0'}`,
+              background: isLearned ? '#f0fdf4' : 'white',
+              color: isLearned ? '#166534' : '#94a3b8',
+              cursor: 'pointer',
+              fontWeight: 500,
+              transition: 'all 0.15s',
+              whiteSpace: 'nowrap',
+            }}
           >
             {isLearned ? '✓ 완료' : '완료'}
           </button>
-          <span className="text-muted text-[11px] leading-none">{isExpanded ? '▲' : '▼'}</span>
+          <span style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1 }}>
+            {isExpanded ? '▲' : '▼'}
+          </span>
         </div>
       </button>
 
-      {/* Expanded body */}
+      {/* ── Expanded body ── */}
       {isExpanded && (
-        <div className="px-3 pb-3 pt-2 border-t border-border space-y-2.5">
-          {/* Rule */}
-          <Section label="Rule" labelColor="#374151">
-            <div className="bg-gray-50 rounded-lg px-3 py-2 text-[12px] text-[#1e293b] leading-relaxed whitespace-pre-wrap">
-              {highlight(card.rule, searchQuery)}
-            </div>
-          </Section>
+        <div style={{ borderTop: '1px solid #f1f5f9' }}>
 
-          {/* Rule items (structured) */}
+          {/* RULE */}
+          <CardSection
+            icon="📋"
+            label="RULE"
+            labelColor="#374151"
+            bg="#f8fafc"
+          >
+            <p style={{ fontSize: 12, color: '#1e293b', margin: 0, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+              {hl(card.rule, searchQuery)}
+            </p>
+          </CardSection>
+
+          {/* Structured rule items */}
           {card.rule_items && card.rule_items.length > 0 && (
-            <Section label={card.rule_title ?? 'Rule Items'} labelColor="#374151">
-              <div className="bg-gray-50 rounded-lg px-3 py-2 space-y-1">
-                {card.rule_items.map((item, i) => (
-                  <p key={i} className="text-[12px] text-[#1e293b] leading-relaxed">
-                    {item}
-                  </p>
-                ))}
-              </div>
-            </Section>
+            <CardSection
+              icon=""
+              label={card.rule_title ?? 'Rule Items'}
+              labelColor="#374151"
+              bg="#f8fafc"
+              noBorderTop
+            >
+              {card.rule_items.map((item, i) => (
+                <p key={i} style={{ fontSize: 12, color: '#1e293b', margin: i > 0 ? '4px 0 0' : 0, lineHeight: 1.55 }}>
+                  {item}
+                </p>
+              ))}
+            </CardSection>
           )}
 
-          {/* Trigger */}
-          <Section label="Trigger" labelColor="#1d4ed8">
-            <div
-              className="rounded-lg px-3 py-2 text-[12px] leading-relaxed whitespace-pre-wrap"
-              style={{ background: '#eff6ff', color: '#1e40af' }}
-            >
-              {highlight(card.trigger, searchQuery)}
-            </div>
-          </Section>
+          {/* TRIGGER */}
+          <CardSection icon="⚡" label="TRIGGER" labelColor="#1d4ed8" bg="#eff6ff">
+            <p style={{ fontSize: 12, color: '#1e40af', margin: 0, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+              {hl(card.trigger, searchQuery)}
+            </p>
+          </CardSection>
 
-          {/* Trap */}
-          <Section label="⚠️ Trap" labelColor="#dc2626">
-            <div
-              className="rounded-lg px-3 py-2 text-[12px] leading-relaxed whitespace-pre-wrap"
-              style={{ background: '#fff5f5', color: '#9b1c1c' }}
-            >
-              {highlight(card.trap, searchQuery)}
-            </div>
-          </Section>
+          {/* TRAP */}
+          <CardSection icon="⚠️" label="TRAP" labelColor="#dc2626" bg="#fff5f5">
+            <p style={{ fontSize: 12, color: '#9b1c1c', margin: 0, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+              {hl(card.trap, searchQuery)}
+            </p>
+          </CardSection>
 
-          {/* Speed */}
+          {/* SPEED */}
           {card.speed && (
-            <Section label="Speed" labelColor="#92400e">
-              <div className="bg-amber-50 rounded-lg px-3 py-2 text-[12px] text-amber-900 leading-relaxed whitespace-pre-wrap">
+            <CardSection icon="⏱" label="SPEED" labelColor="#92400e" bg="#fffbeb">
+              <p style={{ fontSize: 12, color: '#78350f', margin: 0, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
                 {card.speed}
-              </div>
-            </Section>
+              </p>
+            </CardSection>
           )}
 
-          {/* Example */}
+          {/* EXAMPLE */}
           {card.example && (
-            <Section label="Example" labelColor="#374151">
-              <div className="bg-slate-50 rounded-lg px-3 py-2 text-[12px] text-slate-700 leading-relaxed whitespace-pre-wrap font-mono">
+            <CardSection icon="💡" label="EXAMPLE" labelColor="#374151" bg="#f8fafc">
+              <p style={{ fontSize: 12, color: '#374151', margin: 0, lineHeight: 1.65, whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
                 {card.example}
-              </div>
-            </Section>
+              </p>
+            </CardSection>
           )}
 
-          {/* Context background */}
+          {/* JOURNAL ENTRY */}
+          {card.journal_entry && (
+            <CardSection icon="📝" label="JE" labelColor="#374151" bg="#f0fdf4">
+              <p style={{ fontSize: 12, color: '#14532d', margin: 0, lineHeight: 1.8, whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
+                {card.journal_entry}
+              </p>
+            </CardSection>
+          )}
+
+          {/* CONTEXT */}
           {card.context_background && (
-            <Section label="Context" labelColor="#6b21a8">
-              <div
-                className="rounded-lg px-3 py-2 text-[12px] leading-relaxed whitespace-pre-wrap"
-                style={{ background: '#faf5ff', color: '#581c87' }}
-              >
+            <CardSection icon="📖" label="CONTEXT" labelColor="#6b21a8" bg="#faf5ff">
+              <p style={{ fontSize: 12, color: '#581c87', margin: 0, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
                 {card.context_background}
-              </div>
-            </Section>
-          )}
-
-          {/* Context trigger */}
-          {card.context_trigger && (
-            <Section label="Context Trigger" labelColor="#1d4ed8">
-              <div
-                className="rounded-lg px-3 py-2 text-[12px] leading-relaxed whitespace-pre-wrap"
-                style={{ background: '#eff6ff', color: '#1e40af' }}
-              >
-                {card.context_trigger}
-              </div>
-            </Section>
+              </p>
+            </CardSection>
           )}
         </div>
       )}
@@ -541,21 +701,41 @@ function TopicCardItem({
   );
 }
 
-function Section({
+// ── Section block ─────────────────────────────────────────────
+
+function CardSection({
+  icon,
   label,
   labelColor,
+  bg,
+  noBorderTop,
   children,
 }: {
+  icon: string;
   label: string;
   labelColor: string;
+  bg: string;
+  noBorderTop?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <p
-        className="text-[10px] font-bold uppercase tracking-wider mb-1"
-        style={{ color: labelColor }}
-      >
+    <div style={{
+      borderTop: noBorderTop ? 'none' : '1px solid #f1f5f9',
+      background: bg,
+      padding: '10px 14px',
+    }}>
+      <p style={{
+        fontSize: 10,
+        fontWeight: 700,
+        color: labelColor,
+        textTransform: 'uppercase',
+        letterSpacing: '0.07em',
+        margin: '0 0 5px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+      }}>
+        {icon && <span>{icon}</span>}
         {label}
       </p>
       {children}

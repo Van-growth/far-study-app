@@ -14,6 +14,7 @@ export interface TopicCard {
   rule_title?: string;          // RULE 제목
   rule_items?: string[];        // ① ② ... 규칙 항목 배열
   speed?: string;               // SPEED 한 줄 풀이
+  journal_entry?: string;       // 분개 예시 (있는 경우만)
 }
 
 export const EXPLANATION_TEMPLATE = `CONTEXT:
