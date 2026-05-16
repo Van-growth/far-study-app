@@ -19,6 +19,7 @@ import HowToUsePage from './pages/HowToUsePage';
 import BadgesPage from './pages/BadgesPage';
 
 import SprintPage from './pages/SprintPage';
+import ConceptMapPage from './pages/ConceptMapPage';
 import DailyBriefingModal from './components/DailyBriefingModal';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
@@ -38,6 +39,7 @@ const MOBILE_TABS = [
   { label: '홈', icon: '🏠', path: '/' },
   { label: '복습', icon: '⚡', path: '/sprint' },
   { label: '개념', icon: '📑', path: '/concept-notes' },
+  { label: '맵', icon: '🗺️', path: '/concept-map' },
   { label: '더보기', icon: '···', path: '/more' },
 ];
 
@@ -242,6 +244,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/how-to-use" element={<HowToUsePage />} />
             <Route path="/valuation" element={<ValuationPage />} />
             <Route path="/concept-notes" element={<ConceptNotesPage />} />
+            <Route path="/concept-map" element={<ConceptMapPage />} />
             <Route path="/history" element={<Navigate to="/sprint" replace />} />
             <Route path="/sprint" element={<SprintPage />} />
             <Route path="/badges" element={<BadgesPage />} />

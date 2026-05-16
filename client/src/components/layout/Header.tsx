@@ -14,6 +14,7 @@ const mainTabs = [
   { label: '홈', path: '/' },
   { label: '⚡ 복습', path: '/sprint' },
   { label: '📑 개념', path: '/concept-notes' },
+  { label: '🗺️ 개념맵', path: '/concept-map' },
 ];
 
 const MORE_PATHS = new Set<string>([...MORE_MENU_ITEMS, ADMIN_MENU_ITEM].map((t) => t.path));
