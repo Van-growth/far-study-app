@@ -1,90 +1,65 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { PROFESSOR_SSOT_V2, TopicCard } from '../constants/professor_ssot_v2';
 
-// ── Static unit/subcat structure ──────────────────────────────
+// ── Static book/chapter structure ─────────────────────────────
 
-const UNITS: {
+const BOOKS: {
   key: string;
   label: string;
   color: string;
-  subCats: { id: string; label: string }[];
+  chapters: { id: string; label: string }[];
 }[] = [
   {
-    key: 'U1', label: 'Financial Reporting', color: '#4f6ef7',
-    subCats: [
-      { id: 'U1_BALANCE_SHEET', label: 'Balance Sheet' },
-      { id: 'U1_EPS', label: 'EPS' },
-      { id: 'U1_INCOME_STATEMENT', label: 'Income Statement' },
-      { id: 'U1_STOCKHOLDERS_EQUITY', label: 'Stockholders Equity' },
+    key: 'IA', label: 'Intermediate Accounting', color: '#4f6ef7',
+    chapters: [
+      { id: 'IA_CH2', label: 'Revenue & Balance Sheet' },
+      { id: 'IA_CH3', label: 'Inventory' },
+      { id: 'IA_CH4', label: 'Long-term Assets' },
+      { id: 'IA_CH5', label: 'Cash & Receivables' },
+      { id: 'IA_CH6', label: 'Contingencies & Liabilities' },
+      { id: 'IA_CH7', label: 'Interest & TVM' },
+      { id: 'IA_CH8', label: 'Bonds & TDR' },
+      { id: 'IA_CH9', label: 'Leases' },
     ],
   },
   {
-    key: 'U2', label: 'Select Transactions', color: '#7c3aed',
-    subCats: [
-      { id: 'U2_ACCOUNTING_CHANGES', label: 'Accounting Changes' },
-      { id: 'U2_ADJUSTING_ENTRIES', label: 'Adjusting Entries' },
-      { id: 'U2_FAIR_VALUE', label: 'Fair Value' },
-      { id: 'U2_NOTES_TO_FS', label: 'Notes to FS' },
-      { id: 'U2_RATIO_ANALYSIS', label: 'Ratio Analysis' },
-      { id: 'U2_RATIO_VARIANCE', label: 'Ratio Variance' },
-      { id: 'U2_REVENUE_RECOGNITION', label: 'Revenue Recognition' },
-      { id: 'U2_SPECIAL_PURPOSE_FRAMEWORKS', label: 'Special Purpose' },
+    key: 'AA', label: 'Advanced Accounting', color: '#7c3aed',
+    chapters: [
+      { id: 'AA_CH1', label: 'Accruals & Basics' },
+      { id: 'AA_CH2', label: 'Deferred Tax' },
+      { id: 'AA_CH3', label: "Stockholders' Equity & Pension" },
+      { id: 'AA_CH4', label: 'EPS' },
+      { id: 'AA_CH5', label: 'Investments & Fair Value' },
+      { id: 'AA_CH6', label: 'Adjusting Entries & SPF' },
+      { id: 'AA_CH7', label: 'Cash Flow Statement' },
+      { id: 'AA_CH8', label: 'Accounting Changes' },
     ],
   },
   {
-    key: 'U3', label: 'Balance Sheet Accounts', color: '#0891b2',
-    subCats: [
-      { id: 'U3_CASH', label: 'Cash' },
-      { id: 'U3_INTANGIBLES', label: 'Intangibles' },
-      { id: 'U3_INVENTORY', label: 'Inventory' },
-      { id: 'U3_PPE', label: 'PPE' },
-      { id: 'U3_TRADE_RECEIVABLES', label: 'Trade Receivables' },
-    ],
-  },
-  {
-    key: 'U4', label: 'Liabilities', color: '#d97706',
-    subCats: [
-      { id: 'U4_BONDS', label: 'Bonds' },
-      { id: 'U4_CONTINGENCIES', label: 'Contingencies' },
-      { id: 'U4_LEASE', label: 'Lease' },
-      { id: 'U4_LONG_TERM_LIABILITIES', label: 'Long-term Liabilities' },
-      { id: 'U4_PAYABLES', label: 'Payables' },
-      { id: 'U4_TROUBLED_DEBT', label: 'Troubled Debt' },
-    ],
-  },
-  {
-    key: 'U5', label: 'Advanced Topics', color: '#16a34a',
-    subCats: [
-      { id: 'U5_CASH_FLOWS', label: 'Cash Flows' },
-      { id: 'U5_CONSOLIDATED_FS', label: 'Consolidated FS' },
-      { id: 'U5_EQUITY_METHOD', label: 'Equity Method' },
-      { id: 'U5_FINANCIAL_INSTRUMENTS', label: 'Financial Instruments' },
-      { id: 'U5_INCOME_TAX', label: 'Income Tax' },
-      { id: 'U5_PARTNERSHIPS', label: 'Partnerships' },
-    ],
-  },
-  {
-    key: 'U6', label: 'Government & NFP', color: '#dc2626',
-    subCats: [
-      { id: 'U6_GOVERNMENTAL_FUND', label: 'Governmental Fund' },
-      { id: 'U6_GOVERNMENTAL_OVERVIEW', label: 'Governmental Overview' },
-      { id: 'U6_NFP_FINANCIAL_REPORTING', label: 'NFP Financial Reporting' },
+    key: 'GN', label: 'Government & NFP', color: '#16a34a',
+    chapters: [
+      { id: 'GN_CH1', label: 'Governmental Accounting' },
+      { id: 'GN_CH2', label: 'NFP Financial Reporting' },
+      { id: 'GN_CH3', label: 'Partnerships' },
+      { id: 'GN_CH4', label: 'Consolidations' },
+      { id: 'GN_CH7', label: 'Disclosures & Foreign Currency' },
+      { id: 'GN_CH8', label: 'Ratio Analysis' },
     ],
   },
 ];
 
 // ── Static indexes ────────────────────────────────────────────
 
-const UNIT_BY_SUBCAT = new Map<string, (typeof UNITS)[0]>(
-  UNITS.flatMap((u) => u.subCats.map((s) => [s.id, u]))
+const BOOK_BY_CHAPTER = new Map<string, (typeof BOOKS)[0]>(
+  BOOKS.flatMap((b) => b.chapters.map((c) => [c.id, b]))
 );
 
-const CARDS_BY_SUBCAT = new Map<string, TopicCard[]>();
+const CARDS_BY_CHAPTER = new Map<string, TopicCard[]>();
 const CARD_BY_TOPIC = new Map<string, TopicCard>();
 for (const card of PROFESSOR_SSOT_V2) {
-  const arr = CARDS_BY_SUBCAT.get(card.sub_category_id) ?? [];
+  const arr = CARDS_BY_CHAPTER.get(card.chapter_id) ?? [];
   arr.push(card);
-  CARDS_BY_SUBCAT.set(card.sub_category_id, arr);
+  CARDS_BY_CHAPTER.set(card.chapter_id, arr);
   CARD_BY_TOPIC.set(card.topic_id, card);
 }
 
@@ -125,8 +100,8 @@ const TYPE_BADGE: Record<string, { bg: string; color: string }> = {
 export default function ConceptMapPage() {
   const [search, setSearch]                   = useState('');
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
-  const [expandedUnits, setExpandedUnits]     = useState<Set<string>>(new Set(['U1']));
-  const [expandedSubCats, setExpandedSubCats] = useState<Set<string>>(new Set(['U1_BALANCE_SHEET']));
+  const [expandedBooks, setExpandedBooks]       = useState<Set<string>>(new Set(['IA']));
+  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set(['IA_CH2']));
   const [learned, setLearned]                 = useState<Set<string>>(loadLearned);
   const [mobileOpen, setMobileOpen]           = useState(false);
 
@@ -135,7 +110,7 @@ export default function ConceptMapPage() {
   // Auto-select first topic on mount
   useEffect(() => {
     if (!selectedTopicId) {
-      const first = CARDS_BY_SUBCAT.get('U1_BALANCE_SHEET')?.[0];
+      const first = CARDS_BY_CHAPTER.get('IA_CH2')?.[0];
       if (first) setSelectedTopicId(first.topic_id);
     }
   }, []);
@@ -158,24 +133,24 @@ export default function ConceptMapPage() {
 
   const selectedCard = selectedTopicId ? CARD_BY_TOPIC.get(selectedTopicId) : undefined;
 
-  // Unit completion stats
-  const unitStats = useMemo(() =>
-    UNITS.map((u) => {
+  // Book completion stats
+  const bookStats = useMemo(() =>
+    BOOKS.map((b) => {
       let total = 0, done = 0;
-      for (const s of u.subCats) {
-        const cards = CARDS_BY_SUBCAT.get(s.id) ?? [];
+      for (const ch of b.chapters) {
+        const cards = CARDS_BY_CHAPTER.get(ch.id) ?? [];
         total += cards.length;
         done += cards.filter((c) => learned.has(c.topic_id)).length;
       }
-      return { key: u.key, total, done };
+      return { key: b.key, total, done };
     }), [learned]);
 
-  const toggleUnit = useCallback((key: string) => {
-    setExpandedUnits((p) => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
+  const toggleBook = useCallback((key: string) => {
+    setExpandedBooks((p) => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
   }, []);
 
-  const toggleSubCat = useCallback((id: string) => {
-    setExpandedSubCats((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleChapter = useCallback((id: string) => {
+    setExpandedChapters((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }, []);
 
   const selectTopic = useCallback((topicId: string) => {
@@ -232,57 +207,57 @@ export default function ConceptMapPage() {
             </p>
           </div>
           <nav style={{ flex: 1, overflowY: 'auto', padding: '4px 0 12px' }}>
-            {UNITS.map((unit) => {
-              const stats = unitStats.find((s) => s.key === unit.key)!;
+            {BOOKS.map((book) => {
+              const stats = bookStats.find((s) => s.key === book.key)!;
               const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
-              const isUnitOpen = expandedUnits.has(unit.key);
+              const isBookOpen = expandedBooks.has(book.key);
 
               return (
-                <div key={unit.key}>
-                  {/* ── Depth 1: Unit ── */}
+                <div key={book.key}>
+                  {/* ── Depth 1: Book ── */}
                   <button
-                    onClick={() => toggleUnit(unit.key)}
+                    onClick={() => toggleBook(book.key)}
                     style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 5, padding: '7px 10px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                   >
-                    <span style={{ fontSize: 9, color: '#94a3b8', width: 10, flexShrink: 0 }}>{isUnitOpen ? '▾' : '▸'}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: unit.color, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      [{unit.key}] {unit.label}
+                    <span style={{ fontSize: 9, color: '#94a3b8', width: 10, flexShrink: 0 }}>{isBookOpen ? '▾' : '▸'}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: book.color, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      [{book.key}] {book.label}
                     </span>
                     <span style={{ fontSize: 10, color: '#94a3b8', flexShrink: 0 }}>{pct}%</span>
                   </button>
 
-                  {isUnitOpen && unit.subCats.map((sub) => {
-                    const subCards = CARDS_BY_SUBCAT.get(sub.id) ?? [];
-                    const subDone  = subCards.filter((c) => learned.has(c.topic_id)).length;
-                    const isSubOpen = expandedSubCats.has(sub.id);
+                  {isBookOpen && book.chapters.map((ch) => {
+                    const chCards  = CARDS_BY_CHAPTER.get(ch.id) ?? [];
+                    const chDone   = chCards.filter((c) => learned.has(c.topic_id)).length;
+                    const isChOpen = expandedChapters.has(ch.id);
 
                     return (
-                      <div key={sub.id}>
-                        {/* ── Depth 2: Sub-category ── */}
+                      <div key={ch.id}>
+                        {/* ── Depth 2: Chapter ── */}
                         <button
-                          onClick={() => toggleSubCat(sub.id)}
+                          onClick={() => toggleChapter(ch.id)}
                           style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 10px 5px 22px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                           onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
-                            <span style={{ fontSize: 9, color: '#94a3b8', flexShrink: 0 }}>{isSubOpen ? '▾' : '▸'}</span>
+                            <span style={{ fontSize: 9, color: '#94a3b8', flexShrink: 0 }}>{isChOpen ? '▾' : '▸'}</span>
                             <span style={{ fontSize: 12, color: '#374151', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {sub.label}
+                              {ch.label}
                             </span>
                           </div>
                           <span style={{ fontSize: 10, color: '#94a3b8', flexShrink: 0, marginLeft: 4 }}>
-                            {subDone}/{subCards.length}
+                            {chDone}/{chCards.length}
                           </span>
                         </button>
 
                         {/* ── Depth 3: Topic list ── */}
-                        {isSubOpen && subCards.map((card) => {
-                          const isActive  = selectedTopicId === card.topic_id && !isSearching;
-                          const isDone    = learned.has(card.topic_id);
-                          const unitColor = unit.color;
+                        {isChOpen && chCards.map((card) => {
+                          const isActive   = selectedTopicId === card.topic_id && !isSearching;
+                          const isDone     = learned.has(card.topic_id);
+                          const bookColor  = book.color;
 
                           return (
                             <button
@@ -295,14 +270,14 @@ export default function ConceptMapPage() {
                                 alignItems: 'center',
                                 gap: 0,
                                 padding: '4px 10px 4px 34px',
-                                background: isActive ? unitColor + '12' : 'none',
-                                borderLeft: isActive ? `2px solid ${unitColor}` : '2px solid transparent',
+                                background: isActive ? bookColor + '12' : 'none',
+                                borderLeft: isActive ? `2px solid ${bookColor}` : '2px solid transparent',
                                 border: 'none',
                                 cursor: 'pointer',
                                 textAlign: 'left',
                               }}
                               onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = '#f8fafc'; }}
-                              onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = isActive ? unitColor + '12' : 'none'; }}
+                              onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = isActive ? bookColor + '12' : 'none'; }}
                             >
                               <span style={{ fontSize: 10, color: '#cbd5e1', marginRight: 5, flexShrink: 0 }}>·</span>
                               <span style={{ fontSize: 10, color: '#94a3b8', fontFamily: 'monospace', flexShrink: 0, marginRight: 4 }}>
@@ -310,7 +285,7 @@ export default function ConceptMapPage() {
                               </span>
                               <span style={{
                                 fontSize: 11,
-                                color: isActive ? unitColor : '#374151',
+                                color: isActive ? bookColor : '#374151',
                                 fontWeight: isActive ? 600 : 400,
                                 flex: 1,
                                 overflow: 'hidden',
@@ -340,7 +315,7 @@ export default function ConceptMapPage() {
           {/* Mobile nav */}
           {mobileOpen && (
             <MobileNav
-              units={UNITS}
+              books={BOOKS}
               learned={learned}
               selectedTopicId={selectedTopicId}
               onSelect={selectTopic}
@@ -402,15 +377,15 @@ export default function ConceptMapPage() {
 // ── Topic header bar ──────────────────────────────────────────
 
 function TopicHeader({ card, learned }: { card: TopicCard; learned: Set<string> }) {
-  const unit = UNIT_BY_SUBCAT.get(card.sub_category_id);
-  const subLabel = UNITS.flatMap((u) => u.subCats).find((s) => s.id === card.sub_category_id)?.label ?? '';
-  const isDone = learned.has(card.topic_id);
+  const book     = BOOK_BY_CHAPTER.get(card.chapter_id);
+  const chLabel  = BOOKS.flatMap((b) => b.chapters).find((c) => c.id === card.chapter_id)?.label ?? '';
+  const isDone   = learned.has(card.topic_id);
 
   return (
     <div style={{ flexShrink: 0, padding: '8px 16px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <div>
         <p style={{ fontSize: 10, color: '#94a3b8', margin: 0 }}>
-          [{unit?.key}] {unit?.label} · {subLabel}
+          [{book?.key}] {book?.label} · {chLabel}
         </p>
         <p style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0 }}>
           {card.card_name}
@@ -428,49 +403,49 @@ function TopicHeader({ card, learned }: { card: TopicCard; learned: Set<string> 
 // ── Mobile nav ────────────────────────────────────────────────
 
 function MobileNav({
-  units, learned, selectedTopicId, onSelect,
+  books, learned, selectedTopicId, onSelect,
 }: {
-  units: typeof UNITS;
+  books: typeof BOOKS;
   learned: Set<string>;
   selectedTopicId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const [openUnits, setOpenUnits] = useState<Set<string>>(new Set([units[0]?.key]));
-  const [openSubs, setOpenSubs]   = useState<Set<string>>(new Set());
+  const [openBooks, setOpenBooks] = useState<Set<string>>(new Set([books[0]?.key]));
+  const [openChs, setOpenChs]     = useState<Set<string>>(new Set());
 
   return (
     <div className="md:hidden" style={{ flexShrink: 0, background: 'white', borderBottom: '1px solid #e2e8f0', maxHeight: 260, overflowY: 'auto' }}>
-      {units.map((unit) => {
-        const isOpen = openUnits.has(unit.key);
+      {books.map((book) => {
+        const isOpen = openBooks.has(book.key);
         return (
-          <div key={unit.key}>
+          <div key={book.key}>
             <button
-              onClick={() => setOpenUnits((p) => { const n = new Set(p); n.has(unit.key) ? n.delete(unit.key) : n.add(unit.key); return n; })}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: unit.color + '0d', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+              onClick={() => setOpenBooks((p) => { const n = new Set(p); n.has(book.key) ? n.delete(book.key) : n.add(book.key); return n; })}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: book.color + '0d', border: 'none', cursor: 'pointer', textAlign: 'left' }}
             >
               <span style={{ fontSize: 9, color: '#94a3b8' }}>{isOpen ? '▾' : '▸'}</span>
-              <span style={{ fontSize: 10, fontWeight: 700, color: unit.color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>[{unit.key}] {unit.label}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: book.color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>[{book.key}] {book.label}</span>
             </button>
-            {isOpen && unit.subCats.map((sub) => {
-              const subCards = CARDS_BY_SUBCAT.get(sub.id) ?? [];
-              const isSubOpen = openSubs.has(sub.id);
+            {isOpen && book.chapters.map((ch) => {
+              const chCards = CARDS_BY_CHAPTER.get(ch.id) ?? [];
+              const isChOpen = openChs.has(ch.id);
               return (
-                <div key={sub.id}>
+                <div key={ch.id}>
                   <button
-                    onClick={() => setOpenSubs((p) => { const n = new Set(p); n.has(sub.id) ? n.delete(sub.id) : n.add(sub.id); return n; })}
+                    onClick={() => setOpenChs((p) => { const n = new Set(p); n.has(ch.id) ? n.delete(ch.id) : n.add(ch.id); return n; })}
                     style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 12px 4px 20px', background: 'none', border: 'none', cursor: 'pointer' }}
                   >
-                    <span style={{ fontSize: 11, color: '#374151', fontWeight: 500 }}>{sub.label}</span>
-                    <span style={{ fontSize: 9, color: '#94a3b8' }}>{isSubOpen ? '▾' : '▸'}</span>
+                    <span style={{ fontSize: 11, color: '#374151', fontWeight: 500 }}>{ch.label}</span>
+                    <span style={{ fontSize: 9, color: '#94a3b8' }}>{isChOpen ? '▾' : '▸'}</span>
                   </button>
-                  {isSubOpen && subCards.map((card) => (
+                  {isChOpen && chCards.map((card) => (
                     <button
                       key={card.topic_id}
                       onClick={() => onSelect(card.topic_id)}
-                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 4, padding: '3px 12px 3px 28px', background: selectedTopicId === card.topic_id ? unit.color + '10' : 'none', border: 'none', cursor: 'pointer' }}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 4, padding: '3px 12px 3px 28px', background: selectedTopicId === card.topic_id ? book.color + '10' : 'none', border: 'none', cursor: 'pointer' }}
                     >
                       <span style={{ fontSize: 10, color: '#94a3b8', fontFamily: 'monospace' }}>{card.topic_id}</span>
-                      <span style={{ fontSize: 11, color: selectedTopicId === card.topic_id ? unit.color : '#374151', fontWeight: selectedTopicId === card.topic_id ? 600 : 400, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 11, color: selectedTopicId === card.topic_id ? book.color : '#374151', fontWeight: selectedTopicId === card.topic_id ? 600 : 400, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {card.card_name}
                       </span>
                       {learned.has(card.topic_id) && <span style={{ fontSize: 10, color: '#22c55e' }}>✓</span>}
