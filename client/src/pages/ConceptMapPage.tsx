@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { PROFESSOR_SSOT_V2, TopicCard } from '../constants/professor_ssot_v2';
 
 // ── Static book/chapter structure ─────────────────────────────
@@ -104,6 +104,8 @@ export default function ConceptMapPage() {
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set(['IA_CH2']));
   const [learned, setLearned]                 = useState<Set<string>>(loadLearned);
   const [mobileOpen, setMobileOpen]           = useState(false);
+  const [bounceDir, setBounceDir]             = useState<'left' | 'right' | null>(null);
+  const touchStartX                           = useRef<number>(0);
 
   useEffect(() => { saveLearned(learned); }, [learned]);
 
@@ -132,6 +134,40 @@ export default function ConceptMapPage() {
   }, [search, isSearching]);
 
   const selectedCard = selectedTopicId ? CARD_BY_TOPIC.get(selectedTopicId) : undefined;
+
+  // Same topic_group 내 순서 계산 (스와이프 네비게이션용)
+  const groupCards = useMemo(() => {
+    if (!selectedCard) return [];
+    return PROFESSOR_SSOT_V2.filter((c) => c.topic_group === selectedCard.topic_group);
+  }, [selectedCard]);
+
+  const currentIdx = groupCards.findIndex((c) => c.topic_id === selectedTopicId);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) < 50) return;
+    if (dx < 0) {
+      // 왼쪽 스와이프 → 다음 카드
+      if (currentIdx < groupCards.length - 1) {
+        setSelectedTopicId(groupCards[currentIdx + 1].topic_id);
+      } else {
+        setBounceDir('left');
+        setTimeout(() => setBounceDir(null), 350);
+      }
+    } else {
+      // 오른쪽 스와이프 → 이전 카드
+      if (currentIdx > 0) {
+        setSelectedTopicId(groupCards[currentIdx - 1].topic_id);
+      } else {
+        setBounceDir('right');
+        setTimeout(() => setBounceDir(null), 350);
+      }
+    }
+  }, [currentIdx, groupCards]);
 
   // Book completion stats
   const bookStats = useMemo(() =>
@@ -166,6 +202,22 @@ export default function ConceptMapPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: '#f0f4f8' }}>
+      <style>{`
+        @keyframes swipeBounceLeft {
+          0%   { transform: translateX(0); }
+          30%  { transform: translateX(-18px); }
+          65%  { transform: translateX(5px); }
+          100% { transform: translateX(0); }
+        }
+        @keyframes swipeBounceRight {
+          0%   { transform: translateX(0); }
+          30%  { transform: translateX(18px); }
+          65%  { transform: translateX(-5px); }
+          100% { transform: translateX(0); }
+        }
+        .swipe-bounce-left  { animation: swipeBounceLeft  0.35s ease; }
+        .swipe-bounce-right { animation: swipeBounceRight 0.35s ease; }
+      `}</style>
 
       {/* ── Search bar ─────────────────────────────────────── */}
       <div style={{ flexShrink: 0, background: 'white', borderBottom: '1px solid #e2e8f0', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -333,7 +385,12 @@ export default function ConceptMapPage() {
           ) : null}
 
           {/* Card area */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 24px' }}>
+          <div
+            style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 24px' }}
+            onTouchStart={!isSearching ? handleTouchStart : undefined}
+            onTouchEnd={!isSearching ? handleTouchEnd : undefined}
+            className={bounceDir === 'left' ? 'swipe-bounce-left' : bounceDir === 'right' ? 'swipe-bounce-right' : ''}
+          >
             {isSearching ? (
               searchResults.length === 0 ? (
                 <EmptyState text="검색 결과가 없어요" />
@@ -368,6 +425,28 @@ export default function ConceptMapPage() {
               <EmptyState text="좌측에서 토픽을 선택하세요" />
             )}
           </div>
+
+          {/* 스와이프 위치 표시기 */}
+          {!isSearching && selectedCard && groupCards.length > 1 && (
+            <div style={{
+              flexShrink: 0,
+              background: 'white',
+              borderTop: '1px solid #e2e8f0',
+              padding: '7px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+            }}>
+              <span style={{ fontSize: 10, color: '#cbd5e1', letterSpacing: '0.04em' }}>← 스와이프 →</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', minWidth: 44, textAlign: 'center' }}>
+                {currentIdx + 1} / {groupCards.length}
+              </span>
+              <span style={{ fontSize: 10, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
+                {selectedCard.topic_group}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
