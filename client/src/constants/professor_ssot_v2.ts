@@ -1247,6 +1247,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "① Stock dividend(Mar.1) → 소급 → Jan.1 × 1.10 = 99,000\n② May 1 → 8/12 → +9,000\n③ Nov 1 → 2/12 → +750\n④ 99,000 + 9,000 + 750 = 108,750 → 정답 A",
   },
 
+  // [EPS_009] BEPS vs DEPS – Stock Options vs Contingent Shares Inclusion
+  // RULE    : Stock options → BEPS 제외, DEPS만 / Contingent shares → 조건 충족 시 BEPS 포함
+  // TRIGGER : "basic EPS" + "stock options" → 제외 / "contingent shares" → 조건 충족 시 BEPS
+  // TRAP    : options dilutive → BEPS 착각 / contingent → DEPS만 착각
+  {
+    topic_id: "EPS_009",
+    category: "EPS",
+    topic_name: "BEPS vs DEPS – Stock Options vs Contingent Shares Inclusion",
+    rule: "【BEPS 가중평균 주식수 포함 기준】\n실제 발행·유통 중인 주식만 포함\n\nStock Options\n→ 주식 아님 (살 수 있는 권리)\n→ BEPS 제외 ❌\n→ DEPS: dilutive 시 treasury stock method로 포함 ✅\n\nContingent Shares\n→ 특정 조건(EPS 목표, 주가 목표 등) 충족 시 발행 예정\n→ 조건 충족 시점 = 발행 확정으로 간주\n→ BEPS: 조건 충족일부터 가중평균에 포함 ✅\n→ DEPS: dilutive 조건도 충족해야 포함 ✅\n\n【BEPS vs DEPS 항목별 정리】\n실제 발행 주식 → BEPS ✅ / DEPS ✅\nStock options → BEPS ❌ / DEPS ✅(희석시)\nConvertible bonds → BEPS ❌ / DEPS ✅(희석시)\nContingent shares → BEPS ✅(조건충족시) / DEPS ✅(희석시)",
+    trigger: '"basic EPS" + "stock options" → BEPS 제외\n"basic EPS" + "contingent shares" → 조건 충족 시 BEPS 포함\n"dilutive if conditions met" → contingent shares → BEPS도 해당\nI/II 선택 유형 → 각각 독립 판단',
+    trap: "Stock options dilutive → BEPS 포함 착각(DEPS만).\nContingent shares → DEPS에만 포함 착각(조건 충족 시 BEPS도).\n둘 다 BEPS 포함(Both I and II) 선택.\n'dilutive' 조건만 보고 둘 다 DEPS에만 해당한다고 착각.",
+    example: "Stock options 1,000개, 행사가 $10, 시장가 $15\n→ BEPS: 미포함\n→ DEPS: Treasury stock method\n   발행 가정 1,000주 − 재매입 가정 (1,000×$10/$15=667주) = 333주 추가\n\nContingent shares: EPS $3 달성 시 10,000주 발행 조건\n현재 EPS $3.5 → 조건 충족\n→ BEPS: 10,000주 포함 (조건 충족일부터 가중)\n→ DEPS: dilutive 여부 추가 확인",
+    journal_entry: "",
+    key_formula: "BEPS 분모 = 실제 발행 주식 + 조건 충족 contingent shares\nDEPS 분모 = BEPS 분모 + dilutive options(TSM) + dilutive convertibles",
+    speed: "BEPS = 실제 발행 주식 | Stock options → DEPS만 | Contingent shares 조건 충족 → BEPS 포함",
+  },
+
   // ── EQUITY ─────────────────────────────────────────────────────────────────
   {
     topic_id: "EQUITY_001",
@@ -1463,6 +1480,40 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "발행(Y1) → APIC 변화 없음\n행사(Y2) → APIC increased / NI No effect\n시장가 → 즉시 무시",
     context_background: "[Stock Warrant란]\n주주 등에게 일정 기간 내에 정해진 가격(exercise price)으로 주식을 살 수 있는 권리. 옵션과 유사.\n\n[발행 시점 회계]\n권리만 부여, 아직 현금 수령 없음 → APIC 변화 없음.\n\n[행사 시점 회계]\nDr. Cash (exercise price × 주수)\n    Cr. Common Stock (par × 주수)\n    Cr. APIC (차액)\n예: Exercise price $30 / par $20 → Cash $30 수령 / CS $20 / APIC $10\n\n[왜 Net income 무관인가]\n주식 발행·행사는 회사와 주주 간의 owner transaction.\nI/S는 외부 거래에서 발생하는 수익·비용만 기록.\nOwner transaction → equity 계정에만 영향, I/S 통과 안 함.\n\n[왜 시장가가 무관한가]\n시장가는 주식의 현재 거래 가격.\n행사가(exercise price)는 warrant 계약에서 정한 고정 가격.\nJE는 실제 현금 수령액(exercise price)을 기준으로 작성.\n시장가 $40이어도 exercise price $30만 Cash로 받음.",
     example: "Nov 2 Y1: Warrant 발행 → APIC 변화 없음\nMar 1 Y2: Warrant 행사 → Dr.Cash $30 / Cr.CS $20 / Cr.APIC $10 (per share)\nNet income Y1·Y2 → No effect\n시장가 $33/$35/$40 → 완전 무시",
+  },
+
+  // [EQUITY_013] APIC Increase Conditions – At Par vs Noncash Issuance
+  // RULE    : APIC = 발행가 > par일 때만 / at par → APIC 없음 / FV > par → 초과분 APIC
+  // TRIGGER : "issued at par" → APIC 없음 / "issued for services + FV" → APIC 발생
+  // TRAP    : at par 발행에서 APIC 착각 / FV 전액 CS 처리
+  {
+    topic_id: "EQUITY_013",
+    category: "Stockholders Equity",
+    topic_name: "APIC Increase Conditions – At Par vs Noncash Issuance",
+    rule: "【APIC 발생 조건】\nAPIC = 발행가 − par value (발행가 > par일 때만 발생)\n\n【발행 유형별 판단】\n① At par 발행 (현금)\n발행가 = par → 초과분 없음 → APIC 증가 ❌\nJE: Dr. Cash / Cr. Common Stock (par)\n\n② 비현금(서비스 등) FV 기준 발행\n총 발행가액 = FV of services\nCS = par × shares\nAPIC = FV − (par × shares) → 초과분 → APIC 증가 ✅\nJE: Dr. Expense(FV) / Cr. CS(par×sh) / Cr. APIC(초과분)\n\n【FV 측정 우선순위】\n비현금 대가 발행 시:\n① 주식 FV 신뢰 가능 → 주식 FV 사용\n② 대가(서비스) FV 신뢰 가능 → 대가 FV 사용",
+    trigger: '"issued at par" → 발행가 = par → APIC 증가 없음\n"issued for services/noncash" + "fair value of $X" → FV > par → APIC 발생\n표 형식 두 날짜 비교 → 각각 독립 판단',
+    trap: '"at par" 발행에서 APIC 있다고 착각 — par 초과분이 없으면 APIC 없음.\n서비스 수령 발행에서 APIC 없다고 착각 — FV > par → 초과분 → APIC 발생.\nFV 전액을 Common Stock으로 처리 — CS = par × shares만, 초과분은 APIC.',
+    example: "Feb 1: at par 발행 → Dr. Cash $X / Cr. CS $X → APIC 없음\nMar 1: 서비스 FV $45,000, par $5 × 3,000sh = $15,000\nDr. Organization Cost $45,000\nCr. Common Stock $15,000\nCr. APIC $30,000 → APIC 증가 ✅",
+    journal_entry: "Feb 1 (at par):\nDr. Cash [$par × shares]\nCr. Common Stock [$par × shares]\n\nMar 1 (noncash FV):\nDr. Organization Cost $45,000\nCr. Common Stock $15,000  (par $5 × 3,000sh)\nCr. APIC $30,000  (FV $45,000 − CS $15,000)",
+    key_formula: "APIC = 발행가(or FV) − par × shares\nAt par → APIC = 0\nFV 기준 → APIC = FV − (par × shares)",
+    speed: "APIC 발생 = 발행가 > par | at par → APIC 없음 | noncash FV > par → 초과분 APIC",
+  },
+
+  // [EQUITY_014] Stock Rights – Issuance vs Exercise Accounting
+  // RULE    : 발행 시 JE 없음 / 행사 시 CS(par×sh) + APIC(초과분) 증가
+  // TRIGGER : "when the rights are issued" → CS/APIC No / "exercised" → CS/APIC Yes
+  // TRAP    : 발행↔행사 시점 혼동 / "excess of par" 보고 발행 시 APIC 착각
+  {
+    topic_id: "EQUITY_014",
+    category: "Stockholders Equity",
+    topic_name: "Stock Rights – Issuance vs Exercise Accounting",
+    rule: "【Stock Rights 발행 vs 행사 비교】\n\n발행 시 (Issuance)\n→ 무상(without consideration) 발행\n→ 받은 것 없음, 주식 발행 없음\n→ JE 없음\n→ CS/APIC 변동 없음\n\n행사 시 (Exercise)\n→ 주주가 권리 행사 + 현금 납입\n→ 실제 주식 발행\n→ JE 발생:\n   Dr. Cash (행사가 × 주수)\n   Cr. Common Stock (par × 주수)\n   Cr. APIC (초과분)\n→ CS↑(par×shares) / APIC↑(초과분)\n\n실효 시 (Expiration)\n→ 권리 미행사로 소멸\n→ JE 없음 (원래 발행 시도 JE 없었으므로)",
+    trigger: '"rights issued without consideration" → 무상 발행 → JE 없음\n"when the rights are issued" → 발행 시점 → CS/APIC 모두 No\n"when the rights are exercised" → 행사 시점 → CS/APIC 모두 Yes\n"excess of par value" → 행사 시 APIC 발생 (발행 시 아님)',
+    trap: "Rights 행사 시점 처리(CS↑/APIC↑)를 발행 시점으로 혼동.\n'excess of par value' 표현 보고 발행 시 APIC 증가 착각.\n무상 발행이라도 주석 등 뭔가 기록해야 한다는 착각.\n발행 시점(issued)과 행사 시점(exercised) 영어 표현 혼동.",
+    example: "발행 시: JE 없음 → CS No / APIC No\n\n행사 시 (1,000주, 행사가 $15, par $5):\nDr. Cash $15,000\nCr. Common Stock $5,000  (par $5 × 1,000sh)\nCr. APIC $10,000  ($15,000 − $5,000)\n→ CS Yes / APIC Yes",
+    journal_entry: "발행 시: No entry\n\n행사 시:\nDr. Cash [행사가 × shares]\nCr. Common Stock [par × shares]\nCr. APIC [초과분]\n\n실효 시: No entry",
+    key_formula: "Rights 발행 시 → JE 없음\nRights 행사 시 → CS = par × shares / APIC = 행사가 − par × shares",
+    speed: "Rights 발행 시 → JE 없음 → CS/APIC 모두 No | 행사 시 → CS↑(par) / APIC↑(초과분)",
   },
 
   // [EQUITY_008] Stock Split + Cash Dividend — Shares and Dividend Calculation
@@ -1780,6 +1831,57 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "Note receivable → Investing\nNote payable → Financing\nAR·Tax refund → Operating\n'related party' → 무시",
     context_background: "[내가 빌려준 vs 내가 빌린 — 핵심 구분]\n\nNote receivable (내가 빌려준 돈)\n→ 회사가 다른 주체(개인, 다른 회사)에게 대출해준 것\n→ 그 돈을 돌려받는 것 = 투자 회수 = Investing\n→ 예: 자회사에 대여금, 임직원 대출, 관계사 대여\n\nNote payable (내가 빌린 돈)\n→ 회사가 다른 주체에게 빌린 것\n→ 그 돈을 받는 것 = 자금 조달 = Financing\n→ 예: 은행 차입, 사채 발행\n\n[AR vs Note receivable 구분]\nAR (Accounts Receivable)\n→ 물건 팔고 못 받은 돈 = 영업 활동에서 발생\n→ Operating\n\nNote receivable\n→ 돈을 빌려준 것 = 투자 활동에서 발생\n→ Investing\n\n['related party' 수식어]\nNote receivable from a related party (계열사, 임원 등)\n→ 누구에게 빌려줬든 상관없음\n→ 내가 빌려준 돈 회수 = Investing\n→ 'related party'는 단순 수식어, 분류 변경 없음\n\n[Tax refund]\n세금 과납 환급 → 세금은 영업 손익 계산의 일부\n→ Operating",
     example: "Note receivable 회수 → Investing ✅\nNote payable 수령 → Financing\nAR 회수 → Operating\nTax refund → Operating",
+  },
+
+  // [CF_015] SCF Investing – Noncash Portion of Mixed Asset Purchase
+  // RULE    : 혼합 취득 시 investing = 현금분만 / noncash = 주석 공시
+  // TRIGGER : "paying X cash and issuing Y note" → cash portion only
+  // TRAP    : 전체 금액 수정 착각 / Decrease로 착각 / Note payable 상환 → financing
+  {
+    topic_id: "CF_015",
+    category: "Statement of Cash Flows",
+    topic_name: "SCF Investing – Noncash Portion of Mixed Asset Purchase",
+    rule: "【혼합 취득(Mixed Purchase) SCF 처리 원칙】\n현금 + 어음 혼합으로 자산 취득 시:\n① 현금 지급분 → Investing outflow (SCF 본문)\n② 어음 발행분 → Noncash transaction → 별도 주석 공시\n\n【오류 수정 방향】\n전체 금액을 investing에 포함한 경우:\n→ noncash portion이 investing outflow에 잘못 포함됨\n→ 수정: noncash portion 제거\n→ 효과: investing outflow 감소 = investing cash flow Increase\n\n【관련 항목 SCF 분류】\nNote payable 원금 상환 → Financing activity (investing 아님)\n투자자산 매각 proceeds → Investing inflow (gain 제외, 전체 proceeds)\n특허권 매각 proceeds → Investing inflow",
+    trigger: '"paying X cash and issuing Y note payable" → investing = cash portion only\n"incorrectly reported full amount in investing" → noncash portion 잘못 포함\n"net effect after correcting" → noncash 제거 → Increase',
+    trap: "전체 금액($180,000) 수정이라고 착각 — 현금분($60,000)은 원래 맞고 noncash분($120,000)만 수정.\nDecrease로 착각 — 잘못 차감된 금액을 되돌리므로 Increase.\nNote payable 상환을 investing으로 분류 — financing activity.\n투자자산 매각 gain만 investing inflow로 처리 — proceeds 전액이 inflow.",
+    example: "장비 $180,000 취득: 현금 $60,000 + 어음 $120,000\n\n오류: Investing outflow $180,000 계상\n수정: Investing outflow $60,000만 남김\n수정 효과: +$120,000 (Increase)\n\n어음 $120,000 → supplemental noncash disclosure로 이동",
+    journal_entry: "Dr. Equipment $180,000\nCr. Cash $60,000          → Investing outflow\nCr. Notes Payable $120,000 → Noncash (주석 공시)",
+    key_formula: "Investing outflow = 현금 지급분만\nNoncash portion = 별도 주석 공시\n오류 수정 효과 = +noncash portion (Increase)",
+    speed: "혼합 취득 오류 수정 = noncash portion 제거 → investing outflow 감소 → Increase",
+  },
+
+  // [CF_016] SCF Investing – AFS Securities vs Cash Equivalents
+  // RULE    : AFS → Investing / Cash equivalent → SCF 미표시 (현금의 일부)
+  // TRIGGER : "available-for-sale" → investing / "cash equivalents" → 제외
+  // TRAP    : T-bills를 investing으로 포함 / AFS를 제외로 착각
+  {
+    topic_id: "CF_016",
+    category: "Statement of Cash Flows",
+    topic_name: "SCF Investing – AFS Securities vs Cash Equivalents",
+    rule: "【AFS 증권 vs Cash Equivalent SCF 분류】\n\nAFS (Available-for-Sale) 증권\n→ 매수/매도 모두 Investing activity\n→ SCF investing section에 표시\n\nCash Equivalent\n→ 만기 3개월 이내 단기 금융상품 (T-bills, CP 등)\n→ B/S상 현금 잔액의 일부로 포함\n→ SCF operating/investing/financing 어디에도 미표시\n→ '현금으로 현금을 산 것' = 현금 형태 변환에 불과\n\n【증권 분류별 SCF 처리】\nTrading securities → Operating activity\nAFS securities → Investing activity\nHTM securities → Investing activity\nCash equivalents → SCF 미표시",
+    trigger: '"available-for-sale" → investing activity\n"cash equivalents" → SCF 미표시 (현금 잔액의 일부)\n두 항목 동시 제시 → cash equivalent 제외 후 investing 계산\n"Treasury bills / T-bills / money market" → cash equivalent 가능성 확인',
+    trap: "Treasury bills를 investing outflow로 포함 → cash equivalent는 SCF 미표시.\nAFS 전체를 SCF 제외로 착각 → AFS는 investing outflow.\n두 금액 합산($250,000) → cash equivalent 제외 필요.\nTrading securities를 investing으로 착각 → operating activity.",
+    example: "Grove Co.:\nMaple Corp. bonds (AFS) $200,000 → Investing outflow ✅\nU.S. Treasury bills (cash equiv) $50,000 → SCF 미표시 ❌\nNet cash used in investing = $200,000",
+    journal_entry: "AFS 매입:\nDr. AFS Securities $200,000\nCr. Cash $200,000 → Investing outflow\n\nT-bills 매입:\nDr. Cash Equivalents $50,000\nCr. Cash $50,000 → SCF 미표시 (현금 내부 이동)",
+    key_formula: "SCF Investing = AFS/HTM 매매금액\n(Cash equivalent 제외 | Trading → Operating)",
+    speed: "AFS → Investing | Cash equivalent → SCF 미표시 | Trading → Operating",
+  },
+
+  // [CF_017] SCF – Ending Cash Balance Calculation & Distractors
+  // RULE    : 기말 Cash = 기초 + Op − Inv + Fin / 별도 제시 매각대금 → 이미 포함, 무시
+  // TRIGGER : "ending cash balance" → 3개 섹션 합산 / 별도 proceeds/gain → 이중계산 주의
+  // TRAP    : 자산매각 proceeds 별도 가산 / Investing 부호 오류
+  {
+    topic_id: "CF_017",
+    category: "Statement of Cash Flows",
+    topic_name: "SCF – Ending Cash Balance Calculation & Distractors",
+    rule: "【기말 현금잔액 공식】\n기말 Cash = 기초 Cash\n           + Net Cash from Operating\n           − Net Cash used in Investing (or + provided)\n           + Net Cash from Financing\n\n【함정 정보 처리 원칙】\n문제 내 자산매각 proceeds/gain 별도 제시\n→ 이미 Investing CF 섹션 합계에 포함된 금액\n→ 별도로 더하면 이중계산 오류\n→ 무시하고 3개 섹션 합산만으로 계산\n\n【부호 방향 주의】\n'net cash provided by ~' → 가산(+)\n'net cash used in ~' → 차감(−)",
+    trigger: '"ending cash balance" 계산 → 기초 + 3개 섹션 합산\n별도 자산매각 proceeds/gain 제시 → 이미 Investing에 포함 → 무시\n"net cash used" → 차감 / "net cash provided" → 가산',
+    trap: "자산매각 proceeds를 별도 가산(이중계산).\nGain을 별도 가산(이미 Investing에 포함).\nInvesting CF 부호 오류(used=차감인데 가산).\n기초잔액을 기말잔액으로 선택.",
+    example: "Grove Co.:\n기초 $40,500\n+ Operating $526,500\n− Investing $630,000\n+ Financing $375,000\n= 기말 $312,000\n\n토지 proceeds $60,000 → 이미 Investing $630,000 안에 포함 → 별도 계산 금지",
+    journal_entry: "",
+    key_formula: "기말 Cash = 기초 + Operating ± Investing ± Financing",
+    speed: "기말 Cash = 기초 + Op − Inv + Fin | 별도 제시 매각대금 → 이미 포함, 무시",
   },
 
   // ── CHANGE ─────────────────────────────────────────────────────────────────
@@ -3266,6 +3368,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[비율 목적별 분류]\n\n① Gross Profit Margin = (Sales − COGS) ÷ Sales\n→ 가격 전략 + 생산 효율성 (COGS 레벨)\n→ 영업비용·이자·세금 미포함\n\n② Debt-to-equity = Total Debt ÷ Total Equity\n→ 재무 레버리지. 부채 의존도\n→ 수익성·효율성 지표 아님\n\n③ Times interest earned = EBIT ÷ Interest Expense\n→ 이자 커버리지. 부채 상환 능력\n→ 가격·생산과 무관\n\n④ P/E ratio = Market Price ÷ EPS\n→ 시장 밸류에이션. 투자자 성장 기대치\n→ 내부 운영 효율과 무관\n\n[핵심 논리]\n가격을 올리면 Revenue↑ → Gross Profit↑\n생산비를 낮추면 COGS↓ → Gross Profit↑\n→ 두 경영 판단 모두 (Sales − COGS) 구조에서만 포착",
   },
 
+  // [RATIO_017] Dividend Payout Ratio – Formula & Common Traps
+  // RULE    : Dividend Payout = 배당금 ÷ Net Income / Operating income·주식수 → Fake
+  // TRIGGER : "dividend payout ratio" → 배당금÷Net Income / 분자분모 방향 확인
+  // TRAP    : 분자/분모 뒤집기(400%) / Operating income 분모(31%) / 주식수 분모(90%)
+  {
+    topic_id: "RATIO_017",
+    category: "Ratio Analysis",
+    topic_name: "Dividend Payout Ratio – Formula & Common Traps",
+    rule: "【Dividend Payout Ratio】\n= 총 배당금 ÷ Net Income\n= 순이익 중 배당으로 지급한 비율\n\n【분모 주의】\nNet Income ✅\nOperating income ❌ (영업이익 아님)\nCommon shares outstanding ❌ (주식수 아님)\n\n【관련 비율 구분】\nDividend Payout Ratio = 배당금 ÷ Net Income\nDividend Yield = 주당배당금 ÷ 주가\nDPS(주당배당금) = 배당금 ÷ 주식수",
+    trigger: '"dividend payout ratio" → 배당금 ÷ Net Income\nOperating income 제시 → Fake 데이터\n주식수 제시 → Fake 데이터\n분자/분모 방향 확인 필수',
+    trap: "분자/분모 뒤집기 → Net Income ÷ 배당금 = 400%.\nOperating income을 분모로 사용 → 31%.\n주식수를 분모로 사용 → DPS 개념 혼동 → 90%.\nOperating income과 주식수는 이 문제에서 전형적인 Fake 데이터.",
+    example: "Cedar Manufacturing:\n배당금 $1,350,000 ÷ Net Income $5,400,000 = 25%\n\nFake 데이터:\nOperating income $4,350,000 → 사용 안 함\n주식수 1,500,000 → 사용 안 함",
+    journal_entry: "",
+    key_formula: "Dividend Payout Ratio = 총 배당금 ÷ Net Income",
+    speed: "Dividend Payout = 배당금 ÷ Net Income | Operating income·주식수 → Fake",
+  },
+
   // ── DISC ───────────────────────────────────────────────────────────────────
   {
     topic_id: "DISC_001",
@@ -3622,6 +3741,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "Dec.15 Title 이전($1=20euros) → A/P 인식 / Dec.31($1=21euros) → 달러 강세 → Gain → Continuing ops",
     context_background: "외화 거래에서 장부 기록 시점은 title 이전일이다. 계약일도, 결제일도 아니다. 결제 조건(payment term)은 '언제 돈을 내느냐'의 문제이고, title 이전은 '언제 소유권이 넘어오느냐'의 문제로 완전히 별개다. 집을 살 때 등기(title)는 넘어왔지만 잔금(payment)은 나중에 내는 것과 같은 구조다. 결산일에 A/P가 미결제 상태이면 환율 재평가가 필요하고, 달러 강세(같은 달러로 더 많은 유로 구매 가능)면 부채 부담이 줄어 Gain이 발생한다.",
     speed: "① Title 이전 = Dec.15 → A/P 인식($1=20euros)\n② 'still in transit' → 무시, title이 기준\n③ Dec.31: $1=21euros → 달러 강세 → Gain\n④ Continuing operations → 정답 B",
+  },
+
+  // [FC_011] Foreign Currency AP – Unrealized Gain/Loss at Year-End
+  // RULE    : 미실현손익 = 거래일 AP − 결산일 AP / 결산일 환율 재측정 / 지급일 환율 Fake
+  // TRIGGER : "unrealized gain/loss at Dec 31" → 거래일 vs 결산일 환율 / €/$ → 역수 변환
+  // TRAP    : 지급일 환율 사용 / 환율 차이를 €금액에 직접 곱함 / 달러 강세 → Loss로 오인
+  {
+    topic_id: "FC_011",
+    category: "Foreign Currency",
+    topic_name: "Foreign Currency AP – Unrealized Gain/Loss at Year-End",
+    rule: "【외화 AP 회계처리 흐름】\n거래일: AP = €금액 × 거래일 $/€ 환율\n결산일: AP 재측정 = €금액 × 결산일 $/€ 환율\n미실현손익 = 거래일 AP − 결산일 AP\n\n【환율 방향과 손익】\n달러 강세(€당 $ 감소) → AP 감소 → Gain\n달러 약세(€당 $ 증가) → AP 증가 → Loss\n\n【환율 표시 변환】\n€/$ 표시 → $/€로 변환: 1 ÷ €율\nDec 10: 1/0.79 = $1.2658/€\nDec 31: 1/0.82 = $1.2195/€\n\n【지급일 환율】\n미실현손익 계산 무관 (Fake)\n지급일에 실현손익 별도 계산",
+    trigger: '"unrealized gain/loss at Dec 31" → 거래일 vs 결산일 환율만 사용\n"paid on [미래일]" → 지급일 환율 → 미실현손익 Fake\n€/$ 환율 표시 → 역수 취해서 $/€ 변환\n달러 강세(€당 $ 감소) → AP 감소 → Gain',
+    trap: "지급일 환율 사용(미실현손익은 결산일 기준).\n환율 차이(0.82−0.79=0.03)를 €금액에 직접 곱하는 오류.\nGain/Loss 방향 혼동 — 달러 강세 = AP 감소 = Gain.\n€/$ 환율을 $/€로 변환 안 하고 직접 사용.",
+    example: "Cedar Inc.:\nDec 10: €75,000 × (1/0.79) = $94,937 AP 계상\nDec 31: €75,000 × (1/0.82) = $91,463 재측정\nGain = $94,937 − $91,463 = $3,750\n\nJan 10 환율(0.75) → 미실현손익 계산에 사용 안 함",
+    journal_entry: "Dec 10 (매입):\nDr. Inventory $94,937\nCr. AP $94,937\n\nDec 31 (재측정):\nDr. AP $3,474\nCr. FX Gain $3,474\n\nJan 10 (지급):\nDr. AP $91,463\nDr. FX Loss [환율 변동분]\nCr. Cash [지급일 환율 기준]",
+    key_formula: "미실현 FX Gain/Loss = 거래일 AP − 결산일 AP\n$/€ = 1 ÷ (€/$율)\nDollar 강세 → AP↓ → Gain",
+    speed: "미실현 FX = 거래일 AP − 결산일 AP | 지급일 환율 → Fake | 달러 강세 → Gain",
   },
 
   // [FC_009] Foreign currency AP remeasurement — year-end gain when foreign currency weakens
@@ -4171,6 +4307,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "Discount $10,000 / Amortized $2,000 / Premium $14,000\n→ Unamortized = $8,000\n→ Gain = $14,000 + $8,000 = $22,000",
     context_background: "채권 투자를 할인 매입한 경우, 보유 기간 중 discount를 상각하면 장부금액(BV)이 증가한다. 매각 시 gain/loss는 매각금액 - 상각 후 BV로 계산한다. Face value가 주어지지 않아도 양변에서 X로 상쇄되므로 계산 가능하다. 핵심 공식: Gain = Premium received + Unamortized discount.",
     speed: "① Unamortized discount = $10,000 - $2,000 = $8,000\n② Gain = Premium $14,000 + Unamortized $8,000\n③ $22,000 → 정답 B",
+  },
+
+  // [BOND_018] Bond Extinguishment – Loss Calculation with Unamortized Discount & Issuance Costs
+  // RULE    : Loss = Reacquisition price − Net CV / Net CV = Face − Unamortized discount − Unamortized issuance cost
+  // TRIGGER : "called at X%" → Reacquisition price / "issued at discount" + "issuance costs" → 둘 다 CV 차감
+  // TRAP    : discount만 차감(issuance cost 누락) / 경과기간/총기간으로 미상각분 계산(잔여/총기간이 맞음)
+  {
+    topic_id: "BOND_018",
+    category: "Bonds",
+    topic_name: "Bond Extinguishment – Loss Calculation with Unamortized Discount & Issuance Costs",
+    rule: "【채권 조기 상환 손익 계산 5단계】\nStep 1. Reacquisition price = Face × call price%\nStep 2. Unamortized discount = 원래 discount × 잔여기간/총기간\nStep 3. Unamortized issuance cost = 원래 issuance cost × 잔여기간/총기간\nStep 4. Net CV = Face − Unamortized discount − Unamortized issuance cost\nStep 5. Loss(Gain) = Reacquisition price − Net CV\n         양수 → Loss / 음수 → Gain\n\n【미상각분 계산 (SL법)】\n잔여기간 = 총기간 − 경과기간\nUnamortized = 원금액 × 잔여기간/총기간\n\n【Net CV 구성】\nFace value\n− Unamortized discount (할인 발행 시)\n+ Unamortized premium (할증 발행 시)\n− Unamortized issuance cost (항상 차감)",
+    trigger: '"called at X%" → Reacquisition price = Face × X%\n"issued at discount/premium" → Unamortized discount/premium\n"bond issuance costs" → Unamortized portion → CV 차감\n"straight-line" → 미상각분 = 원금액 × 잔여/총기간',
+    trap: "Unamortized discount만 계산하고 issuance cost 미포함.\nUnamortized issuance cost만 계산하고 discount 미포함.\n상각된 금액(amortized)을 CV에서 차감(미상각분만 차감).\n경과기간/총기간으로 미상각분 계산(잔여기간/총기간이 맞음).",
+    example: "Riverside Corp:\nStep 1. $1,500,000 × 102% = $1,530,000\nStep 2. Discount: $30,000 × 20/30 = $20,000 unamortized\nStep 3. Issuance cost: $90,000 × 20/30 = $60,000 unamortized\nStep 4. Net CV: $1,500,000 − $20,000 − $60,000 = $1,420,000\nStep 5. Loss: $1,530,000 − $1,420,000 = $110,000",
+    journal_entry: "Dr. Bonds Payable $1,500,000\nDr. Loss on Extinguishment $110,000\nCr. Discount on Bonds Payable $20,000\nCr. Bond Issuance Costs $60,000\nCr. Cash $1,530,000",
+    key_formula: "Loss = Reacquisition price − Net CV\nNet CV = Face − Unamortized discount − Unamortized issuance cost\nUnamortized = 원금액 × 잔여기간/총기간",
+    speed: "Loss = Reacquisition price − (Face − Unamortized discount − Unamortized issuance cost)",
   },
 
   // [TDR_001] Troubled Debt Restructuring — Asset Transfer: Loss on transfer = FV − CA(자산)
@@ -4797,6 +4950,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "상장주식 → Market approach(L1) / 사모펀드 → Income approach DCF(L3) / 특수기계 → Cost approach 대체원가(L3)",
   },
 
+  // [VAL_015] Fair Value Hierarchy – Level 2 Inputs Identification (Except)
+  // RULE    : L1=identical+active / L2=observable not L1 / L3=unobservable(internal)
+  // TRIGGER : "except" + Level 2 → Level 2 아닌 것 / "internally generated" → Level 3
+  // TRAP    : similar+active → L1 착각 / identical+inactive → L1 착각 / 내부추정 → L2 착각
+  {
+    topic_id: "VAL_015",
+    category: "Fair Value",
+    topic_name: "Fair Value Hierarchy – Level 2 Inputs Identification (Except)",
+    rule: "【Fair Value Hierarchy 3단계】\n\nLevel 1\n= 활성시장(active market) × 동일자산(identical)\n= 가장 신뢰도 높음\n예) NYSE 상장주식 공시가격\n\nLevel 2\n= 관측가능(observable) but Level 1 아닌 것\n예) 유사자산 활성시장 가격\n    동일자산 비활성시장 가격\n    공시 금리·스프레드·환율\n\nLevel 3\n= 관측불가(unobservable) = 내부 가정\n예) 내부 현금흐름 추정\n    자체 할인율·성장률 가정\n    내부 DCF 모델\n\n【Level 1 vs Level 2 경계】\nLevel 1: identical + active (둘 다 필요)\nLevel 2: similar + active OR identical + inactive",
+    trigger: '"except" + Level 2 → Level 2 아닌 것 찾기\n"internally generated / own assumptions" → Level 3\n"similar asset + active market" → Level 2 (not L1)\n"identical asset + inactive market" → Level 2 (not L1)\n공시 금리/스프레드 → Level 2',
+    trap: '"similar + active" → Level 1로 착각 (identical 필요).\n"identical + inactive" → Level 1로 착각 (active market 필요).\n내부 현금흐름 추정 → Level 2로 착각 (unobservable → Level 3).\n복잡한 내부 모델 → Level 2로 착각 (복잡도와 무관, 관측가능성이 기준).',
+    example: "Level 1: NYSE 삼성전자 공시가격 (identical + active)\nLevel 2: 유사채권 브로커 호가 (similar + active)\n         비활성시장 동일채권 가격 (identical + inactive)\n         LIBOR/SOFR 금리 (observable)\nLevel 3: 경영진 내부 DCF 추정 (own assumptions)\n         내부 현금흐름 프로젝션 (unobservable)",
+    journal_entry: "",
+    key_formula: "Level 1 = identical + active market\nLevel 2 = observable (similar or inactive)\nLevel 3 = unobservable (internal/own assumptions)",
+    speed: "L1 = identical+active | L2 = observable not L1 | L3 = unobservable/internal → 내부추정 → L3",
+  },
+
   {
     topic_id: "COMP_001",
     book_id: 'AA',
@@ -4960,6 +5130,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "Granite Bank net: −$600K+$450K+$75K+$750K = $675K → Cash\nRiverside Bank: −$562.5K → Liability\nB/S: Cash $675,000 / Short-term liability $562,500",
   },
 
+  // [CASH_005] Bank Account Netting – Same Bank vs Different Banks
+  // RULE    : 같은 은행 → netting / 다른 은행 음수 → 별도 Liability
+  // TRIGGER : 복수 은행 + 음수 잔액 → 은행별 구분 처리
+  // TRAP    : 전 계좌 합산 / 다른 은행 간 상계 / 양수만 Cash 처리
+  {
+    topic_id: "CASH_005",
+    category: "Cash",
+    topic_name: "Bank Account Netting – Same Bank vs Different Banks",
+    rule: "【은행 계좌 B/S 표시 원칙】\n\n같은 은행 내 계좌\n→ 상계(netting) 가능\n→ 합계 양수 → Cash로 표시\n→ 합계 음수 → Liability(overdraft)로 표시\n\n다른 은행 간 계좌\n→ 상계 절대 불가\n→ 음수 잔액 → 무조건 별도 Liability\n→ 이유: 법적으로 다른 은행에 상계 청구 불가\n\n【계산 순서】\n① 은행별로 그룹화\n② 각 은행 내에서 netting\n③ 양수 → Cash 합산\n④ 음수 → Liability 별도 표시",
+    trigger: '복수 은행 계좌 + 음수 잔액 → 은행별 구분 netting\n"같은 은행" → netting 가능\n"다른 은행" 음수 → 별도 Liability\n음수 계좌 표시 → 먼저 같은 은행인지 확인',
+    trap: "모든 계좌 합산 → 단일 Cash 표시(은행 구분 필요).\n다른 은행 음수를 양수 은행과 상계(법적 상계 불가).\n양수만 Cash, 음수 전부 Liability(같은 은행 내 음수는 netting으로 상쇄).\n같은 은행 내 음수 계좌를 별도 Liability로 표시(netting 가능).",
+    example: "First National: ($600K) + $450K + $75K + $750K = $675K → Cash\nHarbor Bank: ($562.5K) → Liability (다른 은행, 상계 불가)\n\nB/S 표시:\nCash: $675,000\nBank overdraft liability: $562,500",
+    journal_entry: "",
+    key_formula: "같은 은행 Net = 각 계좌 합산 → 양수=Cash / 음수=Liability\n다른 은행 음수 → 무조건 별도 Liability",
+    speed: "같은 은행 → netting | 다른 은행 음수 → 별도 Liability | 은행별 구분이 핵심",
+  },
+
   {
     topic_id: "IS_001",
     book_id: 'AA',
@@ -5063,6 +5250,24 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "제외 3종 확인 → Net sales − COGS − S&A + realized gains = before-tax → ×(1−t) → + discontinued ×(1−t)",
     context_background: "Prior period adj는 RE 조정, AFS unrealized은 OCI, discontinued는 after-tax 별도 — 세 항목 모두 net income 계산에서 제외 또는 별도 처리.",
   },
+
+  // [IS_007] Multiple-Step I/S – G&A vs Selling vs Other Expense Classification
+  // RULE    : G&A = 관리부서 직접비 + 공용비 × admin% / Interest → Other / Loss on disposal → Other
+  // TRIGGER : "multiple-step I/S" + "G&A" → 세 bucket 분류 / 공용비 사용비율 배분
+  // TRAP    : 임차료 전액 G&A / Interest를 G&A로 분류 / Loss on disposal → operating 오류
+  {
+    topic_id: "IS_007",
+    category: "Income Statement",
+    topic_name: "Multiple-Step I/S – G&A vs Selling vs Other Expense Classification",
+    rule: "【Multiple-Step I/S 구조】\nSales\n- COGS\n= Gross Profit\n- Selling Expenses   ← 판매부서 관련\n- G&A Expenses      ← 관리부서 관련\n= Operating Income\n- Other Expenses    ← interest, loss on disposal 등\n= Net Income\n\n【항목별 분류 기준】\nLegal/audit fees → 100% G&A\n공용 임차료 → 사용 부서 비율대로 배분 (sales 50% → Selling / accounting 50% → G&A)\nInterest on inventory floorplan → financing cost → Other expense (below operating)\nLoss on abandoned equipment → 비반복적·비영업적 → Other loss (below operating)\n\n【SCF 관점 (간접법)】\nLoss on abandoned equipment:\n- I/S: Other loss (below operating income)\n- SCF indirect: Operating section add-back (현금 없는 손실이므로 가산)\n- 현금 수취 있었다면: Investing inflow로 표시\n\n【SG&A vs G&A 혼동 주의】\nSG&A = Selling + G&A 합산 (단순 I/S, 실무)\nG&A = 관리비용만 (multiple-step I/S에서 별도 표시)",
+    trigger: '"multiple-step I/S" + "G&A" → Selling / G&A / Other 세 bucket 분류\n"used equally by sales and accounting" → 공용비용 비율 배분\n"interest on floorplan/loan" → Other expense, G&A 제외\n"loss on abandoned equipment" → Other loss, G&A 제외',
+    trap: "SG&A로 무의식적으로 읽어서 Selling 몫까지 G&A에 포함하는 실수.\n공용 임차료 전액을 G&A에 포함 (사용 비율 배분 필요).\nInterest on floorplan → G&A 아닌 Other expense.\nLoss on abandoned equipment → operating expense 아닌 Other loss.\nI/S의 Other loss를 SCF의 Investing과 혼동 (SCF 간접법에선 operating add-back).",
+    example: "Grove Co. G&A 계산:\nLegal & audit fees $255,000 → 전액 G&A ✅\nRent $360,000 × 50% = $180,000 → G&A (나머지 50% → Selling) ✅\nInterest on floorplan $315,000 → Other expense ❌\nLoss on equipment $52,500 → Other loss ❌\nTotal G&A = $255,000 + $180,000 = $435,000",
+    journal_entry: "",
+    key_formula: "G&A = 관리부서 직접비용 + 공용비용 × 관리부서 사용비율\n(Interest expense · 비영업손실 제외)",
+    speed: "G&A = Legal/audit + Rent × admin% | Interest → Other expense | Loss on disposal → Other loss | SCF 간접법: add-back",
+  },
+
   {
     topic_id: "ARO_001",
     book_id: 'IA',
@@ -5369,6 +5574,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "Attachment $126K + Installation $54K + Overhaul parts $39K + Labor $21K = $240,000 전액 capitalize\n'significant increase in production' = 생산성 향상 기준 충족 / useful life 미증가 = 무관",
   },
 
+  // [PPE_017] Held for Sale Classification – Available for Immediate Sale Condition
+  // RULE    : 6가지 조건 ALL 충족 필요 / "renovations required" → ② 조건 미충족 → held and used
+  // TRIGGER : "requires work before sale" → 즉시 매각 불가 → held for sale ❌
+  // TRAP    : 나머지 조건 충족해도 1개 미충족 → 전체 실패 / write-up 금지
+  {
+    topic_id: "PPE_017",
+    category: "PPE",
+    topic_name: "Held for Sale Classification – Available for Immediate Sale Condition",
+    rule: "【Held for Sale 6가지 기준 (모두 충족 필요)】\n① 경영진 매각 계획 확정\n② 현재 상태로 즉시 매각 가능 ← 핵심 함정\n③ 적극적 매수자 탐색 프로그램 개시\n④ 매각 가능성 높고 1년 내 완료 예상\n⑤ 적극적 마케팅 진행 중\n⑥ 계획 변경/철회 가능성 낮음\n\n【미충족 시 처리】\n1개라도 미충족 → 전체 기준 미충족 → Held and Used 유지\n금액 = Carrying value 그대로 (write-up 금지)\n\n【Held and Used write-up 금지】\nUS GAAP: held-and-used 자산은 공정가치로 올리는 write-up 절대 불가\n시장가·NRV·예상매각가 모두 무시 → carrying value 유지",
+    trigger: '"requires renovations/updates before marketable/sale" → ② 조건 미충족 → held for sale ❌\n나머지 조건 다 충족해도 1개 미충족 → 전체 기준 미충족\n"carrying value" vs "market value" → held and used → carrying value 선택',
+    trap: "나머지 5개 조건 충족 → held for sale로 착각 (6개 모두 충족 필요).\n시장가·NRV·예상매각가로 write-up 시도 → held and used write-up 금지.\n공사가 'minor'라서 괜찮다고 착각 → 규모 무관, 즉시 매각 불가하면 기준 미충족.",
+    example: "Riverside Tower: 6개 조건 중 ② '즉시 매각 가능' 미충족 (인테리어 공사 필요)\n→ Held and used 유지\n→ 장부금액 $6.3M 그대로\n→ 시장가 $6.6~6.9M, 예상 NRV 무시\n→ Write-up 불가",
+    journal_entry: "Held and used 유지 시 추가 JE 없음\n(기존 carrying value $6.3M 그대로 유지)",
+    key_formula: "Held for sale = 6가지 조건 ALL 충족\n미충족 시 → Held and used @ carrying value (write-up 금지)",
+    speed: '"renovations required" → 즉시 매각 불가 → held for sale ❌ → held and used @ carrying value',
+  },
+
   // [PPE_DEP_001] Units-of-Production Depreciation — Required Condition
   // RULE    : UOP 필수 요건 = total units estimable / constant→SL / obsolescence→가속상각
   // TRIGGER : "units-of-production" + "required condition" → total units can be estimated
@@ -5449,6 +5671,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     one_sentence: "SYD = (Cost−Salvage) × (잔여연수/분모); Base 고정, 누적합산.",
     speed: "① 분모 = N×(N+1)/2\n② Base = Cost−Salvage (매년 동일)\n③ Y1~YX 각각 곱한 후 합산 → Accumulated",
     example: "Cost $255,000 / Salvage $30,000 / N=5 → Base $225,000 / 분모 15\nY1 $75,000 + Y2 $60,000 + Y3 $45,000 = 누적 $180,000",
+  },
+
+  // [PPE_DEP_005] Depreciation Patterns – SL vs SYD vs DDB Graph Recognition
+  // RULE    : SL=수평 / SYD=직선하락(감소폭 일정) / DDB=곡선하락(감소폭 자체 감소)
+  // TRIGGER : 그래프 패턴 매칭 → 감소 속도 특성 구분
+  // TRAP    : SYD↔DDB 혼동 / SYD를 곡선으로 착각
+  {
+    topic_id: "PPE_DEP_005",
+    category: "PPE",
+    topic_name: "Depreciation Patterns – SL vs SYD vs DDB Graph Recognition",
+    rule: "【3가지 방법 그래프 특성】\n\nStraight-Line (SL)\n→ 매년 동일 금액\n→ 수평선 (Pattern I)\n\nSum-of-Years-Digits (SYD)\n→ 분자: n, n-1, n-2... (매년 1씩 감소)\n→ 감소폭 일정 → 직선으로 하락\n→ SL보다 높게 시작, 일정한 속도로 감소 (Pattern II)\n\nDouble-Declining Balance (DDB)\n→ 장부가치 × 고정률(2/n)\n→ 장부가치가 줄수록 상각액도 감소\n→ 감소폭 자체가 줄어드는 구조\n→ SYD보다 높게 시작, 초기 급락 후 점점 완만 (Pattern III)\n\n【높이 순서 (초기 상각액)】\nDDB > SYD > SL",
+    trigger: '그래프 패턴 매칭 → 각 방법 감소 속도 특성 적용\nSYD: "일정한 속도로 감소" → 직선 하락 (Pattern II)\nDDB: "비일정한 속도로 감소" → 곡선 하락 (Pattern III)\n"constant rate of decline" → SYD | "not at constant rate" → DDB',
+    trap: "SYD를 곡선(Pattern III)으로, DDB를 직선 하락(Pattern II)으로 혼동.\nSYD 분자가 줄어드니까 '감소 속도가 빨라진다'고 착각 — 감소폭은 일정, 속도 변화 없음.\nDDB가 SYD보다 초기에 더 높게 시작한다는 점 간과.",
+    example: "5년 자산, 원가 $10,000, 잔존가치 $0\nSYD 분모 = 1+2+3+4+5 = 15\nYear 1: 5/15 × $10,000 = $3,333\nYear 2: 4/15 × $10,000 = $2,667 (감소폭 $666 일정)\nYear 3: 3/15 × $10,000 = $2,000 (감소폭 $667 일정) → 직선 하락\n\nDDB율 = 2/5 = 40%\nYear 1: $10,000 × 40% = $4,000\nYear 2: $6,000 × 40% = $2,400 (감소폭 $1,600)\nYear 3: $3,600 × 40% = $1,440 (감소폭 $960) → 감소폭 자체가 줄어듦 → 곡선",
+    journal_entry: "",
+    key_formula: "SYD: 상각액 = (잔여연수/SYD분모) × 상각대상액\nDDB: 상각액 = 기초장부가치 × (2/내용연수)\n초기 상각액 크기: DDB > SYD > SL",
+    speed: "SL=수평 | SYD=일정속도 직선하락(Pattern II) | DDB=비일정속도 곡선하락(Pattern III)",
   },
 
   // [PPE_012] Held for Sale — Classification: All Six Criteria Required
@@ -5647,6 +5886,40 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "$650K + $2,700K − $2,150K − $40K − $75K = $1,085K\nEstimated $50K·$110K → 즉시 제외",
     context_background: "[Gross AR vs Net AR]\n\nGross AR (before allowances)\n= 실제로 고객에게 청구한 금액의 잔액\n= 기초 + Credit sales − Collections − Write-offs − Actual returns\n\nNet AR (after allowances)\n= Gross AR − Allowance for sales returns − Allowance for credit losses\n= B/S에 표시되는 최종 값\n\n[Actual vs Estimated 구분]\n\nActual(실제 발생) → Gross AR 직접 조정\n- Collections: 실제 현금 수령 → AR 감소\n- Write-offs: 대손 확정 → AR 감소 (allowance도 동시 감소)\n- Sales returns: 실제 반품 → AR 감소\n\nEstimated(미래 추정) → Allowance 계정 조정\n- Estimated future returns: Allowance for sales returns 설정\n- Estimated credit losses: Allowance for credit losses 설정\n→ Gross AR에는 영향 없음\n\n['before allowances' 조건의 의미]\n문제가 'before allowances'를 명시하면\n→ Allowance 항목(Estimated)을 모두 제외하고\n→ Gross AR만 계산하라는 뜻",
     example: "기초 $650K + Credit sales $2,700K − Collections $2,150K − Write-offs $40K − Returns $75K = Gross AR $1,085K\nEstimated future returns $50K → 제외 / Estimated credit losses $110K → 제외",
+  },
+
+  // [REC_010] Note Receivable Discounting – Proceeds Calculation
+  // RULE    : Proceeds = MV − (MV × Bank Rate × 잔여일/360) / Note rate → MV 계산에만
+  // TRIGGER : "discounted at bank at X%" → MV 기준 / note rate ≠ bank discount rate
+  // TRAP    : Face value를 할인 기준 착각 / note rate와 bank rate 혼동
+  {
+    topic_id: "REC_010",
+    category: "Trade Receivables",
+    topic_name: "Note Receivable Discounting – Proceeds Calculation",
+    rule: "【거래 구조 (3자 관계)】\n발행인 ──만기에 MV 지급──▶ 은행\n나(보유자) ──어음 양도──▶ 은행 / 은행 ──Proceeds──▶ 나\n\n나는 발행 시점에 Face를 지급하고 어음 취득\nNote rate = Coupon rate = 발행인이 나에게 약속한 이자율\n\n【Proceeds 계산 공식】\n① MV = Face × (1 + Note Rate × 어음전체기간/360)\n② Discount = MV × Bank Discount Rate × 잔여일수/360\n③ Proceeds = MV − Discount\n\n【연이율 → 기간 비례 적용 원리】\n연이자율은 1년(360일) 기준 → 실제 보유기간/360 비례 적용\n은행은 잔여일수만 보유 → 잔여일수/360만큼만 할인\n\n【은행의 수익 구조】\n은행 수익 = MV − Proceeds = MV × Bank Rate × 잔여일/360\nNote rate는 은행 계산식에 등장하지 않음",
+    trigger: '"discounted at a bank at X%" → proceeds = MV − (MV × bank rate × 잔여일/360)\n"interest-bearing note" + "discounted at bank" → face value 기준 ❌, MV 기준 ✅\nnote rate ≠ discount rate → 두 이율 혼동 주의',
+    trap: "【함정 ①】Face value를 할인 기준으로 사용\nMV = Face + 이자 → 은행은 MV 기준으로 할인\n\n【함정 ②】Note rate와 bank discount rate 혼동\nNote rate(= coupon rate) → MV 계산에만 사용\nBank rate → proceeds 할인 계산에만 사용\n\n【함정 ③】스프레드 단순 차감\n두 이율의 기간(잔여일 vs 전체기간)과 기준금액(MV vs Face)이 달라서 단순 비교 불가",
+    example: "90일 만기, Face $10,000, note rate 10%, 30일 보유 후 bank rate 18%로 할인\n① MV = $10,000 × (1 + 10% × 90/360) = $10,250\n② Discount = $10,250 × 18% × 60/360 = $307.50\n③ Proceeds = $10,250 − $307.50 = $9,942.50",
+    journal_entry: "Dr. Cash $9,942.50\nDr. Loss on Discounting [차액 발생 시]\nCr. Notes Receivable $10,000\nCr. Interest Revenue (보유 30일치) [차액]",
+    key_formula: "MV = Face × (1 + Note Rate × 전체기간/360)\nProceeds = MV − (MV × Bank Rate × 잔여일/360)",
+    speed: "Proceeds 기준 = MV | 이율 = Bank Rate | Note rate는 MV 계산에만 | 기간 = 잔여일/360",
+  },
+
+  // [REC_011] Current Net Receivables – AR Inclusion vs Exclusion
+  // RULE    : Net AR = Trade AR − Allowance + Claim against shipper
+  // TRIGGER : "claim against shipper" → 포함 / "consignment" → inventory / "security deposit" → other asset
+  // TRAP    : Consignment 미판매 AR 포함 / Security deposit AR 포함 / 합계 그대로 사용
+  {
+    topic_id: "REC_011",
+    category: "Trade Receivables",
+    topic_name: "Current Net Receivables – AR Inclusion vs Exclusion",
+    rule: "【AR 포함 기준】\n고객 또는 제3자에 대한 현금 청구권만 포함\n\n【항목별 판단】\nTrade AR → 포함 ✅\nAllowance for credit losses → 차감 (contra asset)\nClaim against shipper → 운송사에 대한 현금청구권 → 포함 ✅\n\nConsignment 미판매분 → 제외 ❌\n: 수탁자가 판매 완료 전까지 위탁자(보내는 쪽) 재고로 남음\n: AR이 아닌 Inventory\n\nSecurity deposit → 제외 ❌\n: 리스/임차 보증금 = other asset (일반적으로 non-current)\n: AR 아님\n\n【Net AR 공식】\nNet AR = Trade AR − Allowance + Claim against shipper",
+    trigger: '"claim against shipper" → 제3자 현금청구권 → AR 포함\n"consignment" + "not included in ending inventory" → 여전히 위탁자 inventory → AR 제외\n"security deposit" → other asset → AR 제외\n"net receivables" → Trade AR − Allowance + 기타 현금청구권',
+    trap: "Consignment 미판매분을 AR로 포함 (판매 완료 전 → inventory).\nSecurity deposit을 current AR로 포함 (other asset, non-current).\n문제에 나열된 합계를 그대로 정답으로 사용.\nConsignment 금액이 selling price(원가 130%)로 표시되어도 재고 성격 불변.",
+    example: "Cedar Co. Net AR 계산:\nTrade AR $139,500\n− Allowance ($3,000)\n+ Claim against shipper $4,500\n= Net AR $141,000\n\nConsignment $39,000 → Inventory (제외)\nSecurity deposit $45,000 → Other asset (제외)",
+    journal_entry: "",
+    key_formula: "Net AR = Trade AR − Allowance for Credit Losses + Claim against Shipper",
+    speed: "Net AR = Trade AR − Allowance + Claim against shipper | Consignment → Inventory | Security deposit → Other asset",
   },
 
   // [REC_006] Allowance for Discounts — Gross Method
@@ -5972,6 +6245,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "Net Sales $15,000,000 × 3% = $450,000\nUnadjusted $400K → 무시 / Advances $15K/월 → 무시 / April 3 → 무시",
   },
 
+  // [ADJ_012] Real Estate Tax Payable – Closing Credit + Monthly Accrual + Payment Allocation
+  // RULE    : 클로징 크레딧 → Cr.Payable / 매월 accrual → Cr.Payable / 납부 시 payable 잔액 차감, 초과→Prepaid
+  // TRIGGER : "credit for accrued realty taxes at closing" / "records tax at end of each month"
+  // TRAP    : 납부액 전액 payable 차감 / 클로징 크레딧 payable 누락
+  {
+    topic_id: "ADJ_012",
+    category: "Adjusting Entries",
+    topic_name: "Real Estate Tax Payable – Closing Credit + Monthly Accrual + Payment Allocation",
+    rule: "【재산세 매입 시 클로징 처리】\n매입일 이전 기간(매도인 부담분)\n→ 클로징 크레딧으로 수령\n→ Cr. Real estate taxes payable\n\n【매월 accrual】\n매월 말: 1/12 × 연간 세액\n→ Cr. Real estate taxes payable\n\n【납부 시 배분】\n납부액 전체를 payable로 차감 금지\n① Dr. RE taxes payable = 누적 payable 잔액\n② Dr. Prepaid RE taxes = 납부액 − payable 잔액\n③ Cr. Cash = 납부액\n\n이유: payable = 이미 발생한 기간의 의무\n     Prepaid = 아직 발생하지 않은 미래 기간 선납",
+    trigger: '"credit for accrued realty taxes at closing" → payable 크레딧\n"records tax at end of each month" → 매월 accrual\n"first installment" → payable 누적액 vs 납부액 비교\n납부액 > payable → 초과분 Prepaid',
+    trap: "납부액 전액을 payable 차감으로 처리(누적 payable만 차감).\n클로징 크레딧을 payable 계산에서 누락.\n매도인 부담 기간(July~Aug) 계산 오류.\n매월 accrual 시작 시점 혼동(매입월부터 시작).",
+    example: "연간 세액 $24,000 / 월 $2,000\n9/1 매입: July+Aug 크레딧 $4,000 → Cr.Payable\n9/30: Sept accrual $2,000 → Cr.Payable\n10/31: Oct accrual $2,000 → Cr.Payable\n누적 Payable = $8,000\n\n11/1 $12,000 납부:\nDr. RE taxes payable  $8,000\nDr. Prepaid RE taxes  $4,000  ← Nov~Dec 선납\nCr. Cash             $12,000",
+    journal_entry: "9/1 클로징:\nDr. Cash (매입가 감소) $4,000\nCr. RE taxes payable  $4,000\n\n매월 말:\nDr. RE tax expense $2,000\nCr. RE taxes payable $2,000\n\n11/1 납부:\nDr. RE taxes payable $8,000\nDr. Prepaid RE taxes $4,000\nCr. Cash $12,000",
+    key_formula: "누적 Payable = 클로징 크레딧 + 매월 accrual 합계\n납부 시 Dr.Payable = 누적 잔액 / 초과분 = Prepaid",
+    speed: "납부 시 Dr.Payable = 누적 payable 잔액 | 초과분 → Prepaid | 클로징 크레딧도 payable에 포함",
+  },
+
   // [GOV_016] Fund accounting — definition and scope
   // RULE    : Fund = 목적별 자기완결적 회계단위 / 물리적 분리 불필요 / Equity 없음 → Fund Balance
   // TRIGGER : "fund accounting" + "self-balancing" + "segregated for the purpose" + "Fund Balance"
@@ -6191,6 +6481,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     one_sentence: "Equity method goodwill = 취득가 − (취득일 FV × 지분율); 연말 SE → 취득일 SE 역산 후 FV excess 가산.",
     speed: "⚠️ 실전 팁: 4단계 계산 → 시간 소요 큼 → 첫 패스 플래그, 나중에 풀 것\n① 취득일 SE: $820,000 − $60,000 + $40,000 = $800,000\n   ($40,000 = $10,000 ÷ 25%)\n② FV of net assets: $800,000 + $200,000 = $1,000,000\n③ 지분 몫: $1,000,000 × 25% = $250,000\n④ Goodwill: $375,000 − $250,000 = $125,000",
     context_background: "[왜 취득일 기준인가]\nGoodwill은 취득 시점에 지불한 프리미엄이다. 연말 SE는 당해 경영 성과(NI)와 배당이 반영된 값이라 취득 시점과 다르다. 취득일로 돌아가야 '내가 샀을 때 얼마 가치가 있었나'를 정확히 알 수 있다.\n\n[역산 논리 — RE 항등식 활용]\n기말 SE = 기초 SE + NI − Dividends\n→ 기초 SE = 기말 SE − NI + Dividends\n\n배당 총액 주의: 문제에서 주는 배당은 RAK(투자자) 수령액(25%분)이므로 전체로 환산 필요.\n$10,000 ÷ 25% = $40,000 (Oakfield 전체 배당)\n\n[Goodwill 구조]\n취득가 $375,000\n= 피투자사 순자산 FV 중 내 몫 $250,000\n+ Goodwill $125,000\n\n→ $125,000은 순자산 FV로 설명 안 되는 초과 프리미엄(브랜드·시너지·고객관계 등)\n→ 상각 없음, 매년 손상검토",
+  },
+
+  // [EQM_005] Equity Method – I/S Recognition vs Dividend Treatment
+  // RULE    : Equity in Earnings = 순이익 × 지분율 → I/S / 배당 → 투자계정 차감만
+  // TRIGGER : "earned $X" → I/S = X × 지분율 / "paid dividends" → 투자계정 차감
+  // TRAP    : 배당을 I/S 수익으로 포함 / 순이익 전액 인식 / 배당+지분법이익 합산
+  {
+    topic_id: "EQM_005",
+    category: "Equity Method",
+    topic_name: "Equity Method – I/S Recognition vs Dividend Treatment",
+    rule: "【Equity Method 적용 조건】\n지분율 20~50% + 유의적 영향력(significant influence)\n\n【I/S 인식 항목】\nEquity in Earnings = 피투자회사 순이익 × 지분율\n→ 투자자 I/S에 수익으로 인식\n→ 동시에 투자계정 증가\n\n【배당 처리】\n배당 수령 → I/S 수익 아님\n→ 투자계정 차감만\nDr. Cash (or Dividend Receivable)\nCr. Investment in Investee\n이유: 이미 순이익으로 인식한 금액의 회수 → 이중계산 방지\n\n【Investment Account 흐름】\n취득원가\n+ Equity in Earnings (순이익 × 지분율)\n− Dividends received (배당 × 지분율)\n= 기말 Investment Account",
+    trigger: '"significant influence" + 20~50% → Equity Method\n"earned $X" → I/S = X × 지분율\n"paid dividends $Y" → 투자계정 차감 (I/S 아님)\n"Year N income statement" → 해당 연도 지분법이익만',
+    trap: "배당을 I/S 수익으로 포함(배당은 투자계정 차감만).\n피투자회사 순이익 전액을 I/S에 인식(지분율 곱해야 함).\n배당과 지분법이익 합산.\n다른 연도 정보 혼입(Year 2 매각·배당을 Year 1 I/S에 포함).",
+    example: "Cedar 30% 취득 $300,000\nYear 1: Grove 순이익 $120,000 / 배당 $75,000\n\nI/S: Equity in Earnings = $120,000 × 30% = $36,000 ✅\n배당: $75,000 × 30% = $22,500 → 투자계정 차감 (I/S ❌)\n\nInvestment Account:\n$300,000 + $36,000 − $22,500 = $313,500",
+    journal_entry: "순이익 인식:\nDr. Investment in Grove $36,000\nCr. Equity in Earnings $36,000\n\n배당 수령:\nDr. Cash $22,500\nCr. Investment in Grove $22,500",
+    key_formula: "Equity in Earnings = 피투자회사 순이익 × 지분율\nInvestment 기말 = 취득원가 + Equity in Earnings − Dividends received",
+    speed: "Equity Method I/S = 순이익 × 지분율 | 배당 → 투자계정 차감 (I/S 무관)",
   },
 
   // [BOND_002] Bond Extinguishment — Loss on Early Redemption
@@ -6454,6 +6761,57 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "계약가 $0.10 / scrap $0.02 → $0.08 손실\n잔여 2년 × 100K = 200K단위\nLoss = $16,000\nObsolete → 시장 소멸 → scrap = 최종값\nJE: Dr. Loss $16,000 / Cr. Liability $16,000",
   },
 
+  // [INV_012] Dollar-Value LIFO – Price Index & Deflation Effect
+  // RULE    : Price Index = EI(current) ÷ EI(base) / 신규 Layer(current) = Layer(base) × Index
+  // TRIGGER : "false statement" + "DV LIFO" / "declining price" → deflation → index < 1.0
+  // TRAP    : Deflation 시 DV LIFO 재고 higher 착각 / 분자분모 뒤집기
+  {
+    topic_id: "INV_012",
+    category: "Inventory",
+    topic_name: "Dollar-Value LIFO – Price Index & Deflation Effect",
+    rule: "【탄생 배경】\nRegular LIFO는 품목별 layer 관리 → 품목 단종/변경 시 저가 layer 노출 → LIFO Liquidation 발생\nDV LIFO는 dollar pool 단위 관리 → 품목 변경과 무관하게 pool 총액 기준 유지\n\n【핵심 공식】\n① Price Index = 기말재고(current-year cost) ÷ 기말재고(base-year cost)\n② 신규 Layer(current) = 신규 Layer(base-year) × Price Index\n\n【계산 흐름】\nStep 1. 기말재고를 current-year 원가로 측정 → A\nStep 2. 기말재고를 base-year 원가로 측정 → B\nStep 3. Price Index = A ÷ B\nStep 4. A ÷ Price Index = 기말 pool(base-year 기준)\nStep 5. 전기 pool(base)과 비교 → 증가분 = 신규 layer(base)\nStep 6. 신규 layer(base) × Price Index = 신규 layer(current)\n\n【Regular LIFO vs DV LIFO 본질 차이】\nRegular LIFO: 각 layer 단가 취득 시점에 영구 고정 → 물가 변화는 신규 layer에만 반영\nDV LIFO: 매년 price index로 pool 전체 재측정 → 물가 변화가 기존 layer 소멸에도 영향",
+    trigger: '"false statement" + "dollar-value LIFO" → 각 선지 true/false 분류\n"falling/declining price environment" → deflation → price index < 1.0 → pool 전체 축소\n"higher than regular LIFO" → deflation 시 반드시 false',
+    trap: "【함정 ①】분자/분모 뒤집기\nprice index = base ÷ current ❌\nprice index = current ÷ base ✅\n\n【함정 ②】Deflation 방향 혼동\nDeflation → DV LIFO 재고 높아짐 ❌\nDeflation → pool 전체 축소 → regular LIFO보다 낮아짐 ✅\n예시) base layer $100,000 / 단가 $10→$8 하락\nRegular LIFO: $100,000 (layer 단가 고정)\nDV LIFO: $100,000 × (8/10) = $80,000",
+    example: "Year 1 layer: base $10,000 × index 1.00 = $10,000 (고정)\nYear 2 layer: base $5,000  × index 1.20 = $6,000\nYear 3 deflation → pool(base) 축소 → Year 2 layer부터 소멸\n→ 물가 하락이 pool 크기 자체에 반영됨 (regular LIFO와 달리)",
+    journal_entry: "",
+    key_formula: "Price Index = EI(current-year cost) ÷ EI(base-year cost)\n신규 Layer(current) = 신규 Layer(base-year) × Price Index",
+    speed: "DV LIFO = pool 단위 관리 → LIFO liquidation 방지\nDeflation → price index < 1.0 → pool 전체 축소 → regular LIFO보다 낮아짐 → 'higher' = false",
+  },
+
+  // [INV_013] Inventory Cost Inclusions – Freight In vs Interest on Loan
+  // RULE    : Freight in → capitalize / Interest on loan → period expense (재고 목적이어도)
+  // TRIGGER : "freight in" → Inventory ↑ / "interest on inventory loan" → No effect
+  // TRAP    : 차입 목적이 재고여도 이자 capitalize 불가 / Freight in vs out 혼동
+  {
+    topic_id: "INV_013",
+    category: "Inventory",
+    topic_name: "Inventory Cost Inclusions – Freight In vs Interest on Loan",
+    rule: "【재고 원가 포함 기준】\n재고를 '현재 위치·상태'로 만드는 데 직접 필요한 비용만 capitalize\n\n【항목별 판단】\nFreight In (매입 운임)\n→ 재고를 가져오는 데 필요한 비용 → Inventory 원가 포함 ✅\n\nInterest on Inventory Loan (재고 구입 차입금 이자)\n→ 자금조달 비용 = Period expense → Inventory 원가 불포함 ❌\n→ 차입 목적이 재고 구입이어도 동일\n→ 재고는 interest capitalization qualifying asset 아님\n(qualifying asset = 건설 중인 PPE 등 완성까지 상당 기간 필요한 자산)\n\nFreight Out (판매 운임)\n→ Selling expense → Inventory 원가 불포함 ❌",
+    trigger: '"freight in" → inventory 원가 포함 → Increase\n"interest on loan" + inventory 관련 → period expense → No effect\n표 형식 두 항목 동시 비교 → 각각 독립적으로 판단',
+    trap: "Interest on inventory loan: 재고 구입 목적이어도 capitalize 불가 — 자금조달 비용은 항상 period expense.\nFreight in(매입운임) vs Freight out(판매운임) 혼동 주의.\n재고는 US GAAP interest capitalization qualifying asset 아님.",
+    example: "Wholesaler가 $50,000 재고 구입:\n- Freight in $500 → Inventory $50,500 (capitalize)\n- 구입 차입금 이자 $300 → Interest Expense $300 (period expense)\n→ 재고 장부금액: $50,500 (이자 불포함)",
+    journal_entry: "Dr. Inventory $500 (freight in)\nCr. Cash $500\n\nDr. Interest Expense $300 (loan interest)\nCr. Cash $300",
+    key_formula: "Inventory Cost = Purchase Price + Freight In + 직접부대비용\n(Interest on loan 제외)",
+    speed: "Freight in → Inventory ↑ | Interest on inventory loan → Period expense → No effect",
+  },
+
+  // [INV_014] Dollar-Value LIFO – Layer Calculation with Price Index
+  // RULE    : DV LIFO = 전기 DV LIFO + 신규 layer(base) × 당기 price index
+  // TRIGGER : "dollar-value LIFO" + 표 → 4단계 계산 / Price Index = current ÷ base
+  // TRAP    : current-year cost 그대로 사용 / 전기 layer에 새 index 재적용
+  {
+    topic_id: "INV_014",
+    category: "Inventory",
+    topic_name: "Dollar-Value LIFO – Layer Calculation with Price Index",
+    rule: "【DV LIFO 계산 4단계】\nStep 1. Price Index = 기말재고(current-year cost) ÷ 기말재고(base-year cost)\nStep 2. 신규 layer(base) = 당기 pool(base) − 전기 pool(base)\nStep 3. 신규 layer(current) = 신규 layer(base) × 당기 Price Index\nStep 4. DV LIFO 기말 = 전기 DV LIFO + 신규 layer(current)\n\n【핵심 원칙】\n- 기존 layer에는 새 price index 재적용 안 함\n- 각 layer는 생성 당시 price index로 영구 고정\n- Pool 감소 시 → 최신 layer부터 제거(LIFO 순서)",
+    trigger: '"dollar-value LIFO" + 표 형식 → 4단계 계산\nPrice Index = current ÷ base (분자=current, 분모=base)\n신규 layer = 당기 pool(base) − 전기 pool(base)\n신규 layer(current) = 신규 layer(base) × 당기 index',
+    trap: "Current-year cost 합계를 DV LIFO로 사용($120,000 오답).\nPrice index 분자분모 뒤집기(base÷current).\n전기 DV LIFO에 새 price index 재적용 — 기존 layer는 고정.\n신규 layer에 price index 미적용.",
+    example: "Grove Co. Year 2:\nStep 1. Price Index = $120,000 ÷ $90,000 = 1.333\nStep 2. 신규 layer(base) = $90,000 − $67,500 = $22,500\nStep 3. 신규 layer(current) = $22,500 × 1.333 = $30,000\nStep 4. DV LIFO = $69,000 + $30,000 = $99,000",
+    journal_entry: "",
+    key_formula: "Price Index = EI(current) ÷ EI(base)\n신규 Layer(current) = 신규 Layer(base) × Price Index\nDV LIFO 기말 = 전기 DV LIFO + 신규 Layer(current)",
+    speed: "DV LIFO = 전기 DV LIFO + 신규 layer(base) × 당기 price index",
+  },
+
   // ── CASH (Cash & Cash Equivalents) ─────────────────────────────────────────
   // [CASH_001] Cash and Cash Equivalents — Balance Sheet Classification
   // RULE    : Petty cash + Checking + Depository + Savings + MMF + 만기 3개월 이내 T-bills/CD만 포함
@@ -6636,6 +6994,40 @@ Series B+ 감사 시 핵심 검토 항목`,
     one_sentence: "추가비용 → 기존 BV에 가산 / New useful = remaining + 연장연수 / Shorter of legal vs new useful로 상각.",
     speed: "① $144,000 + $75,000 = $219,000\n② New useful: 9 + 7 = 16년\n③ Shorter of legal(12) vs useful(16) = 12년\n④ $219,000 ÷ 12 = $18,250",
     context_background: "[왜 'no economic value after X years'가 중요한가]\n이 정보가 없으면 new useful life를 계산할 수 없다. 문제에서 '6년 후 경제적 가치 없음'은 현재 remaining useful life가 6년임을 의미하고, 추가비용으로 5년 연장하면 new useful = 11년이 된다. 이 숫자와 legal life를 비교해야 shorter를 결정할 수 있다.\n\n[Shorter of legal or useful life 원칙]\n특허는 법적 보호 기간(legal life) 이후에는 독점권이 없으므로 그 이상 사용할 수 없다. 반면 경제적 수명(useful life)이 법적 수명보다 짧다면 더 빨리 상각해야 한다. 둘 중 짧은 것을 기준으로 삼는 이유: 자산에서 실제 효익을 얻을 수 있는 기간이 더 짧은 것이므로.\n\n[추가비용 처리 원칙]\n추가비용은 특허의 경제적 내용연수를 연장하므로 자산화(capitalize). 별도 상각이 아니라 기존 BV와 합산 후 재상각. 마치 PPE 자본적 지출(capital expenditure)과 동일한 논리.",
+  },
+
+  // [INT_011] Intangible Asset Impairment – Two-Step Test & Held for Disposal
+  // RULE    : Step 1 = CV vs 미할인CF / Step 2 = CV−FV (+ disposal costs if held for disposal)
+  // TRIGGER : "CV > undiscounted CF" → Step 2 / "held for disposal" → disposal costs 가산
+  // TRAP    : 미할인CF 손상액 계산에 사용 / disposal costs 누락 / CV−미할인CF 착각
+  {
+    topic_id: "INT_011",
+    category: "Intangibles",
+    topic_name: "Intangible Asset Impairment – Two-Step Test & Held for Disposal",
+    rule: "【유한 내용연수 무형자산 손상 2단계】\n\nStep 1. 손상 여부 판단\nCV vs 미할인 미래현금흐름(undiscounted CF)\nCV > 미할인CF → 손상 존재 → Step 2 진행\nCV ≤ 미할인CF → 손상 없음 → 종료\n\nStep 2. 손상금액 측정\n[Held for Use]\nImpairment Loss = CV − Fair Value\n\n[Held for Disposal]\nImpairment Loss = (CV − Fair Value) + Disposal Costs\n→ 처분비용도 손실에 포함\n\n【미할인CF의 역할】\nStep 1 판단에만 사용\n손상액 계산에는 절대 사용 안 함",
+    trigger: '"CV > undiscounted CF" → Step 1 통과 → Step 2\n"held for disposal" + "disposal costs" → 손상액에 disposal costs 가산\n"fair value" → Step 2 측정 기준\n"undiscounted cash flows" → Step 1 판단만, 손상액 계산 ❌',
+    trap: "Disposal costs만 손상액으로 계산(CV−FV 누락).\nCV−FV만 계산하고 disposal costs 미포함(held for disposal 조건 간과).\n미할인CF를 손상액 계산에 사용(Step 1 판단용).\nCV − 미할인CF = $30,000을 손상액으로 착각.",
+    example: "Maple Tech 소프트웨어:\nCV $450,000 / 미할인CF $420,000 / FV $390,000 / Disposal costs $30,000\n\nStep 1: $450,000 > $420,000 → 손상 존재\nStep 2: ($450,000 − $390,000) + $30,000 = $90,000\n\n비교:\nHeld for use였다면: $450,000 − $390,000 = $60,000만",
+    journal_entry: "Dr. Impairment Loss $90,000\nCr. Accumulated Impairment (or Software) $90,000",
+    key_formula: "Held for use: Impairment = CV − FV\nHeld for disposal: Impairment = (CV − FV) + Disposal Costs\nStep 1 기준: CV vs 미할인CF (판단만)",
+    speed: "손상액 = (CV − FV) + Disposal costs | 미할인CF → Step 1만 | Held for disposal → disposal costs 가산",
+  },
+
+  // [INT_012] Intangible Asset Impairment – Recoverability Test Applicability
+  // RULE    : Recoverability test = 유한 내용연수만 / 무한/Goodwill → 직접 FV / R&D → 자산 없음
+  // TRIGGER : "recoverability test" → 유한만 / "indefinite" → 생략 / "R&D" → expense
+  // TRAP    : Trademark(indefinite) → recoverability 제외 / R&D → 자산 아님
+  {
+    topic_id: "INT_012",
+    category: "Intangibles",
+    topic_name: "Intangible Asset Impairment – Recoverability Test Applicability",
+    rule: "【손상검사 방법 자산 유형별 분류】\n\n유한 내용연수 무형자산 (특허, 저작권 등)\n→ 2단계 검사\n→ Step 1: Recoverability test (CV vs 미할인CF)\n→ Step 2: FV test (CV − FV = 손상액)\n\n무한 내용연수 무형자산 (상표권 indefinite 등)\n→ Recoverability test 생략\n→ 직접 CV vs FV 비교\n\nGoodwill\n→ 별도 Goodwill 손상검사\n→ Recoverability test 아님\n\nR&D Costs\n→ 즉시 비용처리 (자산화 불가)\n→ 자산 자체가 없음 → 손상검사 대상 아님",
+    trigger: '"recoverability test" → 유한 내용연수 무형자산만 해당\n"indefinite useful life" → recoverability test 건너뜀\n"goodwill" → 별도 손상검사 (recoverability 아님)\n"R&D" → 즉시 expense → 자산 없음',
+    trap: "Trademark(indefinite) → 무형자산이지만 recoverability test 제외.\nGoodwill → 무형자산이지만 별도 검사 방식.\nR&D → 비용처리라 자산 자체가 없음.\n'무형자산 = recoverability test' 일반화 오류.",
+    example: "특허(20년 유한) → Step 1 recoverability → Step 2 FV test\n상표권(indefinite) → 직접 FV vs CV 비교\nGoodwill → Goodwill 손상검사 별도\nR&D $500,000 → Dr. R&D Expense → 자산 없음",
+    journal_entry: "",
+    key_formula: "유한 내용연수 → Recoverability test → FV test\n무한 내용연수 → 직접 FV test\nR&D → expense (자산화 불가)",
+    speed: "Recoverability test = 유한 내용연수만 | 무한/Goodwill → 직접 FV | R&D → 자산 없음",
   },
 
   // ── BALANCE SHEET ──────────────────────────────────────────────────────────
