@@ -6114,6 +6114,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "선지 스캔 → 'income tax basis' 문구 포함된 제목 = 정답",
     context_background: "[OCBOA(Other Comprehensive Basis of Accounting)란]\nUS GAAP이 아닌 다른 회계 기준으로 작성된 재무제표. 주요 유형:\n① Income tax basis: 세무신고 기준\n② Cash basis: 현금 수수 기준\n③ Regulatory basis: 규제기관 요구 기준\n④ Contractual basis: 계약 조건 기준\n\n[왜 제목에 basis를 명시해야 하는가]\nOCBOA 재무제표는 GAAP 재무제표와 다른 기준으로 작성되므로, 이용자가 혼동하지 않도록 제목에 반드시 해당 기준을 명시해야 한다.\n\n[Income tax basis 재무제표 제목]\n- B/S 대응: Statement of assets, liabilities, and equity — income tax basis\n- I/S 대응: Statement of revenues and expenses and retained earnings — income tax basis (또는 Statement of income — income tax basis)\n\n[GAAP vs NFP vs OCBOA 제목 비교]\nGAAP B/S: Balance sheet 또는 Statement of financial position\nNFP B/S: Statement of financial position 또는 Statement of net assets\nOCBOA B/S: Statement of assets, liabilities, and equity — income tax basis\n\nGAAP I/S: Income statement 또는 Statement of operations\nNFP I/S: Statement of activities 또는 Statement of operations\nOCBOA I/S: Statement of revenues and expenses — income tax basis",
   },
+
+  // [SPF_004] Modified Cash Basis — Common Modifications vs Full Accrual
+  // RULE    : Modified cash basis 수정 항목 = 장기부채·소득세 발생주의·재고 자본화 등
+  //           "revenues when earned" = full accrual basis 원칙 → modification 아님
+  // TRIGGER : "not a common modification" → 수정 항목 외 찾기 / "when earned" → full accrual 신호
+  // TRAP    : B·C·D 모두 흔한 수정 항목 → 오답
+  {
+    topic_id: "SPF_004",
+    sub_category_id: "U2_SPECIAL_PURPOSE_FRAMEWORKS",
+    card_type: 'concept',
+    card_name: "Modified Cash Basis — Common Modifications vs Full Accrual",
+    rule: "【Modified Cash Basis란】\nCash basis + 일부 발생주의 요소 추가 = Modified cash basis\n\n【흔한 수정 항목 (common modifications)】\n① 장기부채(Long-term liabilities) 기록\n② 소득세 발생주의(Accrual of income taxes)\n③ 재고 자본화(Capitalizing inventory)\n④ 유형자산 자본화(Capitalizing PP&E)\n\n【NOT a modification — Full Accrual 원칙】\n'Recognizing revenues when earned'\n→ 발생주의 핵심 원칙 자체\n→ 추가하면 full accrual basis로 전환\n→ modified cash basis 수정 항목 아님",
+    trigger: '"not a common modification" + modified cash basis → 수정 항목 외 항목 찾기\n"recognizing revenues when earned" → full accrual basis 신호 → 정답\n"long-term liabilities / income taxes / capitalizing" → 흔한 수정 항목 → 오답',
+    trap: "Capitalizing inventory·Long-term liabilities·Accrual of income taxes → 모두 흔한 수정 항목 → 오답\n'when earned' 표현을 그럴싸한 수정 항목으로 착각 → full accrual basis 전환 신호임",
+    example: "Cash basis → Modified cash basis 수정:\n① 장기부채 $500,000 기록 ✅\n② 법인세 발생주의 $80,000 ✅\n③ 재고 $200,000 자본화 ✅\n④ 매출 earned 시 인식 ❌ → full accrual basis 전환",
+    speed: '"when earned" → full accrual 신호 → modification 아님 → 정답\nB·C·D → 흔한 수정 항목 → 오답',
+  },
   {
     topic_id: "ADJ_001",
     book_id: 'AA',
