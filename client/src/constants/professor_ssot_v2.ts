@@ -1921,6 +1921,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "기말 Cash = 기초 + Op − Inv + Fin | 별도 제시 매각대금 → 이미 포함, 무시",
   },
 
+  // [CF_018] Indirect Method CFO — Net Adjustment: Loss + Working Capital Changes
+  // RULE    : Loss → 가산 / Gain → 차감 / 자산↓·부채↑ → 가산 / Land변동 → Investing
+  // TRIGGER : "loss on sale" → 가산 / Prepaid↓ → 가산 / AP↑ → 가산
+  // TRAP    : loss 차감 오류 / loss 누락 / Land 변동 CFO 포함 오류
+  {
+    topic_id: "CF_018",
+    sub_category_id: "U5_CASH_FLOWS",
+    card_type: 'calculation',
+    card_name: "Indirect Method CFO — Net Adjustment: Loss + Working Capital Changes",
+    rule: "【간접법 CFO 순조정 3가지 유형】\n\n① 비현금 손익\nLoss → 가산(+): NI를 낮췄지만 현금 아님 → 되돌리기\nGain → 차감(−): NI를 높였지만 현금 아님 → 되돌리기\n\n② 운전자본 변동\n자산↓ → 가산(+)\n자산↑ → 차감(−)\n부채↑ → 가산(+)\n부채↓ → 차감(−)\n\n③ 장기자산 변동 → Investing 섹션\n→ CFO 조정 없음 (Land, PPE 등)",
+    trigger: '"loss on sale" → 가산(+)\n"gain on sale" → 차감(−)\n자산(Prepaid 등) 감소 → 가산(+)\n부채(AP 등) 증가 → 가산(+)\nLand/PPE 변동 → Investing → CFO 무관',
+    trap: "Loss를 차감으로 처리 → loss는 NI 낮춘 항목 → CFO에서 가산\nLoss 조정 누락 → 비현금 손익 반드시 포함\nLand 장부금액 변동을 CFO에 포함 → Investing 전용\nGain/Loss 방향 혼동 → gain=차감 / loss=가산",
+    example: "Cedar Corp:\n① Loss on land sale $60,000 → +$60,000\n② Prepaid↓ ($30K→$15K) → +$15,000\n③ AP↑ ($25K→$40K) → +$15,000\n④ Land 변동 → Investing → 무시\n합계 = +$90,000",
+    key_formula: "CFO 순조정 = Σ 비현금손익 조정 + Σ 운전자본 변동\nLoss(+) / Gain(−) / 자산↓(+) / 자산↑(−) / 부채↑(+) / 부채↓(−)",
+    speed: "Loss+$60K / Prepaid↓+$15K / AP↑+$15K / Land→무시 = +$90,000",
+  },
+
   // ── CHANGE ─────────────────────────────────────────────────────────────────
   {
     topic_id: "CHANGE_001",
