@@ -5086,6 +5086,22 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "① Kim: vested = Yes → $1,200 × 2 = $2,400 accrual\n② Lee: vest or accumulate = No → $0\n③ Total = $2,400 → 정답 C",
     context_background: "[Compensated Absences accrual 원칙 — ASC 710]\n유급 휴가(vacation)·유급 병가(sick leave) 등 보상 결근에 대한 accrual 기준.\n\n[4가지 요건]\n① Services rendered: 직원이 이미 용역 제공\n② Estimable: 금액 합리적 추정 가능\n③ Vested or accumulated: 퇴직 시 지급(vested) 또는 이월 가능(accumulated)\n④ Probable: 지급 가능성 높음\n\n[③번 요건 — 핵심 판단]\nVested: 퇴직·해고 시에도 미사용 휴가 현금 지급 → accrual 필수\nAccumulated: 당해 미사용분 다음 연도 이월 가능 → accrual 필수\nNeither: 당해 미사용 시 소멸 + 퇴직 시 지급 없음 → accrual 불가\n\n[Vacation vs Sick leave 비교]\nVacation: vested OR accumulated → 둘 중 하나만 해당해도 accrual 필수\nSick leave: vested여야 accrual 필수 / accumulated only → 선택적 (지급 가능성 판단 어려움)\n\n[이 문제]\nKim: vested = Yes → 4요건 ALL 충족 → $1,200 × 2주 = $2,400\nLee: neither → ③ 미충족 → accrual 불가 → $0\n합계 $2,400",
   },
+
+  // [COMP_005] Post-Employment Benefits — Four Liability Reporting Criteria
+  // RULE    : 4가지 ALL 충족 시 accrual 필수 / 기준 외 항목 → "not one of criteria" 정답
+  // TRIGGER : "not one of the criteria" → 4가지 외 항목 찾기
+  // TRAP    : vest/probable/estimable → 모두 4가지 요건 중 하나 → 오답
+  {
+    topic_id: "COMP_005",
+    sub_category_id: "U4_PAYABLES",
+    card_type: 'concept',
+    card_name: "Post-Employment Benefits — Four Liability Reporting Criteria (ASC 710)",
+    rule: "【Post-Employment Benefits 부채 인식 4가지 요건 — ALL 충족 시 accrual 필수】\n\n① Services already rendered\n   → 직원이 이미 용역 제공\n\n② Rights vest or accumulate\n   → 퇴직 시 지급(vested) 또는 이월 가능(accumulated)\n\n③ Payment is probable\n   → 지급 가능성 높음\n\n④ Amount reasonably estimable\n   → 금액 합리적 추정 가능\n\n→ 4가지 외 항목(예: '퇴직 후 가용성') = NOT a criterion",
+    trigger: '"not one of the criteria" + post-employment → 4가지 외 항목 찾기\n"remains available after employment" → 기준 없음 → 정답\n"vest or accumulate / probable / estimable" → 4가지 요건 중 하나 → 오답',
+    trap: "그럴싸하게 들리는 선지 → 기준서 4가지와 반드시 대조\nvest or accumulate(D) / probable(C) / estimable(A) → 모두 요건 중 하나 → 오답\n'퇴직 후 지속 가용성' → GAAP 어디에도 없는 조건",
+    example: "4가지 요건 체크리스트:\n① Services rendered? ✅\n② Vest or accumulate? ✅\n③ Probable? ✅\n④ Estimable? ✅\n→ 전부 해당 → accrual 필수\n\n'continues to be available after employment' → 체크리스트 없음 → NOT a criterion",
+    speed: "① Services rendered ② Vest or accumulate ③ Probable ④ Estimable\n→ 4가지 외 항목 보이면 → 정답",
+  },
   {
     topic_id: "FASB_001",
     book_id: 'AA',
