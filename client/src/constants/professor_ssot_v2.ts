@@ -1535,6 +1535,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "Rights 발행 시 → JE 없음 → CS/APIC 모두 No | 행사 시 → CS↑(par) / APIC↑(초과분)",
   },
 
+  // [EQUITY_015] Dividends — Three Key Dates (Declaration, Record, Payment)
+  // RULE    : Declaration date → 부채 발생 / Date of record → 분개 없음 / Payment date → 부채 소멸
+  // TRIGGER : "declared dividends" → Declaration date → Dividends Payable 계상
+  // TRAP    : Date of record / Payment date / Year-end를 부채 발생일로 혼동
+  {
+    topic_id: "EQUITY_015",
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
+    card_type: 'concept',
+    card_name: "Dividends — Three Key Dates (Declaration, Record, Payment)",
+    rule: "【배당 3대 날짜】\n\n① Declaration date (선언일)\n→ 이사회 공식 결의\n→ 법적 의무 발생\n→ Dr. Retained Earnings / Cr. Dividends Payable\n→ 부채 생성\n\n② Date of record (기준일)\n→ 배당 수령 주주 명단 확정\n→ 분개 없음\n\n③ Payment date (지급일)\n→ 현금 지급\n→ Dr. Dividends Payable / Cr. Cash\n→ 부채 소멸",
+    trigger: '"declared dividends" → Declaration date → Dividends Payable 부채 발생\n"shareholders of record on [날짜]" → Date of record → 분개 없음\n"dividend was paid on [날짜]" → Payment date → 부채 소멸',
+    trap: "Date of record → 분개 없음, 부채 발생 아님\nPayment date → 부채 소멸일, 생성일 아님\nYear-end(Dec 31) → 배당과 무관\n'liability created' 묻는 문제 → 반드시 Declaration date",
+    example: "Mar 10 선언 → Dr. RE / Cr. Dividends Payable (부채 생성)\nApr 5 기준일 → 분개 없음\nMay 20 지급 → Dr. Dividends Payable / Cr. Cash (부채 소멸)",
+    journal_entry: "Declaration date:\nDr. Retained Earnings [배당 총액]\nCr. Dividends Payable [배당 총액]\n\nPayment date:\nDr. Dividends Payable [배당 총액]\nCr. Cash [배당 총액]",
+    speed: '"declared" → Declaration date → 그 날짜 = 정답\nRecord date / Payment date / Year-end → 모두 탈락',
+  },
+
   // [EQUITY_008] Stock Split + Cash Dividend — Shares and Dividend Calculation
   // RULE    : Split 후 주식 수 기준으로 배당 계산 / FV는 cash dividend 무관
   // TRIGGER : "2-for-1 stock split" + "cash dividend per share" → split 후 주식 수 먼저
