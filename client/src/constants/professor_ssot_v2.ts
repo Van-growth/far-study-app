@@ -7553,6 +7553,29 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "FOB destination + shipped → 조정 없음 | Consignment for supplier → Consignee → 조정 없음\n→ physical count 그대로",
   },
 
+  // [INV_016] Consignment Inventory — Consignor vs Consignee Title Rule
+  // RULE    : Consignor = title 보유 → 재고 포함 + freight 포함
+  //           Consignee = title 없음 → 재고 제외
+  // TRIGGER : "shipped on consignment to" → Consignor → 포함
+  //           "received on consignment from" → Consignee → 제외
+  // TRAP    : Freight 누락($36K만) / Consignee 재고 포함($24K)
+  {
+    topic_id: "INV_016",
+    book_id: 'IA',
+    chapter_id: 'IA_CH3',
+    topic_group: 'IA_CH3_INV',
+    sub_category_id: "U3_INVENTORY",
+    card_type: 'calculation',
+    card_name: "Consignment Inventory — Consignor vs Consignee Title Rule",
+    rule: "Consignment 재고 귀속 원칙:\n\n[Consignor(위탁자)]\n→ 판매 완료 전까지 title 보유\n→ 자신의 재고에 포함\n→ freight paid by consignor = 재고 원가에 포함\n\n[Consignee(수탁자)]\n→ title 없음\n→ 자신의 재고에 포함 안 함\n→ freight paid by consignor도 수탁자 재고와 무관\n\n[재고 금액]\nConsignor 재고 = 위탁 상품 원가 + Consignor 부담 freight",
+    trigger: '"shipped on consignment to [회사명]" → 나 = Consignor → 내 재고 포함\n"received on consignment from [회사명]" → 나 = Consignee → 내 재고 제외\n"freight paid by [나]" + consignor인 경우 → 재고 원가 포함\n"freight paid by [상대방]" + 내가 consignee → 무관',
+    trap: "Freight $1,800 누락: Consignor 부담 freight → 재고 원가 포함 필수 → $36,000만 답하면 오답\nConsignee 재고 포함: received on consignment = 내가 수탁자 → title 없음 → 제외\nConsignee freight 포함: Gamma가 낸 $1,000 → Gamma 재고, Stone 무관\n공통 함정: 두 거래에서 내 역할(Consignor vs Consignee) 구분 없이 합산",
+    one_sentence: "Consignor = title 보유 → 재고+freight 포함 / Consignee = title 없음 → 재고 제외.",
+    speed: "① Omega에 발송 → Stone = Consignor → $36,000 + $1,800 = $37,800 포함\n② Gamma로부터 수령 → Stone = Consignee → $24,000 + $1,000 → 전액 제외\n③ Stone 재고 = $37,800",
+    example: "Stone → Omega (consignor): $36,000 + freight $1,800 = $37,800 → Stone 재고\nGamma → Stone (consignee): $24,000 + freight $1,000 = Gamma 재고 → Stone 제외",
+    context_background: "[Consignment(위탁판매) 구조]\n\nConsignor(위탁자): 상품을 보내는 쪽. 판매될 때까지 title(소유권) 보유.\nConsignee(수탁자): 상품을 받아 판매하는 쪽. Title 없음.\n\n[왜 판매 전까지 Consignor 재고인가]\nTitle이 넘어가지 않았으므로 법적 소유자는 여전히 Consignor.\n재고 인식 = 소유권 기준.\n수탁자 창고에 물리적으로 있어도 발송한 회사(consignor)의 재고.\n\n[Freight 처리]\nConsignor가 부담한 발송 운임 = 재고를 현재 위치로 가져오는 비용 → 원가 포함.\nConsignee가 부담한 운임 = Consignee의 비용 (consignor 재고와 무관).\n\n[역할 파악 키워드]\n'shipped to' → 보낸 쪽 = Consignor\n'received from' → 받은 쪽 = Consignee",
+  },
+
   // ── CASH (Cash & Cash Equivalents) ─────────────────────────────────────────
   // [CASH_001] Cash and Cash Equivalents — Balance Sheet Classification
   // RULE    : Petty cash + Checking + Depository + Savings + MMF + 만기 3개월 이내 T-bills/CD만 포함
