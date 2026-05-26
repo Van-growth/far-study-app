@@ -161,6 +161,25 @@ export const PROFESSOR_SSOT_V2: TopicCard[] = [
     example: "허가 Feb 15 / 차입 Mar 10 / 지출 Apr 1 → 시작 Apr 1 / 준공 Oct 20 → 종료 Oct 20 / 입주 Nov 30 → 무시",
   },
 
+  // [INT_CAP_004] Interest Capitalization — Weighted-Average Interest Rate
+  // RULE    : 복수 차입금 → 각 금액 비중(%) × 금리 합산 = 가중평균이자율
+  // TRIGGER : "weighted-average interest rate" + 복수 note → 비중 계산
+  // TRAP    : 단순 평균 함정 / 13개월 note도 연간 이자율 그대로 사용
+  {
+    topic_id: "INT_CAP_004",
+    book_id: 'IA',
+    chapter_id: 'IA_CH4',
+    topic_group: 'IA_CH4_INTR_CAP',
+    sub_category_id: "U3_PPE",
+    card_type: 'concept',
+    card_name: "Interest Capitalization — Weighted-Average Interest Rate",
+    rule: "복수의 차입금으로 건설 자금을 조달한 경우:\n가중평균이자율 = Σ(각 차입금 금액 ÷ 총 차입금) × 각 금리\n→ 단순 평균(각 금리 합 ÷ 차입금 수)이 아님",
+    trigger: '"weighted-average interest rate" + 복수 note → 각 note 금액 ÷ 총 차입금 = 비중 → 금리 × 비중 합산\n두 금리 모두 최고 금리 이하 → 가중평균은 반드시 그 사이값',
+    trap: "단순 평균 함정: (10% + 8%) ÷ 2 = 9.0% → 비중 무시한 오답\n13개월 note도 'outstanding for the entire year' → 연간 이자율 그대로 사용\n총 차입금 아닌 다른 금액으로 나누는 실수 주의",
+    speed: "① 총 차입금 확인 → ② 각 note 비중 계산 → ③ 금리 × 비중 합산\n→ 최고 금리 초과 선지 즉시 탈락",
+    example: "총 $4,800,000: $3,600,000 @ 10% (75%) + $1,200,000 @ 8% (25%)\n= (10% × 75%) + (8% × 25%) = 7.5% + 2.0% = 9.5%",
+  },
+
   // ── LEASE ──────────────────────────────────────────────────────────────────
   {
     topic_id: "LEASE_001",
