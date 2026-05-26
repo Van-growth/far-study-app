@@ -2812,6 +2812,25 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "① Remote → accrual X\n② Guarantee → disclosure 예외 ✅\n③ CEO 관련 → Related party → disclosure 예외 ✅\n④ Accrual X + Disclosure O → Disclosed only → 정답 C",
   },
 
+  // [CONT_010] Loss Contingency in Business Combination — Fair Value Recognition
+  // RULE    : 피인수 기업 우발부채 → 인수 시점 fair value로 인식 (claim 금액 아님)
+  // TRIGGER : "acquired" + "lawsuit against 피인수 기업" → fair value 찾기
+  // TRAP    : claim 금액 사용 / $0 처리 / 중간값 사용
+  {
+    topic_id: "CONT_010",
+    book_id: 'IA',
+    chapter_id: 'IA_CH8',
+    topic_group: 'IA_CH8_CONT',
+    sub_category_id: "U4_CONTINGENCIES",
+    card_type: 'concept',
+    card_name: "Loss Contingency in Business Combination — Fair Value Recognition",
+    rule: "Business Combination에서 피인수 기업의 우발부채 인식:\n→ 인수 시점 fair value로 계상\n→ Claim 금액(원고 요구액) 아님\n→ Probable + fair value 제시 → fair value = accrual 금액\n\n[소송 구조]\n제3자(원고) → 소송 → 피인수 기업(피고)\n→ 인수 후 인수자가 부채 승계\n→ Fair value로 인식",
+    trigger: '"acquired [회사]" + "lawsuit filed against [피인수 기업]" → Business Combination contingency\n"fair value of the liability was $X" → 인식 금액 = $X\n"seeking $Y in damages" → claim 금액 = 함정, 무시',
+    trap: "claim 금액(seeking $X) 그대로 사용 → 원고 요구액이지 fair value 아님\n$0 처리 → probable이면 반드시 accrual\n중간값 사용 → 근거 없음\n소송 당사자 오해 → 제3자 vs 피인수 기업 구도, 인수자↔피인수 기업 간 소송 아님",
+    example: "Grove Corp.이 Maple Inc. 인수\n→ 인수 전 제3자가 Maple에 $8M 소송 제기\n→ 인수 시점 fair value = $3M\n→ Grove 장부: Dr. Net Assets $3M / Cr. Contingent Liability $3M",
+    speed: "Business combination + 피인수 기업 lawsuit → 'fair value of the liability' 찾기 → 그 금액이 답\n'seeking $X' 보이면 → 함정, 무시",
+  },
+
   // ── INTANG ─────────────────────────────────────────────────────────────────
   {
     topic_id: "INTANG_001",
