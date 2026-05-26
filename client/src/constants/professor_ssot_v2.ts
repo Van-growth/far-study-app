@@ -6921,6 +6921,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "DV LIFO = 전기 DV LIFO + 신규 layer(base) × 당기 price index",
   },
 
+  // [INV_015] Inventory Physical Count Adjustment — FOB Destination vs Consignment
+  // RULE    : FOB destination + shipped → 소유권 판매자 → 포함 정당
+  //           Consignment for supplier → Consignee → 남의 물건 → 제외 정당
+  // TRIGGER : "shipped + FOB destination" → 조정 없음 / "for supplier" → Consignee → 조정 없음
+  // TRAP    : shipped를 delivered로 오해 / consignment 방향 혼동
+  {
+    topic_id: "INV_015",
+    sub_category_id: "U3_INVENTORY",
+    card_type: 'conditional',
+    card_name: "Inventory Physical Count Adjustment — FOB Destination vs Consignment",
+    rule: "【FOB 조건 판단】\nFOB destination + shipped(발송) → 목적지 미도착 → 소유권 판매자 → 포함 정당\nFOB destination + delivered(도착) → 소유권 구매자 → 제외\nFOB shipping point + shipped → 소유권 즉시 구매자 → 제외\n\n【Consignment 방향 판단】\n'held on consignment for supplier' → Grove = Consignee(수탁자) → 소유권 Supplier → 제외 정당\n'sent on consignment to customer/dealer' → Grove = Consignor(위탁자) → 소유권 Grove → 포함\n\n【핵심 동사 구분】\nshipped(발송) ≠ delivered(도착)\n→ FOB destination에서 shipped = 아직 소유권 판매자",
+    trigger: '"shipped + FOB destination" → 운송 중 → 소유권 판매자 → included 정당 → 조정 없음\n"held on consignment for supplier" → Grove = Consignee → 남의 물건 → excluded 정당 → 조정 없음\n두 조정 모두 상쇄 → physical count 그대로',
+    trap: "'shipped'를 'delivered'로 오해 → FOB destination + shipped = 아직 소유권 Grove → 빼면 안 됨\n'for supplier' 방향 오해 → Grove = Consignee(수탁자), 남의 물건 → 더하면 안 됨\nFOB shipping point였다면 → shipped 시점 소유권 이전 → 제외해야 함",
+    example: "Physical count $600,000\n① 800units × $15 = $12,000 (FOB destination + shipped) → included 맞음 → 조정 없음\n② 4,000units × $8 = $32,000 (consignment for supplier) → excluded 맞음 → 조정 없음\n→ 정답: $600,000",
+    speed: "FOB destination + shipped → 조정 없음 | Consignment for supplier → Consignee → 조정 없음\n→ physical count 그대로",
+  },
+
   // ── CASH (Cash & Cash Equivalents) ─────────────────────────────────────────
   // [CASH_001] Cash and Cash Equivalents — Balance Sheet Classification
   // RULE    : Petty cash + Checking + Depository + Savings + MMF + 만기 3개월 이내 T-bills/CD만 포함
