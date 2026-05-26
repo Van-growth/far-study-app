@@ -5978,6 +5978,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "Net AR = Trade AR − Allowance + Claim against shipper | Consignment → Inventory | Security deposit → Other asset",
   },
 
+  // [REC_012] Pledge of Accounts Receivable — No Entry to AR
+  // RULE    : Pledge = 담보 제공 (소유권 유지) → AR 분개 없음 / Dr.Cash / Cr.Notes Payable만
+  // TRIGGER : "pledged as collateral" → Pledge → AR 무관
+  // TRAP    : 차액·차입액·담보액을 AR에서 차감하는 오류 (Factoring 혼동)
+  {
+    topic_id: "REC_012",
+    sub_category_id: "U3_TRADE_RECEIVABLES",
+    card_type: 'concept',
+    card_name: "Pledge of Accounts Receivable — No Entry to AR",
+    rule: "【Pledge vs Factoring 핵심 차이】\n\nPledge (질권 설정)\n→ AR을 담보로 제공, 소유권은 회사 유지\n→ AR 분개 없음\n→ Dr. Cash / Cr. Notes Payable\n→ Pledge 사실은 주석 공시만\n\nFactoring (매각)\n→ AR 소유권 이전\n→ AR 제거\n→ Dr. Cash / Dr. Loss(or Cr. Gain) / Cr. AR\n\n【핵심 판단】\n'lender does not have right to sell or repledge' → Pledge 확정\n→ AR에 아무 분개 없음",
+    trigger: '"pledged AR as collateral" → Pledge → AR 변동 없음\n"lender does not have the right to sell or repledge" → Pledge 확정\n"loan proceeds received" → Dr. Cash / Cr. Notes Payable만',
+    trap: "차액($30K) → Pledge를 부분 매각으로 오해\n차입액($150K) → AR 매각 대금으로 오해 (Factoring 혼동)\n담보액($180K) → AR 전액 제거 오류 (Factoring 혼동)\nPledge ≠ Factoring — AR 소유권 이전 없으면 AR 절대 건드리지 않음",
+    example: "Cedar: 차입 $150,000 / 담보 AR $180,000\n→ Dr. Cash $150,000\n→ Cr. Notes Payable $150,000\n→ AR: No entry (주석 공시만)",
+    journal_entry: "차입 시:\nDr. Cash $150,000\nCr. Notes Payable $150,000\n\n(AR 분개 없음 — 주석 공시만)",
+    speed: '"pledged as collateral" → AR 그대로 → No entry to AR\n"factored / sold" 없으면 → AR 절대 건드리지 않음',
+  },
+
   // [REC_006] Allowance for Discounts — Gross Method
   // RULE    : 할인 기간 내 AR만 × 할인 사용 % × 할인율 / Collectible % = 무관
   // TRIGGER : 'gross method' + 'X/Y, net Z' → Allowance for discounts
