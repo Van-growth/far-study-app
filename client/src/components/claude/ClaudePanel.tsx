@@ -46,6 +46,8 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const activeBankQuestion = useClaudeStore((s) => s.activeBankQuestion);
   const pendingQuiz = useClaudeStore((s) => s.pendingQuiz);
   const isOpen = useClaudeStore((s) => s.isOpen);
+  const pendingAutoMessage = useClaudeStore((s) => s.pendingAutoMessage);
+  const setPendingAutoMessage = useClaudeStore((s) => s.setPendingAutoMessage);
 
   const [dbContext, setDbContext] = useState<TutorDbContext | null>(null);
   const [contextLoading, setContextLoading] = useState(false);
@@ -99,6 +101,15 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
     if (shouldAutoScrollRef.current) scrollToBottom();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
+
+  // Auto-send sprint review analysis when panel opens with a pending prompt
+  useEffect(() => {
+    if (!isOpen || !pendingAutoMessage || isLoading) return;
+    const msg = pendingAutoMessage;
+    setPendingAutoMessage(null);
+    sendMessage(msg);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, pendingAutoMessage]);
 
   const handleMsgsScroll = () => {
     if (isProgrammaticRef.current) {
@@ -182,15 +193,22 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
     const qLine = reviewCardContext?.questionText
       ? `\n문제: ${reviewCardContext.questionText}\n정답: ${reviewCardContext.correctAnswer ?? '(미입력)'}`
       : '';
-    return `[STRUCTURED OUTPUT REQUIRED]
-[${topicName}] 개념에 대해 반드시 아래 5개 항목을 번호 순서대로 모두 출력해줘.
-항목을 생략하거나 자유 형식으로 바꾸지 말 것.${qLine}
+    return `[${topicName}] 개념 복습${qLine}
 
-1. 개념 한 줄 요약 (핵심만)
-2. 왜 헷갈리는가 (함정 구조 설명)
-3. 정답 근거 (rule 또는 기준)
-4. 오답 선지 해설 (각 오답이 왜 틀렸는지)
-5. 기억 트리거 (30초 안에 떠올릴 수 있는 키워드/이미지)`;
+아래 순서대로 분석해줘:
+
+[STEP 1] 이 문제가 뭘 묻는 건지 + 정답 이유
+(정답 근거 및 왜 맞는지 한 줄 설명)
+
+[STEP 2] 문제 원문 한 줄씩${reviewCardContext?.questionText ? '' : ' (문제가 없으면 개념 설명으로 대체)'}
+→ 한국어 해석
+→ 이 문장이 문제에서 하는 역할
+
+[STEP 3]
+CONTEXT: 왜 이렇게 처리하는지 경제적 실질
+TRIGGER: 이 표현 보이면 이렇게 풀어라
+TRAP: 여기서 자주 틀린다
+SPEED: 30초 풀이 한 줄`;
   };
 
   const triggerSlash = (cmd: '/go' | '/qu' | '/re') => {

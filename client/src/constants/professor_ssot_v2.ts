@@ -1212,6 +1212,22 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "DTL 계산 → temporary difference × enacted future rate (당기 세율 절대 금지)",
   },
 
+  // [TAX_007] Deferred Tax Liability — F/S basis > Tax basis (Depreciation Difference)
+  // RULE    : ① F/S basis > Tax basis → 현재 세금 덜 냄 → 미래에 더 냄 → DTL ② DTL = temporary difference × enacted FUTURE tax rate ③ DTA = Tax basis > F/S basis
+  // TRIGGER : "F/S basis exceeded tax basis" → DTL | "will reverse in future years" → deferred tax 인식 | "enacted rate for future years = X%" → 이 세율로 계산
+  // TRAP    : 현재 세율(30%) 사용 → $250,000 × 30% = $75,000 오답 | F/S > Tax basis 반대 해석 → DTA 오분류
+  // EXAMPLE : $250,000 × 21%(future enacted rate) = $52,500 DTL
+  {
+    topic_id: "TAX_007",
+    category: "Income Taxes",
+    topic_name: "Deferred Tax Liability — Enacted Future Tax Rate (Depreciation)",
+    rule: "① F/S basis > Tax basis → 현재 세금 덜 냄 → 미래에 더 냄 → DTL ② DTL 계산 = temporary difference × enacted FUTURE tax rate ③ DTA = Tax basis > F/S basis (반대 방향)",
+    trigger: '"financial reporting basis exceeded tax basis" → Tax dep > Book dep → DTL | "this difference will reverse in future years" → temporary difference → deferred tax 인식 | "enacted tax rate for future years = X%" → 이 세율로 DTL 계산, 현재 세율 무시',
+    trap: "현재 세율(Year 1 rate) 사용 → $250,000 × 30% = $75,000 오답 | F/S > Tax basis를 반대로 해석 → DTA로 잘못 분류",
+    context_background: "Deferred Tax는 일시적 차이(temporary difference)가 미래에 세금에 영향을 줄 때 인식한다. F/S basis > Tax basis → Tax depreciation이 더 큼 → 현재 세금을 덜 냄 → 미래에 더 낼 것 → DTL(Deferred Tax Liability). DTL 금액 계산 시 현재 세율이 아닌 차이가 reverse될 미래 시점의 enacted tax rate를 사용한다. 'sole depreciable asset' + 'no other temporary differences'는 계산 단순화 + 오답 방어용 조건.",
+    speed: "F/S basis > Tax basis → DTL | $250,000 × 21%(future enacted rate) = $52,500 Liability",
+  },
+
   // [LTL_001] Current Liabilities — Bond Discount 차감 + Deferred Tax 제외
   // RULE    : Current = AP + Bonds(next yr) − Discount / Deferred tax → Non-current 무조건
   // TRIGGER : 'bonds payable due Year X' → next yr → Current
@@ -5737,6 +5753,22 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "G&A = Legal/audit + Rent × admin% | Interest → Other expense | Loss on disposal → Other loss | SCF 간접법: add-back",
   },
 
+  // [IS_008] Comprehensive Income — I/S Structure with Discontinued Operations and OCI
+  // RULE    : ① Comprehensive Income = Net Income + OCI ② I/S 순서: Operating → 이자비용 → 세전 → 세금 → 계속영업 → 중단영업(net of tax) ③ Discontinued ops 'net of tax' = 세금 재계산 불필요
+  // TRIGGER : "comprehensive income" → Net Income + OCI | "discontinued operations, net of tax" → 세금 재계산 금지 | net sales/gross profit 제공 → 함정 숫자
+  // TRAP    : Net sales / gross profit을 출발점으로 사용 | discontinued ops에 세금 재적용 | OCI 누락 또는 OCI에 세금 적용
+  // EXAMPLE : Operating $135M − interest $45M = $90M → ×60% = $54M → −$20M(discontinued) = $34M → +$3.5M(OCI) = $37,500,000
+  {
+    topic_id: "IS_008",
+    category: "Income Statement",
+    topic_name: "Comprehensive Income — I/S Structure with Discontinued Operations and OCI",
+    rule: "① Comprehensive Income = Net Income + OCI ② I/S 순서: Operating → 이자비용 → 세전 → 세금 → 계속영업 → 중단영업(net of tax) ③ Discontinued ops 'net of tax' = 세금 재계산 불필요",
+    trigger: '"comprehensive income" 요구 → Net Income + OCI | "discontinued operations, net of tax" → 세후 금액 그대로 사용, 세금 재계산 금지 | "tax rate X%" → 계속영업이익(continuing ops)에만 적용 | net sales / gross profit 제공 → 함정용 숫자',
+    trap: "Net sales나 gross profit을 출발점으로 사용하면 오답 | discontinued ops에 세금 재적용하면 오답(이미 net of tax) | OCI 누락 또는 OCI에 세금 적용하면 오답",
+    context_background: "Comprehensive Income = Net Income + OCI. Net Income은 I/S 구조를 따라 순서대로 계산해야 한다: Operating Income → 이자비용 차감 → 세전이익 → 세금 차감 → 계속영업이익 → 중단영업손익(net of tax) 가산/차감 = Net Income. 여기에 OCI를 더하면 Comprehensive Income. 문제에서 net sales / gross profit 등 불필요한 숫자가 많이 주어질수록 출발점(Operating Income)을 고정하는 훈련이 핵심.",
+    speed: "Operating $135M − interest $45M = $90M → ×60% = $54M → −$20M(discontinued) = $34M → +$3.5M(OCI) = $37,500,000",
+  },
+
   {
     topic_id: "ARO_001",
     book_id: 'IA',
@@ -7794,6 +7826,22 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "Recoverability test = 유한 내용연수만 | 무한/Goodwill → 직접 FV | R&D → 자산 없음",
   },
 
+  // [INT_013] Purchased Software — Amortization and Training Costs
+  // RULE    : ① 구매 소프트웨어 = capitalize + SL 상각 ② Training costs = 즉시 expense ③ 상각 시작 = 취득일 → 월할 계산
+  // TRIGGER : "training costs associated with software" → capitalize 불가 | "purchased [날짜]" → 경과월/12 | "economic life of X years" → SL
+  // TRAP    : Training cost를 상각 base에 포함 | 연도 중 취득인데 12개월 전부 상각 | 소프트웨어 구매원가도 expense 처리
+  // EXAMPLE : $800,000 ÷ 4년 = $200,000 (연간) → × 9/12 = $150,000
+  {
+    topic_id: "INT_013",
+    category: "Intangibles",
+    topic_name: "Purchased Software — Amortization and Training Costs",
+    rule: "① 구매 소프트웨어 = capitalize + SL 상각 ② Training costs = 즉시 expense ③ 상각 시작 = 취득일 → 연도 중 취득 시 월할 계산",
+    trigger: '"training costs associated with software" 등장 → capitalize 불가, 즉시 expense | "purchased [날짜]" → 연간 상각액 × 경과월/12 | "economic life of X years" → 정액법(SL) 기준',
+    trap: "Training cost를 상각 base에 포함하면 오답 | 연도 중 취득인데 12개월 전부 상각하면 오답 | 소프트웨어 구매원가도 expense 처리하면 오답",
+    context_background: "구매 소프트웨어(purchased software)는 무형자산으로 capitalize하여 경제적 내용연수에 걸쳐 정액법 상각한다. Training costs(교육훈련비)는 소프트웨어 자체의 가치가 아니라 직원 역량에 귀속되므로 capitalize 불가 — 발생 즉시 expense 처리. 취득일(acquisition date)부터 상각이 시작되므로 연도 중 취득 시 월할(pro-rata) 계산 적용.",
+    speed: "$800,000 ÷ 4년 = $200,000 (연간) → × 9/12 = $150,000",
+  },
+
   // ── BALANCE SHEET ──────────────────────────────────────────────────────────
   // [BS_001] Current Assets Classification — Restricted Cash & Liabilities
   // RULE    : Bond Sinking Fund(Non-current 제외) / Deposits·Unearned Rent(부채 제외) / Net A/R 적용
@@ -7851,6 +7899,52 @@ Series B+ 감사 시 핵심 검토 항목`,
     trap: "총 내부이익 전액 제거 오답. 기말재고 금액 그대로 오답. COGS 제거분과 재고 제거분 혼동.",
     example: "매출 $800,000 / 1.25 = 원가 $640,000. 이익 $160,000 × 25%(기말재고 비율) = $40,000 재고 제거.",
     speed: "내부거래 이익 제거 = 총내부이익 × (기말재고 / 총매출)",
+  },
+
+  // [EPS_010] SEC Filing Forms — 10-K / 10-Q / Form 4 / Form 11-K
+  // RULE    : 10-K: 연간·audited / 10-Q: 분기·condensed / Form 4: insider 지분 변동 / Form 11-K: 직원 플랜
+  // TRIGGER : "condensed financial statements" → Form 10-Q / "audited annual" → 10-K / "insider ownership change" → Form 4 / "employee stock purchase plan" → Form 11-K
+  // TRAP    : 10-K도 FS 포함이지만 condensed 아님 / Form 4·11-K는 FS 없음
+  {
+    topic_id: "EPS_010",
+    book_id: 'AA',
+    chapter_id: 'AA_CH4',
+    topic_group: 'AA_CH4_EPS',
+    sub_category_id: "U1_EPS",
+    card_type: 'concept',
+    card_name: "SEC Filing Forms — 10-K / 10-Q / Form 4 / Form 11-K",
+    rule: "Form 10-K: 연간 보고서 / comprehensive + audited FS / 연 1회 제출\nForm 10-Q: 분기 보고서 / condensed FS 포함 / 연 3회 제출\nForm 4: 내부자(임원·10% 이상 주주) 지분 변동 보고 / FS 없음\nForm 11-K: 직원 주식매입·저축 플랜 연간 보고 / FS 없음",
+    trigger: '"condensed financial statements" → Form 10-Q\n"annual" + "audited" / "comprehensive" → Form 10-K\n"insider ownership change" / "beneficial owner" → Form 4\n"employee stock purchase/savings plan" → Form 11-K',
+    trap: "10-K도 FS 포함이지만 condensed 아님 → comprehensive + audited\n'재무제표 포함'만 보고 10-K 선택 → condensed 키워드 반드시 확인\nForm 4 → FS 없음, 지분 변동 보고 전용",
+    one_sentence: "condensed FS → 10-Q / audited annual FS → 10-K / insider 지분 변동 → Form 4 / 직원 플랜 → 11-K",
+    example: "condensed financial statements related to company's operations → Form 10-Q (분기, 요약)\nannual comprehensive audited FS → Form 10-K",
+    context_background: "SEC에 등록된 상장사(public company)는 정해진 양식으로 공시 의무를 이행한다. 각 양식은 목적과 포함 내용이 다르며, 재무제표 형태(완전 감사 vs 요약)가 핵심 구분 기준이다. 10-Q는 연간 10-K 사이의 분기별 현황을 condensed FS로 제공하며, 10-K보다 주석 공시 수준이 낮을 수 있다.",
+    journal_entry: "",
+    key_formula: "",
+    speed: "condensed → 10-Q 즉시 / audited annual → 10-K",
+  },
+
+  // [EPS_011] EPS Disclosure — Where to Report (Face vs Notes)
+  // RULE    : Continuing ops·Net income EPS → I/S 본문 필수 / Discontinued ops EPS → I/S 본문 or 주석 선택
+  // TRIGGER : "should be reported" + "discontinued/continuing operations" → 둘 다 Yes
+  // TRAP    : Discontinued EPS 주석 허용 = 공시 면제 아님, 위치 선택권일 뿐
+  {
+    topic_id: "EPS_011",
+    book_id: 'AA',
+    chapter_id: 'AA_CH4',
+    topic_group: 'AA_CH4_EPS',
+    sub_category_id: "U1_EPS",
+    card_type: 'concept',
+    card_name: "EPS Disclosure — Where to Report (Face vs Notes)",
+    rule: "EPS 공시 위치 규칙 (US GAAP):\n\n① Continuing operations EPS → I/S 본문 필수\n② Net income EPS → I/S 본문 필수\n③ Discontinued operations EPS → I/S 본문 OR 주석 선택 가능\n\n공시 의무(should be reported) = 세 항목 모두 Yes\n위치 선택권 = Discontinued operations만 해당",
+    trigger: '"should be reported" + "discontinued operations" + "continuing operations" → 둘 다 Yes\n"where to present EPS" → discontinued = face or notes / continuing + net income = face only',
+    trap: "Discontinued operations EPS는 주석에 내려도 되니까 'No' 선택 → 공시 면제가 아님. 위치 선택권이지 공시 의무는 있음.\n'should be reported' = 공시 의무 여부만 묻는 것 → 무조건 Yes",
+    one_sentence: "EPS 공시 의무 = 세 항목 모두 Yes; 위치 선택권은 Discontinued operations만 (I/S 본문 or 주석).",
+    example: "Discontinued operations EPS → 공시 Yes, I/S 본문 또는 주석 선택\nContinuing operations EPS → 공시 Yes, I/S 본문 필수\nNet income EPS → 공시 Yes, I/S 본문 필수",
+    context_background: "US GAAP에서 EPS는 계산뿐 아니라 공시 위치도 규정되어 있다. Discontinued operations가 있을 때 EPS를 I/S 본문에 표시해야 하는지 주석으로 내려도 되는지가 핵심 구분이다. '공시 의무(should be reported)'와 '공시 위치(face vs notes)'를 반드시 분리해서 판단해야 한다.",
+    journal_entry: "",
+    key_formula: "",
+    speed: "should be reported → 둘 다 Yes → D 즉시",
   },
 ];
 

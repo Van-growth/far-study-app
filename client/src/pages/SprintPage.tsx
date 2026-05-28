@@ -549,7 +549,7 @@ function SetupView({
 // ── Quiz view (inline) ────────────────────────────────────────
 function QuizView({
   deck, currentIdx, results, timeLeft, unlimited,
-  onAnswer, onNext, onOpenTTS,
+  onAnswer, onNext,
 }: {
   deck: BankQuestion[]
   currentIdx: number
@@ -558,22 +558,17 @@ function QuizView({
   unlimited: boolean
   onAnswer: (option: string) => void
   onNext: () => void
-  onOpenTTS: (card: BankQuestion) => void
 }) {
   const card = deck[currentIdx]
-  const answered = results[currentIdx] !== null && results[currentIdx] !== undefined
-  const isCorrect = results[currentIdx] === true
   const [selected, setSelected] = useState<string | null>(null)
-  const [cardAnim, setCardAnim] = useState('')
 
-  useEffect(() => { setSelected(null); setCardAnim('') }, [currentIdx])
+  useEffect(() => { setSelected(null) }, [currentIdx])
 
   const handleSelect = (opt: string) => {
     if (selected !== null) return
     setSelected(opt)
-    const correct = opt === card.options[card.correctIndex]
-    setCardAnim(correct ? 'animate-cardBounce' : 'animate-shake')
     onAnswer(opt)
+    onNext()
   }
 
   if (!card) return null
@@ -593,57 +588,19 @@ function QuizView({
         </span>
       </div>
 
-      <div
-        className={`bg-white rounded-2xl p-5 shadow-card border border-border relative overflow-hidden ${cardAnim}`}
-        onAnimationEnd={() => setCardAnim('')}
-      >
-        {answered && isCorrect && (
-          <div className="absolute inset-0 rounded-2xl animate-greenFlash pointer-events-none" style={{ background: 'rgba(34,197,94,0.15)' }} />
-        )}
-        {answered && !isCorrect && (
-          <div className="absolute inset-0 rounded-2xl animate-redFlash pointer-events-none" style={{ background: 'rgba(239,68,68,0.12)' }} />
-        )}
-
+      <div className="bg-white rounded-2xl p-5 shadow-card border border-border">
         <p className="text-sm font-medium text-[#0f172a] leading-relaxed">{card.questionText}</p>
-
-        {answered && (
-          <div className="mt-4 pt-3 border-t border-gray-100 space-y-2 animate-fadeIn">
-            <div className="text-xs font-semibold" style={{ color: isCorrect ? '#15803d' : '#b91c1c' }}>
-              {isCorrect ? '✓ Correct!' : '✗ Incorrect'}
-            </div>
-
-            <StructuredFeedback card={card} />
-
-            <button
-              onClick={() => onOpenTTS(card)}
-              className="w-full py-2 rounded-xl text-xs font-bold transition-colors"
-              style={{ background: '#eff6ff', color: '#4f6ef7' }}
-            >
-              🎧 Listen
-            </button>
-          </div>
-        )}
       </div>
 
       <div className="space-y-2.5">
         {card.options.map((opt, i) => {
           const label = optionLabels[i] ?? String(i + 1)
-          const isSelected = selected === opt
-          const isAnswer = opt === card.options[card.correctIndex]
-          let bg = '#fff', border = '#e2e8f0', textColor = '#0f172a'
-          if (answered) {
-            if (isAnswer) { bg = '#f0fdf4'; border = '#22c55e'; textColor = '#15803d' }
-            else if (isSelected && !isAnswer) { bg = '#fef2f2'; border = '#ef4444'; textColor = '#b91c1c' }
-          } else if (isSelected) {
-            bg = '#eff6ff'; border = '#4f6ef7'
-          }
           return (
             <button
               key={opt}
               onClick={() => handleSelect(opt)}
-              disabled={answered}
               className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all active:scale-[0.98]"
-              style={{ background: bg, border: `1.5px solid ${border}`, color: textColor }}
+              style={{ background: '#fff', border: '1.5px solid #e2e8f0', color: '#0f172a' }}
             >
               <span className="font-bold mr-2">{label}.</span>
               <OptionText text={opt} />
@@ -651,43 +608,57 @@ function QuizView({
           )
         })}
       </div>
-
-      {answered && (
-        <button
-          onClick={onNext}
-          className="w-full py-3.5 rounded-2xl text-white font-bold animate-slideUp"
-          style={{ background: isCorrect ? '#22c55e' : '#4f6ef7' }}
-        >
-          {currentIdx + 1 >= deck.length ? 'See Results →' : 'Next →'}
-        </button>
-      )}
     </div>
   )
 }
 
 // ── Result item ───────────────────────────────────────────────
-function ResultItem({
-  result, onOpenTTS,
-}: {
-  result: SprintResult
-  onOpenTTS: (card: BankQuestion) => void
-}) {
-  const [open, setOpen] = useState(false)
+function ResultItem({ result }: { result: SprintResult }) {
   const { card } = result
+  const optionLabels = ['A', 'B', 'C', 'D']
+  const selectedIdx = card.options.findIndex(o => o === result.selected)
 
-  const handleToggle = () => {
-    const next = !open
-    setOpen(next)
-    if (next) {
-      useClaudeStore.getState().setActiveBankQuestion(card)
-    } else {
-      useClaudeStore.getState().setActiveBankQuestion(null)
-    }
+  const handleClick = () => {
+    const parts: string[] = []
+    parts.push(`[${card.topicId}] 스프린트 리뷰 분석\n`)
+    parts.push(`**문제:** ${card.questionText}\n`)
+    parts.push(card.options.map((o, i) => `${optionLabels[i] ?? i + 1}. ${o}`).join('\n'))
+    const selLabel = selectedIdx >= 0
+      ? `${optionLabels[selectedIdx]}. ${result.selected}`
+      : (result.selected ?? '(없음)')
+    const corLabel = `${optionLabels[card.correctIndex] ?? card.correctIndex + 1}. ${card.options[card.correctIndex]}`
+    parts.push(`\n내가 선택한 답: ${selLabel}`)
+    parts.push(`정답: ${corLabel}`)
+    parts.push(`결과: ${result.isCorrect ? '✓ 정답' : '✗ 오답'}\n`)
+    if (card.contextBackground) parts.push(`**CONTEXT**\n${card.contextBackground}`)
+    if (card.trigger) parts.push(`**TRIGGER**\n${card.trigger}`)
+    if (card.trap) parts.push(`**TRAP**\n${card.trap}`)
+    if (card.speed) parts.push(`**SPEED**\n${card.speed}`)
+    parts.push(`\n아래 순서대로 분석해줘:
+
+[STEP 1] 이 문제가 뭘 묻는 건지 + 정답 이유
+(내가 선택한 답 vs 정답 비교, 왜 틀렸는지/맞았는지 한 줄)
+
+[STEP 2] 문제 원문 한 줄씩
+→ 한국어 해석
+→ 이 문장이 문제에서 하는 역할
+
+[STEP 3]
+CONTEXT: 왜 이렇게 처리하는지 경제적 실질
+TRIGGER: 이 표현 보이면 이렇게 풀어라
+TRAP: 여기서 자주 틀린다
+SPEED: 30초 풀이 한 줄`)
+
+    const store = useClaudeStore.getState()
+    store.clearMessages()
+    store.setActiveBankQuestion(card)
+    store.setPendingAutoMessage(parts.join('\n'))
+    store.openPanel()
   }
 
   return (
     <div className="bg-white rounded-xl border border-border overflow-hidden">
-      <button onClick={handleToggle} className="w-full flex items-center gap-3 p-3.5 text-left">
+      <button onClick={handleClick} className="w-full flex items-center gap-3 p-3.5 text-left hover:bg-gray-50 transition-colors">
         <span
           className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
           style={{
@@ -703,48 +674,22 @@ function ResultItem({
               {card.topicId}
             </span>
           </div>
-          <p className="text-xs text-[#0f172a] leading-relaxed">{card.questionText}</p>
+          <p className="text-xs text-[#0f172a] leading-relaxed truncate">{card.questionText}</p>
         </div>
-        <span className="text-muted text-sm shrink-0">{open ? '▲' : '▼'}</span>
+        <span className="text-xs text-[#4f6ef7] shrink-0 font-medium whitespace-nowrap">Harry →</span>
       </button>
-
-      {open && (
-        <div className="px-4 pb-4 pt-1 border-t border-border space-y-3 animate-fadeIn">
-          {!result.isCorrect && result.selected && (
-            <div className="text-xs">
-              <span className="text-[#ef4444] font-semibold">Selected: </span>
-              <span className="text-muted">{result.selected}</span>
-            </div>
-          )}
-          <div className="text-xs">
-            <span className="text-[#22c55e] font-semibold">Correct: </span>
-            <span className="text-[#0f172a]">{card.options[card.correctIndex]}</span>
-          </div>
-
-          <StructuredFeedback card={card} />
-
-          <button
-            onClick={() => onOpenTTS(card)}
-            className="w-full py-2 rounded-xl text-xs font-bold transition-colors"
-            style={{ background: '#eff6ff', color: '#4f6ef7' }}
-          >
-            🎧 Listen
-          </button>
-        </div>
-      )}
     </div>
   )
 }
 
 function ResultView({
-  results, elapsedSec, maxStreak, onRetry, onBack, onOpenTTS,
+  results, elapsedSec, maxStreak, onRetry, onBack,
 }: {
   results: SprintResult[]
   elapsedSec: number
   maxStreak: number
   onRetry: () => void
   onBack: () => void
-  onOpenTTS: (card: BankQuestion) => void
 }) {
   const correct = results.filter(r => r.isCorrect).length
   const total = results.length
@@ -777,7 +722,7 @@ function ResultView({
       <div className="space-y-2">
         <div className="text-xs font-semibold text-muted uppercase tracking-wider px-1">Review</div>
         {results.map((r, i) => (
-          <ResultItem key={i} result={r} onOpenTTS={onOpenTTS} />
+          <ResultItem key={i} result={r} />
         ))}
       </div>
 
@@ -825,7 +770,6 @@ export default function SprintPage() {
   const [maxStreak, setMaxStreak] = useState(0)
   const [showConfetti, setShowConfetti] = useState(false)
 
-  const [ttsCard, setTtsCard] = useState<BankQuestion | null>(null)
   const [calcOpen, setCalcOpen] = useState(false)
 
   const userId = useStudyStore((s) => s.userId)
@@ -853,8 +797,6 @@ export default function SprintPage() {
     const id = setInterval(() => setElapsedSec(e => e + 1), 1000)
     return () => clearInterval(id)
   }, [phase, timerMode])
-
-  const closeTTS = useCallback(() => setTtsCard(null), [])
 
   const launchSprint = useCallback((focusTopicId?: string) => {
     if (allBank.length === 0) return
@@ -915,10 +857,6 @@ export default function SprintPage() {
 
   return (
     <>
-      {ttsCard && (
-        <TTSOverlay card={ttsCard} onClose={closeTTS} />
-      )}
-
       {/* 계산기 FAB — quiz/result 단계에서만 표시 */}
       {phase !== 'setup' && !calcOpen && (
         <button
@@ -957,7 +895,6 @@ export default function SprintPage() {
             unlimited={timerMode === 0}
             onAnswer={handleAnswer}
             onNext={handleNext}
-            onOpenTTS={setTtsCard}
           />
         </>
       )}
@@ -969,7 +906,6 @@ export default function SprintPage() {
           maxStreak={maxStreak}
           onRetry={() => setPhase('setup')}
           onBack={() => setPhase('setup')}
-          onOpenTTS={setTtsCard}
         />
       )}
     </>
