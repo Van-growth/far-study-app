@@ -43,7 +43,7 @@ const PREFIX_TO_CAT: Record<string, string> = {
 }
 
 const TOPIC_NAMES: Record<string, string> = Object.fromEntries(
-  PROFESSOR_SSOT_V2.map(c => [c.topic_id, c.card_name])
+  PROFESSOR_SSOT_V2.map(c => [c.topic_id, c.card_name ?? ''])
 )
 
 const CSS_ANIMS = `

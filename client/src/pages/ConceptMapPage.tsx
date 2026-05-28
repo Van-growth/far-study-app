@@ -57,9 +57,9 @@ const BOOK_BY_CHAPTER = new Map<string, (typeof BOOKS)[0]>(
 const CARDS_BY_CHAPTER = new Map<string, TopicCard[]>();
 const CARD_BY_TOPIC = new Map<string, TopicCard>();
 for (const card of PROFESSOR_SSOT_V2) {
-  const arr = CARDS_BY_CHAPTER.get(card.chapter_id) ?? [];
+  const arr = CARDS_BY_CHAPTER.get(card.chapter_id ?? '') ?? [];
   arr.push(card);
-  CARDS_BY_CHAPTER.set(card.chapter_id, arr);
+  CARDS_BY_CHAPTER.set(card.chapter_id ?? '', arr);
   CARD_BY_TOPIC.set(card.topic_id, card);
 }
 
@@ -125,7 +125,7 @@ export default function ConceptMapPage() {
     const q = search.toLowerCase();
     return PROFESSOR_SSOT_V2.filter(
       (c) =>
-        c.card_name.toLowerCase().includes(q) ||
+        c.card_name?.toLowerCase().includes(q) ||
         c.rule.toLowerCase().includes(q) ||
         c.trigger.toLowerCase().includes(q) ||
         c.trap.toLowerCase().includes(q) ||
@@ -456,7 +456,7 @@ export default function ConceptMapPage() {
 // ── Topic header bar ──────────────────────────────────────────
 
 function TopicHeader({ card, learned }: { card: TopicCard; learned: Set<string> }) {
-  const book     = BOOK_BY_CHAPTER.get(card.chapter_id);
+  const book     = BOOK_BY_CHAPTER.get(card.chapter_id ?? '');
   const chLabel  = BOOKS.flatMap((b) => b.chapters).find((c) => c.id === card.chapter_id)?.label ?? '';
   const isDone   = learned.has(card.topic_id);
 

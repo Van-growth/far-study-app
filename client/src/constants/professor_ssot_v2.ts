@@ -1,16 +1,22 @@
 export interface TopicCard {
   topic_id: string;
-  book_id: 'IA' | 'AA' | 'GN';
-  chapter_id: string;
-  topic_group: string;
-  sub_category_id: string;
+  // legacy structured fields (book/chapter/group-based entries)
+  book_id?: 'IA' | 'AA' | 'GN';
+  chapter_id?: string;
+  topic_group?: string;
+  sub_category_id?: string;
+  card_name?: string;
+  // newer flat-style fields
+  category?: string;
+  topic_name?: string;
+  summary?: string;
   card_type?: 'calculation' | 'conditional' | 'concept';
-  card_name: string;
   rule: string;
   trigger: string;
   trap: string;
   one_sentence?: string;
   example?: string;
+  context?: string;             // alias used in some entries
   // structured explanation fields (question_bank Migration 034와 동일)
   context_background?: string;  // 경제적 실질 배경
   context_trigger?: string;     // → 회계처리 필요해지는 상황
@@ -18,6 +24,7 @@ export interface TopicCard {
   rule_items?: string[];        // ① ② ... 규칙 항목 배열
   speed?: string;               // SPEED 한 줄 풀이
   journal_entry?: string;       // 분개 예시 (있는 경우만)
+  key_formula?: string;         // 공식/계산 요약
 }
 
 export const EXPLANATION_TEMPLATE = `CONTEXT:
@@ -7189,7 +7196,7 @@ Series B+ 감사 시 핵심 검토 항목`,
     chapter_id: 'AA_CH5',
     topic_group: 'AA_CH5_EQM',
     sub_category_id: "U5_EQUITY_METHOD",
-    card_type: 'conceptual',
+    card_type: 'concept',
     card_name: "Liquidating Dividend — Fair Value Method vs Equity Method",
     rule: "Liquidating Dividend = 취득일 이후 누적 이익을 초과하는 배당. Fair Value Method: 일반 배당 → Dividend Income / 초과 배당(Liquidating) → 투자계정 감소(원가 회수). Equity Method: 배당은 항상 투자계정 감소.",
     trigger: "'dividends in excess of the investor's share of investee's earnings' → Liquidating Dividend 확인\n'subsequent to the date of the investment' → 취득일 이후 누적 이익 기준\nFair Value Method + 초과 배당 → 투자계정 감소 (Income 아님)",
