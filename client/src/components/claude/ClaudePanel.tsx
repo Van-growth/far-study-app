@@ -75,6 +75,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const msgsRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);   // user intent: follow bottom?
   const isProgrammaticRef = useRef(false);    // suppress scroll events from our own scrollTo
+  const pendingAutoSentRef = useRef<string | null>(null);
 
   useEffect(() => { if (isOpen) setTimeout(() => taRef.current?.focus(), 300); }, [isOpen]);
 
@@ -104,7 +105,9 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
 
   // Auto-send sprint review analysis when panel opens with a pending prompt
   useEffect(() => {
-    if (!isOpen || !pendingAutoMessage || isLoading) return;
+    if (!isOpen || !pendingAutoMessage) return;
+    if (pendingAutoMessage === pendingAutoSentRef.current) return;
+    pendingAutoSentRef.current = pendingAutoMessage;
     const msg = pendingAutoMessage;
     setPendingAutoMessage(null);
     sendMessage(msg);
