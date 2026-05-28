@@ -634,20 +634,19 @@ function ResultItem({ result }: { result: SprintResult }) {
     if (card.trigger) parts.push(`**TRIGGER**\n${card.trigger}`)
     if (card.trap) parts.push(`**TRAP**\n${card.trap}`)
     if (card.speed) parts.push(`**SPEED**\n${card.speed}`)
-    parts.push(`\n아래 순서대로 분석해줘:
+    parts.push(`\n아래 순서대로 분석해줘. **반드시 마크다운 형식**으로 작성 (헤더 ### 사용, 핵심 용어 **볼드** 처리):
 
-[STEP 1] 이 문제가 뭘 묻는 건지 + 정답 이유
-(내가 선택한 답 vs 정답 비교, 왜 틀렸는지/맞았는지 한 줄)
+### STEP 1. 이 문제가 뭘 묻는 건지 + 정답 이유
+내가 선택한 답 vs 정답 비교, 왜 틀렸는지/맞았는지 한 줄
 
-[STEP 2] 문제 원문 한 줄씩
-→ 한국어 해석
-→ 이 문장이 문제에서 하는 역할
+### STEP 2. 문제 원문 해석
+문제 원문 한 줄씩 → 한국어 해석 → 이 문장이 문제에서 하는 역할
 
-[STEP 3]
-CONTEXT: 왜 이렇게 처리하는지 경제적 실질
-TRIGGER: 이 표현 보이면 이렇게 풀어라
-TRAP: 여기서 자주 틀린다
-SPEED: 30초 풀이 한 줄`)
+### STEP 3. 개념 요약
+**CONTEXT**: 왜 이렇게 처리하는지 경제적 실질
+**TRIGGER**: 이 표현 보이면 이렇게 풀어라
+**TRAP**: 여기서 자주 틀린다
+**SPEED**: 30초 풀이 한 줄`)
 
     const store = useClaudeStore.getState()
     store.clearMessages()

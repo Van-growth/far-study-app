@@ -7,6 +7,9 @@ import MessageBubble, { TypingBubble } from './MessageBubble';
 
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
+// Module-level guard: shared across all ClaudePanel instances to prevent double auto-send
+let _autoSentMsg: string | null = null;
+
 const BOUNCE_CSS = `@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}`;
 if (typeof document !== 'undefined' && !document.getElementById('claude-bounce')) {
   const s = document.createElement('style'); s.id = 'claude-bounce'; s.textContent = BOUNCE_CSS; document.head.appendChild(s);
@@ -75,7 +78,6 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const msgsRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);   // user intent: follow bottom?
   const isProgrammaticRef = useRef(false);    // suppress scroll events from our own scrollTo
-  const pendingAutoSentRef = useRef<string | null>(null);
 
   useEffect(() => { if (isOpen) setTimeout(() => taRef.current?.focus(), 300); }, [isOpen]);
 
@@ -106,8 +108,8 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   // Auto-send sprint review analysis when panel opens with a pending prompt
   useEffect(() => {
     if (!isOpen || !pendingAutoMessage) return;
-    if (pendingAutoMessage === pendingAutoSentRef.current) return;
-    pendingAutoSentRef.current = pendingAutoMessage;
+    if (pendingAutoMessage === _autoSentMsg) return;
+    _autoSentMsg = pendingAutoMessage;
     const msg = pendingAutoMessage;
     setPendingAutoMessage(null);
     sendMessage(msg);
