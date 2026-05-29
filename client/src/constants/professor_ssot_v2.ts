@@ -1249,12 +1249,35 @@ Series B+ 감사 시 핵심 검토 항목`,
     sub_category_id: "U4_LONG_TERM_LIABILITIES",
     card_type: 'calculation',
     card_name: "Current Liabilities — Bond Discount Deduction + Deferred Tax Exclusion",
-    rule: "Current liabilities 계산:\n✅ Accounts payable → Current\n✅ Bonds payable(다음 연도 만기) → Current\n✅ Discount on bonds payable → 차감(−) (contra-liability)\n❌ Deferred income tax liability → 항상 Non-current (US GAAP)\n   → reversal이 내년이라도 Non-current",
-    trigger: "'bonds payable, due Year X' → 다음 연도 만기 → Current\n'discount on bonds payable' → 차감(−), 더하면 오답\n'deferred income tax liability' → Non-current 무조건\n'expected to reverse in Year X' → 함정, 여전히 Non-current",
-    trap: "Bond discount를 가산(+)하는 오류 → contra-liability라 반드시 차감\nDeferred tax를 'reversal이 내년'이라 Current로 분류 → US GAAP 불가\nDeferred tax 포함해서 합산하는 오류",
+    rule: "Current liabilities = 보고일로부터 1년(또는 영업주기) 내 결제 의무. 항목별 분류:\n✅ Accounts payable → Current\n✅ Bonds payable(1년 내 만기) → Current\n✅ Discount on bonds payable → 차감(−) (contra-liability)\n✅ Premium on bonds payable → 가산(+) (adjunct-liability)\n✅ Dividends payable(선언된 현금배당, 1년 내 지급) → Current\n✅ Income tax payable → Current\n❌ Deferred income tax → 항상 Non-current (US GAAP, reversal 시점 무관)\n❌ Notes/Bonds payable(만기 1년 초과, 예: due Year 3) → Non-current\n[속도 룰] 이름에 'discount' → 차감 / 'premium' → 가산 / 'deferred tax' → 제외 / 'due [1년 초과]' → 제외 / 나머지 단기 → 가산",
+    trigger: "'bonds payable, due Year 2(1년 내)' → Current 포함\n'notes/bonds payable, due Year 3(1년 초과)' → Non-current 제외\n'discount on bonds payable' → 차감(−), 더하면 오답 (이름에 discount 보이면 바로 contra-liability → 차감, 상각·분개 따질 필요 없음)\n'premium on bonds payable' → 가산(+) (거울상)\n'deferred income tax' → Non-current 무조건 (\"expected to reverse in Year X\"는 함정)\n'dividends payable, due [1년 내]' → 선언된 현금배당 = 법적 부채 → Current 포함\n'income tax payable' / 'accounts payable' → 단기 → Current 포함",
+    trap: "Deferred tax를 'reversal이 1~2년 내'라 Current로 분류 → US GAAP에서 항상 Non-current (가장 흔한 함정)\nBond discount를 가산(+)하거나 차감 누락 → contra-liability라 반드시 차감. trial balance에 양수로 적혀 있어도 이름에 'discount'면 차변잔액 → 빼기\n만기 1년 초과 note(due Year 3)를 Current로 포함 → 1년 기준 초과면 Non-current\nDividends payable을 제외하는 오류 → 선언된 현금배당은 1년 내 지급이면 Current\n[혼동 주의] 상각 시 discount가 Cr로 등장하는 것은 '차변잔액을 줄이는 동작'일 뿐, 잔액은 발행~만기 내내 차변(차감 방향 고정). 시점별로 크기만 변하고 부호는 안 바뀜",
     one_sentence: "Current = AP + Bonds − Discount; Deferred tax → 항상 Non-current.",
-    speed: "① Bonds − Discount = 순장부금액\n② Deferred tax → 무조건 제외\n③ AP + 순Bonds = Current liabilities",
+    speed: "이름으로 부호 판단: discount(−)/premium(+) | deferred tax·1년 초과 만기 → 제외 | 나머지 단기 → 더하기\n① 1년 내 항목만: AP + Bonds(1년내) − Discount + Dividends(1년내) + Income tax\n② Deferred tax·Notes(1년 초과) 제외\n예) 19K + 34K − 2K + 5K + 9K = $65,000",
     example: "AP $120K + Bonds $450K − Discount $22.5K = $547,500 / Deferred tax $37.5K → 제외",
+    context_background: "[유동부채 분류 기준]\nCurrent liabilities = 보고일(B/S date)로부터 1년 또는 영업주기 내에 결제될 의무. 분류의 1차 기준은 '만기·결제 시점이 1년 내인가'. 여기에 몇 가지 특수 규칙이 더해진다.\n\n[① Deferred income tax — 항상 Non-current]\nUS GAAP은 2015년 ASU 단순화 이후 이연법인세 자산·부채를 reversal 시점과 무관하게 전부 비유동으로 분류한다. 'Year 3·4에 reverse'라는 단서는 함정 — 여전히 Non-current.\n\n[② Bond discount/premium — 부채의 조정계정]\nDiscount on bonds payable: 사채를 액면보다 싸게 발행할 때 생기는 차변잔액 계정(contra-liability). 발행 분개: Dr.Cash + Dr.Discount / Cr.Bonds Payable(액면). Bonds Payable(대변)을 상쇄하여 장부금액(carrying value) = 실제 순부채를 만든다. → B/S에서 항상 차감(−).\n  · 상각: Dr.Interest Expense / Cr.Discount → discount(차변잔액)를 줄이는 동작. 잔액 위치는 내내 차변, 크기만 0으로 감소 → 장부금액이 액면으로 차오름. 부호는 안 바뀜.\nPremium on bonds payable: 거울상. 대변잔액(adjunct-liability) → 항상 가산(+), 상각 시 Dr로 감소.\n[속도 룰] 이름에 'discount' 보이면 즉시 차감, 'premium'이면 가산. 상각표·발행가 떠올릴 필요 없이 이름만으로 부호 확정.\n\n[③ Dividends payable — 선언되면 법적 부채]\n현금배당은 선언(declaration) 시점에 법적 부채가 된다. 지급일이 1년 내면 Current.\n\n[④ 만기 1년 초과 — Non-current]\nNotes/bonds payable이 B/S date로부터 1년을 초과해 만기(예: due Year 3)면 Non-current로 제외.\n\n[이 문제 적용 — Gar Inc.]\nAccounts payable $19,000 ✅\nBonds payable, due Year 2 $34,000 ✅\nDiscount on bonds payable ($2,000) ✅ 차감\nDividends payable, due 2/15/Year 2 $5,000 ✅\nIncome tax payable $9,000 ✅\nDeferred income tax payable $4,000 ❌ Non-current(reverse 시점 무관)\nNotes payable, due 1/19/Year 3 $6,000 ❌ 1년 초과 Non-current\n→ Current = 19,000 + 34,000 − 2,000 + 5,000 + 9,000 = $65,000 (정답 D)\n오답: B(69,000)=deferred tax 포함 / A(71,000)=note·deferred tax 혼입 / C(67,000)=discount 미차감",
+  },
+
+  // [PAY_001] Accrued Bonus — Bonus Based on Income After Deducting the Bonus (Circular Formula)
+  // RULE    : B가 등호 양쪽에 등장(좌변 B, 우변 −B) → 순환식 / B = (Income − Threshold − B) × rate, 한쪽으로 모아 풀기
+  // TRIGGER : "X% of income over $Y" → 초과분에만 율 / "after deducting the bonus" → 순환식 / "before income taxes" → 세금 제외
+  // TRAP    : 보너스 차감 누락(단순 곱셈)(C) / threshold 무시 / 전체이익에 율 적용
+  {
+    topic_id: "PAY_001",
+    book_id: 'IA',
+    chapter_id: 'IA_CH6',
+    topic_group: 'IA_CH6_LIAB',
+    sub_category_id: "U4_PAYABLES",
+    card_type: 'calculation',
+    card_name: "Accrued Bonus — Bonus Based on Income After Deducting the Bonus (Circular Formula)",
+    rule: "보너스가 '보너스를 차감한 후의 이익(after deducting the bonus)'에 연동되면 보너스 B가 등호 양쪽에 모두 들어가는 순환식(circular)이 된다. B = (Income − Threshold − B) × rate. 좌변의 B와 우변 괄호 안의 −B를 한쪽으로 모아 방정식으로 푼다. 'over $X'는 전체가 아니라 초과분(Income − X)에만 율 적용. 'before income taxes'면 세금은 식에서 제외.",
+    trigger: "bonus of X% of income over $Y | after deducting the bonus | before income taxes | manager bonus | circular bonus\n'X% of income over $Y' → 초과분(Income − Y)에만 율 적용\n'after deducting the (manager's) bonus' → 순환식 → B를 양변에 두고 풀기\n'before income taxes' → 세금은 식에서 무시\n식: B = (Income − Threshold − B) × rate",
+    trap: "C: ($160,000 − $100,000) × 25% = $15,000으로 끝냄 → 'after deducting the bonus'(자기참조) 누락. 보너스를 한 번 더 빼는 순환 처리 안 함\nB: $100,000 × 25% → 'over $100,000'(초과분만) 무시, 전체에 곱한 오류\nA: 전체 이익 $160,000에 잘못된 율 적용 / threshold·보너스 차감 모두 누락\n공통 함정: 'after deducting the bonus' 문구를 놓치고 단순 곱셈으로 처리. 핵심은 B가 등호 양쪽에 다 들어간다는 것",
+    one_sentence: "보너스가 '보너스 차감 후 이익' 기준이면 B가 양변에 등장하는 순환식 → B = (Income − Threshold − B) × rate, 모아서 풀기.",
+    example: "Dodd: income $160,000, threshold $100,000, rate 25%, after deducting bonus\nB = (160,000 − 100,000 − B) × 25% = (60,000 − B) × 0.25\nB = 15,000 − 0.25B → 1.25B = 15,000 → B = $12,000\n검산: (60,000 − 12,000) × 25% = 48,000 × 25% = $12,000 ✅ (순환 닫힘)",
+    key_formula: "B = (Income − Threshold − B) × rate\n→ B(1 + rate) = (Income − Threshold) × rate\n→ B = (Income − Threshold) × rate ÷ (1 + rate)",
+    speed: "초과분 = Income − Threshold = 160,000 − 100,000 = 60,000 | 'after deducting bonus' → 순환식 B = (60,000 − B) × 0.25 → 1.25B = 15,000 → B = $12,000 → 정답 D",
+    context_background: "[보너스를 '보너스 차감 후 이익'에 연동하는 이유]\n경영자 보너스를 보너스까지 뺀 이익에 연동하는 것은 실무에서 흔한 인센티브 설계다. 보너스도 회사 입장에서는 비용이므로, '보너스를 지급하고 난 뒤 실제로 회사에 남는 이익'을 기준으로 보상해야 경영자와 주주의 이해가 일치한다. 회계에서는 이 보너스를 기말에 accrued liability(미지급 보너스)로 계상한다.\n\n[왜 순환식(circular)이 되는가]\n보너스를 계산하려면 '보너스를 뺀 이익'을 알아야 하는데, '보너스를 뺀 이익'을 알려면 보너스를 먼저 알아야 한다. 즉 구하려는 보너스 B가 자기 자신을 계산하는 식 안에 또 들어간다. 그 결과 같은 B가 등호 양쪽에 걸쳐 등장한다(좌변 B, 우변 괄호 안 −B). 이것이 circular의 정체이며, 단순 곱셈으로 풀 수 없고 방정식으로 모아서 풀어야 한다.\n\n[풀이 단계]\n① 초과분 산출: Income − Threshold (over $X → 초과분에만 율 적용)\n  $160,000 − $100,000 = $60,000\n② 순환식 세우기: B = (초과분 − B) × rate\n  B = (60,000 − B) × 0.25\n③ 전개: B = 15,000 − 0.25B\n④ B를 한쪽으로 모음: 1.25B = 15,000\n⑤ B = $12,000\n\n[검산]\n구한 B로 (초과분 − B) × rate가 다시 B와 같으면 순환이 닫힌 것:\n(60,000 − 12,000) × 25% = 48,000 × 25% = $12,000 = B ✅\n\n[세금 처리]\n'before income taxes'면 세금은 식에서 제외한다. 보너스가 '세후(after taxes)' 기준이거나 세금도 보너스에 연동되면 보너스와 세금 두 미지수의 연립식이 되어 더 복잡해진다. 이 문제는 세전 기준이라 보너스 한 개만 푸는 단일 순환식이다.",
   },
 
   // ── EPS ────────────────────────────────────────────────────────────────────
@@ -1280,11 +1303,13 @@ Series B+ 감사 시 핵심 검토 항목`,
     sub_category_id: "U1_EPS",
     card_type: 'calculation',
     card_name: "Cumulative preferred dividend — deduct declared or not",
-    rule: "Cumulative preferred: deduct the annual dividend whether or not declared. Noncumulative preferred: deduct only amounts actually declared.",
-    trigger: "cumulative preferred | noncumulative | dividend | deduct | declared",
-    trap: "Cumulative → deduct regardless of declaration; noncumulative → only if declared.",
+    rule: "Cumulative preferred: 선언·지급 여부와 무관하게 당기 1년치 요구액(annual requirement)을 NI에서 차감. Noncumulative preferred: 실제 선언된 금액만 차감(선언 안 하면 0). 당기 요구액 = par × 우선주 주수 × 배당률 (= 총 par × 배당률, 시가·발행가 아님). 전기 미지급 체납(arrears)은 당기 BEPS에 영향 없음(전기에 이미 차감). 당기 실제 지급액도 무관(지급은 현금흐름, 발생귀속과 별개). BEPS = (NI − 당기 요구액) ÷ WACSO.",
+    trigger: "'cumulative preferred' → 선언 여부 무관, 당기 1년치 요구액 차감\n당기 요구액 = par × 우선주 주수 × 배당률 (= 총 par × 배당률)\n'noncumulative' → 선언된 것만 차감\n'paid no dividends in prior year'(체납) → 당기 BEPS에 영향 없음\n'paid $X during current year' → 실제 지급액 X는 함정, 요구액만 사용\nBEPS = (NI − 당기 요구액) ÷ WACSO",
+    trap: "D: 당기 실제 지급액(예: $16,000)을 차감 → cumulative는 요구액($10,000)을 빼야지 지급액이 아님 (지급액 차감은 noncumulative 접근)\nA: 우선주 배당을 아예 안 뺌 → cumulative는 무조건 당기분 차감\nC: 근거 없는 금액 차감\nYear 1 체납분을 당기에 또 더해 이중 차감(예: $20,000) → 전기에 이미 차감, 당기엔 당기분만\nNoncumulative인데 cumulative처럼 미선언분까지 차감하는 반대 오류\n배당률을 par 아닌 시가·발행가에 곱하는 오류 → 항상 par 기준",
     one_sentence: "Cumulative preferred dividends reduce EPS even in years they are not declared.",
     example: "Cumulative preferred $8/share / not declared → still deduct $8 × shares outstanding from IAC",
+    speed: "cumulative → 당기 요구액 = par × 주수 × 배당률 = $10 × 25,000 × 4% = $10,000 (지급액·전기 체납 무시) | IAC = 500,000 − 10,000 = 490,000 | ÷ 200,000 = $2.45 → 정답 B",
+    context_background: "[누적 우선주와 BEPS]\n누적 우선주(cumulative preferred)는 배당을 선언하지 않아도 회사가 언젠가 반드시 지급해야 할 의무가 매기 쌓인다. 따라서 BEPS의 분자(보통주 귀속 이익, IAC)를 구할 때 당기에 귀속되는 1년치 우선주 배당 요구액을 순이익에서 차감한다 — 선언·지급 여부와 무관하게.\n\n[핵심: '당기 발생분'만]\n- 전기 체납(arrears): 전기 EPS에서 이미 차감되었으므로 당기에 다시 빼지 않는다.\n- 당기 실제 지급액: 지급은 현금흐름일 뿐 발생 귀속과 별개. 당기 요구액과 다를 수 있으나 BEPS엔 요구액만 사용.\n\n[배당률은 par 기준]\n우선주 배당률은 액면가(par) 대비 비율이다. '$10 par, 4%'는 par $10당 매년 4%(주당 $0.40). 시가·발행가가 아니라 par에 곱한다.\n당기 요구액 = par × 우선주 주수 × 배당률 = $10 × 25,000 × 4% = $10,000 (= 총 par $250,000 × 4%, 동일).\n보통주 주식 수는 분모(WACSO)로만 쓰이고 배당 계산엔 들어가지 않는다.\n\n[cumulative vs noncumulative]\n- Cumulative: 선언 안 해도 당기 요구액 차감.\n- Noncumulative: 선언된 것만 차감(선언 안 하면 0).\n이 문제는 cumulative이므로 Year 2 선언·지급 내역과 무관하게 당기 요구액을 뺀다.\n\n[정답 도출 — Ute]\n당기 요구액 = $10 × 25,000 × 4% = $10,000\nIAC = $500,000 − $10,000 = $490,000\nBEPS = $490,000 ÷ 200,000 = $2.45 → 정답 B\n오답: D($2.42)=지급액 $16,000 차감 / A($2.50)=우선주 배당 미차감 / C($2.48)=근거 없는 $4,000 차감.\nYear 2 지급 $16,000은 사실상 (당기 $10,000 + Year 1 체납 $6,000) 구조지만, BEPS엔 당기 $10,000만 반영.",
   },
   {
     topic_id: "EPS_003",
@@ -1399,6 +1424,78 @@ Series B+ 감사 시 핵심 검토 항목`,
     journal_entry: "",
     key_formula: "BEPS 분모 = 실제 발행 주식 + 조건 충족 contingent shares\nDEPS 분모 = BEPS 분모 + dilutive options(TSM) + dilutive convertibles",
     speed: "BEPS = 실제 발행 주식 | Stock options → DEPS만 | Contingent shares 조건 충족 → BEPS 포함",
+  },
+
+  // [EPS_010] EPS Disclosure — Report Requirement vs Location (Face vs Notes)
+  // RULE    : 2축 분리 / report 여부: continuing·net income·discontinued 모두 Yes / 위치: continuing·net income=face 강제, discontinued=face or notes 선택
+  // TRIGGER : "EPS data should be reported for" → report 여부(셋 다 Yes) / "on the face of I/S" → discontinued 제외
+  // TRAP    : discontinued 주석 가능 → 보고 면제(No)로 착각 / continuing ops EPS 누락
+  {
+    topic_id: "EPS_010",
+    category: "EPS",
+    topic_name: "EPS Disclosure — Report Requirement vs Location (Face vs Notes)",
+    book_id: 'AA',
+    chapter_id: 'AA_CH4',
+    topic_group: 'AA_CH4_EPS',
+    sub_category_id: "U1_EPS",
+    card_type: 'concept',
+    card_name: "EPS Disclosure — Report Requirement vs Location (Face vs Notes)",
+    rule: "US GAAP EPS 공시는 2축으로 분리해 판단:\n[축1 — 보고 여부(report/should)] income from continuing operations · net income · discontinued operations(보고 시) → 모두 per-share(BEPS·DEPS) 공시 필수 → 전부 Yes.\n[축2 — 위치(where)] continuing operations·net income → 반드시 I/S 본문(face)에 equal prominence 표시(강제). discontinued operations → face 또는 notes 중 선택 허용.\n질문이 'report 여부'를 물으면 셋 다 Yes. '본문(face) 표시'를 물으면 discontinued 제외.",
+    trigger: "EPS data should be reported for | per share amounts | basic and diluted | face of the income statement | discontinued operations | continuing operations | net income | equal prominence\n'EPS data should be reported for [항목]' → report 여부 → continuing·net income·discontinued 모두 Yes\n'income from continuing operations' / 'net income' → face 필수, Yes\n'discontinued operations' → per-share 공시 필수(Yes), 위치는 face or notes 선택\n'must be presented on the face of the I/S' → 위치 질문 → discontinued 제외(continuing·net income만)",
+    trap: "discontinued operations EPS를 불필요(No)로 착각 → 주석에 둘 수 있다는 '위치 유연성'을 '보고 면제'로 혼동. 표시는 여전히 필수(Yes)\ncontinuing operations EPS를 누락 → continuing ops는 미래 예측 기준이라 오히려 가장 필수, face 강제\n위치(face vs notes)와 표시 여부(report)를 혼동 → 질문이 무엇을 묻는지 먼저 구분\n둘 다 No로 보는 오류",
+    one_sentence: "report 여부는 continuing·net income·discontinued 모두 Yes; 위치만 continuing·net income은 face 강제, discontinued는 face/notes 선택.",
+    example: "'EPS should be reported for discontinued ops? / continuing ops?' → Yes / Yes (정답 D)\n위치 변형: 'on the face of I/S?' → continuing ops Yes, net income Yes, discontinued ops는 face or notes(선택)",
+    key_formula: "report 필수(Yes): continuing ops EPS, net income EPS, discontinued ops EPS\nface 강제: continuing ops, net income\nface or notes 선택: discontinued ops",
+    speed: "US GAAP EPS 필수 공시 = continuing ops / net income / discontinued ops(있으면) 모두 per-share 표시 → report 여부면 전부 Yes → 정답 D | 위치를 물으면 discontinued만 face/notes 선택",
+    context_background: "[EPS를 손익 항목별로 공시하는 이유]\nEPS는 투자자가 '주식 1주가 얼마를 벌었나'를 보는 핵심 지표다. US GAAP은 이익의 지속성(persistence)을 구분해 per-share로 보여주길 요구한다.\n- income from continuing operations: 앞으로도 반복될 이익 → 미래 예측의 기준 → 가장 중요 → face 필수\n- net income: 최종 성과 → face 필수\n- discontinued operations: 일회성, 미래 반복 안 됨 → 투자자가 '이 부분은 빼고 봐야겠다'고 판단하도록 per-share 공시하되, 본문/주석 위치는 선택 허용\n\n[2축 분리가 핵심]\n축1(보고 여부): 셋 다 필수(should) → Yes/Yes/Yes\n축2(위치): continuing ops·net income은 face 강제, discontinued ops는 face or notes 선택\n→ 이 문제처럼 'should be reported for'를 물으면 위치와 무관하게 셋 다 Yes. discontinued를 주석에 둘 수 있다는 것은 '안 해도 된다'가 아니라 '위치만 유연하다'는 의미.\n\n[정답 도출]\nDiscontinued operations: Yes / Income from continuing operations: Yes → 정답 D(Yes/Yes)\nA(No/Yes): discontinued를 보고 면제로 착각한 함정.",
+  },
+
+  // [EPS_011] Dilutive Test — Per-Unit Incremental Effect vs Basic EPS
+  // RULE    : 증분효과 = (1단위 분자증가) ÷ (1단위 신주) vs basic EPS / 작으면 dilutive, 크면 anti
+  // TRIGGER : "which security is dilutive" + basic EPS → 증권별 증분효과 비교 / CB 세후, PS 세전 / 전환조건 없으면 제외
+  // TRAP    : 증분효과 > basic인데 dilutive로 착각 / CB에 (1−t) 누락 / PS에 (1−t) 잘못 곱함 / 이율과 전환비율 혼동
+  {
+    topic_id: "EPS_011",
+    category: "EPS",
+    topic_name: "Dilutive Test — Per-Unit Incremental Effect vs Basic EPS",
+    book_id: 'AA',
+    chapter_id: 'AA_CH4',
+    topic_group: 'AA_CH4_EPS',
+    sub_category_id: "U1_EPS",
+    card_type: 'calculation',
+    card_name: "Dilutive Test — Per-Unit Incremental Effect vs Basic EPS",
+    rule: "여러 증권의 dilutive 여부 판별: 각 증권의 1단위당 증분효과 = (1단위당 분자 증가액) ÷ (1단위당 신주수)를 basic EPS와 비교. 증분효과 < basic EPS → dilutive(EPS 끌어내림). 증분효과 > basic EPS → anti-dilutive(끌어올림) → 제외.\n[분자] CB(전환사채): 액면 × 이율 × (1−t) = 세후 이자절감(이자는 세금공제). CP(전환우선주): par × 배당률 = 세전 배당절감, (1−t) 곱하지 마라(배당은 세금공제 안 됨).\n[분모] 1단위당 전환 보통주 수(CB: $1,000당 N주 / CP: 우선주 1주당 N주).\n[제외] 전환 조건 없는 증권은 분모로 못 바뀌어 후보 아님.\n[포함 순서] dilutive한 것만 증분효과 작은 순서대로 sequential 추가, EPS가 더 내려갈 때까지.",
+    trigger: "which security is dilutive | basic earnings per share | tax rate | convertible bonds | convertible preferred | shares per $1,000 bond | convertible into N shares\n'which security is dilutive' + basic EPS 주어짐 → 각 증권 증분효과 vs basic EPS 비교\n'X% convertible bonds ... N shares per $1,000' → ($1,000 × X% × (1−t)) ÷ N\n'Y%, $par convertible preferred ... N shares each' → ($par × Y%) ÷ N  (세금 무시)\n증분효과 < basic → dilutive / > basic → anti-dilutive\n전환 조건 없는 preferred/일반증권 → 후보 제외",
+    trap: "증분효과가 basic EPS보다 큰데 dilutive로 착각 → 큰 값은 EPS를 올려 anti-dilutive\nCB 이자절감에 (1−t) 안 곱하는 오류 → 채권은 반드시 세후\nPS 배당절감에 (1−t) 잘못 곱하는 오류 → 우선주 배당은 세전(세금공제 안 됨)\n이율(%)과 전환비율(주수) 혼동 → 'X% bonds'의 %는 액면에 곱하는 이율(분자), 'N shares per $1,000'는 전환비율(분모). 서로 다른 자리\n전환 조건 없는 우선주를 후보로 포함 → 분모로 못 바뀌면 dilutive 판단 불가, 제외\n'전환하면 무조건 EPS 내려간다'는 착각 → 증분효과가 basic보다 크면 오히려 올라감",
+    one_sentence: "각 증권의 (1단위 분자증가 ÷ 1단위 신주)를 basic EPS와 비교 → 작으면 dilutive; CB는 세후 이자절감, PS는 세전 배당절감.",
+    example: "basic EPS $1.29, t=30%\nA: 전환조건 없음 → 제외\nB: $1,000×10%×0.7=$70 ÷ 20주 = $3.50 > 1.29 → anti\nC: $100×6%=$6 ÷ 4주 = $1.50 > 1.29 → anti (배당은 세금 X)\nD: $1,000×7%×0.7=$49 ÷ 40주 = $1.225 < 1.29 → dilutive ✅",
+    key_formula: "증분효과 = (1단위 분자 증가액) ÷ (1단위 신주수)\nCB 분자 = 액면 × 이율 × (1 − t)   [세후]\nCP 분자 = par × 배당률            [세전, 세금 무시]\ndilutive ⇔ 증분효과 < basic EPS",
+    speed: "각 증권 증분효과 = (CB: 액면×이율×(1−t) / PS: par×배당률) ÷ 1단위 신주수 → basic EPS와 비교 → < basic이면 dilutive | 예) $1,000×7%×0.7÷40 = $49÷40 = $1.225 < $1.29 → dilutive",
+    context_background: "[Dilutive의 의미]\nDilutive = 그 증권을 보통주로 전환했다고 가정하면 EPS가 내려가는 것. 투자자에게 '최악의 경우 주당이익이 이만큼 희석될 수 있다'를 보여주기 위해 dilutive 증권만 포함해 diluted EPS를 만든다.\n\n[증분효과 = 1단위당 비율]\n각 증권을 '전환 시 분자에 더해지는 금액 ÷ 분모에 더해지는 주식수'로 환산. 새로 들어오는 주식들이 '평균보다 낮은 EPS'를 벌면 전체 평균이 내려간다(dilutive), 높으면 올라간다(anti-dilutive). 그래서 증분효과를 기존 basic EPS와 비교한다.\n\n[CB vs PS — 세금 처리만 다르고 절차는 동일]\n- CB(전환사채): 이자는 세금공제 대상 → 전환 시 사라지는 이자절감을 세후로 = 액면 × 이율 × (1−t)\n- CP(전환우선주): 배당은 세금공제 안 됨 → 배당절감을 세전 그대로 = par × 배당률\n두 경우 모두 분자는 'par(액면) × rate'의 곱셈 구조로 동일하며, CB만 (1−t)를 추가로 곱한다.\n\n[총량이 불필요한 이유 — 약분]\n증권 총량(채권 장수·우선주 주수)은 분자(총 절감액)와 분모(총 전환주) 양쪽에 똑같이 곱해져 약분된다. 따라서 1단위(채권 1장 또는 우선주 1주) 기준 비율만 있으면 충분하고, 문제도 총 발행수를 주지 않는다.\n예) 우선주 1,000주: $6,000÷4,000주=$1.50 = 5,000주: $30,000÷20,000주=$1.50 (동일).\n\n[이율 vs 전환비율 — 다른 자리]\n'10% bonds'의 10%는 액면 $1,000에 곱하는 이자율(분자). '$1,000당 20주'는 전환비율(분모). 같은 $1,000 채권을 '돈을 얼마 아끼나(이자)'와 '주식 몇 개 만드나(전환)' 두 각도로 본 것. 둘을 혼동하지 말 것.\n\n[전환 조건 없는 증권 제외]\n전환 가능(convertible) 단서가 없는 일반 우선주는 보통주(분모)로 바뀔 수 없어 dilutive 후보가 아니다. 문제에서 전환 비율이나 전환 가능 여부가 없으면 즉시 제외.\n\n[정답 도출 — 원문]\nbasic EPS $1.60, t=25%\nA(전환조건 없는 9% 우선주): 제외\nB(8% CB, 25주): $1,000×8%×0.75=$60÷25=$2.40 > 1.60 → anti\nC(5% 전환우선주, 3주): $100×5%=$5÷3=$1.67 > 1.60 → anti\nD(6% CB, 30주): $1,000×6%×0.75=$45÷30=$1.50 < 1.60 → dilutive → 정답 D\n(D가 dilutive인 직관: 이율 낮아 분자 작고 전환주 많아 분모 큼 → 주당 효과가 basic보다 작아짐)\n\n[포함 순서]\n실제 diluted EPS 계산 시에는 dilutive 증권만, 증분효과가 작은 것부터 순서대로 하나씩 추가하며 EPS가 더 내려가는지 확인(sequential ranking). anti-dilutive 증권을 넣으면 EPS가 도로 올라가므로 제외.",
+  },
+
+  // [EPS_012] Diluted EPS — Out-of-the-Money Options Are Anti-dilutive (Diluted = Basic)
+  // RULE    : 행사가 > 시장가(out-of-money) → anti-dilutive → 제외 → diluted = basic / WACSO = Σ(주식수 × 개월/12)
+  // TRIGGER : "exercise price $X, market price $Y" → X vs Y / X>Y → 제외 / X<Y → TSM 포함
+  // TRAP    : 옵션 무조건 희석 착각 / out-of-money인데 분모에 포함 / 개월 가중치 오류
+  {
+    topic_id: "EPS_012",
+    category: "EPS",
+    topic_name: "Diluted EPS — Out-of-the-Money Options Are Anti-dilutive (Diluted = Basic)",
+    book_id: 'AA',
+    chapter_id: 'AA_CH4',
+    topic_group: 'AA_CH4_EPS',
+    sub_category_id: "U1_EPS",
+    card_type: 'calculation',
+    card_name: "Diluted EPS — Out-of-the-Money Options Are Anti-dilutive (Diluted = Basic)",
+    rule: "스톡옵션의 diluted EPS 포함 여부는 행사가 vs 시장가로 결정.\n· 행사가 < 시장가 (in-the-money): 행사 유인 있음 → treasury stock method로 순증주 분모에 포함 (dilutive 가능)\n· 행사가 > 시장가 (out-of-the-money): 아무도 행사 안 함 → anti-dilutive → 제외 → diluted EPS = basic EPS\n(TSM으로 억지로 넣어도 순증주가 음수 → EPS를 올림 → anti-dilutive로 동일 결론)\nWACSO = Σ(주식수 × 유통 개월 ÷ 12). 개월 합은 항상 12.\nBasic(=diluted) EPS = 보통주 귀속 순이익 ÷ WACSO.",
+    trigger: "stock options | incentive stock options | exercise price | market price | diluted EPS | out of the money | anti-dilutive\n'options, exercise price $X, market price $Y' → X vs Y 비교\n행사가 > 시장가 (out-of-the-money) → anti-dilutive → 제외 → diluted = basic\n행사가 < 시장가 (in-the-money) → treasury stock method로 순증주 포함\n'diluted EPS'인데 옵션 out-of-money → basic만 계산하면 끝\nWACSO = Σ(주식수 × 보유 개월 ÷ 12)",
+    trap: "옵션을 '있으면 무조건 희석'으로 착각 → 행사가 > 시장가면 오히려 anti-dilutive(제외)\nout-of-the-money 옵션을 분모에 포함해 EPS를 낮추는 오류 → 제외해야 diluted = basic\n행사가 vs 시장가 방향 혼동 → 행사가가 높으면 out-of-money\nWACSO 개월 가중치 오류 → 각 구간 실제 유통 개월(예: 3/2/7)로 배분, 개월 합 = 12 확인(누적개월·역산 금지)\nincentive 여부에 현혹 → incentive든 아니든 판단은 행사가 vs 시장가",
+    one_sentence: "행사가 > 시장가면 옵션은 out-of-the-money → anti-dilutive → 제외 → diluted EPS = basic EPS.",
+    example: "Ian: NI $125,000, 옵션 10,000주 행사가 $30 > 시장가 $25 → out-of-money → 제외\nWACSO = 15,000×3/12 + 12,500×2/12 + 17,000×7/12 = 3,750 + 2,083 + 9,917 = 15,750\nbasic(=diluted) EPS = 125,000 ÷ 15,750 = $7.94",
+    key_formula: "WACSO = Σ (주식수 × 유통 개월 / 12)   [개월 합 = 12]\nBasic EPS = 보통주 귀속 NI / WACSO\n옵션 out-of-money(행사가>시장가) → 제외 → Diluted EPS = Basic EPS",
+    speed: "행사가 $30 > 시장가 $25 → out-of-the-money → anti-dilutive → diluted = basic | WACSO = 15,000×3/12 + 12,500×2/12 + 17,000×7/12 = 15,750 | 125,000 ÷ 15,750 = $7.94 → 정답 C",
+    context_background: "[Diluted EPS의 목적]\nDiluted EPS는 희석 가능 증권을 전환·행사했다고 가정해 '최악의 주당이익'을 보여준다. 단, 실제로 희석시키는(EPS를 낮추는) 증권만 포함한다.\n\n[옵션의 in/out-of-the-money]\n스톡옵션은 행사가로 회사 주식을 살 권리다.\n· in-the-money (행사가 < 시장가): 싼값에 사서 비싸게 팔 수 있어 행사 유인 있음 → treasury stock method로 순증주를 분모에 더함(희석).\n· out-of-the-money (행사가 > 시장가): 시장에서 더 싸게 살 수 있는데 굳이 비싼 행사가로 살 이유 없음 → 아무도 행사 안 함.\n이 문제는 행사가 $30 > 시장가 $25 → out-of-the-money.\n\n[왜 out-of-money가 anti-dilutive인가]\nTreasury stock method로 억지로 계산해도, 행사가가 시장가보다 높으면 행사 현금으로 되사는 주식수가 신규 발행 주식수보다 많아져 순증주가 음수가 된다. 분모가 줄면 EPS가 올라가므로 anti-dilutive → diluted EPS 계산에서 제외. 따라서 분모에 더할 것이 없어 diluted EPS = basic EPS.\n\n[WACSO 계산]\n각 구간이 실제 유통된 개월수로 가중:\nJan 1~Mar 31: 15,000 × 3/12 = 3,750\nApr 1~May 31: 12,500 × 2/12 = 2,083\nJun 1~Dec 31: 17,000 × 7/12 = 9,917\n합 = 15,750 (개월 합 3+2+7 = 12 확인)\n\n[정답 도출]\nNI $125,000 ÷ 15,750 = $7.94 (basic = diluted)\n→ 정답 C $7.94. A($4.63)·B($7.35)·D($4.85)는 out-of-money 옵션을 분모에 포함하거나 가중치를 잘못 배분한 값.\n\n[반대 방향]\n행사가 < 시장가였다면 in-the-money → TSM 순증주 = n × (시장가 − 행사가)/시장가를 분모에 더해 diluted EPS < basic EPS가 된다.",
   },
 
   // ── EQUITY ─────────────────────────────────────────────────────────────────
@@ -1695,6 +1792,54 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "① Jan 1 Outstanding: 100,000\n② Mar 1 +15,000 issued: 115,000\n③ Jun 1 +2,500 TS resold: 117,500\n④ Sep 1 × 2 split: 235,000",
     example: "Issued 110,000 / Outstanding 100,000 → Treasury 10,000\nMar +15K issued / Jun +2.5K resold → Outstanding 117,500\nSep 2-for-1 split → 117,500 × 2 = 235,000",
     context_background: "[Issued vs Outstanding 구분]\nIssued = 회사가 발행한 총 주식수 (자사주 포함)\nOutstanding = 외부 주주가 보유한 주식수 (= Issued − Treasury)\n\n[자사주 재발행(Resold) 효과]\n자사주를 시장에 다시 팔면:\n→ 주식이 외부 주주에게 이전\n→ Treasury 감소 / Outstanding 증가\n→ Issued는 변화 없음 (새로 발행한 게 아님)\n\n[Stock split 기준]\nSplit = 외부 주주 보유 주식을 나누는 것\n→ 기준 = Outstanding (외부 주주 보유분)\n→ Treasury는 외부에 없으므로 Outstanding에 미포함\n→ Issued 전체에 적용하면 Treasury까지 split → 과대 계산\n\n[C 오답 이유]\nIssued 110,000 + 15,000 = 125,000\n125,000 × 2 = 250,000 → Treasury 10,000도 split에 포함한 오류\n실제 Treasury는 split 대상 아님",
+  },
+
+  // [EQUITY_018] Ending Retained Earnings — Build-up from Income Since Incorporation Less Dividends
+  // RULE    : RE = 누적 순이익 − 현금배당 − 현물배당 / 자사주(cost) 원가초과 재매각 이익 → APIC-TS, RE 무관
+  // TRIGGER : "income since incorporation" → RE 시작점 / "cash + property dividends" → 둘 다 차감 / "excess over cost, cost method" → APIC, 제외
+  // TRAP    : 현물배당 누락(C/D) / 자사주 초과분을 RE 가산(A/D)
+  {
+    topic_id: "EQUITY_018",
+    book_id: 'AA',
+    chapter_id: 'AA_CH3',
+    topic_group: 'AA_CH3_STKEQ',
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
+    card_type: 'calculation',
+    card_name: "Ending Retained Earnings — Build-up from Income Since Incorporation Less Dividends",
+    rule: "기말 Retained Earnings = (설립 이후 누적 순이익) − (현금배당) − (현물배당). 'Total income since incorporation'은 매년 closing(Income Summary → RE)을 통해 RE에 누적되어 온 금액 → RE 계산의 출발점. 현금배당·현물배당(declaration date FV) 모두 RE 직접 차감. Cost method 자사주를 원가 초과로 재매각한 차액 이익 → APIC-TS로 처리, RE 무관(owner transaction이라 손익 아님). 단 원가 미만 재매각 손실은 APIC-TS 잔액 먼저 차감 후 부족 시 RE 차감(비대칭).",
+    trigger: "income since incorporation | cash dividends paid | property dividends distributed | excess of proceeds over cost | treasury stock cost method | retained earnings\n'Total income since incorporation' → RE 시작점(누적 NI 전체, 한 해 아님)\n'cash dividends paid' + 'property dividends distributed' → 둘 다 RE 차감\n'excess of proceeds over cost of treasury stock sold ... cost method' → APIC-TS, RE 무관(더하지도 빼지도 말 것)\n질문 'retained earnings' → 누적NI − 현금배당 − 현물배당",
+    trap: "현물배당(property dividend)을 RE에서 빼먹음 → 현금배당만 차감하고 끝내는 오류(예: 420,000−130,000=290,000)\n자사주 원가초과 재매각 이익을 RE에 가산 → cost method에서 초과분은 APIC-TS, RE에 절대 안 닿음\n'income since incorporation'을 당해 1년치로 착각 → 설립 이후 누적치\n[비대칭 주의] 자사주 원가 미만 재매각 손실은 APIC-TS 잔액 소진 후 RE 차감 가능 → 이익 방향은 RE 무관이지만 손실 방향은 RE 닿을 수 있음",
+    one_sentence: "RE = 누적 순이익 − 현금배당 − 현물배당; cost method 자사주 원가초과 재매각 이익은 APIC-TS라 RE 무관.",
+    example: "Row: 누적NI $420,000 − 현금배당 $130,000 − 현물배당 $30,000 = RE $260,000\n자사주 원가초과 $110,000 → APIC-TS(RE 무관) → 제외\n(현금 미만 재매각이었다면: APIC-TS 먼저 차감 → 부족분만 RE 차감)",
+    journal_entry: "자사주 원가초과 재매각(cost method):\nDr. Cash\n  Cr. Treasury Stock (취득 원가)\n  Cr. APIC — Treasury Stock (원가 초과분)\n\n원가 미만 재매각:\nDr. Cash\nDr. APIC — Treasury Stock (잔액 한도)\nDr. Retained Earnings (APIC-TS 부족 시)\n  Cr. Treasury Stock (취득 원가)",
+    key_formula: "Ending RE = Total income since incorporation − Cash dividends − Property dividends(FV)\n(자사주 cost-method 원가초과 재매각 이익은 제외 → APIC-TS)",
+    speed: "RE = 누적NI − 현금배당 − 현물배당 = 420,000 − 130,000 − 30,000 = $260,000 | 자사주 원가초과 110,000 → APIC-TS, 손대지 말 것 → 정답 C",
+    context_background: "[Retained Earnings의 본질]\nRE(이익잉여금)는 회사가 설립 이후 벌어들인 누적 순이익 중 배당으로 주주에게 분배하지 않고 회사에 남긴 몫이다. 따라서 RE = 누적 순이익 − 누적 배당.\n\n[왜 'income since incorporation'이 출발점인가]\n매 회계연도 말 closing entry로 그 해 net income이 Income Summary를 거쳐 RE로 대체된다(Income Summary → Retained Earnings). 따라서 '설립 이후 누적 순이익'은 사실상 그동안 RE에 쌓여온 총액과 같다. 한 해 I/S 숫자가 아니라 설립부터 현재까지의 누적분이라는 점이 핵심.\n\n[각 항목의 RE 영향 판단]\n① Total income since incorporation $420,000 → RE 가산(출발점)\n② Cash dividends paid $130,000 → RE 차감 (배당 = 이익의 주주 분배)\n③ Property dividends distributed $30,000 → RE 차감 (현물배당도 declaration date FV로 RE 감소, 현금배당과 동일 취급)\n④ Excess of proceeds over cost of treasury stock sold (cost method) $110,000 → RE 무관\n   자사주 거래는 회사와 주주 간 자본거래(owner transaction)이지 영업성과가 아니다. 원가 초과 재매각 차액은 APIC — Treasury Stock으로 가감하며 손익(RE)에 영향 없다.\n\n[자사주 cost method 비대칭]\n- 원가 초과 재매각(이익 방향): 전액 APIC-TS → RE에 절대 안 닿음\n- 원가 미만 재매각(손실 방향): 먼저 APIC-TS 잔액에서 차감 → APIC-TS가 부족하면 그때 RE 차감\n이익은 RE 무관, 손실은 APIC 소진 후 RE 가능 — 방향에 따라 비대칭이라는 점이 함정.\n\n[정답 도출]\nRE = $420,000 − $130,000 − $30,000 = $260,000\n자사주 초과분 $110,000은 APIC-TS이므로 제외.",
+  },
+
+  // [EQUITY_019] Treasury Stock — Par Value Method: APIC Calculation
+  // RULE    : par value method = 거래마다 par·APIC 즉시 분해 / 발행 +(발행가−par) / 취득 −(원발행가−par), 초과분 RE / 재발행 +(재발행가−par)
+  // TRIGGER : "par value method" + treasury → 취득 시 원발행 APIC 제거, 초과분 RE, 재발행 신규 APIC
+  // TRAP    : 취득 APIC 제거 누락(D) / cost method와 혼동 / 취득엔 원발행가·재발행엔 현재가 기준
+  {
+    topic_id: "EQUITY_019",
+    category: "Stockholders' Equity",
+    topic_name: "Treasury Stock — Par Value Method: APIC Calculation",
+    book_id: 'AA',
+    chapter_id: 'AA_CH3',
+    topic_group: 'AA_CH3_STKEQ_TS',
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
+    card_type: 'calculation',
+    card_name: "Treasury Stock — Par Value Method: APIC Calculation",
+    rule: "Par value method = 자사주 취득을 부분 소각(constructive retirement)으로 보아 거래 시점마다 par·APIC를 즉시 분해(시간 무관, 월할 없음).\n· 발행: APIC += (발행가 − par) × 주수\n· 취득: 그 주식이 발행될 때 받았던 APIC만 제거 = (원발행가 − par) × 주수. 취득가가 (par + 원APIC)를 초과하면 다른 주식 APIC를 끌어오지 않고 즉시 RE 차감\n· 재발행: 신규 발행처럼 APIC += (재발행가 − par) × 주수\n취득은 '과거 발행가' 기준(되감기), 재발행은 '현재가' 기준(새 발행) → 곱하는 차액이 다름. cost method와 달리 APIC-TS 공용 완충계정 안 씀.",
+    trigger: "par value method | treasury stock | reissued | additional paid-in capital | constructive retirement\n'par value method' + 자사주 → 취득 시 원발행 APIC 제거 + 초과분 RE, 재발행 시 신규 APIC\n발행: APIC += (발행가 − par) × 주수\n취득(par method): APIC −= (원발행가 − par) × 주수, 초과분 → RE\n재발행: APIC += (재발행가 − par) × 주수\nAPIC는 자본거래 → 월할 계산 없음, 거래 시점 전액",
+    trap: "D: 취득 시 APIC 제거(−$25,000)를 누락 → par value method는 취득 시점에 반드시 APIC 차감\nB: 취득 차액 배분 오류(RE에 $10,000은 넣되 APIC $25,000 제거 안 함)\nA: Jan 5 발행 APIC만 보고 취득·재발행 변동 누락\n[cost method 혼동] cost method라면 취득 시 APIC 안 건드리고 재발행 차액만 APIC-TS로. par value method는 취득 시점부터 APIC 분해\n[기준 혼동] 취득은 원발행가($15) 기준 $5 제거, 재발행은 현재가($20) 기준 $10 신규 → 두 거래의 곱셈 기준이 다름\n[초과분] 취득 주식 본인 발행 APIC를 다 쓴 뒤 초과분은 다른 주식 APIC 안 끌어오고 즉시 RE (cost method는 APIC-TS 먼저 소진 후 RE)",
+    one_sentence: "par value method APIC = 발행차액 + 재발행차액 − 취득 시 원발행 APIC; 취득 초과분은 즉시 RE, 월할 없음.",
+    example: "Asp: par $10\nJan 5 발행 20,000@$15 → APIC +($15−10)×20,000 = +$100,000\nJul 14 취득 5,000@$17 → APIC −($15−10)×5,000 = −$25,000, 초과 ($17−15)×5,000=$10,000 → RE\nDec 27 재발행 5,000@$20 → APIC +($20−10)×5,000 = +$50,000\n누적 APIC = 100,000 − 25,000 + 50,000 = $125,000",
+    journal_entry: "Jan 5 발행:\nDr. Cash 300,000 / Cr. Common stock 200,000 / Cr. APIC 100,000\n\nJul 14 취득 (par value method):\nDr. Treasury stock 50,000 (par×5,000)\nDr. APIC 25,000 (원발행 APIC 환원)\nDr. Retained earnings 10,000 (취득가 − 원발행가 초과분)\n  Cr. Cash 85,000\n\nDec 27 재발행 (신규 발행 취급):\nDr. Cash 100,000\n  Cr. Treasury stock 50,000\n  Cr. APIC 50,000",
+    key_formula: "발행 APIC = (발행가 − par) × 주수\n취득 APIC 제거 = (원발행가 − par) × 주수 ; 초과분(취득가 − 원발행가)×주수 → RE\n재발행 APIC = (재발행가 − par) × 주수\n누적 APIC = Σ 위 항목",
+    speed: "par value method APIC 누적 = 발행차액 + 재발행차액 − 취득 시 원발행 APIC = ($5×20,000) + ($10×5,000) − ($5×5,000) = 100,000 + 50,000 − 25,000 = $125,000 → 정답 C",
+    context_background: "[Cost method vs Par value method]\nTreasury stock 회계엔 두 방법이 있다.\n· Cost method(더 흔함): 자사주를 원가 한 덩어리로 보고, APIC는 재발행 차액에서만 건드린다(APIC-TS 공용 완충계정 사용). 취득 시점엔 APIC를 건드리지 않음.\n· Par value method: 자사주 취득을 '그 주식의 부분 소각(constructive retirement)'으로 보아, 취득 즉시 그 주식이 원래 발행될 때 잡았던 par·APIC를 거꾸로 풀어낸다.\n\n[par value method 3거래 처리]\n① 발행: 정상 발행. APIC += (발행가 − par) × 주수.\n② 취득: 그 주식이 '발행 때 받은 APIC'만 제거 = (원발행가 − par) × 주수. 취득가가 (par + 원APIC)를 초과하면, 다른 주식이 가진 APIC를 끌어오지 않고 그 초과분을 즉시 RE에서 차감. (취득 주식 본인의 발행 APIC만 환원 가능 — 소각하는 건 그 주식이지 남의 주식이 아니므로)\n③ 재발행: 과거 발행가와 무관하게 신규 발행처럼 처리. APIC += (재발행가 − par) × 주수.\n\n[취득 vs 재발행의 기준이 다른 이유]\n취득은 '과거 발행을 되돌리는' 거래 → 기준 = 원발행가($15) → 제거 = ($15−$10)×5,000 = $25,000.\n재발행은 '완전히 새로운 발행' → 기준 = 재발행가($20) → 신규 = ($20−$10)×5,000 = $50,000.\n그래서 같은 5,000주인데 곱하는 차액이 $5와 $10으로 다르다. 과거는 취득 시점에 이미 청산되었으므로 재발행엔 $15가 끼어들지 않는다.\n\n[월할 없음 / APIC-CS 한 덩어리]\nAPIC는 자본거래라 시간에 걸쳐 발생하는 손익이 아니므로 월할(time apportionment) 없음 — 거래 시점에 전액 반영. 이 문제의 APIC는 본질적으로 APIC-CS(보통주 발행초과금) 한 덩어리이며, par value method엔 cost method의 APIC-TS 완충계정이 (AICPA 객관식 수준에선) 없다.\n\n[복수 발행단가 시 — 취득 대상 식별]\n취득 시 제거하는 APIC는 '그 주식이 발행될 때 받은 APIC'이므로, 발행 단가가 여러 종류면 어느 주식을 취득하는지가 중요하다. 자사주는 물리적으로 어느 묶음인지 식별이 어려워, 문제가 대상을 명시하지 않으면 가중평균 APIC 단가로 제거한다. (단일 발행가이거나 대상을 명시한 깔끔한 형태로 주로 출제됨)\n\n[정답 도출 — Asp]\nJan 5: +$100,000 / Jul 14: −$25,000 (초과 $10,000은 RE) / Dec 27: +$50,000\n→ 누적 APIC = $125,000 (정답 C)\nD($150,000)=취득 APIC 제거 누락 / B($140,000)=취득 배분 오류 / A($100,000)=발행분만",
   },
 
   // [EQUITY_015] Dividends — Three Key Dates (Declaration, Record, Payment)
@@ -2486,8 +2631,8 @@ Series B+ 감사 시 핵심 검토 항목`,
     card_type: 'calculation',
     card_name: "Intercompany Fixed Asset Sale — Depreciation Adjustment in Consolidation",
     rule: "Parent→Sub 내부거래 자산 매각 시 연결 감가상각 조정:\n당기 감가상각 감소액 = Gain × (1 ÷ Sub 내용연수)\n\nMCQ: 조정 % = 1 ÷ Sub(매입한 쪽) 내용연수\nTBS: Gain 금액 계산 후 × (1 ÷ Sub 내용연수) = 당기 제거액\n\n항상 Sub(매입한 쪽) 내용연수 기준. Parent 내용연수 사용 금지.",
-    trigger: "Parent→Sub 자산 매각 + Gain 발생 → 연결 감가상각 조정 필요\nSub 내용연수 확인 → 역수 = MCQ 조정 %\n'decreased by X% of the gain' → 1 ÷ Sub 내용연수\n금액 질문: 매수사 감가상각 − 원래 감가상각 = 조정액\n대안: (매각가 − BV) ÷ 매수사 내용연수",
-    trap: "매수사(Sub) 감가상각 전액을 조정액으로 착각 → 원래 감가상각과의 차이만 조정\n'$0' 조정 불필요 오류 → 내부거래 자산도 반드시 조정\n매도사(Parent) 내용연수로 계산 → 항상 매수사(Sub) 내용연수 기준\n매도사가 기록하던 감가상각액을 조정액으로 착각",
+    trigger: "Parent→Sub 자산 매각 + Gain 발생 → 연결 감가상각 조정 필요\nSub 내용연수 확인 → 역수 = MCQ 조정 %\n'decreased by X% of the gain' → 1 ÷ Sub 내용연수\n금액 질문: 매수사 감가상각 − 원래 감가상각 = 조정액\n대안1: (매각가 − BV) ÷ 매수사 내용연수\n대안2: Gain × (1 ÷ 매수사 내용연수)\n'by what amount should depreciation expense be decreased?' → 부풀려진 매각가 상각 − 원래 BV 기준 상각 = 차이가 제거대상",
+    trap: "매수사(Sub) 감가상각 전액을 조정액으로 착각(예: $72,000÷3=$24,000) → 원래 감가상각($48,000÷3=$16,000)과의 차이만 조정\n'$0' 조정 불필요 오류 → 감가성 자산 내부거래도 반드시 매년 조정\n매도사(Parent) 매각 전 연 상각액(예: $80,000÷5=$16,000)을 조정액으로 착각 → 매각 전 금액일 뿐 조정액 아님\n매도사(Parent) 내용연수로 계산 → 항상 매수사(Sub) 내용연수 기준\n핵심: 부풀려진 매각가 기준 상각 − 매각 없었을 때(원래 BV) 기준 상각, 그 '차이'만 제거",
     one_sentence: "연결 감가상각 조정 % = 1 ÷ Sub(매입한 쪽) 내용연수; Parent 내용연수 쓰면 오답.",
     speed: "% 질문: Sub 내용연수 확인 → 역수(1÷n)\n금액 질문:\n① 매수사 감가상각 = 매각가 ÷ 매수사 내용연수\n② 원래 감가상각 = 원가 ÷ 원래 내용연수\n③ 차이 = 조정액\n또는: (매각가 − BV) ÷ 매수사 내용연수",
     context_background: "[내부거래 감가상각 조정 구조]\n\n[왜 조정이 필요한가]\nParent가 Gain 붙여 Sub에 매각\n→ Sub는 높은 매입가 기준으로 감가상각\n→ 연결에서는 원래 원가 기준이어야 함\n→ 초과 감가상각분 제거 필요\n\n[숫자 예시]\nPort 취득가: $100 / 5년 상각 / 2년 경과\n누적감가: $100÷5×2 = $40\nBV: $60\nSalem 매입가: $75 → Gain $15\n\nSalem 감가상각: $75 ÷ 3년 = $25\n연결 감가상각: $100 ÷ 5년 = $20\n초과분(제거): $25 − $20 = $5\n\n검증: $15 × 1/3 = $5 ✅\n\n[MCQ 전략]\nSub 내용연수만 보고 역수 계산\nSalem 3년 → 1/3 = 33 1/3%\nSalem 5년이었다면 → 1/5 = 20%\nSalem 2년이었다면 → 1/2 = 50%\n\n[D 함정]\nPort 5년 → 1/5 = 20%\n→ Parent 내용연수 사용 오류\n→ 항상 매입한 쪽(Sub) 기준",
@@ -5662,8 +5807,8 @@ Series B+ 감사 시 핵심 검토 항목`,
     card_type: 'concept',
     card_name: "Comprehensive income — what is excluded (owner transactions)",
     rule: "Comprehensive Income = Net Income + OCI(PUFI). 제외 항목 = Owner transactions(자사주 거래·배당·주식발행). Treasury stock reissuance gain → APIC(equity 내부 재분류) → NI도 OCI도 아님 → Comprehensive Income 제외. PUFI: Pension / Unrealized AFS G/L / Foreign currency translation / Interest rate hedge.",
-    trigger: "comprehensive income | not used | not included | owner transaction | treasury stock | PUFI | OCI",
-    trap: "D(realized loss on trading): Trading 실현손실 → Net Income → Comprehensive Income 포함. 'realized'라서 제외라고 착각 주의. B(foreign currency translation): OCI(PUFI F항목) → 포함. C(unrealized AFS): OCI(PUFI U항목) → 포함.",
+    trigger: "comprehensive income | not used | not included | owner transaction | treasury stock | PUFI | OCI | purpose of comprehensive income | nonowner sources | all changes in equity",
+    trap: "D(realized loss on trading): Trading 실현손실 → Net Income → Comprehensive Income 포함. 'realized'라서 제외라고 착각 주의. B(foreign currency translation): OCI(PUFI F항목) → 포함. C(unrealized AFS): OCI(PUFI U항목) → 포함. [정의형 함정] 'segment'(부문 이익 연결/부문별 정보) → Segment reporting과 혼동, CI 아님. 'reconcile NI to operating cash flow' → 현금흐름표 간접법, CI 아님. 정답 단서 = 'nonowner sources' + 'all changes in equity'.",
     one_sentence: "Comprehensive Income 제외 = Owner transactions(자사주·배당); PUFI 4가지 + NI는 모두 포함.",
     example: "Treasury stock reissuance $10K gain → Cr.APIC $10K (equity 내부) → Comprehensive Income $0 영향 / AFS unrealized gain $5K → OCI → Comprehensive Income +$5K",
     speed: "① Comprehensive Income = NI + OCI(PUFI) ② Owner transaction → 제외 ③ Treasury stock reissuance → APIC → 제외 → 정답 A",
@@ -6167,6 +6312,30 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "Loss on disposal → 정액법. Gain on disposal → 가속상각(DDB/SYD).",
   },
 
+  // [PPE_022] Sum-of-the-Years'-Digits Depreciation — Accumulated Depreciation Calculation
+  // RULE    : SYD 분모 N(N+1)/2, 분자=잔여연수 / 베이스=원가−잔존가 / 누적=매년 상각액 전부 합산
+  // TRIGGER : "sum-of-the-years'-digits" → 분모 N(N+1)/2 / "accumulated as of Year N" → Y1~N 합산
+  // TRAP    : 누적 vs 당기/일부연도 혼동 / 잔존가 차감 누락 / NBV를 누적상각으로 오독
+  {
+    topic_id: "PPE_022",
+    category: "PP&E",
+    topic_name: "Sum-of-the-Years'-Digits Depreciation — Accumulated Depreciation Calculation",
+    book_id: 'IA',
+    chapter_id: 'IA_CH4',
+    topic_group: 'IA_CH4_PPE',
+    sub_category_id: "U3_PPE",
+    card_type: 'calculation',
+    card_name: "Sum-of-the-Years'-Digits Depreciation — Accumulated Depreciation Calculation",
+    rule: "SYD(Sum-of-the-Years'-Digits) = 가속상각. 분모 = N(N+1)/2 (= N+...+1). 분자 = 매년 잔여 내용연수(Year1=N, Year2=N−1, ... 첫 해가 가장 큼). 감가상각 베이스 = 원가 − 잔존가(DDB와 달리 잔존가를 먼저 차감). 당기 감가상각 = 베이스 × (잔여연수/분모). 누적 감가상각(accumulated depreciation, as of Year N) = 베이스 × (Year1~N 잔여연수 분자들의 합)/분모 = 매년 상각액 전부 합산.",
+    trigger: "sum-of-the-years'-digits | SYD | accelerated depreciation | salvage value | accumulated depreciation as of | depreciable base\n'sum-of-the-years'-digits' → 분모 N(N+1)/2, 분자 잔여 내용연수\n'salvage value' + SYD → 베이스 = 원가 − 잔존가에 분수 적용 (DDB는 잔존가 무시)\n'accumulated depreciation as of [Year N]' → Year 1~N 상각액 전부 합산(누적)\n'depreciation expense for [Year N]' → 그 해 한 해분만",
+    trap: "A(누적-당기 혼동): Year 1+2만 합산하고 Year 3 당기분을 누락 → 누적은 해당 연도까지 전부 합. (이 값은 정액 3년치 $150,000/5×3와도 우연히 일치하는 함정)\nC: Year 3 당기 감가상각만 → 'expense' vs 'accumulated' 혼동\nD: Year 2 말 장부가액(NBV) = 원가 − 누적상각 → 누적상각이 아니라 잔존 장부가, 질문 오독\n잔존가 차감 누락 → SYD는 (원가−잔존가)에 분수 적용\nSYD 분자/분모 거꾸로 → 분모는 N(N+1)/2, 분자는 잔여연수(첫 해 최대)",
+    one_sentence: "SYD 누적상각 = (원가−잔존가) × (해당 연도까지 잔여연수 분자합)/[N(N+1)/2]; 누적은 매년 다 더한 값.",
+    example: "원가 $170,000, 잔존 $20,000, N=5, SYD\n분모 = 5×6/2 = 15, 베이스 = $150,000\nY1: 150,000×5/15 = $50,000\nY2: 150,000×4/15 = $40,000\nY3: 150,000×3/15 = $30,000\n누적(Y3 말) = 50,000+40,000+30,000 = $120,000 (= 150,000×12/15)",
+    key_formula: "분모 = N(N+1)/2\n당기 = (원가 − 잔존가) × (잔여연수 / 분모)\n누적(as of Year N) = (원가 − 잔존가) × (Σ Year1~N 잔여연수) / 분모",
+    speed: "분모 = N(N+1)/2 = 5×6/2 = 15 | 베이스 = 170,000−20,000 = 150,000 | 누적 Y1~Y3 분자합 = 5+4+3 = 12 → 150,000 × 12/15 = $120,000 → 정답 B",
+    context_background: "[SYD가 가속상각인 이유]\nSYD(연수합계법)는 자산이 초기에 더 많은 효익을 내고 후기로 갈수록 효익이 줄어든다는 가정(또는 후기에 늘어나는 수선비와 비용을 균형 맞추려는 목적)을 반영한 가속상각법이다. 초기에 많이, 후기에 적게 상각한다.\n\n[분모와 분자]\n분모 = 내용연수 숫자들의 합 = 5+4+3+2+1 = 15. 빠른 공식 N(N+1)/2 = 5×6/2 = 15.\n분자 = 매년 '남은' 내용연수. Year 1 = 5, Year 2 = 4, Year 3 = 3 ... 그래서 첫 해(5/15)가 가장 크다.\n\n[잔존가 차감 — DDB와의 핵심 차이]\nSYD는 감가상각 베이스에서 잔존가를 먼저 뺀 뒤 분수를 적용한다. 베이스 = $170,000 − $20,000 = $150,000.\n(반면 DDB는 매년 NBV에 정률을 곱하고 잔존가는 베이스 차감에 쓰지 않으며, 마지막에 잔존가 밑으로 내려가지 않도록 멈춘다. 이 차이를 혼동하지 말 것.)\n\n[누적(accumulated) vs 당기(expense)]\n'Accumulated depreciation as of December 31, Year N'은 B/S의 차감계정 잔액으로, 그 해까지 매년 상각액을 전부 합산한 값이다. 당기 한 해분(depreciation expense for Year N)이나 일부 연도 합과 혼동하면 안 된다. 이 문제의 핵심 함정이 바로 이 독해.\n\n[연도별 계산]\nY1: $150,000 × 5/15 = $50,000\nY2: $150,000 × 4/15 = $40,000\nY3: $150,000 × 3/15 = $30,000\n누적(Year 3 말) = $50,000 + $40,000 + $30,000 = $120,000 = $150,000 × (5+4+3)/15 = $150,000 × 12/15\n\n[오답 해부]\nA $90,000: Y1+Y2만 더하고 Y3 누락. 동시에 정액 3년치($150,000/5×3)와 일치해 '그럴듯한' 함정.\nC $30,000: Y3 당기 감가상각만 → 누적 아님.\nD $80,000: Y2 말 NBV($170,000−$50,000−$40,000) → 누적상각이 아니라 장부가.\n→ 정답 B $120,000.",
+  },
+
   // [PPE_DEP_001] Units-of-Production Depreciation — Required Condition
   // RULE    : UOP 필수 요건 = total units estimable / constant→SL / obsolescence→가속상각
   // TRIGGER : "units-of-production" + "required condition" → total units can be estimated
@@ -6339,6 +6508,29 @@ Series B+ 감사 시 핵심 검토 항목`,
     one_sentence: "CECL = asset valuation 강조 = B/S 중심 = Aging of receivables.",
     example: "Aging: 30일 이하 $10,000×1% + 90일 이상 $2,000×20% = Allowance 목표잔액 / % of Sales: $100,000×2% = $2,000 당기 expense / Direct write-off: 파산 확정 시 Dr.Credit Loss Exp / Cr.A/R",
   },
+
+  // [REC_014] Allowance for Credit Losses — Direction of Change by Transaction (CECL)
+  // RULE    : Allowance = 대변잔액(contra-asset) / 증가=Cr., 감소=Dr. / 감소시키는 건 write-off뿐(+드물게 과대적립 환입)
+  // TRIGGER : "allowance decrease" → Dr.Allowance 거래 = write-off / "recovery/collectible/provision" → Cr.Allowance = 증가
+  // TRAP    : recovery를 감소로 착각(직관 함정, 실제는 복원→증가) / good news=감소 의미로 풀기
+  {
+    topic_id: "REC_014",
+    book_id: 'IA',
+    chapter_id: 'IA_CH5',
+    topic_group: 'IA_CH5_REC',
+    sub_category_id: "U3_TRADE_RECEIVABLES",
+    card_type: 'concept',
+    card_name: "Allowance for Credit Losses — Direction of Change by Transaction (CECL)",
+    rule: "Allowance for Credit Losses = AR의 차감계정(contra-asset), 대변잔액(credit balance) 계정. 증가 = 대변(Cr.) 분개, 감소 = 차변(Dr.) 분개. 분개 방향으로만 판단(거래의 'good news/bad news' 의미로 풀면 틀림).\n[감소 = Dr.Allowance] ① Write-off: Dr.Allowance / Cr.AR (미리 쌓은 쿠션에서 확정손실 꺼내 씀) ② 연말 과대적립 환입: Dr.Allowance / Cr.Credit Loss Expense (aging 목표 < 조정 전 잔액일 때, 드묾)\n[증가 = Cr.Allowance] · Provision/추정 인식: Dr.Expense/Cr.Allowance · Recovery(회수): Dr.AR/Cr.Allowance로 write-off 복원 · 회수가능 전환: Dr.AR/Cr.Allowance",
+    trigger: "allowance increase | allowance decrease | written off | collected | becomes collectible | recovery | adjustment to credit losses | CECL\n'allowance would decrease' → Allowance를 차변(Dr.)으로 건드리는 거래 → write-off\n'written off' (실제 제각) → Dr.Allowance / Cr.AR → 감소\n'recovery' / 'previously written off ... collected' / 'becomes collectible' → Dr.AR(or Cash) / Cr.Allowance → 증가\n'adjustment/provision for credit losses' → Dr.Expense / Cr.Allowance → 증가\n'collection on normal account' / 'reclassification' → Allowance 무관",
+    trap: "Recovery(전에 떼인 계정 회수)를 감소로 착각 → 직관('회수=손실 회복=쿠션 줄어듦')의 함정. 실제는 write-off를 먼저 복원(Dr.AR/Cr.Allowance)하므로 오히려 증가\n'becomes collectible'도 동일하게 Cr.Allowance → 증가\nProvision 인식을 감소로 착각 → 쿠션을 키우는 것이라 증가\n정상 채권 현금회수(Dr.Cash/Cr.AR)·재분류를 Allowance 변동으로 착각 → 무관\n공통 함정: 'good news=감소, bad news=증가'라는 의미 기준으로 푸는 것. 반드시 Dr./Cr. 분개 방향으로 판단",
+    one_sentence: "Allowance(대변잔액)는 Cr.이면 증가·Dr.이면 감소 → 감소시키는 건 write-off뿐(+드물게 과대적립 환입); recovery는 복원이라 오히려 증가.",
+    example: "Write-off: Dr.Allowance $46,000 / Cr.AR $46,000 → 감소\nRecovery: ①Dr.AR/Cr.Allowance(복원→증가) ②Dr.Cash/Cr.AR → 순효과 Allowance 증가\nProvision: Dr.Credit Loss Expense / Cr.Allowance → 증가\n과대적립 환입: Dr.Allowance / Cr.Credit Loss Expense → 감소(aging 목표<현재잔액)",
+    journal_entry: "[감소]\nWrite-off: Dr. Allowance / Cr. Accounts Receivable\n과대적립 환입: Dr. Allowance / Cr. Credit Loss Expense\n\n[증가]\nProvision: Dr. Credit Loss Expense / Cr. Allowance\nRecovery 1단계(복원): Dr. Accounts Receivable / Cr. Allowance\nRecovery 2단계: Dr. Cash / Cr. Accounts Receivable",
+    speed: "Allowance = 대변잔액 → 감소하려면 Dr.Allowance 분개 → 그게 일어나는 건 write-off뿐 → 정답은 write-off | 회수·회수가능·provision은 전부 Cr.Allowance → 증가 (recovery 감소 착각 주의)",
+    context_background: "[Allowance는 왜 대변잔액 계정인가]\nAllowance for Credit Losses는 Accounts Receivable의 차감계정(contra-asset). AR(차변잔액 자산)을 깎아 Net AR을 만든다. 그래서 자산과 반대로 대변잔액(credit balance)을 가지며, 증가하면 대변(Cr.), 감소하면 차변(Dr.) 분개가 된다.\n\n[왜 헷갈리는가 — 의미 vs 분개 방향]\n일상 직관은 '회수=좋은 일=쿠션 줄어듦', '떼임=나쁜 일=쿠션 늘어남'으로 생각하기 쉽지만, 회계 처리는 분개 방향(Dr./Cr.)으로 결정된다. 의미로 풀면 recovery 같은 함정에 걸린다.\n\n[Allowance를 직접 헐어 줄이는 유일한 본질 거래 = Write-off]\nWrite-off는 미리 쌓아둔 쿠션(allowance)에서 확정된 손실을 꺼내 쓰는 것. Dr.Allowance / Cr.AR. AR(받을 권리)과 Allowance(쿠션)를 동시에 제거하므로 Net AR은 그 순간 불변, expense도 안 건드림(이미 쿠션 만들 때 비용 처리).\n\n[엄밀히는 감소 거래가 하나 더 — 과대적립 환입]\n연말 aging 재측정에서 목표잔액 < 조정 전 잔액이면 과잉분을 줄이며 expense를 거꾸로 깎는다(Dr.Allowance / Cr.Credit Loss Expense). 이것도 allowance를 줄이지만 write-off보다 드물고, 보기 구성상 잘 나오지 않는다.\n\n[Recovery는 증가 — 핵심 함정]\n전에 write-off한 계정이 회수되면, 먼저 그 write-off를 복원한다:\n① Dr. Accounts Receivable / Cr. Allowance  ← allowance 증가(복원)\n② Dr. Cash / Cr. Accounts Receivable        ← allowance 무관\n순효과로 allowance는 증가한다. 'becomes collectible(회수가능 전환)'도 ①만 일어나 증가.\n\n[증가/감소 요약]\n증가(Cr.Allowance): Provision 인식 / Recovery(복원) / 회수가능 전환\n감소(Dr.Allowance): Write-off / (드물게) 과대적립 환입\n무관: 정상 채권 현금회수(Dr.Cash/Cr.AR) / 재분류",
+  },
+
   // [REC_002] Allowance vs Direct Write-off — Accrual Accounting Consistency
   // RULE    : Allowance(CECL) = Matching Principle 충족 → accrual Yes / Direct Write-off = 시점 불일치 → accrual No
   // TRIGGER : "consistent with accrual accounting" → Allowance Yes / Direct Write-off No
@@ -6407,10 +6599,10 @@ Series B+ 감사 시 핵심 검토 항목`,
     card_name: "Allowance — Aging Method: Total Credit Loss Expense Calculation",
     rule: "Aging Method: ① Allowance 잔액 추적(기초 + 추정 − Write-offs) ② 조정 전 잔액 vs Aging 필요잔액 차액 = 추가 Expense ③ Total Expense = 연중 추정액 + 연말 조정액. Write-off → Allowance 차감, Expense 아님.",
     trigger: "'aging of accounts receivable' → Balance Sheet Approach, Allowance 목표잔액 설정\n'write-offs' → Allowance 차감, Expense 아님\n'estimated credit losses per aging 12/31' → 연말 필요잔액\nTotal Expense = 연중 추정 + 조정액",
-    trap: "$52,000(C): Aging 필요잔액을 그대로 expense 착각\n$46,000(A): Write-off를 expense 착각\n$48,000(B): 계산 오류\n공통 함정 ①: Write-off → Allowance 차감이지 expense 아님\n공통 함정 ②: Aging 잔액 ≠ 당기 expense → 조정액만 추가 expense",
+    trap: "$52,000(C): Aging 필요잔액을 그대로 expense로 착각 → 이건 기말 Allowance 목표잔액(B/S)이지 당기 expense가 아님\n$46,000(A): Write-off를 expense로 착각 → write-off는 Allowance·AR 동시 제거일 뿐 expense 아님\n$48,000(B): 계산 오류\n공통 함정 ①: Write-off → Allowance 차감이지 expense 아님 (이미 과거에 expense로 쿠션을 쌓아둠 → 실제 떼이면 쿠션에서 차감, 새 비용 아님)\n공통 함정 ②: Aging 잔액 ≠ 당기 expense → 목표잔액과 조정 전 잔액의 '차이'만 추가 expense\n공통 함정 ③: 연중 추정 $40,000을 빼먹고 조정액 $16,000만 답 → Total Expense는 연중(I/S 접근) + 연말 조정(B/S 접근) 둘 다 합산\n[방향 주의] 조정 전 잔액 > aging 목표면 expense를 거꾸로 감소(Dr.Allowance/Cr.Expense) → 부등호만 보고 방향 결정",
     one_sentence: "Total Credit Loss Expense = 연중 추정($40K) + 연말 Aging 조정($16K) = $56K; Write-off는 expense 아님.",
     speed: "$42,000+$40,000−$46,000=$36,000(조정전)\n$52,000−$36,000=$16,000(추가)\nTotal=$40,000+$16,000=$56,000",
-    context_background: "[Aging Method — Allowance 잔액 추적]\n\nStep 1. Allowance 잔액 추적\n기초 $42,000\n+ 연중 추정 expense $40,000\n− Write-offs $46,000\n= 조정 전 잔액 $36,000\n\nStep 2. 연말 목표잔액 확인\nAging 기준 필요잔액 = $52,000\n차액 = $52,000 − $36,000 = $16,000 부족\n→ 추가 Credit Loss Expense $16,000 인식\n\nStep 3. 당기 Total Expense\n$40,000(연중) + $16,000(연말 조정) = $56,000\n\n[Write-off 처리]\nDr. Allowance for Credit Losses  $46,000\n    Cr. Accounts Receivable            $46,000\n→ Expense 없음, Allowance만 감소\n\n[연말 조정 분개]\nDr. Credit Loss Expense  $16,000\n    Cr. Allowance for Credit Losses  $16,000",
+    context_background: "[Allowance 잔액 vs Credit Loss Expense — 다른 계정]\nAllowance for Credit Losses = B/S 계정, 누적 잔액('지금 쿠션이 얼마나 쌓였나'). Credit Loss Expense = I/S 계정, 당기 발생분만('올해 비용으로 얼마 잡았나'). expense를 잡을 때마다 allowance가 그만큼 쌓인다(Dr.Expense/Cr.Allowance).\n\n[Aging Method = Balance Sheet Approach]\nAging이 직접 정하는 것은 expense가 아니라 '기말에 있어야 할 Allowance 목표잔액'이다. 채권을 나이별로 분류 → 오래될수록 높은 부도율 적용 → 필요 잔액 산출($52,000). expense는 이 목표를 맞추는 과정에서 차이(plug)로 역산되어 나온다.\n반대로 % of sales method = Income Statement Approach: expense를 먼저 정하고(매출×%) allowance는 결과로 쌓임.\n이 문제는 두 방법이 섞여 있다: 연중 $40,000(매출 2% = I/S 접근) + 연말 aging $52,000(B/S 접근). 회사가 연중엔 간편하게 매출%로 잡다가 연말에 aging으로 정밀 재측정하는 구조.\n\n[Step 1. Allowance 잔액 추적]\n기초 $42,000\n+ 연중 추정 expense $40,000  (Dr.Credit Loss Expense / Cr.Allowance — 이미 올해 I/S에 잡힌 1차 expense)\n− Write-offs $46,000\n= 조정 전 잔액 $36,000\n\n[Step 2. 연말 목표잔액 재측정]\nAging 필요잔액 = $52,000\n차이 = $52,000 − $36,000 = $16,000 부족\n→ 추가 Credit Loss Expense $16,000 인식 (2차 expense)\n\n[Step 3. 당기 Total Expense]\n$40,000(연중 1차) + $16,000(연말 조정 2차) = $56,000\n\n[Write-off 처리 — AR·Allowance 동시 제거, net AR 불변]\nDr. Allowance for Credit Losses $46,000\n    Cr. Accounts Receivable $46,000\n→ 못 받음 확정 → AR(받을 권리)와 미리 쌓아둔 Allowance(쿠션)를 동시에 제거. expense 안 건드림(이미 쿠션 만들 때 비용 처리했으므로 이중계상 방지).\n→ AR도 $46,000↓, Allowance(차감계정)도 $46,000↓ → 상쇄되어 Net AR(순실현가능액)은 그 순간 불변.\n\n[연말 조정 분개]\nDr. Credit Loss Expense $16,000\n    Cr. Allowance for Credit Losses $16,000\n\n[방향: 보통 expense 추가, 드물게 감소]\naging 목표 > 조정 전 잔액 → 부족 → expense 추가 (Dr.Expense). write-off가 쿠션을 헐고 새 매출이 새 부실을 만들기 때문에 보통 이 방향.\naging 목표 < 조정 전 잔액 → 과잉 → expense 감소 (Cr.Expense / Dr.Allowance). 경기 호전·과대적립 시.\n\n[conservatism 방향 & big bath]\n회계 보수주의(conservatism) = 손실/비용을 빨리·충분히, 이익은 낮게 → 대손에서는 allowance를 충분히 쌓는 방향. 단 '의도적 과대적립'은 보수주의가 아니라 부정. 경영진이 이익을 부풀리려 allowance를 적게 잡으면 aggressive. 반대로 big bath = 나쁜 해에 allowance를 과대적립해 손실을 몰아 털고, 다음 해 그 과잉 쿠션을 풀어(Dr.Allowance/Cr.Expense) 이익을 부풀림 → 이익의 시점 이동 조작. 과소든 과대든 추정의 의도적 왜곡은 모두 GAAP 위반.",
   },
 
   // [REC_005] Cash to Accrual Revenue Conversion — AR + Unearned Fees
@@ -7261,6 +7453,29 @@ Series B+ 감사 시 핵심 검토 항목`,
     journal_entry: "순이익 인식:\nDr. Investment in Grove $36,000\nCr. Equity in Earnings $36,000\n\n배당 수령:\nDr. Cash $22,500\nCr. Investment in Grove $22,500",
     key_formula: "Equity in Earnings = 피투자회사 순이익 × 지분율\nInvestment 기말 = 취득원가 + Equity in Earnings − Dividends received",
     speed: "Equity Method I/S = 순이익 × 지분율 | 배당 → 투자계정 차감 (I/S 무관)",
+  },
+
+  // [EQM_006] Equity Method vs Fair Value — Common vs Preferred Stock Separate Treatment
+  // RULE    : 주식 종류별 control 판단 분리 / 보통주(영향력)→equity method, 배당=투자계정차감 / 우선주(nonvoting)→fair value, 배당=revenue
+  // TRIGGER : "owns X% common + Y% preferred" → 분리처리 / "nonvoting preferred" → fair value / "dividend revenue?" → equity method 배당 제외
+  // TRAP    : 보통주 배당을 revenue로(A) / 보통주+우선주 합산(D) / 우선주까지 equity method로 묶음(C)
+  {
+    topic_id: "EQM_006",
+    book_id: 'AA',
+    chapter_id: 'AA_CH5',
+    topic_group: 'AA_CH5_EQM',
+    sub_category_id: "U5_EQUITY_METHOD",
+    card_type: 'conditional',
+    card_name: "Equity Method vs Fair Value — Common vs Preferred Stock Separate Treatment",
+    rule: "같은 피투자회사의 보통주·우선주를 함께 보유할 때 주식 종류별로 control(유의적 영향력) 유무를 따로 판단한다. 보통주 + significant influence(의결권) → equity method → 받은 배당은 dividend revenue 아님, 투자계정 차감(이미 순이익 지분으로 인식 → 이중계산 방지). 우선주 nonvoting → 지분율 100%여도 영향력 없음 → fair value method → 배당 전액 dividend revenue. 영향력은 지분율 크기가 아니라 의결권(주식 성격)에서 나온다.",
+    trigger: "owns X% common + Y% preferred | noncumulative nonvoting preferred | significant influence | dividend revenue | common stock dividend | preferred stock dividend\n'한 회사가 보통주+우선주 동시 보유' → 주식별 분리 처리 신호\n'significant influence' + 보통주 → equity method → 보통주 배당은 revenue 아님(투자계정 차감)\n'nonvoting preferred' → 영향력 없음 → fair value → 우선주 배당 = dividend revenue 전액\n질문이 'dividend revenue' → equity method 배당 제외, fair value 배당만 답",
+    trap: "A: 보통주 배당 × 지분율을 dividend revenue로 착각 → equity method 배당은 revenue 아님(투자계정 차감)\nD: 보통주분 + 우선주분 합산 → 보통주분은 제외해야 함\nC($0): 우선주까지 equity method로 묶어 '배당 다 revenue 아님' 처리 → 우선주는 nonvoting이라 fair value → 배당이 revenue\n공통 함정: 우선주의 nonvoting(영향력 없음)을 놓치고 두 주식을 같은 방법으로 처리. 100% 지분이라 더 통제한다고 착각하는 것이 핵심 트랩",
+    one_sentence: "보통주(영향력)는 equity method라 배당=투자계정 차감 / 우선주(nonvoting)는 fair value라 배당=dividend revenue. control은 지분율이 아니라 의결권에서 나온다.",
+    example: "Green 보통주 30%(significant influence) + 우선주 100%(nonvoting) 보유\n보통주 배당 $100,000 × 30% = $30,000 → equity method → 투자계정 차감(revenue 아님)\n우선주 배당 $60,000 전액 → fair value → dividend revenue\n→ I/S dividend revenue = $60,000",
+    journal_entry: "보통주 배당 수령(equity method):\nDr. Cash $30,000\nCr. Investment in Common Stock $30,000\n\n우선주 배당 수령(fair value):\nDr. Cash $60,000\nCr. Dividend Revenue $60,000",
+    key_formula: "Dividend Revenue = 우선주(fair value 보유분) 배당 전액\n보통주(equity method) 배당 = 투자계정 차감 (revenue 제외)",
+    speed: "보통주 + significant influence → equity method → 배당 revenue 아님(0) | 우선주 nonvoting → fair value → 배당 전액 revenue → dividend revenue = 우선주 배당 $70,000 → 정답 B",
+    context_background: "[한 회사 주식을 종류별로 다르게 회계처리하는 이유]\n같은 피투자회사 주식이라도 보통주와 우선주는 성격이 다르므로 회계처리도 분리한다. 분기점은 지분율 크기가 아니라 'control(유의적 영향력)을 줄 수 있는 주식이냐'이다. 그리고 그 영향력은 의결권(voting)에서 나온다.\n\n[보통주 — equity method]\n보통주는 의결권이 있어 20~50% + 유의적 영향력 시 equity method를 적용한다. equity method에서는 피투자사 순이익 × 지분율을 이미 Equity in Earnings로 수익 인식했기 때문에, 이후 받는 배당은 '이미 잡은 이익의 현금 회수'일 뿐이다. 따라서 배당은 dividend revenue가 아니라 투자계정(Investment) 차감으로 처리한다(이중계산 방지).\n\n[우선주 — fair value method]\n우선주는 nonvoting이면 지분율이 100%여도 경영에 영향력을 행사할 수 없다. 따라서 equity method 자격이 없고 fair value method로 처리한다. fair value 보유 증권의 배당은 그대로 dividend revenue로 I/S에 인식한다.\n\n[흔한 함정]\n'우선주를 100% 가졌으니 더 강하게 통제하는 것 아닌가'라고 생각하면 틀린다. 비율이 아니라 의결권 유무가 핵심이다. nonvoting preferred는 비율과 무관하게 fair value로 떨어진다.\n\n[정답 도출]\n보통주 배당: equity method → revenue 아님 → $0\n우선주 배당: fair value → revenue → $70,000\nDividend revenue = $70,000",
   },
 
   // [BOND_002] Bond Extinguishment — Loss on Early Redemption

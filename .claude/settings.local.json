@@ -98,7 +98,32 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\)[0]; print\\('status:', d['deploy']['status']\\); print\\('createdAt:', d['deploy']['createdAt']\\); print\\('commitMsg:', d['deploy'].get\\('commit',{}\\).get\\('message',''\\)[:80]\\)\")",
       "Bash(Select-Object Name)",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d[0]['deploy']['status'], d[0]['deploy']['commit']['message'][:60]\\) if d else print\\('no deploys'\\)\")",
-      "Bash(grep -v \"//\")"
+      "Bash(grep -v \"//\")",
+      "Bash(powershell *)",
+      "Bash(python *)",
+      "Bash(grep -o \"Translation vs Transaction.\\\\{0,2000\\\\}\" 3a23ace3-23ed-41f8-b566-9107fb875c78.jsonl)",
+      "Bash(grep -E \"\\\\.tsx$\")",
+      "Bash(awk '{print $NF}')",
+      "Bash(node_modules\\\\.bin\\\\tsc --noEmit)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Skill(supabase:supabase)",
+      "Bash(npx --version)",
+      "mcp__supabase__execute_sql",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(grep *)",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__list_tables",
+      "Bash(xargs wc -l)",
+      "PowerShell(git *)",
+      "PowerShell(curl *)",
+      "Bash(sort -t_ -k3 -n)",
+      "Bash(Get-Content \"C:\\\\Users\\\\SAMSUNG\\\\Desktop\\\\far-study-app\\\\client\\\\src\\\\constants\\\\professor_ssot_v2.ts\")",
+      "Bash(Select-Object -Last 30)",
+      "Bash(Measure-Object -Line)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }
