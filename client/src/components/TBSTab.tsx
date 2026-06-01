@@ -415,16 +415,20 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
 
           {/* ── 5. Answer Table (Becker style) ── */}
           <Section title="✅ Answer Table">
-            <div style={{ overflowX: 'auto' }}>
+            <div style={{ overflowX: 'auto', width: '100%' }}>
             <table
-              className="text-[11px] border-collapse bg-white rounded-xl"
-              style={{ borderSpacing: 0, minWidth: 1000 }}
+              className="text-[11px] border-collapse"
+              style={{ minWidth: 1000, width: '100%', tableLayout: 'fixed', borderSpacing: 0 }}
             >
+              <colgroup>
+                <col style={{ width: 200 }} />
+                {cols.map((c) => <col key={c.col} style={{ width: 110 }} />)}
+              </colgroup>
               <thead>
                 <tr>
                   <th
-                    className="text-left px-3 py-2 font-semibold border border-[#e2e8f0] rounded-tl-xl"
-                    style={{ background: '#f8fafc', color: '#64748b', minWidth: 120, fontSize: 11 }}
+                    className="text-left px-3 py-2 font-semibold border border-[#e2e8f0]"
+                    style={{ background: '#f8fafc', color: '#64748b', fontSize: 11 }}
                   >
                     항목
                   </th>
@@ -440,7 +444,6 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
                         style={{
                           background: c.auto ? '#f0fdf4' : '#f8fafc',
                           color: c.auto ? '#166534' : '#0f172a',
-                          minWidth: c.col === 'B' ? 80 : 90,
                           fontSize: 11,
                           borderTopRightRadius: ci === cols.length - 1 ? 12 : 0,
                         }}

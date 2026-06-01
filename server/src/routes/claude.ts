@@ -35,7 +35,8 @@ router.post('/chat', async (req: Request, res: Response) => {
   // ── System prompt size logging ────────────────────────────────
   const sysChars = system.length;
   const estTokens = Math.round(sysChars / 4);
-  console.log(`[harry] system_prompt chars=${sysChars} est_tokens≈${estTokens} msgs=${messages.length}`);
+  const hasTBS = system.includes('[TBS:');
+  console.log(`[harry] chars=${sysChars} est_tokens≈${estTokens} msgs=${messages.length} tbs=${hasTBS}`);
 
   try {
     const stream = anthropic.messages.stream({
