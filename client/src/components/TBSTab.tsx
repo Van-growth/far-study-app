@@ -98,7 +98,7 @@ function fmtCell(val: number | null | string, type: string): string {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="text-[12px] font-bold text-muted uppercase tracking-wider mb-3 px-1">
+      <h3 className="text-[12px] font-bold text-muted uppercase tracking-wider mb-3 px-1 max-w-[1200px] mx-auto">
         {title}
       </h3>
       {children}
@@ -249,22 +249,23 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
 
       {/* ── Scrollable body — y only; x handled per-section ── */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-4 pt-6 pb-5 space-y-6">
+        <div className="w-full px-6 pt-6 pb-5 space-y-6">
 
           {/* ── 1. Question ── */}
           <Section title="📋 Question">
-            <div className="bg-white rounded-xl border border-border p-5 space-y-4">
+            {/* Question text — constrained width */}
+            <div className="max-w-[1200px] mx-auto bg-white rounded-xl border border-border p-5">
               <p className="text-[13px] text-[#0f172a] leading-relaxed whitespace-pre-wrap">
                 {p.question_text}
               </p>
+            </div>
 
-              {/* Empty worksheet table */}
-              <div className="border-t border-border pt-3">
-                <p className="text-[11px] text-muted mb-2 italic">
-                  Fill in each cell — positive for increases, negative for decreases, blank if no effect.
-                </p>
-                {/* scroll wrapper: escapes card p-5(20px) + max-w-2xl px-4(16px) = 36px each side */}
-                <div style={{ marginLeft: -36, marginRight: -36, paddingLeft: 16, paddingRight: 16, overflowX: 'auto' }}>
+            {/* Empty worksheet table — full width */}
+            <div className="mt-3">
+              <p className="text-[11px] text-muted mb-2 italic px-1">
+                Fill in each cell — positive for increases, negative for decreases, blank if no effect.
+              </p>
+              <div style={{ overflowX: 'auto' }}>
                   <table
                     className="text-[11px] border-collapse"
                     style={{ minWidth: 1000, width: '100%', tableLayout: 'fixed' }}
@@ -332,13 +333,12 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
                   </table>
                 </div>
               </div>
-            </div>
           </Section>
 
           {/* ── 2. Exhibits ── */}
           {p.exhibits.map((ex) => (
             <Section key={ex.exhibit_id} title={`📄 Exhibit ${ex.exhibit_id}: ${ex.label}`}>
-              <div className="space-y-2">
+              <div className="max-w-[1200px] mx-auto space-y-2">
                 <div
                   className="rounded-lg px-3 py-2 text-[12px]"
                   style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}
@@ -364,7 +364,7 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
 
           {/* ── 3. Solve Steps ── */}
           <Section title="🪜 Solve Steps">
-            <div className="space-y-2">
+            <div className="max-w-[1200px] mx-auto space-y-2">
               {p.solve_steps.map((s) => (
                 <div key={s.step} className="bg-white rounded-xl border border-border p-3.5 flex gap-3">
                   <div
@@ -387,7 +387,7 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
 
           {/* ── 4. Rules ── */}
           <Section title="📐 Rules by Transaction Type">
-            <div className="space-y-2">
+            <div className="max-w-[1200px] mx-auto space-y-2">
               {p.rules.map((r, i) => (
                 <div key={i} className="bg-white rounded-xl border border-border p-3.5">
                   <div className="flex items-start justify-between gap-2 mb-2">
@@ -415,10 +415,10 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
 
           {/* ── 5. Answer Table (Becker style) ── */}
           <Section title="✅ Answer Table">
-            {/* No overflow wrapper — page scrolls naturally */}
+            <div style={{ overflowX: 'auto' }}>
             <table
               className="text-[11px] border-collapse bg-white rounded-xl"
-              style={{ borderSpacing: 0 }}
+              style={{ borderSpacing: 0, minWidth: 1000 }}
             >
               <thead>
                 <tr>
@@ -501,12 +501,13 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
                 })}
               </tbody>
             </table>
+            </div>
           </Section>
 
           {/* ── 6. Related Topics ── */}
           {p.related_topic_ids.length > 0 && (
             <Section title="🔗 Related Topics">
-              <div className="flex flex-wrap gap-1.5">
+              <div className="max-w-[1200px] mx-auto flex flex-wrap gap-1.5">
                 {p.related_topic_ids.map((id) => (
                   <button
                     key={id}
