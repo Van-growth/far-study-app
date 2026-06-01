@@ -45,6 +45,20 @@ export function TypingBubble() {
 // ── SVG/HTML block with fullscreen expand ─────────────────────
 function SVGBlock({ raw }: { raw: string }) {
   const [expanded, setExpanded] = useState(false);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const isSvg = raw.trimStart().toLowerCase().startsWith('<svg');
+
+  // Build blob URL when modal opens (SVG only)
+  useEffect(() => {
+    if (!expanded || !isSvg) return;
+    const blob = new Blob([raw], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    setBlobUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+      setBlobUrl(null);
+    };
+  }, [expanded, isSvg, raw]);
 
   // Close on Escape
   useEffect(() => {
@@ -75,20 +89,31 @@ function SVGBlock({ raw }: { raw: string }) {
           onClick={() => setExpanded(false)}
         >
           <div
-            className="relative bg-white rounded-2xl overflow-auto shadow-2xl"
+            className="relative bg-white rounded-2xl shadow-2xl overflow-auto"
             style={{ maxWidth: '90vw', maxHeight: '90vh' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
             <button
               onClick={() => setExpanded(false)}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full z-10 text-lg font-bold transition-colors"
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full z-10 text-lg font-bold"
               style={{ background: '#f1f5f9', color: '#0f172a' }}
               aria-label="닫기"
             >
               ×
             </button>
-            <div className="p-6 pt-10" dangerouslySetInnerHTML={{ __html: raw }} />
+            <div className="p-4 pt-12">
+              {isSvg && blobUrl ? (
+                // blob URL → <img> 방식: SVG 크기/스코프 문제 없이 안정적으로 렌더링
+                <img
+                  src={blobUrl}
+                  alt="SVG visualization"
+                  style={{ width: '100%', height: 'auto', display: 'block' }}
+                />
+              ) : (
+                <div dangerouslySetInnerHTML={{ __html: raw }} />
+              )}
+            </div>
           </div>
         </div>
       )}

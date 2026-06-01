@@ -248,7 +248,13 @@ SVG 규격:
 - font-family: Arial, sans-serif
 - 배경 #ffffff / 텍스트 #0f172a / 강조 #4f6ef7 / 서브 배경 #f1f5f9
 - 오답·잘못된 방식: #ef4444(빨강) 계열 / 정답·올바른 방식: #4f6ef7(파랑) 또는 #22c55e(초록)
-- 한국어 텍스트 포함 가능`
+- 한국어 텍스트 포함 가능
+
+SVG 출력 규칙:
+- SVG 블록 앞에 제목("SVG Visualization", "TBS: [name] — SVG") 쓰지 말 것
+- \`\`\`svg 코드 블록 바로 출력, 선행 텍스트 없음
+- SVG 뒤 설명 추가 금지 (요청하지 않는 한)
+- 코드 블록 하나만, 여러 블록 금지`
 + `\n\n## FAR Topic Reference (170 cards)\n\n${PROFESSOR_SSOT_V2_TEXT}`;
 
 const ALPHA = ['A', 'B', 'C', 'D'];
