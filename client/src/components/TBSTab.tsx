@@ -237,8 +237,8 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
         </div>
       </div>
 
-      {/* ── Scrollable body (overflow-auto for both axes) ── */}
-      <div className="flex-1 overflow-auto">
+      {/* ── Scrollable body — y only; x handled per-section ── */}
+      <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 pt-6 pb-5 space-y-6">
 
           {/* ── 1. Question ── */}
@@ -253,66 +253,74 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
                 <p className="text-[11px] text-muted mb-2 italic">
                   Fill in each cell — positive for increases, negative for decreases, blank if no effect.
                 </p>
-                <table className="text-[11px] border-collapse w-full">
-                  <thead>
-                    <tr>
-                      <th
-                        className="text-left px-2 py-1.5 font-semibold border border-[#e2e8f0] text-muted"
-                        style={{ background: '#f8fafc', minWidth: 160, verticalAlign: 'top', whiteSpace: 'normal' }}
-                      >
-                        항목
-                      </th>
-                      {cols.map((c) => {
-                        const WS_ABBR: Record<string, string> = {
-                          B: 'Shares', C: 'CS', D: 'APIC',
-                          E: 'RE', F: 'AOCI', G: 'TS', H: 'Total',
-                        };
+                {/* scroll wrapper: escapes card p-5(20px) + max-w-2xl px-4(16px) = 36px each side */}
+                <div style={{ marginLeft: -36, marginRight: -36, paddingLeft: 16, paddingRight: 16, overflowX: 'auto' }}>
+                  <table
+                    className="text-[11px] border-collapse"
+                    style={{ minWidth: 1000, width: '100%', tableLayout: 'fixed' }}
+                  >
+                    <colgroup>
+                      <col style={{ width: 220 }} />
+                      {cols.map((c) => <col key={c.col} style={{ width: 110 }} />)}
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th
+                          className="text-left px-2 py-1.5 font-semibold border border-[#e2e8f0] text-muted"
+                          style={{ background: '#f8fafc', whiteSpace: 'normal' }}
+                        >
+                          항목
+                        </th>
+                        {cols.map((c) => {
+                          const WS_ABBR: Record<string, string> = {
+                            B: 'Shares', C: 'CS', D: 'APIC',
+                            E: 'RE', F: 'AOCI', G: 'TS', H: 'Total',
+                          };
+                          return (
+                            <th
+                              key={c.col}
+                              className="px-1 py-1.5 border border-[#e2e8f0] text-center"
+                              style={{
+                                background: c.auto ? '#f0fdf4' : '#f8fafc',
+                                color: c.auto ? '#166534' : '#0f172a',
+                              }}
+                            >
+                              <div className="font-bold text-sm">{c.col}</div>
+                              <div className="text-xs text-muted font-normal leading-tight mt-0.5">
+                                {WS_ABBR[c.col] ?? c.col}
+                              </div>
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, i) => {
+                        const isEnding = i === rows.length - 1;
                         return (
-                          <th
-                            key={c.col}
-                            className="px-1 py-1.5 border border-[#e2e8f0] text-center"
-                            style={{
-                              background: c.auto ? '#f0fdf4' : '#f8fafc',
-                              color: c.auto ? '#166534' : '#0f172a',
-                              minWidth: 100,
-                            }}
-                          >
-                            <div className="font-bold">{c.col}</div>
-                            <div className="text-[9px] font-normal text-muted leading-tight mt-0.5">
-                              {WS_ABBR[c.col] ?? c.col}
-                            </div>
-                          </th>
+                          <tr key={i} style={{ fontWeight: isEnding ? 700 : 400 }}>
+                            <td
+                              className="px-2 py-1.5 border border-[#e2e8f0] text-[#0f172a] text-[11px]"
+                              style={{ background: isEnding ? '#f0fdf4' : 'white', verticalAlign: 'top', whiteSpace: 'normal' }}
+                            >
+                              {row.label}
+                            </td>
+                            {cols.map((c) => (
+                              <td
+                                key={c.col}
+                                className="border border-[#e2e8f0]"
+                                style={{
+                                  background: isEnding ? '#f0fdf4' : '#f1f5f9',
+                                  height: 28,
+                                }}
+                              />
+                            ))}
+                          </tr>
                         );
                       })}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row, i) => {
-                      const isEnding = i === rows.length - 1;
-                      return (
-                        <tr key={i} style={{ fontWeight: isEnding ? 700 : 400 }}>
-                          <td
-                            className="px-2 py-1.5 border border-[#e2e8f0] text-[#0f172a] text-[11px]"
-                            style={{ background: isEnding ? '#f0fdf4' : 'white', verticalAlign: 'top', whiteSpace: 'normal', minWidth: 160 }}
-                          >
-                            {row.label}
-                          </td>
-                          {cols.map((c) => (
-                            <td
-                              key={c.col}
-                              className="border border-[#e2e8f0]"
-                              style={{
-                                background: isEnding ? '#f0fdf4' : '#f1f5f9',
-                                minWidth: 100,
-                                height: 28,
-                              }}
-                            />
-                          ))}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </Section>
