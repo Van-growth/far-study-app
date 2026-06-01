@@ -216,6 +216,30 @@ TRAP: 여기서 자주 틀린다
 SPEED: 30초 풀이 한 줄`;
   };
 
+  const buildShowMeCommand = (): string => {
+    const q = activeBankQuestion;
+    if (q) {
+      const optLabels = ['A', 'B', 'C', 'D'];
+      const parts: string[] = ['show me'];
+      parts.push(`\n[현재 문제 컨텍스트 — 이 숫자로 시각화해줘]`);
+      parts.push(`Q. ${q.questionText}`);
+      parts.push(q.options.map((o, i) => `${optLabels[i] ?? i + 1}. ${o}`).join('\n'));
+      parts.push(`정답: ${optLabels[q.correctIndex] ?? q.correctIndex}. ${q.options[q.correctIndex]}`);
+      if (q.explanation) parts.push(`해설 핵심: ${q.explanation.slice(0, 300)}`);
+      if (q.speed) parts.push(`SPEED: ${q.speed}`);
+      return parts.join('\n');
+    }
+    if (reviewCardContext) {
+      const parts: string[] = ['show me'];
+      parts.push(`\n[현재 복습 카드 — 이 개념을 시각화해줘]`);
+      parts.push(`토픽: ${reviewCardContext.topicTags[0] ?? reviewCardContext.topicId ?? '현재 개념'}`);
+      if (reviewCardContext.questionText) parts.push(`문제: ${reviewCardContext.questionText}`);
+      if (reviewCardContext.correctAnswer) parts.push(`정답: ${reviewCardContext.correctAnswer}`);
+      return parts.join('\n');
+    }
+    return 'show me';
+  };
+
   const triggerSlash = (cmd: '/go' | '/qu' | '/re') => {
     if (isLoading) return;
     const msg = cmd === '/re' ? buildReCommand() : cmd === '/qu' ? buildQuCommand() : buildGoCommand();
@@ -236,12 +260,19 @@ SPEED: 30초 풀이 한 줄`;
     triggerSlash(cmd);
   };
 
+  const SHOW_ME_TRIGGERS = /^(show me|비주얼로|숫자로 보여줘|비교해줘|구조화해줘)$/i;
+
   const handleSend = () => {
     const t = input.trim();
     if (!t || isLoading) return;
     const isSlash = t === '/re' || t === '/qu' || t === '/go';
-    const { text: correctedText, corrected } = isSlash ? { text: t, corrected: false } : correctTypos(t);
-    const message = t === '/re' ? buildReCommand() : t === '/qu' ? buildQuCommand() : t === '/go' ? buildGoCommand() : correctedText;
+    const isShowMe = SHOW_ME_TRIGGERS.test(t);
+    const { text: correctedText, corrected } = (isSlash || isShowMe) ? { text: t, corrected: false } : correctTypos(t);
+    const message = t === '/re' ? buildReCommand()
+      : t === '/qu' ? buildQuCommand()
+      : t === '/go' ? buildGoCommand()
+      : isShowMe ? buildShowMeCommand()
+      : correctedText;
     sendMessage(message, corrected);
     setInput('');
     if (taRef.current) taRef.current.style.height = 'auto';

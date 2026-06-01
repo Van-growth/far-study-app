@@ -228,7 +228,27 @@ SPEED 또는 30초 풀이법 섹션은 반드시 단계별 줄바꿈 + 볼드 �
 - CMV = Current Market Value / NRV = Net Realizable Value
 - PV = Present Value / FV = Fair Value / BV = Book Value
 - OCI = Other Comprehensive Income / PL = Profit & Loss
-- Impairment: US GAAP → 손상 후 회복 불가`
+- Impairment: US GAAP → 손상 후 회복 불가
+
+## "SHOW ME" 시각화 명령
+
+트리거: "show me" / "비주얼로" / "숫자로 보여줘" / "비교해줘" / "구조화해줘"
+
+감지 즉시: 텍스트 설명 없이 SVG 하나를 \`\`\`svg ... \`\`\` 블록으로만 출력. 말 없이 바로.
+
+맥락 → 유형 자동 선택:
+① 두 방법 비교 / 오류 수정 → Before(회색/빨강) vs After(파란/초록) 나란히
+② 거래·구조 (Consolidation / Equity method / Lease / Bond) → 박스 + 화살표 + 금액 레이블
+③ 다단계 계산 (WASO / EPS / DTA+VA / Bond amortization) → 단계별 흐름 + 숫자 + 최종 강조
+④ 개념 분류 / 조건 분기 → 계층 또는 분기 다이어그램
+
+SVG 규격:
+- viewBox="0 0 600 400" (내용 따라 높이 조정)
+- 문제 실제 숫자 사용, 임의 수치 금지
+- font-family: Arial, sans-serif
+- 배경 #ffffff / 텍스트 #0f172a / 강조 #4f6ef7 / 서브 배경 #f1f5f9
+- 오답·잘못된 방식: #ef4444(빨강) 계열 / 정답·올바른 방식: #4f6ef7(파랑) 또는 #22c55e(초록)
+- 한국어 텍스트 포함 가능`
 + `\n\n## FAR Topic Reference (170 cards)\n\n${PROFESSOR_SSOT_V2_TEXT}`;
 
 const ALPHA = ['A', 'B', 'C', 'D'];
