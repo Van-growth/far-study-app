@@ -381,16 +381,55 @@ function buildReviewCardContextBlock(ctx: ReviewCardContext): string {
 }
 
 function buildTBSContextBlock(ctx: CurrentTBSPattern): string {
-  return [
+  const lines: string[] = [
     '---',
-    'The user is currently studying the following TBS pattern:',
-    `- Pattern: ${ctx.pattern_name} (${ctx.tbs_id})`,
-    `- Topic group: ${ctx.topic_group}`,
-    `- Related MCQ topics: ${ctx.related_topic_ids.join(', ')}`,
+    `[TBS Pattern: ${ctx.pattern_name} (${ctx.tbs_id})]`,
+    `Topic group: ${ctx.topic_group}`,
+    `Related MCQ topics: ${ctx.related_topic_ids.join(', ')}`,
     '',
-    "When the user says 'show me', generate an SVG visualization relevant to this TBS pattern (solve flow, transaction rules, or answer table structure).",
-    '---',
-  ].join('\n');
+    'Here is the full TBS problem data the user is studying:',
+    '',
+    `Question: ${ctx.question_text}`,
+  ];
+
+  // Worksheet columns
+  if (ctx.answer_columns.length > 0) {
+    lines.push('');
+    lines.push(`Answer structure columns: ${ctx.answer_columns.map((c) => `${c.col}(${c.label})`).join(', ')}`);
+  }
+
+  // Exhibits (transactions)
+  ctx.exhibits.forEach((ex) => {
+    if (ex.items.length === 0) return;
+    lines.push('');
+    lines.push(`Transactions (${ex.label}):`);
+    ex.items.forEach((item) => {
+      lines.push(`- ${item.row}: ${item.en}`);
+    });
+  });
+
+  // Answer table (reference values)
+  if (ctx.answer_table.rows.length > 0) {
+    const cols = ctx.answer_columns.map((c) => c.col);
+    lines.push('');
+    lines.push('Correct answer reference:');
+    ctx.answer_table.rows.forEach((row) => {
+      const cells = cols
+        .map((c) => {
+          const v = row[c];
+          return v !== null && v !== undefined ? `${c}:${v}` : null;
+        })
+        .filter(Boolean)
+        .join(', ');
+      if (cells) lines.push(`  ${row.label}: ${cells}`);
+    });
+  }
+
+  lines.push('');
+  lines.push("When the user says 'show me', generate an SVG using the ACTUAL numbers and transactions from this specific problem — not a generic template.");
+  lines.push('---');
+
+  return lines.join('\n');
 }
 
 // ── Hook ──────────────────────────────────────────────────────

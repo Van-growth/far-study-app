@@ -204,6 +204,16 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
       pattern_name: p.pattern_name,
       topic_group: p.topic_group,
       related_topic_ids: p.related_topic_ids,
+      question_text: p.question_text,
+      answer_columns: p.answer_columns,
+      exhibits: p.exhibits.map((ex) => ({
+        exhibit_id: ex.exhibit_id,
+        label: ex.label,
+        items: ex.items,
+      })),
+      solve_steps: p.solve_steps,
+      rules: p.rules,
+      answer_table: p.answer_table,
     });
     return () => { setCurrentTBSPattern(null); };
   }, [p.tbs_id, setCurrentTBSPattern]);

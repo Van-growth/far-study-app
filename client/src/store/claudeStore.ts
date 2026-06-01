@@ -61,6 +61,18 @@ export interface CurrentTBSPattern {
   pattern_name: string;
   topic_group: string;
   related_topic_ids: string[];
+  question_text: string;
+  answer_columns: { col: string; label: string; type: string; auto?: boolean }[];
+  exhibits: {
+    exhibit_id: number;
+    label: string;
+    items: { row: string; en: string; ko: string }[];
+  }[];
+  solve_steps: { step: number; en: string; ko: string; detail: string }[];
+  rules: { tx_type: string; en_rule: string; columns: string[]; ko_trap: string }[];
+  answer_table: {
+    rows: ({ label: string } & Record<string, number | null | string>)[];
+  };
 }
 
 const MAX_MESSAGES = 20;
