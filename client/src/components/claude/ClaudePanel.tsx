@@ -351,6 +351,20 @@ SPEED: 30초 풀이 한 줄`;
               </span>
             </span>
           </div>
+        ) : currentTBSPattern ? (
+          <div className="px-3 pb-2">
+            <div
+              className="px-3 py-2 rounded-lg"
+              style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}
+            >
+              <p className="text-[13px] font-medium" style={{ color: '#6b21a8' }}>
+                📋 {currentTBSPattern.pattern_name}
+              </p>
+              <p className="text-[11px] mt-0.5" style={{ color: '#a855f7' }}>
+                {currentTBSPattern.tbs_id}
+              </p>
+            </div>
+          </div>
         ) : topic ? (
           <div className="px-4 pb-2">
             <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: '#f0f4f8', color: '#64748b' }}>

@@ -253,31 +253,37 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
                 <p className="text-[11px] text-muted mb-2 italic">
                   Fill in each cell — positive for increases, negative for decreases, blank if no effect.
                 </p>
-                <table className="text-[11px] border-collapse" style={{ tableLayout: 'auto' }}>
+                <table className="text-[11px] border-collapse w-full">
                   <thead>
                     <tr>
                       <th
                         className="text-left px-2 py-1.5 font-semibold border border-[#e2e8f0] text-muted"
-                        style={{ background: '#f8fafc', minWidth: 120 }}
+                        style={{ background: '#f8fafc', minWidth: 160, verticalAlign: 'top', whiteSpace: 'normal' }}
                       >
                         항목
                       </th>
-                      {cols.map((c) => (
-                        <th
-                          key={c.col}
-                          className="px-1 py-1.5 font-bold border border-[#e2e8f0] text-center"
-                          style={{
-                            background: c.auto ? '#f0fdf4' : '#f8fafc',
-                            color: c.auto ? '#166534' : '#0f172a',
-                            minWidth: c.col === 'B' ? 80 : 90,
-                          }}
-                        >
-                          <div>{c.col}</div>
-                          <div className="text-[9px] font-normal text-muted leading-tight mt-0.5 whitespace-nowrap">
-                            {c.label.length > 12 ? c.label.slice(0, 12) + '…' : c.label}
-                          </div>
-                        </th>
-                      ))}
+                      {cols.map((c) => {
+                        const WS_ABBR: Record<string, string> = {
+                          B: 'Shares', C: 'CS', D: 'APIC',
+                          E: 'RE', F: 'AOCI', G: 'TS', H: 'Total',
+                        };
+                        return (
+                          <th
+                            key={c.col}
+                            className="px-1 py-1.5 border border-[#e2e8f0] text-center"
+                            style={{
+                              background: c.auto ? '#f0fdf4' : '#f8fafc',
+                              color: c.auto ? '#166534' : '#0f172a',
+                              minWidth: 100,
+                            }}
+                          >
+                            <div className="font-bold">{c.col}</div>
+                            <div className="text-[9px] font-normal text-muted leading-tight mt-0.5">
+                              {WS_ABBR[c.col] ?? c.col}
+                            </div>
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
@@ -287,7 +293,7 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
                         <tr key={i} style={{ fontWeight: isEnding ? 700 : 400 }}>
                           <td
                             className="px-2 py-1.5 border border-[#e2e8f0] text-[#0f172a] text-[11px]"
-                            style={{ background: isEnding ? '#f0fdf4' : 'white' }}
+                            style={{ background: isEnding ? '#f0fdf4' : 'white', verticalAlign: 'top', whiteSpace: 'normal', minWidth: 160 }}
                           >
                             {row.label}
                           </td>
@@ -297,7 +303,7 @@ function TBSDetail({ pattern: p, onBack }: { pattern: TBSPattern; onBack: () => 
                               className="border border-[#e2e8f0]"
                               style={{
                                 background: isEnding ? '#f0fdf4' : '#f1f5f9',
-                                minWidth: c.col === 'B' ? 80 : 90,
+                                minWidth: 100,
                                 height: 28,
                               }}
                             />
