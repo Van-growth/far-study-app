@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -42,6 +42,60 @@ export function TypingBubble() {
   );
 }
 
+// ── SVG/HTML block with fullscreen expand ─────────────────────
+function SVGBlock({ raw }: { raw: string }) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [expanded]);
+
+  return (
+    <>
+      {/* Inline preview — clickable */}
+      <div
+        className="my-2 overflow-x-auto rounded-lg cursor-zoom-in transition-all"
+        style={{ outline: '1.5px solid transparent' }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.outline = '1.5px solid #c7d2fe'; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.outline = '1.5px solid transparent'; }}
+        onClick={() => setExpanded(true)}
+        title="클릭하여 확대"
+        dangerouslySetInnerHTML={{ __html: raw }}
+      />
+
+      {/* Fullscreen modal */}
+      {expanded && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.82)' }}
+          onClick={() => setExpanded(false)}
+        >
+          <div
+            className="relative bg-white rounded-2xl overflow-auto shadow-2xl"
+            style={{ maxWidth: '90vw', maxHeight: '90vh' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setExpanded(false)}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full z-10 text-lg font-bold transition-colors"
+              style={{ background: '#f1f5f9', color: '#0f172a' }}
+              aria-label="닫기"
+            >
+              ×
+            </button>
+            <div className="p-6 pt-10" dangerouslySetInnerHTML={{ __html: raw }} />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ── Markdown components map ────────────────────────────────────
 const MD_COMPONENTS = {
   h1: ({ children }: { children?: React.ReactNode }) => <p className="text-base font-bold text-[#0f172a] mt-3 mb-1">{children}</p>,
@@ -57,7 +111,7 @@ const MD_COMPONENTS = {
     const lang = className?.replace('language-', '') ?? '';
     const raw = String(children ?? '').replace(/\n$/, '');
     if (lang === 'html' || lang === 'svg') {
-      return <div className="my-2 overflow-x-auto" dangerouslySetInnerHTML={{ __html: raw }} />;
+      return <SVGBlock raw={raw} />;
     }
     if (className?.includes('language-')) {
       return (
