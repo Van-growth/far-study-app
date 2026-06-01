@@ -77,6 +77,12 @@ export interface CurrentTBSPattern {
 
 const MAX_MESSAGES = 20;
 
+export interface HarryContext {
+  context_type: 'tbs' | 'mcq' | 'sprint' | 'concept' | 'general';
+  context_id: string | null;
+  context_name: string | null;
+}
+
 interface ClaudeStore {
   isOpen: boolean;
   messages: Message[];
@@ -88,6 +94,8 @@ interface ClaudeStore {
   lastTtsScript: string | null;
   pendingAutoMessage: string | null;
   currentTBSPattern: CurrentTBSPattern | null;
+  harryContext: HarryContext | null;
+  harryConversationId: string | null;
 
   togglePanel: () => void;
   openPanel: () => void;
@@ -104,6 +112,9 @@ interface ClaudeStore {
   setLastTtsScript: (s: string | null) => void;
   setPendingAutoMessage: (msg: string | null) => void;
   setCurrentTBSPattern: (p: CurrentTBSPattern | null) => void;
+  setHarryContext: (ctx: HarryContext | null) => void;
+  setHarryConversationId: (id: string | null) => void;
+  setMessages: (msgs: Message[]) => void;
 }
 
 const useClaudeStore = create<ClaudeStore>((set) => ({
@@ -117,6 +128,8 @@ const useClaudeStore = create<ClaudeStore>((set) => ({
   lastTtsScript: null,
   pendingAutoMessage: null,
   currentTBSPattern: null,
+  harryContext: null,
+  harryConversationId: null,
 
   togglePanel: () => set((s) => ({ isOpen: !s.isOpen })),
   openPanel: () => set({ isOpen: true }),
@@ -128,6 +141,9 @@ const useClaudeStore = create<ClaudeStore>((set) => ({
   setLastTtsScript: (s) => set({ lastTtsScript: s }),
   setPendingAutoMessage: (msg) => set({ pendingAutoMessage: msg }),
   setCurrentTBSPattern: (p) => set({ currentTBSPattern: p }),
+  setHarryContext: (ctx) => set({ harryContext: ctx }),
+  setHarryConversationId: (id) => set({ harryConversationId: id }),
+  setMessages: (msgs) => set({ messages: msgs }),
   setMessageFeedback: (id, fb) =>
     set((s) => ({
       messages: s.messages.map((m) => (m.id === id ? { ...m, feedback: fb } : m)),

@@ -1,9 +1,12 @@
 import { useRef, useEffect, useState, KeyboardEvent } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useClaudeStore from '../../store/claudeStore';
 import useStudyStore from '../../store/studyStore';
 import { useClaudeChat, TutorDbContext } from '../../hooks/useClaudeChat';
 import { getTopicById } from '../../data/far-topics';
 import MessageBubble, { TypingBubble } from './MessageBubble';
+import { loadConversation, saveConversation, deleteConversation } from '../../lib/harryHistory';
+import type { HarryMessage } from '../../lib/harryHistory';
 
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
@@ -52,12 +55,82 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const pendingAutoMessage = useClaudeStore((s) => s.pendingAutoMessage);
   const setPendingAutoMessage = useClaudeStore((s) => s.setPendingAutoMessage);
   const currentTBSPattern = useClaudeStore((s) => s.currentTBSPattern);
+  const harryContext = useClaudeStore((s) => s.harryContext);
+  const harryConversationId = useClaudeStore((s) => s.harryConversationId);
+  const setHarryContext = useClaudeStore((s) => s.setHarryContext);
+  const setHarryConversationId = useClaudeStore((s) => s.setHarryConversationId);
+  const setMessages = useClaudeStore((s) => s.setMessages);
+
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [dbContext, setDbContext] = useState<TutorDbContext | null>(null);
   const [contextLoading, setContextLoading] = useState(false);
   const contextFetchedRef = useRef(false);
 
-  // Fetch personalized DB context once when panel first opens
+  // ── Context detection ────────────────────────────────────────
+  useEffect(() => {
+    if (!isOpen) return;
+    let ctx: ReturnType<typeof setHarryContext> extends void ? Parameters<typeof setHarryContext>[0] : never;
+    if (currentTBSPattern) {
+      ctx = { context_type: 'tbs', context_id: currentTBSPattern.tbs_id, context_name: currentTBSPattern.pattern_name };
+    } else if (activeBankQuestion) {
+      ctx = { context_type: 'mcq', context_id: activeBankQuestion.questionId, context_name: activeBankQuestion.topicId };
+    } else if (analyzeContext) {
+      ctx = { context_type: 'mcq', context_id: analyzeContext.topicId ?? 'unknown', context_name: analyzeContext.topicLabel ?? analyzeContext.topicId ?? '분석' };
+    } else if (reviewCardContext) {
+      ctx = { context_type: 'concept', context_id: reviewCardContext.topicId ?? 'unknown', context_name: reviewCardContext.topicTags[0] ?? reviewCardContext.topicLabel ?? '개념' };
+    } else if (location.pathname === '/sprint') {
+      const today = new Date().toISOString().split('T')[0];
+      ctx = { context_type: 'sprint', context_id: today, context_name: `복습 세션 ${today}` };
+    } else if (currentTopicId) {
+      ctx = { context_type: 'concept', context_id: currentTopicId, context_name: topic?.label ?? currentTopicId };
+    } else {
+      ctx = { context_type: 'general', context_id: null, context_name: '일반 대화' };
+    }
+    setHarryContext(ctx);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, currentTBSPattern?.tbs_id, activeBankQuestion?.questionId, analyzeContext?.topicId, reviewCardContext?.topicId, location.pathname, currentTopicId]);
+
+  // ── Load conversation from DB when context is set ────────────
+  useEffect(() => {
+    if (!isOpen || !userId || !harryContext) return;
+    loadConversation(userId, harryContext.context_type, harryContext.context_id)
+      .then((conv) => {
+        if (conv && conv.messages.length > 0) {
+          setMessages(conv.messages.map((m, i) => ({
+            id: `hist-${i}-${m.created_at}`,
+            role: m.role,
+            content: m.content,
+            timestamp: new Date(m.created_at).getTime(),
+          })));
+          setHarryConversationId(conv.id);
+        }
+      })
+      .catch(() => { /* silent */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, harryContext?.context_type, harryContext?.context_id, userId]);
+
+  // ── Save conversation (debounced, after assistant responds) ──
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!userId || !harryContext || isLoading || messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    if (last.role !== 'assistant' || !last.content) return;
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      const harryMsgs: HarryMessage[] = messages
+        .filter((m) => m.content)
+        .map((m) => ({ role: m.role, content: m.content, created_at: new Date(m.timestamp).toISOString() }));
+      const id = await saveConversation(userId, harryContext.context_type, harryContext.context_id, harryContext.context_name, harryMsgs);
+      if (id) setHarryConversationId(id);
+    }, 1500);
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length, isLoading]);
+
+  // ── Fetch personalized DB context once when panel first opens
   useEffect(() => {
     if (!isOpen || !userId || contextFetchedRef.current) return;
     contextFetchedRef.current = true;
@@ -317,11 +390,32 @@ SPEED: 30초 풀이 한 줄`;
             {(isLoading || contextLoading) && <div className="w-3 h-3 border-2 border-[#4f6ef7] border-t-transparent rounded-full animate-spin" />}
             {contextLoading && <span className="text-[10px] text-[#94a3b8]">학습 현황 로딩 중</span>}
           </div>
-          <div className="flex items-center gap-1">
-            {messages.length > 0 && (
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={() => { closePanel(); navigate('/harry-history'); }}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:text-[#0f172a] hover:bg-gray-100 text-sm"
+              title="대화 히스토리"
+            >
+              🕐
+            </button>
+            {harryConversationId && (
+              <button
+                onClick={async () => {
+                  if (!harryConversationId) return;
+                  await deleteConversation(harryConversationId);
+                  setHarryConversationId(null);
+                  clearMessages();
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:text-[#ef4444] hover:bg-red-50 text-sm"
+                title="이 대화 삭제"
+              >
+                🗑️
+              </button>
+            )}
+            {messages.length > 0 && !harryConversationId && (
               <button onClick={clearMessages} className="text-[11px] text-muted hover:text-[#0f172a] px-2 py-1 rounded-lg hover:bg-gray-100">초기화</button>
             )}
-            <button onClick={closePanel} className="w-11 h-11 flex items-center justify-center rounded-lg text-muted hover:text-[#0f172a] hover:bg-gray-100 text-xl">×</button>
+            <button onClick={closePanel} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted hover:text-[#0f172a] hover:bg-gray-100 text-xl">×</button>
           </div>
         </div>
         {analyzeContext ? (
