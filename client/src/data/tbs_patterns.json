@@ -56,7 +56,7 @@
             },
             {
               "row": "Stock dividend issued",
-              "en": "Jul 1 — Declared and issued a 15% stock dividend. No market price provided.",
+              "en": "Jul 1 — Declared and issued a 15% stock dividend. No market price provided at declaration date.",
               "ko": "기준주식수: 850K+13K–21K=842K × 15% = 126,300주. 시가 없음 → par 기준. C=+$126K / E=–$126K / APIC 변동 없음"
             },
             {
@@ -83,13 +83,13 @@
           "step": 1,
           "en": "Calculate share count flow first",
           "ko": "주식수 흐름 먼저 — 850K → +13K → –21K → ×1.15 → 968,300",
-          "detail": "issuance → treasury → stock div → cash div 순서. 틀리면 stock div / cash div 금액 전부 틀림"
+          "detail": "issuance → treasury → stock div → cash div 순서. 틀리면 이후 계산 전부 틀림"
         },
         {
           "step": 2,
           "en": "Assign each transaction to correct columns",
-          "ko": "거래 유형별 컬럼 배분 — market value / FMV / par / cost method 기준",
-          "detail": "유형별 규칙 참고"
+          "ko": "거래 유형별 컬럼 배분 — market value / FMV / par / cost method 기준 적용",
+          "detail": "아래 rules 참고"
         },
         {
           "step": 3,
@@ -99,8 +99,8 @@
         },
         {
           "step": 4,
-          "en": "Verify ending balances via H column",
-          "ko": "H열 합계로 검증"
+          "en": "Verify ending balances via H column total",
+          "ko": "H열 합계로 최종 검증"
         }
       ],
 
@@ -143,7 +143,7 @@
         },
         {
           "tx_type": "AFS unrealized gain/loss",
-          "en_rule": "Record in AOCI (column F) only. No effect on RE.",
+          "en_rule": "Record in AOCI (col F) only. No effect on RE.",
           "columns": ["F"],
           "ko_trap": "RE에 넣으면 즉시 오답 — OCI 항목"
         }
@@ -152,21 +152,21 @@
       "traps": [
         "Property dividend — use FMV ($55K), not BV ($65K) for RE reduction",
         "Stock dividend with no market price — APIC does NOT change",
-        "Cash dividend share count — must include shares from stock dividend (968,300, not 842,000)",
+        "Cash dividend share count — must include shares from stock dividend (968,300 not 842,000)",
         "AFS unrealized gain — goes to AOCI (col F), never to RE"
       ],
 
       "answer_table": {
         "rows": [
-          { "label": "Beginning balances", "B": 850000, "C": 850000, "D": 3100000, "E": 3700000, "F": null, "G": null },
-          { "label": "Issuance of shares for property", "B": 13000, "C": 13000, "D": 156000, "E": null, "F": null, "G": null },
-          { "label": "Purchase of treasury stock", "B": -21000, "C": null, "D": null, "E": null, "F": null, "G": -252000 },
-          { "label": "Property dividends distributed", "B": null, "C": null, "D": null, "E": -55000, "F": null, "G": null },
-          { "label": "Stock dividend issued", "B": 126300, "C": 126300, "D": null, "E": -126300, "F": null, "G": null },
-          { "label": "Cash dividend", "B": null, "C": null, "D": null, "E": -968300, "F": null, "G": null },
-          { "label": "Net income for the year", "B": null, "C": null, "D": null, "E": 1443000, "F": null, "G": null },
-          { "label": "Unrealized gain on AFS", "B": null, "C": null, "D": null, "E": null, "F": 95000, "G": null },
-          { "label": "Ending balances", "B": 968300, "C": 989300, "D": 3256000, "E": 3993400, "F": 95000, "G": -252000 }
+          { "label": "Beginning balances",              "B": 850000,  "C": 850000,  "D": 3100000, "E": 3700000,  "F": null,  "G": null     },
+          { "label": "Issuance of shares for property", "B": 13000,   "C": 13000,   "D": 156000,  "E": null,     "F": null,  "G": null     },
+          { "label": "Purchase of treasury stock",      "B": -21000,  "C": null,    "D": null,    "E": null,     "F": null,  "G": -252000  },
+          { "label": "Property dividends distributed",  "B": null,    "C": null,    "D": null,    "E": -55000,   "F": null,  "G": null     },
+          { "label": "Stock dividend issued",           "B": 126300,  "C": 126300,  "D": null,    "E": -126300,  "F": null,  "G": null     },
+          { "label": "Cash dividend",                   "B": null,    "C": null,    "D": null,    "E": -968300,  "F": null,  "G": null     },
+          { "label": "Net income for the year",         "B": null,    "C": null,    "D": null,    "E": 1443000,  "F": null,  "G": null     },
+          { "label": "Unrealized gain on AFS",          "B": null,    "C": null,    "D": null,    "E": null,     "F": 95000, "G": null     },
+          { "label": "Ending balances",                 "B": 968300,  "C": 989300,  "D": 3256000, "E": 3993400,  "F": 95000, "G": -252000  }
         ]
       },
 

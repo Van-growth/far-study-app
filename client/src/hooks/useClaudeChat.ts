@@ -1,4 +1,4 @@
-import useClaudeStore, { AnalyzeContext, ReviewCardContext } from '../store/claudeStore';
+import useClaudeStore, { AnalyzeContext, ReviewCardContext, CurrentTBSPattern } from '../store/claudeStore';
 import { PROFESSOR_SSOT_V2_TEXT } from '../constants/professor_ssot_v2';
 
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
@@ -380,6 +380,19 @@ function buildReviewCardContextBlock(ctx: ReviewCardContext): string {
   return lines.join('\n');
 }
 
+function buildTBSContextBlock(ctx: CurrentTBSPattern): string {
+  return [
+    '---',
+    'The user is currently studying the following TBS pattern:',
+    `- Pattern: ${ctx.pattern_name} (${ctx.tbs_id})`,
+    `- Topic group: ${ctx.topic_group}`,
+    `- Related MCQ topics: ${ctx.related_topic_ids.join(', ')}`,
+    '',
+    "When the user says 'show me', generate an SVG visualization relevant to this TBS pattern (solve flow, transaction rules, or answer table structure).",
+    '---',
+  ].join('\n');
+}
+
 // ── Hook ──────────────────────────────────────────────────────
 export function useClaudeChat(
   currentTopicLabel?: string,
@@ -387,6 +400,7 @@ export function useClaudeChat(
   reviewCardCtx?: ReviewCardContext | null,
   dbCtx?: TutorDbContext | null,
   dailyGoal?: number,
+  tbsCtx?: CurrentTBSPattern | null,
 ) {
   const store = useClaudeStore();
 
@@ -409,11 +423,15 @@ export function useClaudeChat(
       : SYSTEM_PROMPT;
 
     // Inject context into system prompt — analyze takes priority over review card.
-    const systemPrompt = analyzeCtx
+    const baseWithContext = analyzeCtx
       ? `${baseSystem}\n\n${buildAnalyzeContextBlock(analyzeCtx)}`
       : reviewCardCtx
       ? `${baseSystem}\n\n${buildReviewCardContextBlock(reviewCardCtx)}`
       : baseSystem;
+
+    const systemPrompt = tbsCtx
+      ? `${baseWithContext}\n\n${buildTBSContextBlock(tbsCtx)}`
+      : baseWithContext;
 
     let accumulated = '';
 

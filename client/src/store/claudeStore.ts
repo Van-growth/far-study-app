@@ -56,6 +56,13 @@ export interface ReviewCardContext {
   exampleQuestion: ExampleQuestion | null;
 }
 
+export interface CurrentTBSPattern {
+  tbs_id: string;
+  pattern_name: string;
+  topic_group: string;
+  related_topic_ids: string[];
+}
+
 const MAX_MESSAGES = 20;
 
 interface ClaudeStore {
@@ -68,6 +75,7 @@ interface ClaudeStore {
   activeBankQuestion: ActiveBankQuestion | null;
   lastTtsScript: string | null;
   pendingAutoMessage: string | null;
+  currentTBSPattern: CurrentTBSPattern | null;
 
   togglePanel: () => void;
   openPanel: () => void;
@@ -83,6 +91,7 @@ interface ClaudeStore {
   setMessageFeedback: (id: string, fb: 'up' | 'down' | null) => void;
   setLastTtsScript: (s: string | null) => void;
   setPendingAutoMessage: (msg: string | null) => void;
+  setCurrentTBSPattern: (p: CurrentTBSPattern | null) => void;
 }
 
 const useClaudeStore = create<ClaudeStore>((set) => ({
@@ -95,6 +104,7 @@ const useClaudeStore = create<ClaudeStore>((set) => ({
   activeBankQuestion: null,
   lastTtsScript: null,
   pendingAutoMessage: null,
+  currentTBSPattern: null,
 
   togglePanel: () => set((s) => ({ isOpen: !s.isOpen })),
   openPanel: () => set({ isOpen: true }),
@@ -105,6 +115,7 @@ const useClaudeStore = create<ClaudeStore>((set) => ({
   setActiveBankQuestion: (q) => set({ activeBankQuestion: q }),
   setLastTtsScript: (s) => set({ lastTtsScript: s }),
   setPendingAutoMessage: (msg) => set({ pendingAutoMessage: msg }),
+  setCurrentTBSPattern: (p) => set({ currentTBSPattern: p }),
   setMessageFeedback: (id, fb) =>
     set((s) => ({
       messages: s.messages.map((m) => (m.id === id ? { ...m, feedback: fb } : m)),

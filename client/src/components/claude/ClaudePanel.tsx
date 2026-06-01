@@ -51,6 +51,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const isOpen = useClaudeStore((s) => s.isOpen);
   const pendingAutoMessage = useClaudeStore((s) => s.pendingAutoMessage);
   const setPendingAutoMessage = useClaudeStore((s) => s.setPendingAutoMessage);
+  const currentTBSPattern = useClaudeStore((s) => s.currentTBSPattern);
 
   const [dbContext, setDbContext] = useState<TutorDbContext | null>(null);
   const [contextLoading, setContextLoading] = useState(false);
@@ -69,7 +70,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   }, [isOpen, userId]);
 
   const { messages, isLoading, closePanel, sendMessage, sendStarter, clearMessages } =
-    useClaudeChat(topic?.label, analyzeContext, reviewCardContext, dbContext, dailyGoal);
+    useClaudeChat(topic?.label, analyzeContext, reviewCardContext, dbContext, dailyGoal, currentTBSPattern);
   const setPendingQuiz = useClaudeStore((s) => s.setPendingQuiz);
 
   const [input, setInput] = useState('');
