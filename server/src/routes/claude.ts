@@ -32,6 +32,11 @@ router.post('/chat', async (req: Request, res: Response) => {
   res.flushHeaders();
   res.write(': ping\n\n');
 
+  // ── System prompt size logging ────────────────────────────────
+  const sysChars = system.length;
+  const estTokens = Math.round(sysChars / 4);
+  console.log(`[harry] system_prompt chars=${sysChars} est_tokens≈${estTokens} msgs=${messages.length}`);
+
   try {
     const stream = anthropic.messages.stream({
       model: MODEL,
