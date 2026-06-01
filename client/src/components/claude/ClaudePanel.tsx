@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, KeyboardEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import useClaudeStore from '../../store/claudeStore';
+import useClaudeStore, { HarryContext } from '../../store/claudeStore';
 import useStudyStore from '../../store/studyStore';
 import { useClaudeChat, TutorDbContext } from '../../hooks/useClaudeChat';
 import { getTopicById } from '../../data/far-topics';
@@ -71,7 +71,7 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   // ── Context detection ────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
-    let ctx: ReturnType<typeof setHarryContext> extends void ? Parameters<typeof setHarryContext>[0] : never;
+    let ctx: HarryContext;
     if (currentTBSPattern) {
       ctx = { context_type: 'tbs', context_id: currentTBSPattern.tbs_id, context_name: currentTBSPattern.pattern_name };
     } else if (activeBankQuestion) {
@@ -111,6 +111,22 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, harryContext?.context_type, harryContext?.context_id, userId]);
 
+  // ── Fetch personalized DB context once when panel first opens
+  useEffect(() => {
+    if (!isOpen || !userId || contextFetchedRef.current) return;
+    contextFetchedRef.current = true;
+    setContextLoading(true);
+    fetch(`${API_URL}/api/tutor/context?userId=${encodeURIComponent(userId)}`)
+      .then((r) => r.json() as Promise<{ available: boolean } & Partial<TutorDbContext>>)
+      .then((data) => { if (data.available) setDbContext(data as TutorDbContext); })
+      .catch(() => { /* silent fail — tutor works without DB context */ })
+      .finally(() => setContextLoading(false));
+  }, [isOpen, userId]);
+
+  const { messages, isLoading, closePanel, sendMessage, sendStarter, clearMessages } =
+    useClaudeChat(topic?.label, analyzeContext, reviewCardContext, dbContext, dailyGoal, currentTBSPattern);
+  const setPendingQuiz = useClaudeStore((s) => s.setPendingQuiz);
+
   // ── Save conversation (debounced, after assistant responds) ──
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -129,22 +145,6 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length, isLoading]);
-
-  // ── Fetch personalized DB context once when panel first opens
-  useEffect(() => {
-    if (!isOpen || !userId || contextFetchedRef.current) return;
-    contextFetchedRef.current = true;
-    setContextLoading(true);
-    fetch(`${API_URL}/api/tutor/context?userId=${encodeURIComponent(userId)}`)
-      .then((r) => r.json() as Promise<{ available: boolean } & Partial<TutorDbContext>>)
-      .then((data) => { if (data.available) setDbContext(data as TutorDbContext); })
-      .catch(() => { /* silent fail — tutor works without DB context */ })
-      .finally(() => setContextLoading(false));
-  }, [isOpen, userId]);
-
-  const { messages, isLoading, closePanel, sendMessage, sendStarter, clearMessages } =
-    useClaudeChat(topic?.label, analyzeContext, reviewCardContext, dbContext, dailyGoal, currentTBSPattern);
-  const setPendingQuiz = useClaudeStore((s) => s.setPendingQuiz);
 
   const [input, setInput] = useState('');
   const [isAtBottom, setIsAtBottom] = useState(true);
