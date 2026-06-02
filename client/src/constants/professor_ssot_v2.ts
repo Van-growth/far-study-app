@@ -1994,6 +1994,28 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[Issued vs Outstanding 구분]\nIssued = 회사가 발행한 총 주식수 (자사주 포함)\nOutstanding = 외부 주주가 보유한 주식수 (= Issued − Treasury)\n\n[자사주 재발행(Resold) 효과]\n자사주를 시장에 다시 팔면:\n→ 주식이 외부 주주에게 이전\n→ Treasury 감소 / Outstanding 증가\n→ Issued는 변화 없음 (새로 발행한 게 아님)\n\n[Stock split 기준]\nSplit = 외부 주주 보유 주식을 나누는 것\n→ 기준 = Outstanding (외부 주주 보유분)\n→ Treasury는 외부에 없으므로 Outstanding에 미포함\n→ Issued 전체에 적용하면 Treasury까지 split → 과대 계산\n\n[C 오답 이유]\nIssued 110,000 + 15,000 = 125,000\n125,000 × 2 = 250,000 → Treasury 10,000도 split에 포함한 오류\n실제 Treasury는 split 대상 아님",
   },
 
+  // [EQUITY_023] Treasury Stock — Par Value Method: APIC Decrease at Reacquisition
+  // RULE    : APIC 감소 = (발행가 − par) × shares / RE 차감 = (재취득가 − 발행가) × shares / APIC-TS 계정 없음
+  // TRIGGER : "par value method" + "originally issued for $X" → 발행 시 APIC 역산
+  // TRAP    : RE 감소분을 APIC로 혼동 / cost method 로직 적용 / APIC-TS 계정 탐색
+  {
+    topic_id: "EQUITY_023",
+    book_id: 'AA',
+    chapter_id: 'AA_CH3',
+    topic_group: 'AA_CH3_STKEQ_TS',
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
+    card_type: 'calculation',
+    card_name: "Treasury stock reacquisition — par value method APIC decrease",
+    rule: "Par value method 재취득 분개 구조:\nDr. Treasury Stock = par × shares\nDr. APIC (발행 시 APIC 전액 제거) = (발행가 − par) × shares\nDr. Retained Earnings (플러그) = (재취득가 − 발행가) × shares\nCr. Cash = 재취득가 × shares\n\n[Cost method와 핵심 차이]\nPar method: APIC-TS 계정 없음 / 재취득 시 RE 즉시 차감\nCost method: APIC-TS 계정 있음 / RE는 재매각 시에만 차감",
+    trigger: '"par value method" + "originally issued for $X" → APIC 감소 = (발행가 − par) × shares\n"decrease in APIC" → APIC 항목만 분리 (RE 감소분과 혼동 금지)\n"APIC-TS" 계정 → par value method에는 존재하지 않음',
+    trap: "RE 감소분(재취득가 − 발행가) × shares를 APIC 감소로 혼동\nCost method 로직 적용: 재취득 시 APIC 변동 없다고 착각\nAPIC + RE 합산 금액을 APIC만 묻는 문제에 답으로 제출\nAPIC-TS 계정 탐색 → par value method에는 없음",
+    one_sentence: "Par method: APIC 감소 = 발행 시 APIC 역추적 / RE 감소 = 초과분 플러그 / APIC-TS 없음.",
+    speed: "APIC 감소 = (발행가 − par) × shares | RE 감소 = (재취득가 − 발행가) × shares | APIC-TS 계정 없음",
+    journal_entry: "재취득 시:\nDr. Treasury Stock (par × N)  \nDr. APIC [(발행가 − par) × N]  ← 이 금액이 APIC 감소\nDr. Retained Earnings [(재취득가 − 발행가) × N]  ← 플러그\nCr. Cash (재취득가 × N)",
+    example: "100주, par $6, 발행가 $7, 재취득가 $10:\nDr. TS $600 / Dr. APIC $100 / Dr. RE $300 / Cr. Cash $1,000\nAPIC 감소 = $100 (정답) / RE 감소 = $300 (별도)",
+    context_background: "[Par value method 핵심 개념]\n재취득 = 최초 발행 취소(reverse)처럼 처리\n→ TS는 par만 기록 (취득원가 전체 아님)\n→ 발행 시 받은 APIC 즉시 제거\n→ 재취득가 > 발행가 초과분 → RE 즉시 차감\n\n[Cost method와 비교]\n| 항목 | Par method | Cost method |\n| TS 기록 | par × 주수 | 취득원가 전액 |\n| APIC-TS | 없음 | 재매각 시 생성 |\n| RE 차감 | 재취득 시 | 재매각 시(손실 시만) |",
+  },
+
   // [EQUITY_018] Ending Retained Earnings — Build-up from Income Since Incorporation Less Dividends
   // RULE    : RE = 누적 순이익 − 현금배당 − 현물배당 / 자사주(cost) 원가초과 재매각 이익 → APIC-TS, RE 무관
   // TRIGGER : "income since incorporation" → RE 시작점 / "cash + property dividends" → 둘 다 차감 / "excess over cost, cost method" → APIC, 제외
@@ -6318,7 +6340,7 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "Grove Co. G&A 계산:\nLegal & audit fees $255,000 → 전액 G&A ✅\nRent $360,000 × 50% = $180,000 → G&A (나머지 50% → Selling) ✅\nInterest on floorplan $315,000 → Other expense ❌\nLoss on equipment $52,500 → Other loss ❌\nTotal G&A = $255,000 + $180,000 = $435,000",
     journal_entry: "",
     key_formula: "G&A = 관리부서 직접비용 + 공용비용 × 관리부서 사용비율\n(Interest expense · 비영업손실 제외)",
-    speed: "G&A = Legal/audit + Rent × admin% | Interest → Other expense | Loss on disposal → Other loss | SCF 간접법: add-back",
+    speed: "Selling = Advertising + Freight out + Rent×sales% + Sales salaries | G&A = Legal/audit + Rent×admin% + Officers' salaries | Interest·처분손실 → Other expense | SCF 간접법: add-back",
   },
 
   // [IS_008] Comprehensive Income — I/S Structure with Discontinued Operations and OCI

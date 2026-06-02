@@ -1,0 +1,199 @@
+{
+  "categories": [
+    {
+      "category_id": "recognition",
+      "category_name": "Recognition",
+      "category_ko": "언제 기록하나",
+      "color": "#534AB7",
+      "bg": "#EEEDFE",
+      "border": "#AFA9EC",
+      "principles": [
+        {
+          "id": "REC_001",
+          "title": "Accrual Basis",
+          "one_liner": "Record when the economic event occurs — not when cash moves",
+          "essence": "재무제표는 현금 흐름이 아닌 경제적 실질을 반영해야 한다. Cash를 받거나 지급하는 타이밍과 실제 거래 발생 시점은 다를 수 있다.",
+          "examples": [
+            { "q": "Service completed Dec 31, cash received Jan 15", "a": "Recognize revenue in December — earned, not when collected" },
+            { "q": "12-month insurance premium paid Jan 1 ($12,000)", "a": "Expense $1,000/month — allocate over the benefit period" },
+            { "q": "Salaries earned Dec 31, paid Jan 5", "a": "Accrue Dec 31 — Dr. Salaries Expense / Cr. Salaries Payable" }
+          ],
+          "svg_data": {
+            "type": "flow",
+            "nodes": [
+              { "label": "Economic Event", "sub": "발생 시점 ← 기록 기준", "color": "purple" },
+              { "label": "Journal Entry", "sub": "Dr. Receivable / Cr. Revenue", "color": "purple" },
+              { "label": "Cash Receipt", "sub": "나중에 — 무관", "color": "gray" }
+            ],
+            "note": "Cash timing과 recognition timing은 분리된다"
+          }
+        },
+        {
+          "id": "REC_002",
+          "title": "Matching Principle",
+          "one_liner": "Expenses follow the revenues they help generate",
+          "essence": "비용은 관련 수익이 인식되는 같은 기간에 인식해야 한다. 수익과 직접 대응할 수 없는 비용은 발생 기간에 즉시 period cost로 처리한다.",
+          "examples": [
+            { "q": "Inventory sold in Q3", "a": "COGS recognized in Q3 — direct match with revenue" },
+            { "q": "Sales commission tied to a specific sale", "a": "Expense when the sale is recognized — cause and effect" },
+            { "q": "Advertising expenditure", "a": "Period cost — no direct link to specific revenue → expense immediately" }
+          ],
+          "svg_data": {
+            "type": "match",
+            "note": "Direct match → same period / No match → immediate period cost"
+          }
+        },
+        {
+          "id": "REC_003",
+          "title": "Revenue Recognition",
+          "one_liner": "Revenue is earned when the performance obligation is satisfied — not when cash is received",
+          "essence": "현금 수취 여부와 무관하게, 고객에게 약속한 재화·용역을 이전한 시점에 수익을 인식한다. (ASC 606: 5-step model)",
+          "examples": [
+            { "q": "Gift card sold for $100", "a": "Dr. Cash / Cr. Deferred Revenue — recognize when customer redeems" },
+            { "q": "Long-term construction contract", "a": "Recognize revenue over time using percentage of completion" },
+            { "q": "Sale with right of return", "a": "Record net of estimated returns — only recognize what is probable to keep" }
+          ],
+          "svg_data": {
+            "type": "flow",
+            "note": "Cash → Deferred Revenue (liability) → Performance obligation fulfilled → Revenue"
+          }
+        }
+      ]
+    },
+    {
+      "category_id": "measurement",
+      "category_name": "Measurement",
+      "category_ko": "얼마로 기록하나",
+      "color": "#0F6E56",
+      "bg": "#E1F5EE",
+      "border": "#5DCAA5",
+      "principles": [
+        {
+          "id": "MS_001",
+          "title": "Historical Cost",
+          "one_liner": "Assets are initially recorded at acquisition cost — FV changes don't update the book",
+          "essence": "자산은 취득 시점의 원가로 최초 측정한다. 이후 시장가치가 변해도 장부가는 원가 기준 유지가 원칙. FV 측정은 특정 자산(Trading securities, Derivatives)에만 예외 적용.",
+          "examples": [
+            { "q": "Land purchased for $500K, now worth $2M", "a": "Book value remains $500K — no write-up under US GAAP" },
+            { "q": "AFS bond FV increases by $30K", "a": "Record unrealized gain in AOCI — bypasses I/S" },
+            { "q": "Trading security FV changes", "a": "Recognize change directly on I/S — exception to historical cost" }
+          ],
+          "svg_data": {
+            "type": "compare",
+            "note": "원칙: Historical Cost / 예외: FV measurement — 항상 어느 쪽인지 확인"
+          }
+        },
+        {
+          "id": "MS_002",
+          "title": "Conservatism",
+          "one_liner": "Recognize losses early, defer gains until realized",
+          "essence": "불확실한 상황에서 자산·수익은 과대평가하지 않고, 부채·손실은 과소평가하지 않는다. 투자자가 나쁜 소식을 늦게 알수록 피해가 커지기 때문이다.",
+          "examples": [
+            { "q": "Inventory market value drops below cost", "a": "Write down immediately to LCM — don't wait" },
+            { "q": "Loss contingency: probable and estimable", "a": "Accrue immediately — Dr. Loss / Cr. Liability" },
+            { "q": "Gain contingency: probable but not yet realized", "a": "No accrual — disclose in footnotes only" }
+          ],
+          "svg_data": {
+            "type": "scale",
+            "note": "Loss → recognize early / Gain → wait until certain"
+          }
+        }
+      ]
+    },
+    {
+      "category_id": "asset_liability",
+      "category_name": "Asset & Liability",
+      "category_ko": "자산·부채의 운명",
+      "color": "#854F0B",
+      "bg": "#FAEEDA",
+      "border": "#EF9F27",
+      "principles": [
+        {
+          "id": "AL_001",
+          "title": "Assets eventually become expenses",
+          "one_liner": "Every asset is a deferred cost — it becomes an expense when consumed or sold",
+          "essence": "자산을 사는 것은 비용을 미래로 이연하는 것이다. 그 자산이 소멸되는 방식이 비용화 타이밍을 결정한다. 소멸 방식이 없으면 (토지) — No effect.",
+          "examples": [
+            { "q": "Inventory", "a": "→ COGS when sold (immediate consumption)" },
+            { "q": "Building / Equipment", "a": "→ Depreciation expense each year (gradual consumption)" },
+            { "q": "Equity method FV premium on land", "a": "→ No effect until sold (non-depreciable — never consumed)" }
+          ],
+          "svg_data": {
+            "type": "branch",
+            "note": "소멸 방식이 비용화 타이밍을 결정한다"
+          }
+        },
+        {
+          "id": "AL_002",
+          "title": "Liabilities must be settled",
+          "one_liner": "Every liability represents a future sacrifice — cash, goods, or services",
+          "essence": "부채는 미래에 경제적 자원을 이전해야 하는 현재 의무다. 어떤 형태로 갚느냐만 다를 뿐, 반드시 소멸된다.",
+          "examples": [
+            { "q": "Deferred Revenue (gift card, advance payment)", "a": "Settled by delivering service → transferred to Revenue" },
+            { "q": "Warranty liability", "a": "Settled by providing repair service → liability extinguished" },
+            { "q": "Bonds payable", "a": "Settled by cash repayment at maturity" }
+          ],
+          "svg_data": {
+            "type": "converge",
+            "note": "형태만 다를 뿐 — 모든 Liability는 반드시 소멸된다"
+          }
+        }
+      ]
+    },
+    {
+      "category_id": "reporting",
+      "category_name": "Reporting Integrity",
+      "category_ko": "보고의 신뢰성",
+      "color": "#185FA5",
+      "bg": "#E6F1FB",
+      "border": "#85B7EB",
+      "principles": [
+        {
+          "id": "RI_001",
+          "title": "Owner Transactions ≠ Income",
+          "one_liner": "Transactions with shareholders bypass the income statement — they go straight to equity",
+          "essence": "이익은 제3자와의 거래에서만 발생한다. 주주에게 주식을 팔고, 자사주를 사고, 배당을 지급하는 것은 손익이 아니다 — 자본 내부 이동일 뿐.",
+          "examples": [
+            { "q": "Treasury stock reissued above cost", "a": "Excess → APIC-TS, not revenue — I/S is never touched" },
+            { "q": "Cash dividend paid to shareholders", "a": "Debit Retained Earnings — not an expense on I/S" },
+            { "q": "Shares issued in a seasoned offering", "a": "Credit CS + APIC — not revenue" }
+          ],
+          "svg_data": {
+            "type": "bypass",
+            "note": "Income only from third-party transactions — owner transactions → equity accounts only"
+          }
+        },
+        {
+          "id": "RI_002",
+          "title": "Consistency",
+          "one_liner": "Same accounting policy, same period — changes require disclosure",
+          "essence": "같은 거래에 매기 동일한 정책을 써야 Comparability가 생긴다. 변경 시엔 반드시 공시하고 소급 또는 전진 적용 기준을 따른다.",
+          "examples": [
+            { "q": "Change inventory method: LIFO → FIFO", "a": "Accounting policy change → retrospective application, restate prior periods" },
+            { "q": "Change depreciation: straight-line → double declining", "a": "Accounting estimate change → prospective application only" },
+            { "q": "Switching methods arbitrarily each year", "a": "GAAP violation — destroys comparability" }
+          ],
+          "svg_data": {
+            "type": "timeline",
+            "note": "Policy change → retrospective / Estimate change → prospective"
+          }
+        },
+        {
+          "id": "RI_003",
+          "title": "Materiality",
+          "one_liner": "If it could influence a user's decision — it must be accurately reported",
+          "essence": "재무제표 이용자의 의사결정에 영향을 줄 수 있는 정보는 정확하게 표시해야 한다. 영향을 줄 수 없는 소액은 편의상 처리 허용.",
+          "examples": [
+            { "q": "$10 stapler purchased", "a": "Expense immediately — immaterial, no need to capitalize" },
+            { "q": "Significant contingent liability not disclosed", "a": "GAAP violation — material omission affects investor decisions" },
+            { "q": "Prior period error discovered", "a": "Material → restate retroactively / Immaterial → correct in current period" }
+          ],
+          "svg_data": {
+            "type": "decision",
+            "note": "Does it affect user decisions? Material → precise treatment required"
+          }
+        }
+      ]
+    }
+  ]
+}

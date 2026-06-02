@@ -1,4 +1,5 @@
 export const MORE_MENU_ITEMS = [
+  { label: '🔑 Core Principles', path: '/core' },
   { label: '📊 분석', path: '/analyze' },
   { label: '🗂️ TBS', path: '/tbs' },
   { label: '💬 Harry 히스토리', path: '/harry-history' },

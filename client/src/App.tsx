@@ -22,6 +22,7 @@ import SprintPage from './pages/SprintPage';
 import ConceptMapPage from './pages/ConceptMapPage';
 import TBSPage from './pages/TBSPage';
 import HarryHistoryPage from './pages/HarryHistoryPage';
+import CorePage from './pages/CorePage';
 import DailyBriefingModal from './components/DailyBriefingModal';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
@@ -252,6 +253,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/badges" element={<BadgesPage />} />
             <Route path="/tbs" element={<TBSPage />} />
             <Route path="/harry-history" element={<HarryHistoryPage />} />
+            <Route path="/core" element={<CorePage />} />
             {email.toLowerCase() === ADMIN_EMAIL && (
               <Route path="/admin" element={<AdminPage email={email} />} />
             )}
