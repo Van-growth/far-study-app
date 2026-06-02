@@ -171,6 +171,242 @@
       },
 
       "practice_questions": []
+    },
+    {
+      "tbs_id": "TBS_TS_001",
+      "pattern_name": "Treasury Stock: Par Value Method vs Cost Method",
+      "becker_unit": "F1",
+      "becker_modules": ["M3", "M4"],
+      "book_id": "AA",
+      "chapter_id": "AA_CH3",
+      "topic_group": "AA_CH3_STKEQ_TS",
+      "related_topic_ids": ["EQUITY_004", "EQUITY_018"],
+      "question_text": "Lexin Corp. uses the par value method to account for its treasury stock transactions. The company is considering changing to the cost method, and would like to evaluate the differences between the two methods and the impact that the change would have on the equity section of the company's balance sheet.\n\nThe following transactions occurred during the year:\n- At the beginning of the year, 25,000 shares of $5 par common stock were issued at $8 per share.\n- Several months later, Lexin repurchased 1,500 shares at $12 per share.\n- Before the end of the fiscal year, the company re-sold 500 shares at $10 per share and then another 500 shares at $15 per share.\n\nPart 1: Provide journal entries under the par value method (separate entries for each re-sell).\nPart 2: Provide journal entries under the cost method (separate entries for each re-sell).\nPart 3: Fill in the equity section comparison table under both methods.",
+      "answer_format": "journal_entry",
+      "answer_columns": [
+        { "col": "event", "label": "Event", "type": "text" },
+        { "col": "account", "label": "Account Name", "type": "dropdown" },
+        { "col": "debit", "label": "Debit", "type": "dollar" },
+        { "col": "credit", "label": "Credit", "type": "dollar" }
+      ],
+      "exhibits": [
+        {
+          "exhibit_id": 1,
+          "label": "Transaction Data",
+          "format": "text_bullets",
+          "role": "분개 작성에 필요한 거래 조건 제공",
+          "what_to_extract": "주식 수, par value, 발행가, 재매입가, 재매도가 2건",
+          "read_tip": "4개 가격 구분이 핵심: par($5) / issuance($8) / buyback($12) / resell($10, $15)",
+          "items": [
+            { "row": "Issuance", "en": "25,000 shares of $5 par common stock issued at $8 per share", "ko": "par $5 / 발행가 $8 / spread $3 → CS $125K / APIC–C/S $75K" },
+            { "row": "Buy Back", "en": "Repurchased 1,500 shares at $12 per share", "ko": "원가 $12 — Par: T/S=par퉁 / Cost: T/S=원가퉁" },
+            { "row": "Re-sell ①", "en": "Re-sold 500 shares at $10 per share", "ko": "재매도가($10) < 원가($12) → 손실 상황" },
+            { "row": "Re-sell ②", "en": "Re-sold another 500 shares at $15 per share", "ko": "재매도가($15) > 원가($12) → 이익 상황" }
+          ]
+        }
+      ],
+      "solve_steps": [
+        { "step": 1, "en": "Issuance (both methods identical)", "ko": "Dr.Cash / Cr.CS(par) / Cr.APIC–C/S — 동일", "detail": "Cash $200K / CS $125K / APIC–C/S $75K" },
+        { "step": 2, "en": "Par Buy Back — decompose into original issuance components", "ko": "T/S=par / APIC–C/S=원래spread / RE=plug", "detail": "T/S $7,500 + APIC $4,500 + RE $6,000 / Cash $18,000" },
+        { "step": 3, "en": "Cost Buy Back — full cost in one line", "ko": "T/S=원가전액, 단 2줄", "detail": "T/S $18,000 / Cash $18,000" },
+        { "step": 4, "en": "Par Re-sell ① @$10 — no gain/loss concept", "ko": "Cash / T/S(par) / APIC–C/S(plug) — 손실이어도 RE 안 건드림", "detail": "Cash $5,000 / T/S $2,500 / APIC–C/S $2,500" },
+        { "step": 5, "en": "Cost Re-sell ① @$10 — loss: APIC–T/S first, then RE", "ko": "T/S release 원가기준 / 부족분 RE plug", "detail": "Cash $5,000 + RE $1,000 / T/S $6,000 (APIC–T/S $0이므로 바로 RE)" },
+        { "step": 6, "en": "Par Re-sell ② @$15 — same structure, APIC–C/S plug", "ko": "이익이어도 구조 동일", "detail": "Cash $7,500 / T/S $2,500 / APIC–C/S $5,000" },
+        { "step": 7, "en": "Cost Re-sell ② @$15 — gain → APIC–T/S", "ko": "초과분 APIC–T/S 쌓기 / RE 증가 불가", "detail": "Cash $7,500 / T/S $6,000 / APIC–T/S $1,500" },
+        { "step": 8, "en": "Equity comparison — verify both totals equal $194,500", "ko": "계정 배분만 다르고 Total 동일 검산", "detail": "Par: CS125K / T/S(2.5K) / APIC–C/S 78K / RE(6K) = 194.5K\nCost: CS125K / T/S(6K) / APIC–C/S 75K / APIC–T/S 1.5K / RE(1K) = 194.5K" }
+      ],
+      "rules": [
+        { "tx_type": "Issuance", "en_rule": "Both identical: Cash / CS(par) / APIC–C/S", "columns": ["Cash","Common Stock","APIC–C/S"], "ko_trap": "두 방법 동일 — 헷갈릴 필요 없음" },
+        { "tx_type": "Par Buy Back", "en_rule": "T/S(par) + APIC–C/S(original spread×sh) + RE(plug) / Cash", "columns": ["T/S","APIC–C/S","RE","Cash"], "ko_trap": "APIC–C/S = 재매입가−par 아님! 원래 issuance spread × 주수" },
+        { "tx_type": "Cost Buy Back", "en_rule": "T/S(full cost) / Cash — 2 lines only", "columns": ["T/S","Cash"], "ko_trap": "원가 전액 T/S — APIC/RE 절대 건드리지 않음" },
+        { "tx_type": "Par Re-sell (any)", "en_rule": "Cash / T/S(par×sh) / APIC–C/S(plug) — regardless of gain/loss", "columns": ["Cash","T/S","APIC–C/S"], "ko_trap": "이익/손실 개념 없음 / APIC–T/S 계정 없음 / 손실이어도 RE 안 건드림" },
+        { "tx_type": "Cost Re-sell gain", "en_rule": "Cash / T/S(cost×sh) / APIC–T/S(excess)", "columns": ["Cash","T/S","APIC–T/S"], "ko_trap": "이익 → APIC–T/S 쌓기 / RE 증가 절대 불가" },
+        { "tx_type": "Cost Re-sell loss", "en_rule": "Cash + APIC–T/S(balance first) + RE(remainder) / T/S(cost×sh)", "columns": ["Cash","APIC–T/S","RE","T/S"], "ko_trap": "APIC–T/S 잔액 먼저 소진 → 부족분만 RE" }
+      ],
+      "traps": [
+        "Par Buy Back: APIC–C/S = 재매입가−par 아님 → 원래 issuance spread($3) × 주수",
+        "Par Re-sell: 이익/손실 개념 없음 — 손실이어도 RE 건드리지 않음",
+        "Cost Re-sell 이익: APIC–T/S 쌓기 / RE 증가 절대 불가",
+        "Cost Re-sell 손실: APIC–T/S 잔액 먼저 → 부족분만 RE",
+        "Total Equity: 두 방법 항상 동일 $194,500"
+      ],
+      "answer_table": {
+        "par_value_method": {
+          "journal_entries": [
+            { "event": "Issuance", "account": "Cash", "debit": 200000, "credit": null },
+            { "event": "Issuance", "account": "Common Stock", "debit": null, "credit": 125000 },
+            { "event": "Issuance", "account": "APIC–C/S", "debit": null, "credit": 75000 },
+            { "event": "Buy Back", "account": "Treasury Stock", "debit": 7500, "credit": null },
+            { "event": "Buy Back", "account": "APIC–C/S", "debit": 4500, "credit": null },
+            { "event": "Buy Back", "account": "Retained Earnings", "debit": 6000, "credit": null },
+            { "event": "Buy Back", "account": "Cash", "debit": null, "credit": 18000 },
+            { "event": "Re-sell ①", "account": "Cash", "debit": 5000, "credit": null },
+            { "event": "Re-sell ①", "account": "Treasury Stock", "debit": null, "credit": 2500 },
+            { "event": "Re-sell ①", "account": "APIC–C/S", "debit": null, "credit": 2500 },
+            { "event": "Re-sell ②", "account": "Cash", "debit": 7500, "credit": null },
+            { "event": "Re-sell ②", "account": "Treasury Stock", "debit": null, "credit": 2500 },
+            { "event": "Re-sell ②", "account": "APIC–C/S", "debit": null, "credit": 5000 }
+          ],
+          "equity_section": { "Common Stock": 125000, "Treasury Stock": -2500, "APIC_CS": 78000, "APIC_TS": 0, "Retained Earnings": -6000, "Total": 194500 }
+        },
+        "cost_method": {
+          "journal_entries": [
+            { "event": "Issuance", "account": "Cash", "debit": 200000, "credit": null },
+            { "event": "Issuance", "account": "Common Stock", "debit": null, "credit": 125000 },
+            { "event": "Issuance", "account": "APIC–C/S", "debit": null, "credit": 75000 },
+            { "event": "Buy Back", "account": "Treasury Stock", "debit": 18000, "credit": null },
+            { "event": "Buy Back", "account": "Cash", "debit": null, "credit": 18000 },
+            { "event": "Re-sell ①", "account": "Cash", "debit": 5000, "credit": null },
+            { "event": "Re-sell ①", "account": "Retained Earnings", "debit": 1000, "credit": null },
+            { "event": "Re-sell ①", "account": "Treasury Stock", "debit": null, "credit": 6000 },
+            { "event": "Re-sell ②", "account": "Cash", "debit": 7500, "credit": null },
+            { "event": "Re-sell ②", "account": "Treasury Stock", "debit": null, "credit": 6000 },
+            { "event": "Re-sell ②", "account": "APIC–T/S", "debit": null, "credit": 1500 }
+          ],
+          "equity_section": { "Common Stock": 125000, "Treasury Stock": -6000, "APIC_CS": 75000, "APIC_TS": 1500, "Retained Earnings": -1000, "Total": 194500 }
+        }
+      },
+      "practice_questions": []
+    },
+    {
+      "tbs_id": "TBS_EPS_001",
+      "pattern_name": "Diluted EPS Worksheet — Convertible Securities",
+      "becker_unit": "F1",
+      "becker_modules": ["M2"],
+      "book_id": "AA",
+      "chapter_id": "AA_CH4",
+      "topic_group": "AA_CH4_EPS",
+      "related_topic_ids": ["EPS_005", "EPS_006", "EPS_007", "EPS_008", "EPS_009"],
+      "question_text": "During Years 1 and 2, JLC Corp., a calendar year-end company, had several transactions related to raising capital. For each situation in the table below, enter the appropriate value as it relates to JLC's diluted earnings per share computation for the six months ended June 30, Year 2. Use the facts in the exhibit and assume no income taxes. Round all amounts to the nearest whole number, except for diluted earnings per share. Round diluted earnings per share to two decimal places.",
+      "answer_format": "worksheet",
+      "answer_columns": [
+        { "col": "B", "label": "Situation", "type": "text" },
+        { "col": "C", "label": "Amount", "type": "dollar" }
+      ],
+      "exhibits": [
+        {
+          "exhibit_id": 1,
+          "label": "JLC Capital Transactions",
+          "format": "text_bullets",
+          "role": "자본 조달 거래에 사용된 JLC 증권 관련 정보 전체 제공 — EPS 계산 재료 전부 포함",
+          "what_to_extract": "전환우선주 발행 조건(배당률, 전환비율) / 보통주 기초주식수 및 추가발행일 / 평균시가(함정) / 전환사채 조건(이율, 원금, 전환비율) / 분기별 순이익",
+          "read_tip": "평균시가 $59는 이 문제에서 사용하지 않는 함정 정보 — 옵션/워런트 없으므로 무시",
+          "items": [
+            {
+              "row": "전환우선주",
+              "en": "In the second quarter of Year 1, JLC issued 600,000 shares of convertible preferred stock for assets in a purchase transaction. The quarterly dividend on the convertible stock is $0.05 per share, payable at the end of each quarter. Each share is convertible into one share of common stock.",
+              "ko": "Year 1 2분기 발행 → Year 2 전체 유통 중. 분기배당 $0.05 × 2분기 = $60,000 (Basic EPS 분자 차감). 전환비율 1:1 → 전환 가정 시 증분주식 600,000주 (Diluted 분모에만 사용)"
+            },
+            {
+              "row": "보통주 기초",
+              "en": "Common shares outstanding at January 1, Year 2, were 3,300,000.",
+              "ko": "WASO 기산점. 기간 전체(6/6) 가중치 적용"
+            },
+            {
+              "row": "보통주 추가발행",
+              "en": "300,000 shares of common stock were issued for cash on March 31, Year 2.",
+              "ko": "3/31 발행 → 잔여기간 4/1~6/30 = 3개월. 가중치 = 3/6 = 1/2 → 300,000 × 1/2 = 150,000 가산"
+            },
+            {
+              "row": "평균시가",
+              "en": "The average market price for common stock for the first six months of Year 2 was $59 per share.",
+              "ko": "★함정 — Treasury Stock Method(옵션/워런트)에 사용되는 숫자. 이 문제엔 옵션 없음 → 계산에 사용하지 않음"
+            },
+            {
+              "row": "전환사채",
+              "en": "In the last quarter of Year 1, JLC issued 4% convertible debentures with a principal of $10,000,000, due in 20 years, at $1,000 (par). Interest is payable annually on November 1. Each $1,000 debenture is convertible into 20 shares of common stock.",
+              "ko": "Year 1 4분기 발행 → Year 2 전체 유통. 이자절감 = $10,000,000 × 4% × 6/12 = $200,000 (Diluted 분자 가산). 전환주식수 = $10,000,000 ÷ $1,000 × 20주 = 200,000주 (Diluted 분모 가산). Debenture = 무담보채권, FAR에서는 Convertible bond와 동일하게 취급"
+            },
+            {
+              "row": "보통주 배당",
+              "en": "JLC did not declare or pay any dividends on its common stock for Year 2.",
+              "ko": "IAC = NI - PS배당만 차감. 보통주 배당 추가 차감 없음 확인용 문장"
+            },
+            {
+              "row": "분기별 순이익",
+              "en": "Q1: $3,000,000 / Q2: $3,600,000 / Q3: $2,900,000 / Q4: $3,100,000",
+              "ko": "★함정 — 보고기간 = 상반기(6개월) → Q1+Q2만 사용. Q3, Q4는 사용하지 않음. H1 NI = $6,600,000"
+            }
+          ]
+        }
+      ],
+      "solve_steps": [
+        {
+          "step": 1,
+          "en": "Compute Basic EPS first",
+          "ko": "Basic EPS 먼저 계산 — 희석성 테스트 기준값",
+          "detail": "분자: NI(Q1+Q2) $6,600,000 - PS배당 $60,000 = $6,540,000 / 분모: WASO = 3,300,000 + 300,000×(3/6) = 3,450,000 / Basic EPS = $6,540,000 ÷ 3,450,000 = $1.90"
+        },
+        {
+          "step": 2,
+          "en": "Test dilutiveness of each convertible security",
+          "ko": "각 전환증권의 희석성 테스트 — 증분 EPS < Basic EPS $1.90이면 희석성 있음",
+          "detail": "전환우선주: $60,000 ÷ 600,000주 = $0.10 → 희석 ✅ / 전환사채: $200,000 ÷ 200,000주 = $1.00 → 희석 ✅"
+        },
+        {
+          "step": 3,
+          "en": "Compute Diluted EPS numerator (Row 2)",
+          "ko": "Diluted 분자 = NI + 이자절감 (전환우선주 있으면 PS배당 상쇄되어 NI 그대로 출발)",
+          "detail": "$6,600,000 + $200,000 = $6,800,000. PS배당은 Basic에서 뺐다가 Diluted에서 다시 더해지므로 NI 그대로 사용"
+        },
+        {
+          "step": 4,
+          "en": "Compute WASO (Row 3)",
+          "ko": "실제 유통 CS만 포함 — 전환우선주/전환사채는 여기 넣지 않음",
+          "detail": "3,300,000 + 300,000×(3/6) = 3,450,000. WASO 분모 = 보고기간 총 길이(6개월)"
+        },
+        {
+          "step": 5,
+          "en": "Add incremental shares (Row 5, 6)",
+          "ko": "전환 가정 시 추가되는 주식수 — Row 3과 별도로 쌓음",
+          "detail": "전환우선주: 600,000 × 1주 = 600,000 / 전환사채: 10,000채 × 20주 = 200,000"
+        },
+        {
+          "step": 6,
+          "en": "Compute Diluted EPS (Row 9)",
+          "ko": "Row 2 ÷ Row 8",
+          "detail": "$6,800,000 ÷ 4,250,000 = $1.60"
+        }
+      ],
+      "rules": [
+        {
+          "tx_type": "전환우선주 (Convertible Preferred Stock)",
+          "en_rule": "If converted: add back PS dividends to numerator + add converted shares to denominator",
+          "columns": ["분자", "분모"],
+          "ko_trap": "Basic EPS에서 뺐던 PS배당을 Diluted에서 다시 더해야 함. 전환우선주가 있으면 NI 그대로 출발하면 자동 상쇄"
+        },
+        {
+          "tx_type": "전환사채 (Convertible Debentures)",
+          "en_rule": "If converted: add after-tax interest savings to numerator + add converted shares to denominator",
+          "columns": ["분자", "분모"],
+          "ko_trap": "이자 = 연간이율 × 원금 × 보고기간/12. 세율 없으면 전액 더함. Debenture = 무담보채권, Bond와 동일 취급"
+        },
+        {
+          "tx_type": "WASO 가중치",
+          "en_rule": "Weight = months outstanding / total reporting period length",
+          "columns": ["분모"],
+          "ko_trap": "분모 = 보고기간 총 길이. 연간=12, 반기=6, 분기=3. 연간 문제 습관으로 반기 문제에서 /12 쓰면 틀림"
+        }
+      ],
+      "traps": [
+        "평균시가 $59 — 옵션/워런트 없으면 사용하지 않는 함정 정보",
+        "Q3, Q4 순이익 — 보고기간 상반기(6개월)이므로 Q1+Q2만 사용",
+        "전환사채 이자 연간($400,000) 그대로 쓰면 틀림 — 반기이므로 × 1/2 = $200,000",
+        "전환우선주/전환사채를 WASO(Row 3)에 포함하면 틀림 — Row 5,6에 별도 기재",
+        "희석성 테스트 생략 — 증분 EPS > Basic EPS면 anti-dilutive → 제외"
+      ],
+      "answer_table": {
+        "rows": [
+          { "label": "Income available to stockholders plus assumed conversions", "amount": 6800000 },
+          { "label": "Weighted-average number of shares outstanding", "amount": 3450000 },
+          { "label": "Convertible preferred stock (incremental shares)", "amount": 600000 },
+          { "label": "Convertible debentures (incremental shares)", "amount": 200000 },
+          { "label": "Dilutive potential common shares", "amount": 800000 },
+          { "label": "Total adjusted weighted-average shares after dilution", "amount": 4250000 },
+          { "label": "Diluted earnings per share", "amount": 1.60 }
+        ]
+      },
+      "practice_questions": []
     }
   ]
 }
