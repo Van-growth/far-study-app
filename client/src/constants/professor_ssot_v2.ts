@@ -9239,6 +9239,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     rule_items: ["Incremental = 계약 없었으면 발생 안 했을 비용만", "Recoverable = 계약 수익이 비용보다 커야 자산화 가능", "커미션 → capitalize", "급여(고정비) → expense", "광고비(일반영업) → expense", "자산화 후 계약 기간 상각 → 수익 매칭"],
     key_formula: "Contract Cost Asset → 계약 기간 상각 = Amortization Expense",
   },
+  {
+    topic_id: "REV_016",
+    book_id: "IA",
+    chapter_id: "IA_CH2",
+    topic_group: "IA_CH2_REV",
+    sub_category_id: "U2_REVENUE_RECOGNITION",
+    card_type: "calculation",
+    card_name: "Percentage of Completion — Annual GP Calculation",
+    rule: "GP recognized = (Estimated total GP × Completion %) − Prior years GP. Completion % = Cumulative actual costs ÷ (Cumulative actual + Remaining estimated costs). Recalculate every year as estimates change.",
+    trigger: "percentage of completion | long-term construction | estimated costs remaining | revenue over time | gross profit",
+    trap: "당기 GP ≠ 누적 GP → 반드시 전기 인식분 차감 / 총예상원가는 매년 재추정 → GP 목표도 매년 바뀜 / Contract price는 고정, 바뀌는 건 원가 추정",
+    speed: "완성률 = 누적실제 ÷ (누적실제+잔여예상) / 당기GP = 총예상GP×완성률(누적) − 전기인식GP",
+    context_background: "Contract price는 전체 공사 계약금액으로 고정. 매년 실제 투입원가 누적 + 잔여 예상원가 재추정 → 총예상원가 업데이트 → GP목표/완성률 동시 연동. 실제 매출 확정 전이라 진척률로 매출 추정하는 구조 → 누적 재계산 필수.",
+    context_trigger: "3년 이상 장기 건설 프로젝트에서 연도별 GP 인식 계산",
+    rule_items: ["Contract price 고정 / 총예상원가 매년 재추정", "완성률 = 누적실제원가 ÷ (누적실제 + 잔여예상)", "총예상GP = Contract price − 총예상원가", "누적인식GP = 총예상GP × 완성률", "당기GP = 누적인식GP − 전기인식GP"],
+    key_formula: "당기GP = (Contract price − 총예상원가) × 완성률 − 전기인식GP",
+  },
 ];
 
 export const PROFESSOR_SSOT_V2_TEXT: string = PROFESSOR_SSOT_V2.map(t =>
