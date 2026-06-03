@@ -9222,6 +9222,23 @@ Series B+ 감사 시 핵심 검토 항목`,
     rule_items: "① 의도/계획만으론 부족 — 실제 장기 재융자 action 필요 ② 재융자 실행이 FS 발행일 이전 완료되어야 long-term 가능 ③ 재융자 전 선납(excess cash 등) → 재융자와 무관 → current ④ current liabilities = 선납분만",
     key_formula: "Current = 재융자 전 선납분 / Long-term = 재융자 후 잔액 (FS발행 전 완료 시)",
   },
+  {
+    topic_id: "REV_015",
+    book_id: "IA",
+    chapter_id: "IA_CH2",
+    topic_group: "IA_CH2_REV",
+    sub_category_id: "U2_REVENUE_RECOGNITION",
+    card_type: "conditional",
+    card_name: "Contract Cost Asset — Incremental Costs of Obtaining a Contract",
+    rule: "Capitalize ONLY incremental costs of obtaining a contract (costs that would NOT have been incurred without the contract) AND are recoverable. Salaries and advertising = not incremental = expense.",
+    trigger: "commissions | contract costs | incremental | recoverable | salaries | advertising | capitalize",
+    trap: "급여는 계약 여부와 무관하게 발생 → expense / 광고비는 특정 계약과 무관 → expense / recoverable 조건 미충족 시 자산화 불가",
+    speed: "'계약 없었어도 어차피 냈을 비용?' YES → expense / NO → Contract Cost Asset",
+    context_background: "ASC 606(2018년 적용): 계약 획득 증분원가만 자산화. Incremental = 계약 수에 따라 증분되는 비용(커미션 등). 자산화 후 계약 기간에 걸쳐 상각하여 수익-비용 매칭. Recoverable = AR 대손충당금 논리와 동일 — 계약 수익이 자산화 비용보다 커야 함.",
+    context_trigger: "영업직원 급여+커미션+광고비가 동시에 주어지고 capitalize 대상을 고르는 상황",
+    rule_items: ["Incremental = 계약 없었으면 발생 안 했을 비용만", "Recoverable = 계약 수익이 비용보다 커야 자산화 가능", "커미션 → capitalize", "급여(고정비) → expense", "광고비(일반영업) → expense", "자산화 후 계약 기간 상각 → 수익 매칭"],
+    key_formula: "Contract Cost Asset → 계약 기간 상각 = Amortization Expense",
+  },
 ];
 
 export const PROFESSOR_SSOT_V2_TEXT: string = PROFESSOR_SSOT_V2.map(t =>
