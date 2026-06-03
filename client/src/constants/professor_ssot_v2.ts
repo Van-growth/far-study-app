@@ -9207,6 +9207,21 @@ Series B+ 감사 시 핵심 검토 항목`,
     rule_items: ["Basic EPS = (NI-PrefDiv)/Common", "희석테스트: 증분EPS < Basic → 희석적", "Diluted 분자: NI + 이자×(1-t) (pref div 제거)", "Diluted 분모: Common + pref전환주 + bond전환주"],
     key_formula: "Diluted EPS = (NI + bond interest×(1-t)) / (Common + pref conv shares + bond conv shares)",
   },
+  {
+    topic_id: "LTL_002",
+    book_id: "IA",
+    chapter_id: "IA_CH12",
+    topic_group: "IA_CH12_LTL",
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
+    card_type: "conditional",
+    card_name: "Short-term Debt Refinancing — Current vs Long-term Classification",
+    rule: "Short-term debt → long-term only if: ① actual refinancing completed (intent alone insufficient) ② completed BEFORE FS issuance date. Prepaid before refinancing = always current.",
+    trigger: "note payable | refinancing | long-term bonds | prepaid | excess cash | FS issuance date",
+    trap: "계획/의도만으론 long-term 불가 → 실제 실행 필요 / 재융자 전 선납분은 long-term 커버 불가 → 무조건 current / current liabilities 물어보는 거 놓치지 말 것",
+    speed: "계획 ❌ / 실행 ✓ / FS발행 전 완료 ✓ / 선납분 → 무조건 current",
+    rule_items: "① 의도/계획만으론 부족 — 실제 장기 재융자 action 필요 ② 재융자 실행이 FS 발행일 이전 완료되어야 long-term 가능 ③ 재융자 전 선납(excess cash 등) → 재융자와 무관 → current ④ current liabilities = 선납분만",
+    key_formula: "Current = 재융자 전 선납분 / Long-term = 재융자 후 잔액 (FS발행 전 완료 시)",
+  },
 ];
 
 export const PROFESSOR_SSOT_V2_TEXT: string = PROFESSOR_SSOT_V2.map(t =>
