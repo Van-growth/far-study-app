@@ -85,6 +85,7 @@ export async function listConversations(
   userId: string,
   contextType?: ContextType,
   search?: string,
+  contextName?: string,
   limit = 50,
 ): Promise<HarryConversation[]> {
   let query = supabase
@@ -95,6 +96,7 @@ export async function listConversations(
     .limit(limit);
 
   if (contextType) query = query.eq('context_type', contextType);
+  if (contextName) query = query.eq('context_name', contextName);
   if (search?.trim()) {
     query = query.ilike('messages::text', `%${search.trim()}%`);
   }

@@ -23,7 +23,7 @@ const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:30
 
 const CATEGORIES = [
   { id: 'bond',        label: 'Bond',                         groups: ['IA_CH8_BOND'] },
-  { id: 'tdr',         label: 'TDR (Troubled Debt Restructuring)', groups: ['IA_CH8_TDR'] },
+  { id: 'tdr',         label: 'TDR',                               groups: ['IA_CH8_TDR'] },
   { id: 'lease',       label: 'Lease',                        groups: ['IA_CH8_LEASE'] },
   { id: 'note',        label: 'Note Payable & Interest',      groups: ['IA_CH8_NOTE', 'IA_CH8_INT'] },
   { id: 'aro',         label: 'ARO',                          groups: ['IA_CH8_ARO'] },
@@ -2137,7 +2137,7 @@ function HarryTab({ catLabel }: { catLabel: string }) {
   }, [msgs])
 
   async function refreshList() {
-    const list = await listConversations(userId!, 'concept', search || undefined)
+    const list = await listConversations(userId!, 'concept', search || undefined, catLabel)
     setConversations(list)
   }
 
@@ -2739,8 +2739,12 @@ export default function ConceptNotesPage() {
   const TABS: { key: TabKey; label: string }[] = [
     { key: 'content', label: '핵심 정리' },
     { key: 'cards',   label: '개념 카드' },
-    { key: 'harry',   label: 'Harry Practice' },
+    ...(!isSuper ? [{ key: 'harry' as TabKey, label: 'Harry Practice' }] : []),
   ]
+
+  useEffect(() => {
+    if (isSuper && activeTab === 'harry') setActiveTab('content')
+  }, [isSuper]) // eslint-disable-line
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#fafaf8' }}>
