@@ -25,144 +25,55 @@ import HarryHistoryPage from './pages/HarryHistoryPage';
 import CorePage from './pages/CorePage';
 import BondMasterPage from './pages/BondMasterPage';
 import WrongAnswerPreviewPage from './pages/WrongAnswerPreviewPage';
+import ExamPage from './pages/ExamPage';
 import DailyBriefingModal from './components/DailyBriefingModal';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 import useClaudeStore from './store/claudeStore';
 import useStudyStore from './store/studyStore';
-import { MORE_MENU_ITEMS, ADMIN_MENU_ITEM } from './constants/navigation';
 
 const PANEL_MIN = 280;
 const PANEL_MAX = 600;
 const PANEL_DEFAULT = 340;
 
 // ── Bottom Tab Bar (mobile only) ──────────────────────────────
-// New 3-tab structure: Home (AI tutor briefing) / Analyze / More.
-// Coach, Wrong, Science, Valuation still resolve as URLs but are not
-// reachable through the nav (intentional per the 2026-04 repositioning).
 const MOBILE_TABS = [
-  { label: '홈', icon: '🏠', path: '/' },
-  { label: '복습', icon: '⚡', path: '/sprint' },
   { label: '개념', icon: '📑', path: '/concept-notes' },
-  { label: '맵', icon: '🗺️', path: '/concept-map' },
-  { label: '더보기', icon: '···', path: '/more' },
+  { label: '복습', icon: '📝', path: '/wrong-answers' },
+  { label: '시험', icon: '📅', path: '/exam' },
 ];
 
-function BottomTabBar({ email }: { email: string }) {
+function BottomTabBar({ email: _email }: { email: string }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [showMore, setShowMore] = useState(false);
-  const [tocOpen, setTocOpen] = useState(false);
-  const isAdmin = email.toLowerCase() === ADMIN_EMAIL;
-  const openPanel = useClaudeStore((s) => s.openPanel);
 
-  const isPanelOpen = useClaudeStore((s) => s.isOpen);
-
-  const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/';
-    if (path.startsWith('/quiz')) return location.pathname === '/quiz';
-    return location.pathname.startsWith(path);
-  };
-
-  const morePaths = ['/quiz', '/admin', '/history', '/analyze'];
-  const moreActive = morePaths.some((p) => location.pathname.startsWith(p));
-
-  // Close more menu when viewport switches to desktop (md = 768px)
-  useEffect(() => {
-    const onResize = () => { if (window.innerWidth >= 768) setShowMore(false); };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+  const isActive = (path: string) => location.pathname.startsWith(path);
 
   return (
-    <>
-      {/* More menu popup — drops down from tab bar */}
-      {showMore && (
-        <div className="fixed inset-0 z-50 md:hidden" onClick={() => setShowMore(false)}>
-          <div
-            className="absolute top-[100px] right-3 bg-white rounded-xl shadow-lg border border-border py-1 min-w-[160px]"
-            onClick={(e) => e.stopPropagation()}
+    <div
+      className="md:hidden fixed top-[54px] left-0 right-0 z-40 bg-white border-b border-border flex items-center justify-around"
+      style={{ height: 44 }}
+    >
+      {MOBILE_TABS.map((tab) => {
+        const active = isActive(tab.path);
+        return (
+          <button
+            key={tab.path}
+            onClick={() => navigate(tab.path)}
+            className="flex items-center justify-center gap-1 flex-1 h-full"
+            style={{ borderBottom: active ? '2px solid #1a2744' : '2px solid transparent' }}
           >
-            <button
-              onClick={() => { navigate('/'); openPanel(); setShowMore(false); }}
-              className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors"
+            <span className="text-base leading-none">{tab.icon}</span>
+            <span
+              className="text-[11px] font-medium"
+              style={{ color: active ? '#1a2744' : '#94a3b8' }}
             >
-              🤖 AI 튜터
-            </button>
-            <div className="border-t border-border my-1" />
-            {[
-              ...MORE_MENU_ITEMS,
-              ...(isAdmin ? [ADMIN_MENU_ITEM] : []),
-            ].map((item) => (
-              <button
-                key={item.path}
-                onClick={() => { navigate(item.path); setShowMore(false); }}
-                className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors"
-              >
-                {item.label}
-              </button>
-            ))}
-            <div className="border-t border-border my-1" />
-            <button
-              onClick={() => { setTocOpen(true); setShowMore(false); }}
-              className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors"
-            >
-              📚 FAR 목차
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Becker 목차 모달 — 모바일 */}
-      {tocOpen && (
-        <div className="fixed inset-0 z-50 flex" onClick={() => setTocOpen(false)}>
-          <div className="absolute inset-0 bg-black/30" />
-          <div
-            className="relative flex flex-col bg-white shadow-xl overflow-hidden"
-            style={{ width: '85vw', maxWidth: 320, marginTop: 98, maxHeight: 'calc(100dvh - 98px)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
-              <span className="text-xs font-semibold text-muted uppercase tracking-wider">📚 FAR 목차</span>
-              <button onClick={() => setTocOpen(false)} className="text-muted hover:text-[#0f172a] text-lg leading-none px-1">×</button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <Sidebar onItemClick={() => setTocOpen(false)} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tab bar — fixed below header */}
-      <div
-        className="md:hidden fixed top-[54px] left-0 right-0 z-40 bg-white border-b border-border flex items-center justify-around"
-        style={{ height: 44 }}
-      >
-        {MOBILE_TABS.map((tab) => {
-          const active = tab.path === '/more' ? moreActive : isActive(tab.path);
-          return (
-            <button
-              key={tab.path}
-              onClick={() => {
-                if (tab.path === '/more') { setShowMore(!showMore); return; }
-                navigate(tab.path);
-                setShowMore(false);
-              }}
-              className="flex items-center justify-center gap-1 flex-1 h-full"
-              style={{ borderBottom: active ? '2px solid #4f6ef7' : '2px solid transparent' }}
-            >
-              <span className="text-base leading-none">{tab.icon}</span>
-              <span
-                className="hidden min-[480px]:inline text-[11px] font-medium"
-                style={{ color: active ? '#4f6ef7' : '#94a3b8' }}
-              >
-                {tab.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </>
+              {tab.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -258,6 +169,8 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/core" element={<CorePage />} />
             <Route path="/bond-master" element={<BondMasterPage />} />
             <Route path="/wrong-preview" element={<WrongAnswerPreviewPage />} />
+            <Route path="/wrong-answers" element={<WrongAnswerPreviewPage />} />
+            <Route path="/exam" element={<ExamPage />} />
             {email.toLowerCase() === ADMIN_EMAIL && (
               <Route path="/admin" element={<AdminPage email={email} />} />
             )}
