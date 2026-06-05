@@ -35,6 +35,10 @@
     font-size: 16px;
   }
 
+  body, #root {
+    background-color: var(--bg-primary);
+  }
+
   body {
     font-family: 'Noto Sans KR', 'Noto Sans', -apple-system, sans-serif;
     font-size: 14px;

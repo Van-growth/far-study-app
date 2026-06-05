@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
 import { supabase } from '../lib/supabase'
 import { PROFESSOR_SSOT_V2, TopicCard } from '../constants/professor_ssot_v2'
 import useStudyStore from '../store/studyStore'
@@ -2389,11 +2390,37 @@ function HarryTab({ catLabel }: { catLabel: string }) {
                     background: msg.role === 'assistant' ? NAVY : '#f3f3f0',
                     color: msg.role === 'assistant' ? 'white' : '#111',
                     fontSize: 13, lineHeight: 1.65,
-                    whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                    wordBreak: 'break-word',
+                    ...(msg.role === 'user' ? { whiteSpace: 'pre-wrap' as const } : {}),
                   }}>
-                    {msg.content || (streaming && i === msgs.length - 1
-                      ? <span style={{ opacity: 0.4, fontSize: 18, letterSpacing: 2 }}>•••</span>
-                      : null)}
+                    {msg.role === 'assistant' ? (
+                      msg.content ? (
+                        <ReactMarkdown
+                          components={{
+                            p: ({ children }: { children?: React.ReactNode }) => <p style={{ margin: '0 0 6px', color: 'inherit', lineHeight: 1.65 }}>{children}</p>,
+                            strong: ({ children }: { children?: React.ReactNode }) => <strong style={{ fontWeight: 600, color: 'inherit' }}>{children}</strong>,
+                            em: ({ children }: { children?: React.ReactNode }) => <em style={{ fontStyle: 'italic', color: 'inherit' }}>{children}</em>,
+                            ul: ({ children }: { children?: React.ReactNode }) => <ul style={{ paddingLeft: 16, margin: '4px 0' }}>{children}</ul>,
+                            ol: ({ children }: { children?: React.ReactNode }) => <ol style={{ paddingLeft: 16, margin: '4px 0' }}>{children}</ol>,
+                            li: ({ children }: { children?: React.ReactNode }) => <li style={{ marginBottom: 2, color: 'inherit' }}>{children}</li>,
+                            h3: ({ children }: { children?: React.ReactNode }) => <h3 style={{ fontSize: 13, fontWeight: 700, margin: '8px 0 4px', color: 'inherit' }}>{children}</h3>,
+                            h2: ({ children }: { children?: React.ReactNode }) => <h2 style={{ fontSize: 13, fontWeight: 700, margin: '8px 0 4px', color: 'inherit' }}>{children}</h2>,
+                            code: ({ children }: { children?: React.ReactNode }) => <code style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace', fontSize: 12, color: 'inherit' }}>{children}</code>,
+                            pre: ({ children }: { children?: React.ReactNode }) => <pre style={{ background: 'rgba(255,255,255,0.1)', padding: 10, borderRadius: 6, overflow: 'auto', fontSize: 12, margin: '8px 0', color: 'inherit' }}>{children}</pre>,
+                            blockquote: ({ children }: { children?: React.ReactNode }) => <blockquote style={{ borderLeft: '3px solid rgba(255,255,255,0.4)', paddingLeft: 10, margin: '6px 0', color: 'inherit' }}>{children}</blockquote>,
+                            table: ({ children }: { children?: React.ReactNode }) => <table style={{ borderCollapse: 'collapse', width: '100%', margin: '8px 0', fontSize: 12 }}>{children}</table>,
+                            th: ({ children }: { children?: React.ReactNode }) => <th style={{ border: '1px solid rgba(255,255,255,0.3)', padding: '4px 8px', background: 'rgba(255,255,255,0.1)', color: 'inherit' }}>{children}</th>,
+                            td: ({ children }: { children?: React.ReactNode }) => <td style={{ border: '1px solid rgba(255,255,255,0.2)', padding: '4px 8px', color: 'inherit' }}>{children}</td>,
+                          } as never}
+                        >{msg.content}</ReactMarkdown>
+                      ) : (
+                        streaming && i === msgs.length - 1
+                          ? <span style={{ opacity: 0.4, fontSize: 18, letterSpacing: 2 }}>•••</span>
+                          : null
+                      )
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                 </div>
               ))}
@@ -2654,7 +2681,7 @@ export default function ConceptNotesPage() {
   const [wrongCounts, setWrongCounts] = useState<Record<string, number>>({})
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 768) return true
-    try { return localStorage.getItem('far-concept-notes-sidebar-collapsed') === 'true' } catch { return false }
+    try { return localStorage.getItem('sidebar-collapsed') === 'true' } catch { return false }
   })
   const prevIdRef = useRef<ActiveId>(activeId)
 
@@ -2682,7 +2709,7 @@ export default function ConceptNotesPage() {
   }, [activeId])
 
   useEffect(() => {
-    try { localStorage.setItem('far-concept-notes-sidebar-collapsed', String(sidebarCollapsed)) } catch { /* ignore */ }
+    try { localStorage.setItem('sidebar-collapsed', String(sidebarCollapsed)) } catch { /* ignore */ }
   }, [sidebarCollapsed])
 
   const isSuper = SUPER_CATEGORIES.some(s => s.id === activeId)
@@ -2716,7 +2743,7 @@ export default function ConceptNotesPage() {
   ]
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#f8f9fb' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#fafaf8' }}>
 
       {/* Sidebar */}
       <aside
