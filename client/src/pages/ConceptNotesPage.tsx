@@ -1,430 +1,953 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { PROFESSOR_SSOT_V2 } from '../constants/professor_ssot_v2'
+import { PROFESSOR_SSOT_V2, TopicCard } from '../constants/professor_ssot_v2'
+import useStudyStore from '../store/studyStore'
 
-// ── Types ──────────────────────────────────────────────────────────────────
-interface GameCard {
-  id: string
-  topicId: string
-  category: string
-  trigger: string
-  speed: string
+// ── Constants ──────────────────────────────────────────────────────────────────
+const NAVY = '#1a2744'
+const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001'
+
+const CATEGORIES = [
+  { id: 'bond',        label: 'Bond & TDR',                   groups: ['IA_CH8_BOND', 'IA_CH8_TDR'] },
+  { id: 'lease',       label: 'Lease',                        groups: ['IA_CH8_LEASE'] },
+  { id: 'note',        label: 'Note Payable & Interest',      groups: ['IA_CH8_NOTE', 'IA_CH8_INT'] },
+  { id: 'aro',         label: 'ARO',                          groups: ['IA_CH8_ARO'] },
+  { id: 'inventory',   label: 'Inventory',                    groups: ['IA_CH5_INV'] },
+  { id: 'ppe',         label: 'PP&E & Depreciation',          groups: ['IA_CH4_PPE', 'IA_CH4_DEPR', 'IA_CH4_IMPAIR'] },
+  { id: 'intangibles', label: 'Intangibles',                  groups: ['IA_CH4_INTANG'] },
+  { id: 'revenue',     label: 'Revenue Recognition',          groups: ['IA_CH2_REV'] },
+  { id: 'tax',         label: 'Deferred Tax',                 groups: ['IA_CH10_TAX'] },
+  { id: 'eps',         label: 'EPS',                          groups: ['IA_CH9_EPS'] },
+  { id: 'scf',         label: 'SCF',                          groups: ['IA_CH7_SCF'] },
+  { id: 'investments', label: 'Investments & Equity Method',  groups: ['IA_CH6_INVEST'] },
+  { id: 'equity',      label: "Stockholders' Equity",         groups: ['IA_CH9_EQUITY'] },
+  { id: 'nfp',         label: 'NFP Accounting',               groups: ['IB_NFP'] },
+  { id: 'gov',         label: 'Governmental Accounting',      groups: ['IB_GOV'] },
+  { id: 'changes',     label: 'Accounting Changes & Errors',  groups: ['IA_CH11_CHANGE'] },
+  { id: 'fv',          label: 'Fair Value',                   groups: ['IA_CH12_FV'] },
+  { id: 'other',       label: 'Other',                        groups: [] },
+] as const
+
+type CategoryId = typeof CATEGORIES[number]['id']
+type TabKey = 'content' | 'cards' | 'harry'
+
+interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
 }
 
-interface CardResult {
-  topicId: string
-  step1: boolean
-  step2: boolean
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function getCardsForCategory(cat: typeof CATEGORIES[number]): TopicCard[] {
+  if (cat.groups.length === 0) return []
+  return PROFESSOR_SSOT_V2.filter(card =>
+    cat.groups.some(g => (card as TopicCard & { topic_group?: string }).topic_group === g)
+  )
 }
 
-type Phase = 'loading' | 'menu' | 'game' | 'result'
+// ── Structured Content Sections ────────────────────────────────────────────────
 
-// ── Constants ──────────────────────────────────────────────────────────────
-const CATEGORY_TABS = [
-  { key: 'All', label: '전체' },
-  { key: 'Assets', label: 'Assets' },
-  { key: 'Income & Equity', label: 'Income & Equity' },
-  { key: 'Debt & Instr.', label: 'Debt & Instr.' },
-  { key: 'Tax & Pension', label: 'Tax & Pension' },
-  { key: 'Gov & NFP', label: 'Gov & NFP' },
-  { key: 'Other Topics', label: 'Other Topics' },
-]
+function BondContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. Overview">
+        <Table
+          headers={['', 'Market Rate vs Coupon', 'Issue Price vs Face']}
+          rows={[
+            ['Premium', 'Market < Coupon', 'Issue > Face'],
+            ['Discount', 'Market > Coupon', 'Issue < Face'],
+          ]}
+        />
+      </Section>
 
-const PREFIX_TO_CAT: Record<string, string> = {
-  PPE: 'Assets', IMP: 'Assets', INV: 'Assets', CASH: 'Assets', REC: 'Assets', EQM: 'Assets',
-  INTANG: 'Assets', SW: 'Assets',
-  CF: 'Income & Equity', ADJ: 'Income & Equity', REV: 'Income & Equity',
-  ACE: 'Income & Equity', EPS: 'Income & Equity', EQUITY: 'Income & Equity',
-  IS: 'Income & Equity', DISC: 'Income & Equity', SPF: 'Income & Equity',
-  BOND: 'Debt & Instr.', LEASE: 'Debt & Instr.', TDR: 'Debt & Instr.',
-  ARO: 'Debt & Instr.', BC: 'Debt & Instr.', INT: 'Debt & Instr.',
-  TAX: 'Tax & Pension', PEN: 'Tax & Pension',
-  GOV: 'Gov & NFP', NFP: 'Gov & NFP',
-}
+      <Section title="2. PV Calculation">
+        <p style={{ marginBottom: 8 }}>
+          <strong>Issue Price = PV of Coupons + PV of Principal</strong>
+        </p>
+        <CodeBlock>{`Premium (coupon 6%, market 4%, 5yr):
+  $6,000 × 4.4518  = $26,711
+  $100,000 × 0.8219 = $82,190
+  Issue Price       = $108,901
 
-const TOPIC_NAMES: Record<string, string> = Object.fromEntries(
-  PROFESSOR_SSOT_V2.map(c => [c.topic_id, c.card_name ?? ''])
-)
+Discount (coupon 6%, market 8%, 5yr):
+  $6,000 × 3.9927  = $23,956
+  $100,000 × 0.6806 = $68,060
+  Issue Price       = $92,016`}</CodeBlock>
+      </Section>
 
-const CSS_ANIMS = `
-  @keyframes cardIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
-  @keyframes comboPop { 0%{transform:scale(1)} 50%{transform:scale(1.5)} 100%{transform:scale(1)} }
-  @keyframes comboReset { 0%{transform:scale(1)} 35%{transform:scale(0.65);color:#ef4444} 100%{transform:scale(1)} }
-  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
-  @keyframes rainbow { 0%{box-shadow:0 0 0 3px #ef4444} 25%{box-shadow:0 0 0 3px #f59e0b} 50%{box-shadow:0 0 0 3px #22c55e} 75%{box-shadow:0 0 0 3px #3b82f6} 100%{box-shadow:0 0 0 3px #ef4444} }
-  @keyframes pulse15 { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
-  @keyframes timerDrain { from{width:100%} to{width:0%} }
-  @keyframes dotBounce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.5)} }
-`
+      <Section title="3. Journal Entries — Issuance">
+        <CodeBlock>{`Premium:
+  Dr. Cash            108,000
+    Cr. Bonds Payable          100,000
+    Cr. Premium on Bonds         8,000
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-function catOf(topicId: string) {
-  return PREFIX_TO_CAT[topicId.split('_')[0]] ?? 'Other Topics'
-}
+Discount:
+  Dr. Cash             92,000
+  Dr. Discount on Bonds  8,000
+    Cr. Bonds Payable          100,000`}</CodeBlock>
+      </Section>
 
-function topicLabel(id: string) {
-  const name = TOPIC_NAMES[id]
-  return name ? `${id}: ${name}` : id
-}
+      <Section title="4. Straight-Line Amortization (SL) — Premium Example">
+        <Table
+          headers={['Year', 'Int Exp', 'Cash Paid', 'Amort', 'Carrying Value']}
+          rows={[
+            ['1', '4,400', '6,000', '1,600', '106,400'],
+            ['2', '4,400', '6,000', '1,600', '104,800'],
+            ['3', '4,400', '6,000', '1,600', '103,200'],
+            ['4', '4,400', '6,000', '1,600', '101,600'],
+            ['5', '4,400', '6,000', '1,600', '100,000'],
+          ]}
+        />
+        <p style={{ fontSize: 13, color: '#666', marginTop: 8 }}>
+          SL Amort = $8,000 premium ÷ 5 years = $1,600/yr
+        </p>
+      </Section>
 
-function stripMd(text: string) {
-  return text.replace(/\*\*/g, '')
-}
+      <Section title="5. Effective Interest (EI) — Premium (108,000 × 4%)">
+        <Table
+          headers={['Year', 'Int Exp (BV×4%)', 'Cash Paid', 'Amort', 'Ending BV']}
+          rows={[
+            ['1', '4,320', '6,000', '1,680', '106,320'],
+            ['2', '4,253', '6,000', '1,747', '104,573'],
+            ['3', '4,183', '6,000', '1,817', '102,756'],
+            ['4', '4,110', '6,000', '1,890', '100,866'],
+            ['5', '4,035*', '6,000', '1,965', '100,000'],
+          ]}
+        />
+      </Section>
 
-function truncate(text: string, max = 130) {
-  const t = stripMd(text).replace(/\n/g, ' ')
-  return t.length > max ? t.slice(0, max) + '…' : t
-}
+      <Section title="6. Effective Interest (EI) — Discount (92,000 × 8%)">
+        <Table
+          headers={['Year', 'Int Exp (BV×8%)', 'Cash Paid', 'Amort', 'Ending BV']}
+          rows={[
+            ['1', '7,360', '6,000', '1,360', '93,360'],
+            ['2', '7,469', '6,000', '1,469', '94,829'],
+            ['3', '7,586', '6,000', '1,586', '96,415'],
+            ['4', '7,713', '6,000', '1,713', '98,128'],
+            ['5', '7,872*', '6,000', '1,872', '100,000'],
+          ]}
+        />
+      </Section>
 
-function shuffle<T>(arr: T[]) {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
+      <Section title="7. Early Retirement">
+        <CodeBlock>{`Net Carrying Value = Face ± Unamortized Premium/Discount
+Gain/Loss = Net CV − Reacquisition Price
+→ Reported on Income Statement (ordinary item)`}</CodeBlock>
+      </Section>
 
-function pick4<T>(correct: T, pool: T[]): T[] {
-  const uniq = [...new Set(pool)].filter(x => x !== correct)
-  return shuffle([correct, ...shuffle(uniq).slice(0, 3)])
-}
-
-function comboColor(n: number): string {
-  if (n >= 10) return '#f97316'
-  if (n >= 5) return '#f59e0b'
-  return '#0f172a'
-}
-
-function comboSize(n: number): number {
-  if (n >= 15) return 38
-  if (n >= 10) return 34
-  if (n >= 5) return 30
-  return 26
-}
-
-function cardBorder(n: number): React.CSSProperties {
-  if (n >= 20) return { animation: 'rainbow 1.2s linear infinite' }
-  if (n >= 10) return { boxShadow: '0 0 0 3px #f97316, 0 0 16px rgba(249,115,22,0.25)' }
-  if (n >= 3) return { boxShadow: '0 0 0 2px #f59e0b' }
-  return {}
-}
-
-// ── Supabase ───────────────────────────────────────────────────────────────
-async function fetchCards(): Promise<GameCard[]> {
-  const { data, error } = await supabase
-    .from('question_bank')
-    .select('question_id, topic_id, trigger, speed')
-    .in('source', [1, 2])
-    .eq('is_banned', false)
-    .not('trigger', 'is', null)
-    .not('speed', 'is', null)
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map(r => {
-    const topicId = String(r.topic_id ?? '')
-    return {
-      id: String(r.question_id ?? ''),
-      topicId,
-      category: catOf(topicId),
-      trigger: String(r.trigger ?? ''),
-      speed: String(r.speed ?? ''),
-    }
-  })
-}
-
-// ── Main ───────────────────────────────────────────────────────────────────
-export default function ConceptNotesPage() {
-  const [allCards, setAllCards] = useState<GameCard[]>([])
-  const [phase, setPhase] = useState<Phase>('loading')
-  const [activeCategory, setActiveCategory] = useState('All')
-  const [deck, setDeck] = useState<GameCard[]>([])
-  const [cardIdx, setCardIdx] = useState(0)
-  const [step1Opts, setStep1Opts] = useState<string[]>([])
-  const [step2Opts, setStep2Opts] = useState<string[]>([])
-  const [step1Choice, setStep1Choice] = useState<number | null>(null)
-  const [step2Choice, setStep2Choice] = useState<number | null>(null)
-  const [cardKey, setCardKey] = useState(0)
-  const [combo, setCombo] = useState(0)
-  const [comboKey, setComboKey] = useState(0)
-  const [maxCombo, setMaxCombo] = useState(0)
-  const [results, setResults] = useState<CardResult[]>([])
-  const [shakingIdx, setShakingIdx] = useState<number | null>(null)
-  const [timerActive, setTimerActive] = useState(false)
-  const [timerDuration, setTimerDuration] = useState(1200)
-  const [hasWrong, setHasWrong] = useState(false)
-  const advanceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    fetchCards().then(cards => { setAllCards(cards); setPhase('menu') })
-    return () => { if (advanceRef.current) clearTimeout(advanceRef.current) }
-  }, [])
-
-  function setupCard(theDeck: GameCard[], idx: number, cat: string, all: GameCard[]) {
-    const card = theDeck[idx]
-    if (!card) return
-    const catCards = cat === 'All' ? all : all.filter(c => c.category === cat)
-
-    const allTopics = [...new Set(all.map(c => c.topicId))]
-    const catTopics = [...new Set(catCards.map(c => c.topicId))]
-    const topicPool = catTopics.length >= 4 ? catTopics : allTopics
-
-    const allSpeeds = [...new Set(all.map(c => c.speed))]
-    const catSpeeds = [...new Set(catCards.map(c => c.speed))]
-    const speedPool = catSpeeds.length >= 4 ? catSpeeds : allSpeeds
-
-    setStep1Opts(pick4(card.topicId, topicPool))
-    setStep2Opts(pick4(card.speed, speedPool))
-    setStep1Choice(null)
-    setStep2Choice(null)
-    setShakingIdx(null)
-    setTimerActive(false)
-    setHasWrong(false)
-    setCardKey(k => k + 1)
-  }
-
-  function startGame(cat: string) {
-    if (advanceRef.current) clearTimeout(advanceRef.current)
-    const pool = cat === 'All' ? allCards : allCards.filter(c => c.category === cat)
-    if (pool.length === 0) return
-    const shuffled = shuffle(pool)
-    setDeck(shuffled)
-    setActiveCategory(cat)
-    setCardIdx(0)
-    setCombo(0)
-    setMaxCombo(0)
-    setResults([])
-    setupCard(shuffled, 0, cat, allCards)
-    setPhase('game')
-  }
-
-  function handleStep1(i: number) {
-    if (step1Choice !== null) return
-    setStep1Choice(i)
-    const ok = step1Opts[i] === deck[cardIdx].topicId
-    if (!ok) { setShakingIdx(i); setTimeout(() => setShakingIdx(null), 400) }
-    if ('vibrate' in navigator) navigator.vibrate(ok ? 30 : [50, 30, 50])
-  }
-
-  function handleStep2(i: number) {
-    if (step1Choice === null || step2Choice !== null) return
-    const card = deck[cardIdx]
-    setStep2Choice(i)
-    const s1ok = step1Opts[step1Choice!] === card.topicId
-    const s2ok = step2Opts[i] === card.speed
-    const wrong = !s1ok || !s2ok
-    setHasWrong(wrong)
-    if (!s2ok) { setShakingIdx(10 + i); setTimeout(() => setShakingIdx(null), 400) }
-    if ('vibrate' in navigator) navigator.vibrate(s2ok ? 30 : [50, 30, 50])
-    const newCombo = s1ok && s2ok ? combo + 1 : 0
-    setCombo(newCombo)
-    setMaxCombo(p => Math.max(p, newCombo))
-    setComboKey(k => k + 1)
-    setResults(p => [...p, { topicId: card.topicId, step1: s1ok, step2: s2ok }])
-    const delay = wrong ? 1500 : 1200
-    setTimerDuration(delay)
-    setTimerActive(true)
-    advanceRef.current = setTimeout(() => {
-      const next = cardIdx + 1
-      if (next >= deck.length) { setPhase('result'); return }
-      setCardIdx(next)
-      setupCard(deck, next, activeCategory, allCards)
-    }, delay)
-  }
-
-  // ── Loading ────────────────────────────────────────────────────────────
-  if (phase === 'loading') return (
-    <div style={{ padding: 16 }}>
-      {[80, 120, 100, 100].map((h, i) => (
-        <div key={i} style={{ height: h, background: '#f1f5f9', borderRadius: 16, marginBottom: 10, opacity: 0.5 + i * 0.12 }} />
-      ))}
+      <TrapBox items={[
+        '"sold to yield X%" → use X% as the discount factor only',
+        'Never omit Principal PV from issue price calculation',
+        'SL vs EI: BV differs at interim dates → early retirement produces different gain/loss',
+      ]} />
     </div>
   )
+}
 
-  // ── Menu ───────────────────────────────────────────────────────────────
-  if (phase === 'menu') return (
-    <div style={{ height: 'calc(100dvh - 98px)', overflowY: 'auto', padding: '20px 16px 32px' }}>
-      <p style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>개념 게임</p>
-      <p style={{ fontSize: 13, color: '#64748b', marginBottom: 18 }}>TRIGGER 보고 topic → 풀이 맞추기</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        <button onClick={() => startGame('All')} style={{ gridColumn: '1/-1', padding: '18px 16px', borderRadius: 18, background: 'linear-gradient(135deg,#4f6ef7,#7c3aed)', color: 'white', fontWeight: 800, fontSize: 16, border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>전체 랜덤</span>
-          <span style={{ opacity: 0.8, fontSize: 14 }}>{allCards.length}장 →</span>
-        </button>
-        {CATEGORY_TABS.slice(1).map(tab => {
-          const count = allCards.filter(c => c.category === tab.key).length
-          return (
-            <button key={tab.key} onClick={() => count > 0 && startGame(tab.key)} disabled={count === 0}
-              style={{ padding: '14px 12px', borderRadius: 16, background: '#f8fafc', border: '1.5px solid #e2e8f0', textAlign: 'left', cursor: count === 0 ? 'not-allowed' : 'pointer', opacity: count === 0 ? 0.4 : 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{tab.label}</div>
-              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{count}장</div>
-            </button>
-          )
-        })}
+function LeaseContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Finance Lease — Classification (TBORTS)">
+        <Table
+          headers={['Criterion', 'Threshold']}
+          rows={[
+            ['T — Title Transfer', 'Ownership passes at end'],
+            ['B — Bargain Purchase Option', 'BPO likely exercised'],
+            ['O — Lease term ≥ 75%', '≥ 75% of economic life'],
+            ['R — PV ≥ 90%', 'PV of payments ≥ 90% of FV'],
+            ['S — Specialized asset', 'No alternative use to lessor'],
+          ]}
+        />
+      </Section>
+
+      <Section title="Finance Lease — Day 1 Entry">
+        <CodeBlock>{`Dr. ROU Asset          84,248
+  Cr. Lease Liability          84,248
+  (= PV of future payments)`}</CodeBlock>
+      </Section>
+
+      <Section title="Finance Lease — Amortization Table ($20K/yr, 6%, 5yr, PV=84,248)">
+        <Table
+          headers={['Year', 'Int Exp (BV×6%)', 'Payment', 'Principal', 'Ending BV']}
+          rows={[
+            ['1', '5,055', '20,000', '14,945', '69,303'],
+            ['2', '4,158', '20,000', '15,842', '53,461'],
+            ['3', '3,208', '20,000', '16,792', '36,669'],
+            ['4', '2,200', '20,000', '17,800', '18,869'],
+            ['5', '1,131', '20,000', '18,869', '0'],
+          ]}
+        />
+      </Section>
+
+      <Section title="Annuity Due vs Ordinary Annuity">
+        <CodeBlock>{`Ordinary Annuity  → payments at END of period
+Annuity Due       → payments at BEGINNING of period
+                   PV(Due) = PV(Ordinary) × (1 + r)
+                   → Due is LARGER (first payment discounted 0 periods)`}</CodeBlock>
+      </Section>
+
+      <Section title="Rate Priority">
+        <CodeBlock>{`1st choice: Implicit rate (if known to lessee)
+2nd choice: Incremental Borrowing Rate (IBR)`}</CodeBlock>
+      </Section>
+
+      <Section title="Operating Lease (ASC 842)">
+        <CodeBlock>{`I/S: Straight-line lease expense (uniform each period)
+B/S: ROU Asset + Lease Liability (both recognized)
+
+ROU Amortization (plug):
+  ROU Amort = SL Expense − Interest Expense`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        'Annuity Due vs Ordinary: Due → first payment today → higher PV',
+        'Implicit rate available → must use it, not IBR',
+        'Operating lease: I/S = SL expense; B/S liability = EI basis (different!)',
+      ]} />
+    </div>
+  )
+}
+
+function NoteContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Interest Calculation">
+        <CodeBlock>{`Interest = Beginning Principal × Rate × (months / 12)
+
+Example: Borrowed $1,000,000 on Sep 30 @ 9%
+  → 3 months remain in year
+  → Interest = $1,000,000 × 9% × 3/12 = $22,500`}</CodeBlock>
+      </Section>
+      <Section title="Key Rule">
+        <p>Use <strong>Beginning Balance × rate × time fraction</strong>. Never use payment amount directly for interest calculation.</p>
+      </Section>
+      <TrapBox items={[
+        'Accrued interest at year-end: use days/months outstanding, not full year',
+        'Do NOT confuse payment amount with interest expense',
+      ]} />
+    </div>
+  )
+}
+
+function AroContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Day 1 Recognition">
+        <CodeBlock>{`Recognize at Present Value using credit-adjusted risk-free rate
+
+Dr. PP&E (Asset)         60,000   ← ARO PV added to asset cost
+  Cr. Cash / Cr. Payable              (acquisition cost)
+  Cr. ARO Liability        60,000  ← PV of future dismantlement`}</CodeBlock>
+      </Section>
+
+      <Section title="Subsequent Measurement">
+        <CodeBlock>{`Two parallel tracks:
+
+Asset Track  → Depreciate ROU/PP&E (straight-line or units)
+Liability Track → Accretion each year
+
+Accretion = Beginning ARO Balance × credit-adjusted rate`}</CodeBlock>
+      </Section>
+
+      <Section title="Accretion Example (ARO=$60,000, Rate=5%)">
+        <Table
+          headers={['Year', 'Beg ARO', 'Accretion', 'End ARO']}
+          rows={[
+            ['1', '60,000', '3,000', '63,000'],
+            ['2', '63,000', '3,150', '66,150'],
+            ['3', '66,150', '3,308', '69,458'],
+          ]}
+        />
+      </Section>
+
+      <TrapBox items={[
+        'ARO uses credit-adjusted risk-free rate (not plain risk-free)',
+        'Accretion ≠ depreciation — they are separate expense lines',
+        'Rate changes: new layer approach for revisions',
+      ]} />
+    </div>
+  )
+}
+
+function EpsContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Basic EPS">
+        <CodeBlock>{`Basic EPS = Net Income Available to Common ÷ WASO
+  (WASO = Weighted Average Shares Outstanding)`}</CodeBlock>
+      </Section>
+
+      <Section title="Diluted EPS — Convertible Bonds">
+        <CodeBlock>{`Add back: After-tax interest = Face × coupon rate × (1 − tax rate)
+Add shares: # bonds × conversion ratio
+→ Include only if DILUTIVE (decreases EPS)`}</CodeBlock>
+      </Section>
+
+      <Section title="Diluted EPS — Convertible Preferred">
+        <CodeBlock>{`Add back: Preferred dividends (no tax shield — already after-tax)
+Add shares: # preferred × conversion ratio`}</CodeBlock>
+      </Section>
+
+      <Section title="Diluted EPS — Stock Options (Treasury Stock Method)">
+        <CodeBlock>{`Proceeds = Options × Exercise Price
+Shares repurchased = Proceeds ÷ Avg Market Price
+Net new shares = Options issued − Shares repurchased
+
+Example: 1,000 options @ $20 exercise, $25 avg market
+  Proceeds = $20,000
+  Repurchased = $20,000 ÷ $25 = 800
+  Net dilutive shares = 200`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        'Antidilutive securities → EXCLUDE from diluted EPS',
+        'Convertible bonds: interest add-back must be after-tax',
+        'Convertible preferred: no tax shield → add back full dividend amount',
+        'Options in-the-money → always dilutive; out-of-the-money → antidilutive',
+      ]} />
+    </div>
+  )
+}
+
+function TaxContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Temporary Differences">
+        <Table
+          headers={['Type', 'Direction', 'Balance Sheet Item']}
+          rows={[
+            ['Deductible temp diff', 'Tax deduction later', 'DTA (Deferred Tax Asset)'],
+            ['Taxable temp diff', 'Taxable income later', 'DTL (Deferred Tax Liability)'],
+          ]}
+        />
+      </Section>
+
+      <Section title="Permanent Differences — No DTA/DTL">
+        <CodeBlock>{`Meals & Entertainment (50% disallowed)
+Tax-exempt municipal bond interest
+Fines and penalties
+Life insurance proceeds on key employees`}</CodeBlock>
+      </Section>
+
+      <Section title="Key Rules (ASC 740)">
+        <CodeBlock>{`Rate: Use ENACTED tax rate at balance sheet date
+Classification: ALL deferred taxes are NON-CURRENT (ASC 740)
+
+Valuation Allowance:
+  If DTA "more likely than not" NOT to be realized
+  → Contra asset reduces DTA to expected realizable amount`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        'Use enacted rate (not proposed or current rate)',
+        'Permanent differences never create DTA or DTL',
+        'All deferred taxes = non-current (no current/non-current split under ASC 740)',
+        'Valuation allowance: "more likely than not" = > 50% chance of non-realization',
+      ]} />
+    </div>
+  )
+}
+
+// ── Reusable Sub-components ────────────────────────────────────────────────────
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 style={{ fontSize: 14, fontWeight: 700, color: NAVY, marginBottom: 10, borderBottom: '1px solid #e0e0e0', paddingBottom: 6 }}>
+        {title}
+      </h3>
+      <div style={{ fontSize: 13, color: '#111', lineHeight: 1.6 }}>{children}</div>
+    </div>
+  )
+}
+
+function CodeBlock({ children }: { children: string }) {
+  return (
+    <pre style={{
+      background: '#f7f8fa',
+      border: '1px solid #e0e0e0',
+      borderRadius: 6,
+      padding: '12px 14px',
+      fontSize: 12.5,
+      lineHeight: 1.7,
+      overflowX: 'auto',
+      whiteSpace: 'pre-wrap',
+      wordBreak: 'break-word',
+      margin: 0,
+      fontFamily: '"Fira Mono", "Cascadia Code", monospace',
+    }}>
+      {children}
+    </pre>
+  )
+}
+
+function Table({ headers, rows }: { headers: string[]; rows: string[][] }) {
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+        <thead>
+          <tr style={{ background: '#f0f3f8' }}>
+            {headers.map(h => (
+              <th key={h} style={{ padding: '6px 10px', border: '1px solid #e0e0e0', textAlign: 'left', fontWeight: 600, color: NAVY }}>
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, ri) => (
+            <tr key={ri} style={{ background: ri % 2 === 0 ? '#fff' : '#fafafa' }}>
+              {row.map((cell, ci) => (
+                <td key={ci} style={{ padding: '5px 10px', border: '1px solid #e0e0e0', color: '#111' }}>
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function TrapBox({ items }: { items: string[] }) {
+  return (
+    <div style={{ background: '#fff8f8', border: '1px solid #fca5a5', borderRadius: 8, padding: '12px 16px' }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#dc2626', marginBottom: 8, letterSpacing: 0.5 }}>
+        TRAP
       </div>
+      <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {items.map((item, i) => (
+          <li key={i} style={{ fontSize: 12.5, color: '#7f1d1d', lineHeight: 1.5 }}>{item}</li>
+        ))}
+      </ul>
     </div>
   )
+}
 
-  // ── Result ─────────────────────────────────────────────────────────────
-  if (phase === 'result') {
-    const total = results.length
-    const both = results.filter(r => r.step1 && r.step2).length
-    const pct = total > 0 ? Math.round(both / total * 100) : 0
+function ComingSoon({ label }: { label: string }) {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: 12, padding: '60px 24px', color: '#999', textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 36 }}>📚</div>
+      <div style={{ fontSize: 16, fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: 13 }}>상세 정리 콘텐츠 준비 중입니다.</div>
+    </div>
+  )
+}
+
+// ── Content Tab Dispatcher ─────────────────────────────────────────────────────
+function ContentTab({ catId, catLabel }: { catId: CategoryId; catLabel: string }) {
+  switch (catId) {
+    case 'bond':        return <BondContent />
+    case 'lease':       return <LeaseContent />
+    case 'note':        return <NoteContent />
+    case 'aro':         return <AroContent />
+    case 'eps':         return <EpsContent />
+    case 'tax':         return <TaxContent />
+    default:            return <ComingSoon label={catLabel} />
+  }
+}
+
+// ── Cards Tab ──────────────────────────────────────────────────────────────────
+function CardsTab({ cat }: { cat: typeof CATEGORIES[number] }) {
+  const [openId, setOpenId] = useState<string | null>(null)
+  const cards = getCardsForCategory(cat)
+
+  if (cards.length === 0) {
     return (
-      <div style={{ height: 'calc(100dvh - 98px)', overflowY: 'auto', padding: '20px 16px 32px' }}>
-        <div style={{ maxWidth: 520, margin: '0 auto' }}>
-          <div style={{ borderRadius: 24, padding: '28px 20px', background: pct >= 80 ? 'linear-gradient(135deg,#22c55e,#16a34a)' : pct >= 50 ? 'linear-gradient(135deg,#4f6ef7,#7c3aed)' : 'linear-gradient(135deg,#f97316,#ef4444)', color: 'white', textAlign: 'center', marginBottom: 16 }}>
-            <div style={{ fontSize: 60, fontWeight: 900, lineHeight: 1 }}>{pct}%</div>
-            <div style={{ opacity: 0.8, fontSize: 14, marginTop: 4 }}>{both}/{total} 완벽 정답</div>
-            <div style={{ fontSize: 16, fontWeight: 700, marginTop: 10 }}>최대 콤보 {maxCombo}×</div>
-          </div>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-            <div style={{ flex: 1, background: '#f0fdf4', borderRadius: 16, padding: '12px 16px', textAlign: 'center' }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#16a34a' }}>{results.filter(r => r.step1).length}</div>
-              <div style={{ fontSize: 12, color: '#64748b' }}>Topic 맞춤</div>
-            </div>
-            <div style={{ flex: 1, background: '#eff6ff', borderRadius: 16, padding: '12px 16px', textAlign: 'center' }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#4f6ef7' }}>{results.filter(r => r.step2).length}</div>
-              <div style={{ fontSize: 12, color: '#64748b' }}>풀이 맞춤</div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => setPhase('menu')} style={{ flex: 1, padding: '14px', borderRadius: 16, background: 'white', border: '1.5px solid #e2e8f0', fontWeight: 700, color: '#64748b', fontSize: 14, cursor: 'pointer' }}>카테고리 선택</button>
-            <button onClick={() => startGame(activeCategory)} style={{ flex: 2, padding: '14px', borderRadius: 16, background: 'linear-gradient(135deg,#4f6ef7,#7c3aed)', color: 'white', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }}>다시 하기 ⚡</button>
-          </div>
-        </div>
+      <div style={{ padding: '48px 24px', textAlign: 'center', color: '#999', fontSize: 14 }}>
+        이 파트 카드 준비 중입니다
       </div>
     )
   }
 
-  // ── Game ───────────────────────────────────────────────────────────────
-  const card = deck[cardIdx]
-  if (!card) return null
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {cards.map(card => {
+        const isOpen = openId === card.topic_id
+        return (
+          <div
+            key={card.topic_id}
+            style={{
+              border: '1px solid #e0e0e0',
+              borderRadius: 8,
+              overflow: 'hidden',
+              background: '#fff',
+            }}
+          >
+            <button
+              onClick={() => setOpenId(isOpen ? null : card.topic_id)}
+              style={{
+                width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                cursor: 'pointer', padding: '12px 16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, color: NAVY, background: '#e8edf5',
+                    borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap',
+                  }}>
+                    {card.topic_id}
+                  </span>
+                  {card.speed && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 4,
+                      background: card.speed === 'fast' ? '#dcfce7' : card.speed === 'slow' ? '#fee2e2' : '#fef9c3',
+                      color: card.speed === 'fast' ? '#166534' : card.speed === 'slow' ? '#991b1b' : '#854d0e',
+                    }}>
+                      {card.speed}
+                    </span>
+                  )}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>
+                  {card.card_name ?? card.topic_name ?? '—'}
+                </span>
+                {card.one_sentence && (
+                  <span style={{ fontSize: 12, color: '#555' }}>{card.one_sentence}</span>
+                )}
+              </div>
+              <span style={{ fontSize: 16, color: '#999', flexShrink: 0 }}>{isOpen ? '▲' : '▼'}</span>
+            </button>
 
-  const s1Correct = step1Choice !== null ? step1Opts[step1Choice] === card.topicId : null
-  const s2Correct = step2Choice !== null ? step2Opts[step2Choice] === card.speed : null
+            {isOpen && (
+              <div style={{ padding: '0 16px 16px', borderTop: '1px solid #f0f0f0' }}>
+                {card.rule && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: NAVY, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Rule</div>
+                    <div style={{ fontSize: 12.5, color: '#111', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{card.rule}</div>
+                  </div>
+                )}
+                {card.trigger && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#0369a1', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Trigger</div>
+                    <div style={{ fontSize: 12.5, color: '#111', lineHeight: 1.6 }}>{card.trigger}</div>
+                  </div>
+                )}
+                {card.trap && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Trap</div>
+                    <div style={{ fontSize: 12.5, color: '#7f1d1d', lineHeight: 1.6 }}>{card.trap}</div>
+                  </div>
+                )}
+                {card.example && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Example</div>
+                    <pre style={{ fontSize: 12, color: '#111', lineHeight: 1.6, whiteSpace: 'pre-wrap', background: '#f7f8fa', borderRadius: 6, padding: '8px 12px', border: '1px solid #e0e0e0', margin: 0, fontFamily: 'inherit' }}>{card.example}</pre>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
-  const dotsFilled = combo === 0 ? 0 : combo >= 5 ? 5 : combo % 5
-  const comboAnim = combo >= 15
-    ? 'pulse15 0.8s ease infinite'
-    : results.length > 0 && combo === 0
-    ? 'comboReset 0.25s ease'
-    : results.length > 0
-    ? 'comboPop 0.15s ease'
-    : 'none'
+// ── Harry Tab ──────────────────────────────────────────────────────────────────
+function HarryTab({ catLabel }: { catLabel: string }) {
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  const systemPrompt = `You are Harry, a FAR CPA exam tutor. Current topic: ${catLabel}. Focus exclusively on concepts in this category. Be concise, use examples with numbers, and guide the student to understand. If asked for a visual, respond with a clear ASCII diagram or table.`
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  async function sendMessage(text: string) {
+    if (!text.trim() || isLoading) return
+    const userMsg: ChatMessage = { role: 'user', content: text }
+    const updated = [...messages, userMsg]
+    setMessages(updated)
+    setInput('')
+    setIsLoading(true)
+
+    try {
+      const res = await fetch(`${API_URL}/api/claude/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: updated, systemPrompt }),
+      })
+
+      if (!res.ok || !res.body) throw new Error('Stream failed')
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let assistantText = ''
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }])
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const payload = line.slice(6).trim()
+            if (payload === '[DONE]') continue
+            try {
+              const parsed = JSON.parse(payload)
+              const delta = parsed?.choices?.[0]?.delta?.content
+                ?? parsed?.delta?.text
+                ?? parsed?.content
+                ?? ''
+              assistantText += delta
+              setMessages(prev => {
+                const copy = [...prev]
+                copy[copy.length - 1] = { role: 'assistant', content: assistantText }
+                return copy
+              })
+            } catch { /* ignore parse errors */ }
+          }
+        }
+      }
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ 응답을 가져오지 못했습니다. 다시 시도해주세요.' }])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const quickButtons = [
+    { label: '개념 확인', prompt: `Ask me a fill-in-the-blank question about ${catLabel}` },
+    { label: '분개 오류 찾기', prompt: `Show me a journal entry with one error related to ${catLabel}` },
+    { label: '빈칸 채우기', prompt: `Give me a formula completion question for ${catLabel}` },
+  ]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 98px)' }}>
-      <style>{CSS_ANIMS}</style>
-
-      {/* Category tabs */}
-      <div style={{ display: 'flex', overflowX: 'auto', gap: 6, padding: '7px 12px', borderBottom: '1.5px solid #e2e8f0', background: 'white', flexShrink: 0 }}>
-        {CATEGORY_TABS.map(t => (
-          <button key={t.key} onClick={() => startGame(t.key)} style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', cursor: 'pointer', background: activeCategory === t.key ? '#4f6ef7' : '#f1f5f9', color: activeCategory === t.key ? 'white' : '#475569', transition: 'background 0.15s' }}>
-            {t.label}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 500 }}>
+      <div style={{ display: 'flex', gap: 8, padding: '12px 0', flexWrap: 'wrap' }}>
+        {quickButtons.map(btn => (
+          <button
+            key={btn.label}
+            onClick={() => sendMessage(btn.prompt)}
+            disabled={isLoading}
+            style={{
+              padding: '6px 14px', borderRadius: 20, border: `1px solid ${NAVY}`,
+              background: '#fff', color: NAVY, fontSize: 12.5, fontWeight: 600,
+              cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.5 : 1,
+            }}
+          >
+            {btn.label}
           </button>
         ))}
       </div>
 
-      {/* Combo + progress bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 14px', background: 'white', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
-        <div
-          key={`cn-${comboKey}`}
-          style={{ color: comboColor(combo), fontSize: comboSize(combo), fontWeight: 900, lineHeight: 1, minWidth: 40, textAlign: 'center', animation: comboAnim, transition: 'font-size 0.2s, color 0.2s' }}
-        >
-          {combo}×
-        </div>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {[0, 1, 2, 3, 4].map(i => (
-            <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: i < dotsFilled ? '#f59e0b' : '#e2e8f0', transition: 'background 0.2s', animation: i === dotsFilled - 1 && dotsFilled > 0 ? 'dotBounce 0.2s ease' : 'none' }} />
-          ))}
-        </div>
-        <div style={{ flex: 1, height: 4, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
-          <div style={{ height: '100%', background: '#4f6ef7', width: `${((cardIdx) / deck.length) * 100}%`, transition: 'width 0.25s ease', borderRadius: 4 }} />
-        </div>
-        <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>{cardIdx + 1}/{deck.length}</span>
+      <div style={{
+        flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12,
+        padding: '8px 0', minHeight: 300, maxHeight: 480,
+      }}>
+        {messages.length === 0 && (
+          <div style={{ color: '#aaa', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
+            Harry에게 {catLabel} 관련 질문을 해보세요
+          </div>
+        )}
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+            }}
+          >
+            <div
+              style={{
+                maxWidth: '82%',
+                padding: '10px 14px',
+                borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                background: msg.role === 'user' ? '#e8edf5' : NAVY,
+                color: msg.role === 'user' ? '#111' : '#fff',
+                fontSize: 13,
+                lineHeight: 1.6,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+              }}
+            >
+              {msg.content || (isLoading && i === messages.length - 1 ? '...' : '')}
+            </div>
+          </div>
+        ))}
+        <div ref={bottomRef} />
       </div>
 
-      {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 24px' }}>
-        <div style={{ maxWidth: 520, margin: '0 auto' }}>
-
-          {/* TRIGGER card */}
-          <div
-            key={cardKey}
-            style={{ background: 'white', borderRadius: 18, padding: '14px 16px', marginBottom: 12, border: '1.5px solid #e2e8f0', animation: 'cardIn 0.18s ease both', transition: 'box-shadow 0.3s', ...cardBorder(combo) }}
-          >
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Trigger</div>
-            <p style={{ fontSize: 13, lineHeight: 1.8, color: '#1e293b', margin: 0, whiteSpace: 'pre-wrap' }}>{stripMd(card.trigger)}</p>
-          </div>
-
-          {/* Step 1 */}
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 7, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ background: '#eff6ff', color: '#4f6ef7', borderRadius: 20, padding: '1px 8px', fontSize: 10, fontWeight: 800 }}>Step 1</span>
-              이게 무슨 topic?
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-              {step1Opts.map((opt, i) => {
-                const chosen = step1Choice === i
-                const isCorrect = opt === card.topicId
-                let bg = '#f8fafc', border = '#e2e8f0', color = '#1e293b'
-                if (step1Choice !== null) {
-                  if (isCorrect) { bg = '#f0fdf4'; border = '#4ade80'; color = '#15803d' }
-                  else if (chosen) { bg = '#fef2f2'; border = '#f87171'; color = '#dc2626' }
-                }
-                return (
-                  <button key={i} onClick={() => handleStep1(i)}
-                    style={{ padding: '9px 10px', borderRadius: 11, background: bg, border: `1.5px solid ${border}`, color, fontSize: 11, fontWeight: 600, textAlign: 'left', cursor: step1Choice !== null ? 'default' : 'pointer', lineHeight: 1.4, minHeight: 44, transition: 'background 0.1s, border 0.1s', animation: shakingIdx === i ? 'shake 0.3s ease' : 'none', transform: chosen ? 'scale(1.02)' : 'scale(1)' }}>
-                    {topicLabel(opt)}
-                  </button>
-                )
-              })}
-            </div>
-            {s1Correct === false && (
-              <div style={{ marginTop: 6, fontSize: 11, color: '#64748b', padding: '6px 10px', background: '#f0fdf4', borderRadius: 8 }}>
-                ✓ 정답: <strong style={{ color: '#15803d' }}>{topicLabel(card.topicId)}</strong>
-              </div>
-            )}
-          </div>
-
-          {/* Step 2 */}
-          <div style={{ opacity: step1Choice === null ? 0.35 : 1, transition: 'opacity 0.2s', pointerEvents: step1Choice === null ? 'none' : 'auto' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 7, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ background: '#fdf4ff', color: '#7c3aed', borderRadius: 20, padding: '1px 8px', fontSize: 10, fontWeight: 800 }}>Step 2</span>
-              어떻게 풀어?
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {step2Opts.map((opt, i) => {
-                const chosen = step2Choice === i
-                const isCorrect = opt === card.speed
-                let bg = '#f8fafc', border = '#e2e8f0', color = '#1e293b'
-                if (step2Choice !== null) {
-                  if (isCorrect) { bg = '#f0fdf4'; border = '#4ade80'; color = '#15803d' }
-                  else if (chosen) { bg = '#fef2f2'; border = '#f87171'; color = '#dc2626' }
-                }
-                return (
-                  <button key={i} onClick={() => handleStep2(i)}
-                    style={{ padding: '10px 12px', borderRadius: 11, background: bg, border: `1.5px solid ${border}`, color, fontSize: 11, fontWeight: 500, textAlign: 'left', cursor: step2Choice !== null ? 'default' : 'pointer', lineHeight: 1.55, minHeight: 44, transition: 'background 0.1s, border 0.1s', animation: shakingIdx === 10 + i ? 'shake 0.3s ease' : 'none' }}>
-                    {truncate(opt)}
-                  </button>
-                )
-              })}
-            </div>
-            {s2Correct === false && (
-              <div style={{ marginTop: 6, fontSize: 11, color: '#64748b', padding: '6px 10px', background: '#f0fdf4', borderRadius: 8 }}>
-                ✓ 정답: <strong style={{ color: '#15803d' }}>{truncate(card.speed, 150)}</strong>
-              </div>
-            )}
-          </div>
-
-          {/* Timer bar */}
-          {timerActive && (
-            <div style={{ marginTop: 14, height: 3, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
-              <div key={`t-${cardIdx}`} style={{ height: '100%', background: hasWrong ? '#ef4444' : '#f59e0b', borderRadius: 4, animation: `timerDrain ${timerDuration}ms linear forwards` }} />
-            </div>
-          )}
-        </div>
+      <div style={{ display: 'flex', gap: 8, paddingTop: 12, borderTop: '1px solid #e0e0e0' }}>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) } }}
+          placeholder={`${catLabel} 관련 질문 입력...`}
+          disabled={isLoading}
+          style={{
+            flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #e0e0e0',
+            fontSize: 13, outline: 'none',
+          }}
+        />
+        <button
+          onClick={() => sendMessage(input)}
+          disabled={isLoading || !input.trim()}
+          style={{
+            padding: '8px 18px', borderRadius: 8, border: 'none',
+            background: NAVY, color: '#fff', fontSize: 13, fontWeight: 600,
+            cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer',
+            opacity: isLoading || !input.trim() ? 0.5 : 1,
+          }}
+        >
+          전송
+        </button>
       </div>
     </div>
+  )
+}
+
+// ── Main Page ──────────────────────────────────────────────────────────────────
+export default function ConceptNotesPage() {
+  const userId = useStudyStore((s) => s.userId)
+  const [selectedCatId, setSelectedCatId] = useState<CategoryId>('bond')
+  const [activeTab, setActiveTab] = useState<TabKey>('content')
+  const [wrongCounts, setWrongCounts] = useState<Record<string, number>>({})
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const prevCatRef = useRef<CategoryId>(selectedCatId)
+
+  useEffect(() => {
+    if (!userId) return
+    supabase
+      .from('wrong_answers')
+      .select('topic_tag, times_wrong')
+      .eq('user_id', userId)
+      .then(({ data }) => {
+        if (!data) return
+        const agg: Record<string, number> = {}
+        ;(data as { topic_tag: string | null; times_wrong: number }[]).forEach(r => {
+          if (r.topic_tag) agg[r.topic_tag] = (agg[r.topic_tag] ?? 0) + (r.times_wrong ?? 1)
+        })
+        setWrongCounts(agg)
+      })
+  }, [userId])
+
+  useEffect(() => {
+    if (prevCatRef.current !== selectedCatId) {
+      prevCatRef.current = selectedCatId
+      setActiveTab('content')
+    }
+  }, [selectedCatId])
+
+  const activeCat = CATEGORIES.find(c => c.id === selectedCatId) ?? CATEGORIES[0]
+
+  function getWrongCountForCat(cat: typeof CATEGORIES[number]): number {
+    const cards = getCardsForCategory(cat)
+    const relevantTopicIds = new Set(cards.map(c => c.topic_id))
+    return Object.entries(wrongCounts)
+      .filter(([tag]) => relevantTopicIds.has(tag))
+      .reduce((sum, [, cnt]) => sum + cnt, 0)
+  }
+
+  function getCardCountForCat(cat: typeof CATEGORIES[number]): number {
+    return getCardsForCategory(cat).length
+  }
+
+  const TABS: { key: TabKey; label: string }[] = [
+    { key: 'content', label: '핵심 정리' },
+    { key: 'cards',   label: '개념 카드' },
+    { key: 'harry',   label: 'Harry Practice' },
+  ]
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#f8f9fb' }}>
+
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 40 }}
+        />
+      )}
+
+      {/* Sidebar — desktop always visible, mobile slide-over */}
+      <aside style={{
+        width: 240,
+        background: '#fff',
+        borderRight: '1px solid #e0e0e0',
+        overflowY: 'auto',
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        position: undefined,
+        zIndex: 50,
+      }}
+        className="hidden md:flex"
+      >
+        <SidebarContent
+          selectedCatId={selectedCatId}
+          onSelect={id => setSelectedCatId(id)}
+          getCardCount={getCardCountForCat}
+          getWrongCount={getWrongCountForCat}
+        />
+      </aside>
+
+      {/* Mobile slide sidebar */}
+      <aside
+        style={{
+          position: 'fixed', top: 0, left: 0, bottom: 0, width: 260,
+          background: '#fff', borderRight: '1px solid #e0e0e0',
+          overflowY: 'auto', zIndex: 50,
+          transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.22s ease',
+          display: 'flex', flexDirection: 'column',
+        }}
+        className="md:hidden"
+      >
+        <SidebarContent
+          selectedCatId={selectedCatId}
+          onSelect={id => { setSelectedCatId(id); setSidebarOpen(false) }}
+          getCardCount={getCardCountForCat}
+          getWrongCount={getWrongCountForCat}
+        />
+      </aside>
+
+      {/* Main */}
+      <main style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+
+        {/* Mobile top bar */}
+        <div
+          className="flex md:hidden"
+          style={{
+            padding: '10px 16px', background: '#fff', borderBottom: '1px solid #e0e0e0',
+            display: 'flex', alignItems: 'center', gap: 10, position: 'sticky', top: 0, zIndex: 30,
+          }}
+        >
+          <button
+            onClick={() => setSidebarOpen(true)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="2" y="4" width="16" height="2" rx="1" fill={NAVY} />
+              <rect x="2" y="9" width="16" height="2" rx="1" fill={NAVY} />
+              <rect x="2" y="14" width="16" height="2" rx="1" fill={NAVY} />
+            </svg>
+          </button>
+          <span style={{ fontWeight: 700, fontSize: 15, color: NAVY }}>{activeCat.label}</span>
+        </div>
+
+        {/* Content area */}
+        <div style={{ flex: 1, padding: '24px 28px', maxWidth: 860 }}>
+
+          {/* Page title (desktop) */}
+          <div
+            className="hidden md:block"
+            style={{ marginBottom: 20 }}
+          >
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: NAVY, margin: 0 }}>
+              {activeCat.label}
+            </h1>
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e0e0e0', marginBottom: 24 }}>
+            {TABS.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                style={{
+                  padding: '9px 20px', fontSize: 13.5, fontWeight: 600,
+                  border: 'none', background: 'none', cursor: 'pointer',
+                  color: activeTab === tab.key ? NAVY : '#888',
+                  borderBottom: activeTab === tab.key ? `2px solid ${NAVY}` : '2px solid transparent',
+                  marginBottom: -1,
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          {activeTab === 'content' && (
+            <ContentTab catId={activeCat.id as CategoryId} catLabel={activeCat.label} />
+          )}
+          {activeTab === 'cards' && (
+            <CardsTab cat={activeCat} />
+          )}
+          {activeTab === 'harry' && (
+            <HarryTab key={`harry-${selectedCatId}`} catLabel={activeCat.label} />
+          )}
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// ── Sidebar Content Component ──────────────────────────────────────────────────
+function SidebarContent({
+  selectedCatId,
+  onSelect,
+  getCardCount,
+  getWrongCount,
+}: {
+  selectedCatId: CategoryId
+  onSelect: (id: CategoryId) => void
+  getCardCount: (cat: typeof CATEGORIES[number]) => number
+  getWrongCount: (cat: typeof CATEGORIES[number]) => number
+}) {
+  return (
+    <>
+      <div style={{ padding: '16px 14px 10px', borderBottom: '1px solid #f0f0f0' }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#999', letterSpacing: 1, textTransform: 'uppercase' }}>
+          Topics
+        </span>
+      </div>
+      <nav style={{ flex: 1, padding: '8px 0' }}>
+        {CATEGORIES.map(cat => {
+          const isActive = cat.id === selectedCatId
+          const cardCount = getCardCount(cat)
+          const wrongCount = getWrongCount(cat)
+          return (
+            <button
+              key={cat.id}
+              onClick={() => onSelect(cat.id as CategoryId)}
+              style={{
+                width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
+                padding: '8px 14px',
+                background: isActive ? '#eef1f8' : 'transparent',
+                borderLeft: isActive ? `3px solid ${NAVY}` : '3px solid transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+              }}
+            >
+              <span style={{
+                fontSize: 13, fontWeight: isActive ? 700 : 400,
+                color: isActive ? NAVY : '#333',
+                flex: 1, lineHeight: 1.35,
+              }}>
+                {cat.label}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                {cardCount > 0 && (
+                  <span style={{
+                    fontSize: 10, color: '#888', background: '#f0f0f0',
+                    borderRadius: 10, padding: '1px 6px',
+                  }}>
+                    {cardCount}
+                  </span>
+                )}
+                {wrongCount > 0 && (
+                  <span style={{
+                    fontSize: 10, color: '#fff', background: '#dc2626',
+                    borderRadius: 10, padding: '1px 6px', fontWeight: 700,
+                  }}>
+                    {wrongCount}
+                  </span>
+                )}
+              </div>
+            </button>
+          )
+        })}
+      </nav>
+    </>
   )
 }
