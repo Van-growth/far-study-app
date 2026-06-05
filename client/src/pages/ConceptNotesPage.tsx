@@ -66,7 +66,7 @@ type ActiveId = CategoryId | SuperCategoryId
 const SUPER_CATEGORIES = [
   {
     id: 'interest4' as SuperCategoryId,
-    label: '이자비용 4형제',
+    label: '이자비용',
     children: ['bond', 'tdr', 'lease', 'note', 'aro'] as CategoryId[],
   },
   {
