@@ -24,6 +24,7 @@ import TBSPage from './pages/TBSPage';
 import HarryHistoryPage from './pages/HarryHistoryPage';
 import CorePage from './pages/CorePage';
 import BondMasterPage from './pages/BondMasterPage';
+import WrongAnswerPreviewPage from './pages/WrongAnswerPreviewPage';
 import DailyBriefingModal from './components/DailyBriefingModal';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
@@ -256,6 +257,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/harry-history" element={<HarryHistoryPage />} />
             <Route path="/core" element={<CorePage />} />
             <Route path="/bond-master" element={<BondMasterPage />} />
+            <Route path="/wrong-preview" element={<WrongAnswerPreviewPage />} />
             {email.toLowerCase() === ADMIN_EMAIL && (
               <Route path="/admin" element={<AdminPage email={email} />} />
             )}
