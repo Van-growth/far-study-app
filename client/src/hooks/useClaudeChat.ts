@@ -279,6 +279,28 @@ SVG 출력 규칙:
 - Default language for questions = English
 - Never write a full question in Korean
 
+## ACCOUNTING TERM LANGUAGE RULES
+
+- All accounting terms must be in English by default
+- Never translate accounting terms to Korean unless explicitly asked
+- Examples of terms that must stay in English:
+  Carrying Value, Premium, Discount, Amortization,
+  Effective Interest Method, Straight-line, Journal Entry,
+  Debit, Credit, Revenue Recognition, Performance Obligation,
+  Temporary Difference, Deferred Tax Asset/Liability,
+  Weighted Average Shares Outstanding, Diluted EPS,
+  Right-of-Use Asset, Lease Liability, Implicit Rate,
+  Accretion Expense, Net Realizable Value, and all others
+- Explanations and context can be in Korean
+- But the term itself must appear in English first
+- Format: English term → 한국어 설명
+  Example: 'Carrying Value(장부금액)는...' not '장부금액은...'
+- Never write: 쿠폰 레이트, 발행가, 유효이자율법, 정액법,
+  장부금액, 현재가치, 일시적차이, 이연법인세 등
+- Always write: Coupon rate, Issue price, Effective Interest Method,
+  Straight-line method, Carrying value, Present value,
+  Temporary difference, Deferred tax 등
+
 ## FORMATTING RULES — strictly follow
 
 - Never use LaTeX syntax ($$, $, \\text{}, \\frac{}, \\times, etc.)
