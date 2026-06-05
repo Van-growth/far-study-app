@@ -2164,88 +2164,114 @@ function CardsTab({ activeId }: { activeId: ActiveId }) {
     )
   }
 
+  const openCard = cards.find(c => c.topic_id === openId) ?? null
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {cards.map(card => {
-        const isOpen = openId === card.topic_id
-        return (
-          <div
+    <>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {cards.map(card => (
+          <button
             key={card.topic_id}
+            onClick={() => setOpenId(card.topic_id)}
             style={{
-              border: '1px solid #e0e0e0',
-              borderRadius: 8,
-              overflow: 'hidden',
-              background: '#fff',
+              width: '100%', textAlign: 'left', background: '#fff', border: '1px solid #e0e0e0',
+              borderRadius: 8, cursor: 'pointer', padding: '12px 16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
             }}
           >
-            <button
-              onClick={() => setOpenId(isOpen ? null : card.topic_id)}
-              style={{
-                width: '100%', textAlign: 'left', background: 'none', border: 'none',
-                cursor: 'pointer', padding: '12px 16px',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, color: NAVY, background: '#e8edf5',
-                    borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap',
-                  }}>
-                    {card.topic_id}
-                  </span>
-                  {card.speed && (
-                    <span style={{
-                      fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 4,
-                      background: card.speed === 'fast' ? '#dcfce7' : card.speed === 'slow' ? '#fee2e2' : '#fef9c3',
-                      color: card.speed === 'fast' ? '#166534' : card.speed === 'slow' ? '#991b1b' : '#854d0e',
-                    }}>
-                      {card.speed}
-                    </span>
-                  )}
-                </div>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>
-                  {card.card_name ?? card.topic_name ?? '—'}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{
+                  fontSize: 11, fontWeight: 700, color: NAVY, background: '#e8edf5',
+                  borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap',
+                }}>
+                  {card.topic_id}
                 </span>
-                {card.one_sentence && (
-                  <span style={{ fontSize: 12, color: '#555' }}>{card.one_sentence}</span>
+                {card.speed && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 4,
+                    background: card.speed === 'fast' ? '#dcfce7' : card.speed === 'slow' ? '#fee2e2' : '#fef9c3',
+                    color: card.speed === 'fast' ? '#166534' : card.speed === 'slow' ? '#991b1b' : '#854d0e',
+                  }}>
+                    {card.speed}
+                  </span>
                 )}
               </div>
-              <span style={{ fontSize: 16, color: '#999', flexShrink: 0 }}>{isOpen ? '▲' : '▼'}</span>
-            </button>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>
+                {card.card_name ?? card.topic_name ?? '—'}
+              </span>
+              {card.one_sentence && (
+                <span style={{ fontSize: 12, color: '#555' }}>{card.one_sentence}</span>
+              )}
+            </div>
+            <span style={{ fontSize: 14, color: '#bbb', flexShrink: 0 }}>›</span>
+          </button>
+        ))}
+      </div>
 
-            {isOpen && (
-              <div style={{ padding: '0 16px 16px', borderTop: '1px solid #f0f0f0' }}>
-                {card.rule && (
-                  <div style={{ marginTop: 12 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: NAVY, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Rule</div>
-                    <div style={{ fontSize: 12.5, color: '#111', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{card.rule}</div>
-                  </div>
+      {openCard && (
+        <div className="show-me-overlay" onClick={() => setOpenId(null)}>
+          <div className="show-me-modal" onClick={e => e.stopPropagation()}>
+            <button className="show-me-close" onClick={() => setOpenId(null)}>✕</button>
+
+            {/* Header */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <span style={{
+                  fontSize: 12, fontWeight: 700, color: NAVY, background: '#e8edf5',
+                  borderRadius: 4, padding: '3px 8px',
+                }}>
+                  {openCard.topic_id}
+                </span>
+                {openCard.speed && (
+                  <span style={{
+                    fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 4,
+                    background: openCard.speed === 'fast' ? '#dcfce7' : openCard.speed === 'slow' ? '#fee2e2' : '#fef9c3',
+                    color: openCard.speed === 'fast' ? '#166534' : openCard.speed === 'slow' ? '#991b1b' : '#854d0e',
+                  }}>
+                    {openCard.speed}
+                  </span>
                 )}
-                {card.trigger && (
-                  <div style={{ marginTop: 12 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#0369a1', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Trigger</div>
-                    <div style={{ fontSize: 12.5, color: '#111', lineHeight: 1.6 }}>{card.trigger}</div>
-                  </div>
-                )}
-                {card.trap && (
-                  <div style={{ marginTop: 12 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Trap</div>
-                    <div style={{ fontSize: 12.5, color: '#7f1d1d', lineHeight: 1.6 }}>{card.trap}</div>
-                  </div>
-                )}
-                {card.example && (
-                  <div style={{ marginTop: 12 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Example</div>
-                    <pre style={{ fontSize: 12, color: '#111', lineHeight: 1.6, whiteSpace: 'pre-wrap', background: '#f7f8fa', borderRadius: 6, padding: '8px 12px', border: '1px solid #e0e0e0', margin: 0, fontFamily: 'inherit' }}>{card.example}</pre>
-                  </div>
-                )}
+              </div>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: NAVY, margin: 0 }}>
+                {openCard.card_name ?? openCard.topic_name ?? '—'}
+              </h2>
+              {openCard.one_sentence && (
+                <p style={{ fontSize: 13, color: '#555', marginTop: 6 }}>{openCard.one_sentence}</p>
+              )}
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid #e8e8e4', marginBottom: 20 }} />
+
+            {/* Body */}
+            {openCard.rule && (
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: NAVY, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Rule</div>
+                <div style={{ fontSize: 14, color: '#111', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{openCard.rule}</div>
+              </div>
+            )}
+            {openCard.trigger && (
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#0369a1', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Trigger</div>
+                <div style={{ fontSize: 14, color: '#111', lineHeight: 1.7 }}>{openCard.trigger}</div>
+              </div>
+            )}
+            {openCard.trap && (
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Trap</div>
+                <div style={{ fontSize: 14, color: '#7f1d1d', lineHeight: 1.7 }}>{openCard.trap}</div>
+              </div>
+            )}
+            {openCard.example && (
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Example</div>
+                <pre style={{ fontSize: 13, color: '#111', lineHeight: 1.7, whiteSpace: 'pre-wrap', background: '#f7f8fa', borderRadius: 8, padding: '12px 16px', border: '1px solid #e0e0e0', margin: 0, fontFamily: 'inherit' }}>{openCard.example}</pre>
               </div>
             )}
           </div>
-        )
-      })}
-    </div>
+        </div>
+      )}
+    </>
   )
 }
 

@@ -25,6 +25,54 @@
   --color-text-tertiary: #888888;
 }
 
+/* ── Show Me card viewer modal ────────────────────────── */
+.show-me-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.show-me-modal {
+  background: white;
+  border-radius: 12px;
+  overflow-y: auto;
+  z-index: 1000;
+  padding: 24px;
+  position: relative;
+  width: min(90vw, 1200px);
+  height: min(90vh, 900px);
+  max-width: 100%;
+  max-height: 100%;
+}
+@media (max-width: 768px) {
+  .show-me-modal {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    padding: 16px;
+  }
+}
+.show-me-close {
+  position: sticky;
+  top: 0;
+  float: right;
+  font-size: 20px;
+  cursor: pointer;
+  color: #1a2744;
+  background: white;
+  border: none;
+  padding: 4px 8px;
+  z-index: 1;
+}
+.show-me-modal svg {
+  width: 100%;
+  height: auto;
+}
+
 /* ── Bond diagram SVG styles ──────────────────────────── */
 .bond-diagram svg text.th { font-size: 12px; font-weight: 700; }
 .bond-diagram svg text.ts { font-size: 11px; fill: #444; }
