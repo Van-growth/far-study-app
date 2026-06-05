@@ -109,6 +109,20 @@ function getCardsForCategory(cat: typeof CATEGORIES[number]): TopicCard[] {
 function BondContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is a Bond?</strong> A debt instrument — issuer borrows money, promises periodic Coupon payments + Face value at maturity.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>회사가 투자자에게 발행하는 차용증. 매년 이자 + 만기 원금 상환 약속.</p>
+        <p style={{ marginTop: 12 }}><strong>Why does Issue Price differ from Face value?</strong></p>
+        <p style={{ color: '#555' }}>투자자는 시장이자율(Market rate)로 돈을 굴릴 수 있어. Coupon rate와 Market rate 차이만큼 발행가가 조정됨.</p>
+        <CodeBlock>{`Issue Price = PV of Coupons (Ordinary Annuity)
+            + PV of Principal (PV of $1)
+
+Discount example (Face $100,000 / Coupon 6% / Market 8% / 5yr):
+  PV of Coupons   = $6,000 × 3.9927 = $23,956
+  PV of Principal = $100,000 × 0.6806 = $68,060
+  Issue Price = $92,016 → Discount $7,984`}</CodeBlock>
+        <p style={{ color: '#555', marginTop: 8, fontStyle: 'italic' }}>Memory: "Coupon"은 옛날 채권에 달린 실제 쿠폰에서 유래. 만기마다 떼어내서 이자를 수령했음.</p>
+      </Section>
       <Section title="1. Overview">
         <Table
           headers={['', 'Market Rate vs Coupon', 'Issue Price vs Face']}
@@ -206,6 +220,17 @@ Gain/Loss = Net CV − Reacquisition Price
 function LeaseContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is a Lease?</strong> A contract giving the lessee the right to use an asset for periodic payments.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>자산을 사지 않고 빌려 쓰는 계약. 경제적 실질로 "소유"와 같으면 B/S에 올려야 정직한 재무제표가 됨.</p>
+        <p style={{ marginTop: 12 }}><strong>Finance vs Operating?</strong></p>
+        <p style={{ color: '#555' }}>Finance Lease = 실질적 소유 / Operating = 단순 임차. 어느 쪽이든 ASC 842 이후 B/S에 ROU Asset + Lease Liability 계상.</p>
+        <CodeBlock>{`Finance Lease Example:
+  Payment $20,000 / Rate 6% / 5yr
+  ROU Asset = Lease Liability = $84,248
+  Year 1: Interest $5,055 / Principal $14,945`}</CodeBlock>
+        <p style={{ color: '#555', marginTop: 8, fontStyle: 'italic' }}>Memory: Finance Lease = 할부로 사는 것. Operating Lease = 호텔방 — 쓰고 나면 내 것이 아님.</p>
+      </Section>
       <Section title="Finance Lease — Classification (TBORTS)">
         <Table
           headers={['Criterion', 'Threshold']}
@@ -270,6 +295,17 @@ ROU Amortization (plug):
 function NoteContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is a Note Payable?</strong> A written promise to repay borrowed money with interest.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>차용증 — Payment에는 이자 + 원금이 섞여 있어. 이자비용만 따로 계산해야 정확한 I/S 반영 가능.</p>
+        <CodeBlock>{`Interest Expense = Beginning balance × rate × m/12
+Principal       = Payment − Interest (Plug-in)
+
+Example (Borrowed Sep 30 / $1,000,000 / 9%):
+  Interest (Oct–Dec) = $1,000,000 × 9% × 3/12 = $22,500
+  ⚠ Payment $264,200 직접 사용 → 절대 금지`}</CodeBlock>
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Payment = 이자 + 원금 섞인 덩어리. 항상 이자 먼저 계산, 나머지가 원금.</p>
+      </Section>
       <Section title="Interest Calculation">
         <CodeBlock>{`Interest = Beginning Principal × Rate × (months / 12)
 
@@ -291,6 +327,15 @@ Example: Borrowed $1,000,000 on Sep 30 @ 9%
 function AroContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is an ARO?</strong> A legal obligation to dismantle or restore an asset at retirement (e.g., oil rig, nuclear plant).</p>
+        <p style={{ color: '#555', marginTop: 6 }}>법적 의무 — 자산 철거/복구 비용을 미리 부채로 인식. 비용이 나중에 발생해도 의무는 지금 존재함 → 발생주의 원칙.</p>
+        <p style={{ color: '#555', marginTop: 8 }}>PV로 인식 (명목 금액 아님) / Credit-adjusted risk-free rate 사용.</p>
+        <CodeBlock>{`Two annual tracks:
+  Asset track:     Depreciation = $18M ÷ 10yr = $1.8M
+  Liability track: Accretion    = $18M × 8%   = $1.44M`}</CodeBlock>
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: ARO Accretion = Bond Discount 상각과 동일 구조. 시간이 지날수록 부채가 만기 금액으로 수렴.</p>
+      </Section>
       <Section title="Day 1 Recognition">
         <CodeBlock>{`Recognize at Present Value using credit-adjusted risk-free rate
 
@@ -331,6 +376,23 @@ Accretion = Beginning ARO Balance × credit-adjusted rate`}</CodeBlock>
 function EpsContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is EPS?</strong> Earnings Per Share — profit attributable to each common share. 공개기업 필수 공시 항목.</p>
+        <p style={{ marginTop: 8 }}><strong>Basic EPS</strong> = (NI − Preferred Dividends) ÷ WASO</p>
+        <p style={{ marginTop: 8 }}><strong>Diluted EPS</strong> — 희석증권 전환 가정 시 "최악의 경우" EPS:</p>
+        <Table
+          headers={['Security', 'Numerator ↑', 'Denominator ↑']}
+          rows={[
+            ['Convertible bond', '+ Interest × (1−t)', '+ Converted shares'],
+            ['Convertible preferred', '+ Dividend (pre-tax)', '+ Converted shares'],
+            ['Stock options', 'None', '+ Net new shares (treasury method)'],
+          ]}
+        />
+        <CodeBlock>{`Example:
+  Basic:   ($500K − $20K) ÷ 100,000 shares = $4.80
+  Diluted: $516,000 ÷ 120,000 shares = $4.30`}</CodeBlock>
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Diluted EPS = 항상 Basic EPS 이하 (dilutive). Antidilutive → 제외.</p>
+      </Section>
       <Section title="Basic EPS">
         <CodeBlock>{`Basic EPS = Net Income Available to Common ÷ WASO
   (WASO = Weighted Average Shares Outstanding)`}</CodeBlock>
@@ -371,6 +433,20 @@ Example: 1,000 options @ $20 exercise, $25 avg market
 function TaxContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is Deferred Tax?</strong> Book income (GAAP) ≠ Taxable income (IRS) → timing difference → future tax effect.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>회계이익과 과세소득의 차이로 생기는 미래 세금 효과.</p>
+        <Table
+          headers={['Difference', 'Future effect', 'Result']}
+          rows={[
+            ['Deductible temporary', '나중에 세금 덜 냄', 'DTA (asset)'],
+            ['Taxable temporary', '나중에 세금 더 냄', 'DTL (liability)'],
+            ['Permanent', '미래 효과 없음', '없음'],
+          ]}
+        />
+        <p style={{ marginTop: 8 }}><strong>Key rules:</strong> All non-current (ASC 740) / Enacted rate 사용 / Valuation allowance = always Credit entry.</p>
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Deductible → DTA (나중에 아낄 세금 = 자산). Taxable → DTL (나중에 낼 세금 = 부채).</p>
+      </Section>
       <Section title="Temporary Differences">
         <Table
           headers={['Type', 'Direction', 'Balance Sheet Item']}
@@ -500,6 +576,19 @@ function ComingSoon({ label }: { label: string }) {
 function InventoryContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is Inventory valuation?</strong> The cost flow assumption determines which costs go to COGS vs Ending Inventory.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>같은 물건도 어떤 원가를 먼저 팔았다고 가정하느냐에 따라 COGS와 NI가 달라짐.</p>
+        <Table
+          headers={['Method', 'COGS (price rising)', 'Ending Inv', 'Net Income']}
+          rows={[
+            ['FIFO', 'Low', 'High', 'High'],
+            ['LIFO', 'High', 'Low', 'Low'],
+            ['Weighted Average', 'Middle', 'Middle', 'Middle'],
+          ]}
+        />
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: LIFO 가격 상승 = 높은 COGS = 낮은 세금. LIFO는 절세 목적으로 쓰임 (IFRS 금지).</p>
+      </Section>
       <Section title="1. Overview">
         <p>FIFO / LIFO / Weighted Average / Periodic vs Perpetual / LCM(NRV) / Dollar-Value LIFO</p>
       </Section>
@@ -543,6 +632,19 @@ Step3: Add all layers = LIFO cost
 function PpeContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is PP&E?</strong> Long-lived tangible assets used in operations. Historical cost − Accumulated Depreciation. No write-ups under US GAAP.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>유형자산 — 취득원가에서 감가상각 누계액 차감. 미국 GAAP 재평가 불가.</p>
+        <Table
+          headers={['Method', 'Formula', 'Year 1 (Cost $100K / Salvage $10K / 5yr)']}
+          rows={[
+            ['SL', '(Cost−Salvage) ÷ Life', '$18,000'],
+            ['DDB', 'BV × 2/Life', '$40,000 (Salvage 무시)'],
+            ['SYD', '(Cost−Salvage) × remaining/SYD', '$30,000'],
+          ]}
+        />
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: DDB는 Salvage value 무시하고 계산. 단, BV가 Salvage 아래로 내려가면 중단.</p>
+      </Section>
       <Section title="1. Overview">
         <p>Capitalization vs Expense / Depreciation methods / Interest capitalization / Impairment</p>
       </Section>
@@ -590,6 +692,26 @@ Step2 Measurement:
 function IntangiblesContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is an Intangible?</strong> Non-physical long-term asset (patents, trademarks, goodwill). 핵심 질문: Finite life인가 Indefinite life인가?</p>
+        <Table
+          headers={['Type', 'Amortization', 'Impairment']}
+          rows={[
+            ['Finite life', 'Yes (SL, zero residual)', 'When indicator exists'],
+            ['Indefinite life', 'No', 'Annual test'],
+            ['Goodwill', 'No', 'Annual test'],
+          ]}
+        />
+        <CodeBlock>{`Patent defense:
+  승소 → Capitalize (기존 BV + 소송비용, 잔여내용연수 상각)
+  패소 → Expense immediately
+
+Software 3 stages:
+  Preliminary         → Expense
+  Application dev     → Capitalize
+  Post-implementation → Expense`}</CodeBlock>
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Goodwill = 사업 인수 시 순자산 FV 초과 지급한 프리미엄. 상각 없음, 매년 손상 검사.</p>
+      </Section>
       <Section title="1. Overview">
         <p>Definite vs Indefinite / Internally generated vs Purchased / R&D expense</p>
       </Section>
@@ -629,6 +751,21 @@ Impairment Loss = CV − FV of reporting unit`}</CodeBlock>
 function RevenueContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is Revenue Recognition?</strong> Revenue recognized when (or as) a performance obligation is satisfied — not when cash is received.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>현금 수령 시점이 아닌 의무 이행 시점에 인식. ASC 606 = 수십 개 업종별 규정을 하나의 5단계로 통합 (2018년 시행).</p>
+        <Table
+          headers={['Step', 'Question']}
+          rows={[
+            ['1', 'Valid contract?'],
+            ['2', 'What did we promise? (Performance Obligations)'],
+            ['3', 'How much? (Transaction price)'],
+            ['4', 'How much per PO? (Allocate to POs)'],
+            ['5', 'When satisfied? (Recognize revenue)'],
+          ]}
+        />
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: PO 충족 = 고객이 통제권을 넘겨받는 시점. Over time 또는 Point in time.</p>
+      </Section>
       <Section title="1. ASC 606 Five-Step Model">
         <Table
           headers={['Step', '내용', '핵심 판단']}
@@ -677,6 +814,24 @@ Constraint: high probability (significant reversal 없는 경우에만 포함)`}
 function ScfContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is SCF?</strong> Shows actual cash movement — 발생주의 I/S와 실제 현금 흐름의 차이를 보여줌.</p>
+        <Table
+          headers={['Activity', 'Content', 'Key items']}
+          rows={[
+            ['Operating', '영업 관련 현금', 'AR, Inventory, AP, Interest paid'],
+            ['Investing', '장기자산 취득/처분', 'PP&E, Notes receivable'],
+            ['Financing', '부채/자본 거래', 'Debt, Stock, Dividends paid'],
+          ]}
+        />
+        <CodeBlock>{`Indirect Method:
+  Net Income
+  + Depreciation / Amortization (non-cash)
+  + Loss / − Gain on sale
+  ± Working capital changes
+  = Cash from Operations`}</CodeBlock>
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: SCF는 발생주의 조작이 불가능. 현금은 현금 — 숫자 조작 어려움.</p>
+      </Section>
       <Section title="1. 활동 분류">
         <Table
           headers={['활동', '항목 예시']}
@@ -722,6 +877,26 @@ function ScfContent() {
 function InvestmentsContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is the Equity Method?</strong> 20–50% ownership = significant influence → Investment account mirrors investee's net assets.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>투자자가 피투자자에 유의적 영향력 보유 시 사용.</p>
+        <Table
+          headers={['Ownership', 'Method', 'Key']}
+          rows={[
+            ['< 20%', 'Fair value (Trading/AFS/HTM)', 'Unrealized G/L'],
+            ['20–50%', 'Equity Method', 'NI×% − Differential amort'],
+            ['> 50%', 'Consolidation', 'Elimination'],
+          ]}
+        />
+        <CodeBlock>{`Equity income = NI × % − Differential amortization
+
+Example: $150K × 40% = $60K − $8K differential = $52K
+
+Sale of AFS:
+  Realized G/L = Proceeds − Prior year-end FV
+  ⚠ 원가 기준 아님 — 가장 자주 틀리는 포인트`}</CodeBlock>
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Equity method = "1줄짜리 연결". 그들의 이익이 오르면 내 투자계정도 오름.</p>
+      </Section>
       <Section title="1. 분류 기준">
         <Table
           headers={['분류', '측정', 'Unrealized G/L', '지분율']}
@@ -767,6 +942,20 @@ Realized G/L = 매각가 − amortized cost`}</CodeBlock>
 function EquityContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is Stockholders' Equity?</strong> Residual interest: Assets − Liabilities. SE = Paid-in capital + RE + AOCI − Treasury stock.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>자사주 매입 = 자본 감소 (자산 아님). Treasury stock = contra-equity.</p>
+        <Table
+          headers={['OCI Item', 'Treatment', 'Reclassify to I/S?']}
+          rows={[
+            ['AFS Unrealized G/L', 'OCI', '매각 시 reclassify'],
+            ['Pension adjustment', 'OCI', '상각 시 (corridor)'],
+            ['FX translation', 'OCI', '해외사업 처분 시'],
+            ['Cash flow hedge', 'OCI', '헷지 거래 실현 시'],
+          ]}
+        />
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: AOCI = "아직 실현 안 된 손익 창고". 실현되면 I/S로 이동.</p>
+      </Section>
       <Section title="1. Treasury Stock — Cost Method vs Par Value Method">
         <Table
           headers={['', 'Cost Method', 'Par Value Method']}
@@ -830,6 +1019,19 @@ AFS 매각 시 reclassify (OCI → I/S):
 function NfpContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is NFP?</strong> No owners/shareholders — reports Net Assets (not equity). FASB ASC 958.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>영리 목적 없음 — 주주 대신 기부자와 이사회가 관리. NFP ≠ 면세 기관. 관련 없는 사업 소득엔 세금 부과됨.</p>
+        <Table
+          headers={['Net Asset Class', 'Condition', 'Example']}
+          rows={[
+            ['With donor restriction', '기부자가 목적/기간 제한', '특정 프로그램용 기부'],
+            ['Without donor restriction', '조건 없음', '일반 기부금'],
+            ['Endowment (permanent)', '원금 영구 보존', '장학재단 원금'],
+          ]}
+        />
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Endowment 원금 = 절대 사용 불가. 투자 수익만 지출 가능.</p>
+      </Section>
       <Section title="1. Net Assets 분류">
         <Table
           headers={['분류', '설명', '예시']}
@@ -877,6 +1079,19 @@ Fundraising (모금 활동)
 function GovContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is Governmental Accounting?</strong> GASB governed (not FASB). Focus on stewardship of public resources, not profit.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>FASB 아닌 GASB 기준 / 이익 아닌 공공 자원 수탁 책임. Modified Accrual = Governmental funds / Full Accrual = Proprietary funds.</p>
+        <Table
+          headers={['Category', 'Fund types', 'Accrual basis']}
+          rows={[
+            ['Governmental', 'General, Special Revenue, Capital Projects, Debt Service', 'Modified Accrual'],
+            ['Proprietary', 'Enterprise, Internal Service', 'Full Accrual'],
+            ['Fiduciary', 'Pension Trust, Agency', 'Full Accrual'],
+          ]}
+        />
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Modified accrual = "거의 현금주의". Revenue available = 60일 내 수령 가능.</p>
+      </Section>
       <Section title="1. Fund 유형 분류">
         <Table
           headers={['유형', 'Fund', '회계 기준']}
@@ -924,6 +1139,20 @@ Property tax:
 function ChangesContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is an Accounting Change?</strong> Change in estimate, principle, entity, or correction of an error — each has different treatment.</p>
+        <Table
+          headers={['Type', 'Treatment', 'Example']}
+          rows={[
+            ['Change in Estimate', 'Prospective', '감가상각 내용연수 변경'],
+            ['Change in Principle', 'Retrospective', 'FIFO → WA'],
+            ['Change in Entity', 'Retrospective', '연결범위 변경'],
+            ['Error Correction', 'Restatement', '잘못된 방법 사용'],
+          ]}
+        />
+        <p style={{ marginTop: 8 }}><strong>Critical trap:</strong> 감가상각 방법 변경 = Change in <em>Estimate</em> (Prospective!) — 가장 자주 출제되는 함정.</p>
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Estimate 변경 = 새로운 정보 반영. Principle 변경 = 다른 회계 방법 선택.</p>
+      </Section>
       <Section title="1. 4가지 유형 비교">
         <Table
           headers={['유형', '처리 방법', '예시']}
@@ -965,6 +1194,19 @@ function ChangesContent() {
 function FvContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is Fair Value?</strong> Exit price — 팔 때 받을 가격 (사는 가격 아님). FASB ASC 820.</p>
+        <Table
+          headers={['Level', 'Input', 'Example']}
+          rows={[
+            ['L1', 'Identical + active market', 'NYSE 상장 주식'],
+            ['L2', 'Observable, not L1', '유사 채권, 비활성 시장 identical 자산'],
+            ['L3', 'Unobservable (내부 모델)', '비상장사 DCF 평가'],
+          ]}
+        />
+        <p style={{ marginTop: 8 }}><strong>3 approaches:</strong> Market / Income (DCF) / Cost (replacement)</p>
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: L1 = Bloomberg에서 바로 검색. L3 = 내가 직접 모델 만들어서 추정. Similar + active → L2 (L1 아님!).</p>
+      </Section>
       <Section title="1. Fair Value Hierarchy">
         <Table
           headers={['Level', '정의', '예시']}
@@ -1010,6 +1252,22 @@ Most advantageous market: principal market 없을 때`}</CodeBlock>
 function FxContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is a Foreign Currency transaction?</strong> US company transacts in foreign currency → exchange rate changes create FX gains/losses.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>환율 변동으로 발생하는 손익. Record at spot rate on title transfer date.</p>
+        <Table
+          headers={['"Units of FC per dollar"', 'Meaning', 'AR effect']}
+          rows={[
+            ['↓ Decrease', '외화 강세 / 달러 약세', 'FX Gain (AR 가치 상승)'],
+            ['↑ Increase', '외화 약세 / 달러 강세', 'FX Loss (AR 가치 하락)'],
+          ]}
+        />
+        <CodeBlock>{`Timeline:
+  Transaction date → record at spot rate
+  B/S date         → remeasure at current rate → FX G/L
+  Settlement date  → settle at spot rate → FX G/L`}</CodeBlock>
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: "달러당 외화 수"가 줄면 = 달러 약세 = 외화 강세. AR + 외화 강세 → FX Gain.</p>
+      </Section>
       <Section title="1. Overview">
         <Table
           headers={['개념', '설명']}
@@ -1073,6 +1331,23 @@ function FxContent() {
 function RatioContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is Ratio Analysis?</strong> Financial ratios measure performance, liquidity, efficiency, and value from financial statements.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>재무제표 숫자로 기업 건강도 측정. 반드시 Average 사용 (ending 단독 금지).</p>
+        <Table
+          headers={['Category', 'Ratio', 'Formula']}
+          rows={[
+            ['Liquidity', 'Current ratio', 'CA ÷ CL'],
+            ['Liquidity', 'Quick ratio', '(Cash+ST inv+AR) ÷ CL'],
+            ['Profitability', 'ROA', 'NI ÷ Avg total assets'],
+            ['Profitability', 'ROE', 'NI ÷ Avg SE'],
+            ['Efficiency', 'Asset turnover', 'Net sales ÷ Avg total assets'],
+            ['Efficiency', 'DSO', '365 ÷ AR turnover'],
+            ['Market', 'P/E', 'Market price ÷ Basic EPS'],
+          ]}
+        />
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Quick ratio = 지금 당장 현금화 가능한 것만. 재고는 팔아야 현금 — 즉시 현금화 불가.</p>
+      </Section>
       <Section title="1. Liquidity Ratios">
         <Table
           headers={['지표', '공식', '예시']}
@@ -1121,6 +1396,20 @@ function RatioContent() {
 function ConsolContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is Consolidation?</strong> Parent {`>`} 50% → present as single economic entity. All intercompany transactions eliminated.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>연결재무제표 = "하나의 회사인 척". 내부거래 흔적 전부 제거.</p>
+        <CodeBlock>{`Goodwill = Acquisition price − FV of net assets × %
+
+Key eliminations:
+  Intercompany sales   → Dr. Sales / Cr. COGS
+  Unrealized profit    → Dr. COGS / Cr. Inventory
+  Intercompany dividends → 제거
+
+Downstream (parent → sub): 100% parent NI 조정
+Upstream (sub → parent): parent + NCI 비례 배분`}</CodeBlock>
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Goodwill = 취득가 − FV 순자산 (BV 아님!). No amortization, annual impairment test.</p>
+      </Section>
       <Section title="1. Overview">
         <Table
           headers={['개념', '설명']}
@@ -1180,6 +1469,19 @@ function ConsolContent() {
 function SubsequentContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is a Subsequent Event?</strong> Event after B/S date but before financial statements are issued.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>결산일 이후 ~ 재무제표 발행 전 사이 사건. 발행 후 사건은 반영 불가.</p>
+        <Table
+          headers={['Type', 'Condition', 'Treatment']}
+          rows={[
+            ['Type 1 (Recognized)', 'B/S일 이전 조건 존재', 'FS 수정'],
+            ['Type 2 (Disclosed)', 'B/S일 이후 새로운 조건', '주석 공시만'],
+          ]}
+        />
+        <p style={{ marginTop: 8 }}>Type 1 예: 소송 (소송은 B/S일 전 제기, 판결은 이후) / Type 2 예: 자연재해, 주가 폭락</p>
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Type 1 = "이미 알고 있던 문제의 확인". Type 2 = "완전히 새로운 사건".</p>
+      </Section>
       <Section title="1. Overview — Type 1 vs Type 2">
         <Table
           headers={['유형', '조건', '처리', '예시']}
@@ -1224,6 +1526,18 @@ Type 2 — 공시만 (분개 없음):
 function BankRecContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is Bank Reconciliation?</strong> Reconciling Book balance vs Bank balance to find the true Adjusted balance. Both must equal.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>장부잔액과 은행잔액의 차이 원인을 파악하고 조정잔액을 일치시킴. 분개는 Book 조정 항목만.</p>
+        <Table
+          headers={['Side', 'Add (+)', 'Subtract (−)']}
+          rows={[
+            ['Book', 'Interest earned', 'NSF check / Bank charges'],
+            ['Bank', 'Deposits in transit', 'Outstanding checks'],
+          ]}
+        />
+        <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: NSF(부도수표) → Book 차감. Outstanding checks → Bank 차감. 절대 혼동 금지.</p>
+      </Section>
       <Section title="1. Overview — Book vs Bank">
         <Table
           headers={['조정 대상', '항목', '방향']}
