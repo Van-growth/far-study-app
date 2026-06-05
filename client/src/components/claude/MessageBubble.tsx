@@ -11,6 +11,25 @@ interface MessageBubbleProps {
   message: Message;
 }
 
+// Strip LaTeX syntax → plain text
+function cleanLatex(text: string): string {
+  return text
+    .replace(/\$\$([^$]+)\$\$/g, '$1')
+    .replace(/\$([^$\n]+)\$/g, '$1')
+    .replace(/\\text\{([^}]+)\}/g, '$1')
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)')
+    .replace(/\\times/g, '×')
+    .replace(/\\div/g, '÷')
+    .replace(/\\geq/g, '≥')
+    .replace(/\\leq/g, '≤')
+    .replace(/\\neq/g, '≠')
+    .replace(/\\cdot/g, '·')
+    .replace(/\\_/g, '_')
+    .replace(/\\left\(/g, '(')
+    .replace(/\\right\)/g, ')')
+    .replace(/\\\\/g, '');
+}
+
 // Strip HTML/SVG tags and ```html/svg fences for TTS plaintext
 function extractTextForTts(content: string): string {
   const noBlocks = content.replace(/```(?:html|svg)[\s\S]*?```/gi, '[그림]');
@@ -234,7 +253,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           className="max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tr-sm text-white text-sm leading-relaxed whitespace-pre-wrap"
           style={{ background: '#4f6ef7' }}
         >
-          {message.content}
+          {cleanLatex(message.content)}
         </div>
       </div>
     );
@@ -257,7 +276,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         style={{ background: 'white', border: '1.5px solid #e2e8f0' }}
       >
         <Markdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MD_COMPONENTS as never}>
-          {message.content}
+          {cleanLatex(message.content)}
         </Markdown>
         {isStreaming && (
           <span className="inline-block w-1.5 h-4 bg-[#4f6ef7] ml-0.5 animate-pulse align-text-bottom rounded-sm" />

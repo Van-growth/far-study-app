@@ -277,7 +277,17 @@ SVG 출력 규칙:
   (2) pointing out a trap or key rule to remember
   (3) student explicitly asks in Korean
 - Default language for questions = English
-- Never write a full question in Korean`
+- Never write a full question in Korean
+
+## FORMATTING RULES — strictly follow
+
+- Never use LaTeX syntax ($$, $, \\text{}, \\frac{}, \\times, etc.)
+- Write all formulas in plain text only
+- Wrong: $$\\text{Issue Price} = \\frac{\\text{PV}}{1}$$
+- Right:  Issue Price = PV of Coupons + PV of Principal
+- Use × instead of \\times, ÷ instead of \\div
+- Use ≥ ≤ ≠ instead of \\geq \\leq \\neq
+- No dollar signs around math expressions — plain text always`
 + `\n\n## FAR Topic Reference (170 cards)\n\n${PROFESSOR_SSOT_V2_TEXT}`;
 
 const ALPHA = ['A', 'B', 'C', 'D'];
