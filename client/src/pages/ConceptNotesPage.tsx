@@ -4,6 +4,15 @@ import { supabase } from '../lib/supabase'
 import { PROFESSOR_SSOT_V2, TopicCard } from '../constants/professor_ssot_v2'
 import useStudyStore from '../store/studyStore'
 import useClaudeStore from '../store/claudeStore'
+import {
+  InterestFamilyViz,
+  InventoryCostViz,
+  EquityCapitalViz,
+  TaxAdjustmentViz,
+  RevenueRecognitionViz,
+  FinancialAnalysisViz,
+  PublicNonprofitViz,
+} from './ConceptViz'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const NAVY = '#1a2744'
@@ -36,6 +45,56 @@ const CATEGORIES = [
 
 type CategoryId = typeof CATEGORIES[number]['id']
 type TabKey = 'content' | 'cards' | 'harry'
+
+// ── Super Categories ──────────────────────────────────────────────────────────
+type SuperCategoryId =
+  | 'interest4'
+  | 'inventory-cost'
+  | 'equity-capital'
+  | 'tax-adjustment'
+  | 'revenue-recognition'
+  | 'financial-analysis'
+  | 'public-nonprofit'
+
+type ActiveId = CategoryId | SuperCategoryId
+
+const SUPER_CATEGORIES = [
+  {
+    id: 'interest4' as SuperCategoryId,
+    label: '이자비용 4형제',
+    children: ['bond', 'lease', 'note', 'aro'] as CategoryId[],
+  },
+  {
+    id: 'inventory-cost' as SuperCategoryId,
+    label: '재고 & 원가',
+    children: ['inventory', 'ppe', 'intangibles'] as CategoryId[],
+  },
+  {
+    id: 'equity-capital' as SuperCategoryId,
+    label: '지분 & 자본',
+    children: ['equity', 'eps', 'investments', 'consol'] as CategoryId[],
+  },
+  {
+    id: 'tax-adjustment' as SuperCategoryId,
+    label: '세금 & 조정',
+    children: ['tax', 'changes'] as CategoryId[],
+  },
+  {
+    id: 'revenue-recognition' as SuperCategoryId,
+    label: '수익 & 비용 인식',
+    children: ['revenue', 'subsequent', 'fx'] as CategoryId[],
+  },
+  {
+    id: 'financial-analysis' as SuperCategoryId,
+    label: '재무제표 & 분석',
+    children: ['scf', 'ratio', 'fv', 'bankrec'] as CategoryId[],
+  },
+  {
+    id: 'public-nonprofit' as SuperCategoryId,
+    label: '공공 & 비영리',
+    children: ['nfp', 'gov'] as CategoryId[],
+  },
+] as const
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function getCardsForCategory(cat: typeof CATEGORIES[number]): TopicCard[] {
@@ -1249,9 +1308,18 @@ function ContentTab({ catId, catLabel }: { catId: CategoryId; catLabel: string }
 }
 
 // ── Cards Tab ──────────────────────────────────────────────────────────────────
-function CardsTab({ cat }: { cat: typeof CATEGORIES[number] }) {
+function CardsTab({ activeId }: { activeId: ActiveId }) {
   const [openId, setOpenId] = useState<string | null>(null)
-  const cards = getCardsForCategory(cat)
+
+  const superCat = SUPER_CATEGORIES.find(s => s.id === activeId)
+  const cat = CATEGORIES.find(c => c.id === activeId)
+
+  const cards: TopicCard[] = superCat
+    ? superCat.children.flatMap(childId => {
+        const childCat = CATEGORIES.find(c => c.id === childId)
+        return childCat ? getCardsForCategory(childCat) : []
+      })
+    : cat ? getCardsForCategory(cat) : []
 
   if (cards.length === 0) {
     return (
@@ -1390,19 +1458,186 @@ function HarryTab({ catLabel }: { catLabel: string }) {
   )
 }
 
+// ── Super Category Content Components ─────────────────────────────────────────
+
+function Interest4Content() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="관계 시각화">
+        <div style={{ overflowX: 'auto' }}>
+          <InterestFamilyViz />
+        </div>
+      </Section>
+      <Section title="4형제 비교표">
+        <Table
+          headers={['항목', 'Bond', 'Finance Lease', 'Note Payable', 'ARO']}
+          rows={[
+            ['관점', 'Issuer', 'Lessee', 'Borrower', 'Legal obligation'],
+            ['이자 계산', 'CV × 시장율', 'Beg Liab × rate', 'Beg × rate × m/12', 'Beg ARO × credit-adj'],
+            ['CV/Liability', 'Disc↑/Prem↓', '↓ 감소', '↓ 감소', '↑ 증가'],
+            ['I/S 비용', 'Interest Exp', 'Interest+Depr', 'Interest Exp', 'Accretion+Depr'],
+            ['상각 방법', 'SL or Effective', 'Effective only', 'Effective only', 'Effective only'],
+            ['SL 허용', '문제 명시 시', '불가', '불가', '불가'],
+          ]}
+        />
+      </Section>
+      <Section title="핵심 공통 로직">
+        <CodeBlock>{`이자 먼저 계산 → 나머지 원금 (Plug-in)
+SL 명시 없으면 → Effective Method
+Payment 숫자 직접 = 이자비용 → 항상 오답`}</CodeBlock>
+      </Section>
+    </div>
+  )
+}
+
+function InventoryCostContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="관계 시각화">
+        <div style={{ overflowX: 'auto' }}><InventoryCostViz /></div>
+      </Section>
+      <Section title="비교표">
+        <Table
+          headers={['항목', 'Inventory', 'PP&E', 'Intangibles']}
+          rows={[
+            ['측정 기준', 'Lower of Cost/NRV', 'Historical cost−Accum Depr', 'Cost−Accum Amort'],
+            ['방법', 'FIFO/LIFO/WA', 'SL/DDB/SYD', 'SL (정액)'],
+            ['손상', 'NRV 이하 write-down', '2-Step test', 'Definite:indicator / Indef:annual'],
+            ['회복', 'US GAAP 불가', 'US GAAP 불가', 'US GAAP 불가'],
+            ['특수', 'Dollar-Value LIFO', 'Interest capitalization', 'Goodwill no amort'],
+          ]}
+        />
+      </Section>
+    </div>
+  )
+}
+
+function EquityCapitalContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="관계 시각화">
+        <div style={{ overflowX: 'auto' }}><EquityCapitalViz /></div>
+      </Section>
+      <Section title="비교표">
+        <Table
+          headers={['항목', 'SE', 'EPS', 'Equity Method', 'Consolidation']}
+          rows={[
+            ['핵심', 'TS Cost/Par', 'Basic/Diluted', 'NI×%−diff amort', 'Elimination'],
+            ['배당 효과', 'RE 감소', '분자 영향 없음', 'Investment 감소', 'Sub 배당 제거'],
+            ['OCI', 'AFS/Pension/FX', 'Excluded', 'Excluded', 'Included'],
+          ]}
+        />
+      </Section>
+    </div>
+  )
+}
+
+function TaxAdjustmentContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="관계 시각화">
+        <div style={{ overflowX: 'auto' }}><TaxAdjustmentViz /></div>
+      </Section>
+      <Section title="비교표">
+        <Table
+          headers={['항목', 'Deferred Tax', 'Accounting Changes']}
+          rows={[
+            ['처리 방향', '소급 불필요 (전진)', '유형별 다름'],
+            ['핵심', 'Enacted rate / VA', 'Estimate=Prospective'],
+            ['I/S 영향', 'Tax expense 조정', 'Cumulative effect or prospective'],
+          ]}
+        />
+      </Section>
+    </div>
+  )
+}
+
+function RevenueRecContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="관계 시각화">
+        <div style={{ overflowX: 'auto' }}><RevenueRecognitionViz /></div>
+      </Section>
+      <Section title="비교표">
+        <Table
+          headers={['항목', 'Revenue', 'Foreign Currency', 'Subsequent Events']}
+          rows={[
+            ['인식 기준', 'PO 충족 시', 'Title transfer', 'BS date 이전 조건'],
+            ['시점', 'Over time / Point', '거래일 환율', '~ FS 발행일'],
+            ['TRAP', 'Variable consideration constraint', 'units per $ 방향', 'Type1 vs Type2 혼동'],
+          ]}
+        />
+      </Section>
+    </div>
+  )
+}
+
+function FinancialAnalysisContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="관계 시각화">
+        <div style={{ overflowX: 'auto' }}><FinancialAnalysisViz /></div>
+      </Section>
+      <Section title="비교표">
+        <Table
+          headers={['항목', 'SCF', 'Ratio Analysis', 'Fair Value']}
+          rows={[
+            ['핵심', '활동 분류', '공식 암기', 'Level 분류'],
+            ['함정', 'Notes rec=Investing', 'Avg 사용 필수', 'Similar≠Identical (L2)'],
+            ['방법', 'Direct/Indirect', 'Liquidity/Profit/Eff', 'Market/Income/Cost'],
+          ]}
+        />
+      </Section>
+    </div>
+  )
+}
+
+function PublicNonprofitContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="관계 시각화">
+        <div style={{ overflowX: 'auto' }}><PublicNonprofitViz /></div>
+      </Section>
+      <Section title="비교표">
+        <Table
+          headers={['항목', 'NFP Accounting', 'Governmental']}
+          rows={[
+            ['기준', 'FASB ASC 958', 'GASB'],
+            ['핵심', 'Donor restriction', 'Fund type + Accrual basis'],
+            ['수익', 'Contribution vs Exchange', 'Available + Measurable'],
+          ]}
+        />
+      </Section>
+    </div>
+  )
+}
+
+function SuperContentTab({ superId }: { superId: SuperCategoryId }) {
+  switch (superId) {
+    case 'interest4':          return <Interest4Content />
+    case 'inventory-cost':     return <InventoryCostContent />
+    case 'equity-capital':     return <EquityCapitalContent />
+    case 'tax-adjustment':     return <TaxAdjustmentContent />
+    case 'revenue-recognition': return <RevenueRecContent />
+    case 'financial-analysis': return <FinancialAnalysisContent />
+    case 'public-nonprofit':   return <PublicNonprofitContent />
+  }
+}
+
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function ConceptNotesPage() {
   const userId = useStudyStore((s) => s.userId)
   const openPanel = useClaudeStore((s) => s.openPanel)
   const [searchParams] = useSearchParams()
-  const initCat = (searchParams.get('cat') ?? 'bond') as CategoryId
-  const [selectedCatId, setSelectedCatId] = useState<CategoryId>(
-    CATEGORIES.some(c => c.id === initCat) ? initCat : 'bond'
+  const initId = (searchParams.get('cat') ?? 'interest4') as ActiveId
+  const [activeId, setActiveId] = useState<ActiveId>(
+    CATEGORIES.some(c => c.id === initId) || SUPER_CATEGORIES.some(s => s.id === initId)
+      ? initId : 'interest4'
   )
   const [activeTab, setActiveTab] = useState<TabKey>('content')
   const [wrongCounts, setWrongCounts] = useState<Record<string, number>>({})
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const prevCatRef = useRef<CategoryId>(selectedCatId)
+  const prevIdRef = useRef<ActiveId>(activeId)
 
   useEffect(() => {
     if (!userId) return
@@ -1421,13 +1656,16 @@ export default function ConceptNotesPage() {
   }, [userId])
 
   useEffect(() => {
-    if (prevCatRef.current !== selectedCatId) {
-      prevCatRef.current = selectedCatId
+    if (prevIdRef.current !== activeId) {
+      prevIdRef.current = activeId
       setActiveTab('content')
     }
-  }, [selectedCatId])
+  }, [activeId])
 
-  const activeCat = CATEGORIES.find(c => c.id === selectedCatId) ?? CATEGORIES[0]
+  const isSuper = SUPER_CATEGORIES.some(s => s.id === activeId)
+  const activeSuperCat = isSuper ? SUPER_CATEGORIES.find(s => s.id === activeId) : null
+  const activeCat = !isSuper ? (CATEGORIES.find(c => c.id === activeId) ?? CATEGORIES[0]) : null
+  const displayLabel = isSuper ? (activeSuperCat?.label ?? '') : (activeCat?.label ?? '')
 
   function getWrongCountForCat(cat: typeof CATEGORIES[number]): number {
     const cards = getCardsForCategory(cat)
@@ -1439,6 +1677,13 @@ export default function ConceptNotesPage() {
 
   function getCardCountForCat(cat: typeof CATEGORIES[number]): number {
     return getCardsForCategory(cat).length
+  }
+
+  function getSuperWrongCount(superCat: typeof SUPER_CATEGORIES[number]): number {
+    return superCat.children.reduce((sum, childId) => {
+      const childCat = CATEGORIES.find(c => c.id === childId)
+      return sum + (childCat ? getWrongCountForCat(childCat) : 0)
+    }, 0)
   }
 
   const TABS: { key: TabKey; label: string }[] = [
@@ -1473,10 +1718,11 @@ export default function ConceptNotesPage() {
         className="hidden md:flex"
       >
         <SidebarContent
-          selectedCatId={selectedCatId}
-          onSelect={id => setSelectedCatId(id)}
+          activeId={activeId}
+          onSelect={id => { setActiveId(id); setActiveTab('content') }}
           getCardCount={getCardCountForCat}
           getWrongCount={getWrongCountForCat}
+          getSuperWrongCount={getSuperWrongCount}
         />
       </aside>
 
@@ -1493,10 +1739,11 @@ export default function ConceptNotesPage() {
         className="md:hidden"
       >
         <SidebarContent
-          selectedCatId={selectedCatId}
-          onSelect={id => { setSelectedCatId(id); setSidebarOpen(false) }}
+          activeId={activeId}
+          onSelect={id => { setActiveId(id); setActiveTab('content'); setSidebarOpen(false) }}
           getCardCount={getCardCountForCat}
           getWrongCount={getWrongCountForCat}
+          getSuperWrongCount={getSuperWrongCount}
         />
       </aside>
 
@@ -1521,7 +1768,7 @@ export default function ConceptNotesPage() {
               <rect x="2" y="14" width="16" height="2" rx="1" fill={NAVY} />
             </svg>
           </button>
-          <span style={{ fontWeight: 700, fontSize: 15, color: NAVY }}>{activeCat.label}</span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: NAVY }}>{displayLabel}</span>
         </div>
 
         {/* Content area */}
@@ -1533,7 +1780,7 @@ export default function ConceptNotesPage() {
             style={{ marginBottom: 20 }}
           >
             <h1 style={{ fontSize: 22, fontWeight: 800, color: NAVY, margin: 0 }}>
-              {activeCat.label}
+              {displayLabel}
             </h1>
           </div>
 
@@ -1557,14 +1804,17 @@ export default function ConceptNotesPage() {
           </div>
 
           {/* Tab content */}
-          {activeTab === 'content' && (
+          {activeTab === 'content' && isSuper && activeSuperCat && (
+            <SuperContentTab superId={activeSuperCat.id} />
+          )}
+          {activeTab === 'content' && !isSuper && activeCat && (
             <ContentTab catId={activeCat.id as CategoryId} catLabel={activeCat.label} />
           )}
           {activeTab === 'cards' && (
-            <CardsTab cat={activeCat} />
+            <CardsTab activeId={activeId} />
           )}
           {activeTab === 'harry' && (
-            <HarryTab key={`harry-${selectedCatId}`} catLabel={activeCat.label} />
+            <HarryTab key={`harry-${activeId}`} catLabel={displayLabel} />
           )}
         </div>
       </main>
@@ -1574,16 +1824,31 @@ export default function ConceptNotesPage() {
 
 // ── Sidebar Content Component ──────────────────────────────────────────────────
 function SidebarContent({
-  selectedCatId,
+  activeId,
   onSelect,
   getCardCount,
   getWrongCount,
+  getSuperWrongCount,
 }: {
-  selectedCatId: CategoryId
-  onSelect: (id: CategoryId) => void
+  activeId: ActiveId
+  onSelect: (id: ActiveId) => void
   getCardCount: (cat: typeof CATEGORIES[number]) => number
   getWrongCount: (cat: typeof CATEGORIES[number]) => number
+  getSuperWrongCount: (superCat: typeof SUPER_CATEGORIES[number]) => number
 }) {
+  const [openSupers, setOpenSupers] = useState<Set<SuperCategoryId>>(
+    new Set(['interest4' as SuperCategoryId])
+  )
+
+  function toggleSuper(id: SuperCategoryId) {
+    setOpenSupers(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   return (
     <>
       <div style={{ padding: '16px 14px 10px', borderBottom: '1px solid #f0f0f0' }}>
@@ -1591,49 +1856,99 @@ function SidebarContent({
           Topics
         </span>
       </div>
-      <nav style={{ flex: 1, padding: '8px 0' }}>
-        {CATEGORIES.map(cat => {
-          const isActive = cat.id === selectedCatId
-          const cardCount = getCardCount(cat)
-          const wrongCount = getWrongCount(cat)
+      <nav style={{ flex: 1, padding: '4px 0' }}>
+        {SUPER_CATEGORIES.map(superCat => {
+          const isOpen = openSupers.has(superCat.id)
+          const isSuperActive = activeId === superCat.id
+          const superWrong = getSuperWrongCount(superCat)
           return (
-            <button
-              key={cat.id}
-              onClick={() => onSelect(cat.id as CategoryId)}
-              style={{
-                width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
-                padding: '8px 14px',
-                background: isActive ? '#eef1f8' : 'transparent',
-                borderLeft: isActive ? `3px solid ${NAVY}` : '3px solid transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-              }}
-            >
-              <span style={{
-                fontSize: 13, fontWeight: isActive ? 700 : 400,
-                color: isActive ? NAVY : '#333',
-                flex: 1, lineHeight: 1.35,
-              }}>
-                {cat.label}
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                {cardCount > 0 && (
-                  <span style={{
-                    fontSize: 10, color: '#888', background: '#f0f0f0',
-                    borderRadius: 10, padding: '1px 6px',
-                  }}>
-                    {cardCount}
-                  </span>
-                )}
-                {wrongCount > 0 && (
-                  <span style={{
-                    fontSize: 10, color: '#fff', background: '#dc2626',
-                    borderRadius: 10, padding: '1px 6px', fontWeight: 700,
-                  }}>
-                    {wrongCount}
-                  </span>
-                )}
-              </div>
-            </button>
+            <div key={superCat.id}>
+              {/* 상위 카테고리 헤더 */}
+              <button
+                onClick={() => {
+                  onSelect(superCat.id)
+                  toggleSuper(superCat.id)
+                }}
+                style={{
+                  width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
+                  background: isSuperActive ? '#162038' : NAVY,
+                  color: 'white',
+                  padding: '10px 14px',
+                  fontWeight: 700,
+                  fontSize: 12.5,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span>{superCat.label}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {superWrong > 0 && (
+                    <span style={{
+                      fontSize: 10, color: 'white', background: '#dc2626',
+                      borderRadius: 10, padding: '1px 6px', fontWeight: 700,
+                    }}>
+                      {superWrong}
+                    </span>
+                  )}
+                  <span style={{ fontSize: 14, color: 'white' }}>{isOpen ? '▾' : '▸'}</span>
+                </div>
+              </button>
+
+              {/* 하위 카테고리 목록 */}
+              {isOpen && superCat.children.map(childId => {
+                const cat = CATEGORIES.find(c => c.id === childId)
+                if (!cat) return null
+                const isActive = activeId === cat.id
+                const cardCount = getCardCount(cat)
+                const wrongCount = getWrongCount(cat)
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => onSelect(cat.id as CategoryId)}
+                    style={{
+                      width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
+                      paddingLeft: 28, paddingRight: 10, paddingTop: 8, paddingBottom: 8,
+                      background: isActive ? '#eef1f8' : 'transparent',
+                      borderLeft: isActive ? `3px solid ${NAVY}` : '3px solid transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                    }}
+                    onMouseEnter={e => {
+                      if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(26,39,68,0.05)'
+                    }}
+                    onMouseLeave={e => {
+                      if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+                    }}
+                  >
+                    <span style={{
+                      fontSize: 12.5, fontWeight: isActive ? 700 : 400,
+                      color: isActive ? NAVY : '#333',
+                      flex: 1, lineHeight: 1.35,
+                    }}>
+                      {cat.label}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                      {cardCount > 0 && (
+                        <span style={{
+                          fontSize: 10, color: '#888', background: '#f0f0f0',
+                          borderRadius: 10, padding: '1px 6px',
+                        }}>
+                          {cardCount}
+                        </span>
+                      )}
+                      {wrongCount > 0 && (
+                        <span style={{
+                          fontSize: 10, color: '#fff', background: '#dc2626',
+                          borderRadius: 10, padding: '1px 6px', fontWeight: 700,
+                        }}>
+                          {wrongCount}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           )
         })}
       </nav>
