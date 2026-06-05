@@ -9623,7 +9623,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     trigger: "note payable | refinancing | long-term bonds | prepaid | excess cash | FS issuance date",
     trap: "계획/의도만으론 long-term 불가 → 실제 실행 필요 / 재융자 전 선납분은 long-term 커버 불가 → 무조건 current / current liabilities 물어보는 거 놓치지 말 것",
     speed: "계획 ❌ / 실행 ✓ / FS발행 전 완료 ✓ / 선납분 → 무조건 current",
-    rule_items: "① 의도/계획만으론 부족 — 실제 장기 재융자 action 필요 ② 재융자 실행이 FS 발행일 이전 완료되어야 long-term 가능 ③ 재융자 전 선납(excess cash 등) → 재융자와 무관 → current ④ current liabilities = 선납분만",
+    rule_items: [
+      "① 의도/계획만으론 부족 — 실제 장기 재융자 action 필요",
+      "② 재융자 실행이 FS 발행일 이전 완료되어야 long-term 가능",
+      "③ 재융자 전 선납(excess cash 등) → 재융자와 무관 → current",
+      "④ current liabilities = 선납분만",
+    ],
     key_formula: "Current = 재융자 전 선납분 / Long-term = 재융자 후 잔액 (FS발행 전 완료 시)",
   },
   {
