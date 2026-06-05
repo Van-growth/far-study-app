@@ -26,6 +26,11 @@ const CATEGORIES = [
   { id: 'gov',         label: 'Governmental Accounting',      groups: ['IB_GOV'] },
   { id: 'changes',     label: 'Accounting Changes & Errors',  groups: ['IA_CH11_CHANGE'] },
   { id: 'fv',          label: 'Fair Value',                   groups: ['IA_CH12_FV'] },
+  { id: 'fx',          label: 'Foreign Currency',             groups: ['IA_CH12_FX'] },
+  { id: 'ratio',       label: 'Ratio Analysis',               groups: [] },
+  { id: 'consol',      label: 'Consolidation',                groups: ['IA_CH12_CONSOL'] },
+  { id: 'subsequent',  label: 'Subsequent Events',            groups: [] },
+  { id: 'bankrec',     label: 'Bank Reconciliation',          groups: [] },
   { id: 'other',       label: 'Other',                        groups: [] },
 ] as const
 
@@ -726,16 +731,38 @@ function EquityContent() {
       </Section>
 
       <Section title="3. AOCI 구성 항목">
-        <CodeBlock>{`1) AFS unrealized G/L
-2) Pension adjustment (funded status)
-3) Foreign currency translation adjustment
-4) Cash flow hedge (effective portion)`}</CodeBlock>
+        <Table
+          headers={['항목', '방향', '비고']}
+          rows={[
+            ['AFS Unrealized G/L', 'OCI (I/S 아님)', '매각 시 → reclassify to I/S'],
+            ['Pension (OPEB)', 'OCI', 'Prior service cost / Actuarial G/L'],
+            ['FX Translation', 'OCI', 'Foreign subsidiary 환산'],
+            ['Derivatives — Cash flow hedge', 'OCI', 'Fair value hedge → I/S'],
+          ]}
+        />
+      </Section>
+
+      <Section title="4. OCI — 분개 예시">
+        <CodeBlock>{`Pension Prior Service Cost:
+  Dr. OCI — Prior Service Cost   XXX
+    Cr. Pension Liability              XXX
+
+Pension Actuarial Loss:
+  Dr. OCI — Actuarial Loss   XXX
+    Cr. Pension Liability          XXX
+
+AFS 매각 시 reclassify (OCI → I/S):
+  Dr. OCI (Unrealized G/L)   XXX
+    Cr. Realized G/L (I/S)        XXX`}</CodeBlock>
       </Section>
 
       <TrapBox items={[
         'Cost Method 재발행 손실: APIC-TS 먼저 차감 → 부족 시 RE',
         'Stock split = 분개 없음 (memo entry만)',
         'Property dividend = FMV 기준 RE 차감 + G/L 인식',
+        'Trading → Unrealized G/L → I/S (OCI 아님!)',
+        'AFS → Unrealized → OCI / Realized (매각 시) → I/S',
+        'Cash flow hedge → OCI / Fair value hedge → I/S',
       ]} />
     </div>
   )
@@ -919,6 +946,279 @@ Most advantageous market: principal market 없을 때`}</CodeBlock>
   )
 }
 
+// ── New Category Content Functions ────────────────────────────────────────────
+
+function FxContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. Overview">
+        <Table
+          headers={['개념', '설명']}
+          rows={[
+            ['Foreign currency transaction', '거래 시점 spot rate으로 인식'],
+            ['AR/AP + 환율 변동', '결제 시 FX Gain/Loss 인식'],
+            ['JE 기준일', 'Title transfer 날짜 (계약일·지급일 아님)'],
+            ['"units of FC per dollar"', '숫자↓ = 외화 강세 = dollar 약세'],
+          ]}
+        />
+      </Section>
+
+      <Section title="2. 출제 유형">
+        <Table
+          headers={['유형', '키워드', '로직']}
+          rows={[
+            ['AR + FX Gain', 'exchange rate direction', '외화강세 → units per $ Decrease'],
+            ['AP + FX Loss', 'units of FC per dollar', '외화강세 → AP 상환 비용 증가'],
+            ['JE timing', 'title transfer date', '계약일·지급일 기준 아님'],
+          ]}
+        />
+      </Section>
+
+      <Section title="3. Accounting Treatment">
+        <CodeBlock>{`매출 인식 (title transfer 날짜):
+  Dr. AR (spot rate)     XXX
+    Cr. Sales                  XXX
+
+결제 시 (환율 변동 — 외화 강세, FX Gain):
+  Dr. Cash (new rate)    XXX
+    Cr. AR (original rate)     XXX
+    Cr. FX Gain                XXX
+
+결제 시 (환율 변동 — 외화 약세, FX Loss):
+  Dr. Cash (new rate)    XXX
+  Dr. FX Loss            XXX
+    Cr. AR (original rate)     XXX`}</CodeBlock>
+      </Section>
+
+      <Section title="4. 환율 방향 해석">
+        <Table
+          headers={['상황', '"units of FC per $" 변화', '결과']}
+          rows={[
+            ['외화 강세 / dollar 약세', '감소 (Decrease)', 'AR 보유 → FX Gain'],
+            ['외화 약세 / dollar 강세', '증가 (Increase)', 'AR 보유 → FX Loss'],
+            ['AP 보유 + 외화 강세', '감소', 'AP 상환 비용↑ → FX Loss'],
+          ]}
+        />
+      </Section>
+
+      <TrapBox items={[
+        '"units of foreign currency per dollar" 숫자↓ = 외화 강세 (직관과 반대!)',
+        'AR + 외화 강세 → FX Gain (외화로 더 받으니까)',
+        'JE 기준 = title transfer 날짜 (계약서 서명일·대금 지급일 아님)',
+        '결산일 미결제 AR/AP → spot rate으로 재평가 → FX Gain/Loss 인식',
+      ]} />
+    </div>
+  )
+}
+
+function RatioContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. Liquidity Ratios">
+        <Table
+          headers={['지표', '공식', '예시']}
+          rows={[
+            ['Current Ratio', 'Current Assets ÷ Current Liabilities', 'CA $300K ÷ CL $150K = 2.0'],
+            ['Quick Ratio', '(Cash + ST Inv + AR) ÷ CL', '($300K−$80K−$10K) ÷ $150K = 1.4'],
+          ]}
+        />
+      </Section>
+
+      <Section title="2. Profitability Ratios">
+        <Table
+          headers={['지표', '공식', '주의']}
+          rows={[
+            ['Gross Margin %', '(Sales − COGS) ÷ Sales', ''],
+            ['Net Profit Margin', 'NI ÷ Net Sales', ''],
+            ['ROA', 'NI ÷ Avg Total Assets', 'Avg (기초+기말÷2) 필수'],
+            ['ROE', 'NI ÷ Avg Stockholders\' Equity', 'Avg 필수'],
+          ]}
+        />
+      </Section>
+
+      <Section title="3. Efficiency & Market Ratios">
+        <Table
+          headers={['지표', '공식', '예시']}
+          rows={[
+            ['Asset Turnover', 'Net Sales ÷ Avg Total Assets', '$67.5M ÷ $90M = 0.75'],
+            ['AR Turnover', 'Net Sales ÷ Avg AR', ''],
+            ['DSO', '365 ÷ AR Turnover', ''],
+            ['P/E Ratio', 'Market Price per Share ÷ Basic EPS', '$45 ÷ $3.00 = 15×'],
+          ]}
+        />
+      </Section>
+
+      <TrapBox items={[
+        'Asset Turnover → Ending 단독 사용 금지 → 반드시 평균(Avg) 사용',
+        'Quick Ratio → Inventory AND Prepaid 둘 다 제외',
+        'ROA/ROE 분모 → 반드시 Average (Ending만 사용 시 오답)',
+        'P/E 분모 = Basic EPS (Diluted EPS 사용 주의)',
+        'DSO 공식: 365 ÷ AR Turnover (AR Turnover = Net Sales ÷ Avg AR)',
+      ]} />
+    </div>
+  )
+}
+
+function ConsolContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. Overview">
+        <Table
+          headers={['개념', '설명']}
+          rows={[
+            ['연결 목적', 'Parent + Subsidiary → 단일 경제적 실체'],
+            ['Intercompany 거래', '전부 제거 (Elimination)'],
+            ['NCI', 'Non-controlling interest — minority 지분'],
+            ['Goodwill', '취득가 − FV of net assets × 취득 %'],
+          ]}
+        />
+      </Section>
+
+      <Section title="2. 취득 분개 & 연결 제거 분개">
+        <CodeBlock>{`취득:
+  Dr. Investment in Sub   XXX
+    Cr. Cash                    XXX
+
+연결 제거 (elimination):
+  Dr. Common Stock (Sub)   XXX
+  Dr. Retained Earnings (Sub) XXX
+  Dr. Goodwill             XXX
+    Cr. Investment in Sub        XXX
+    Cr. NCI                      XXX`}</CodeBlock>
+      </Section>
+
+      <Section title="3. Intercompany 거래 제거">
+        <CodeBlock>{`Intercompany sale (미실현이익 포함):
+  Dr. Sales (intercompany)   XXX
+    Cr. COGS (intercompany)       XXX
+
+미실현이익 제거 (재고 미판매 시):
+  Dr. COGS (or Inv.)   XXX
+    Cr. Inventory              XXX`}</CodeBlock>
+      </Section>
+
+      <Section title="4. Downstream vs Upstream">
+        <Table
+          headers={['유형', '판매 방향', '미실현이익 귀속']}
+          rows={[
+            ['Downstream', 'Parent → Sub', 'Parent NI 전액 조정'],
+            ['Upstream', 'Sub → Parent', 'NCI에도 비례 배분'],
+          ]}
+        />
+      </Section>
+
+      <TrapBox items={[
+        'Goodwill = 취득가 − FV of net assets (BV 아님!)',
+        'Consolidated dividend = Parent 배당만 (Sub 배당은 제거)',
+        'Downstream: Parent가 판매 → Parent NI에서 전액 제거',
+        'Upstream: Sub가 판매 → NCI에도 미실현이익 배분',
+        'Intercompany receivable/payable → 연결 B/S에서 상계 제거',
+      ]} />
+    </div>
+  )
+}
+
+function SubsequentContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. Overview — Type 1 vs Type 2">
+        <Table
+          headers={['유형', '조건', '처리', '예시']}
+          rows={[
+            ['Type 1 (Recognized)', 'BS일 이전 조건 존재', 'FS 수정', '소송 — BS일 전 발생, 판결은 이후'],
+            ['Type 2 (Disclosed)', 'BS일 이후 새로운 조건', '주석 공시만', '자연재해, 주가 폭락'],
+          ]}
+        />
+      </Section>
+
+      <Section title="2. Accounting Treatment">
+        <CodeBlock>{`Type 1 — 인식 (소송 패소, BS일 이전 조건 확인):
+  Dr. Loss on Litigation   XXX
+    Cr. Litigation Liability       XXX
+
+Type 2 — 공시만 (분개 없음):
+  → 재무제표 주석에 사건 내용 설명만
+  → FS 본문 수정 없음`}</CodeBlock>
+      </Section>
+
+      <Section title="3. 기준일">
+        <Table
+          headers={['구간', '처리 가능 여부']}
+          rows={[
+            ['BS date 이전 조건', 'Type 1 or Type 2 판단 대상'],
+            ['BS date ~ FS 발행일', '반영 가능 (Type 1/2 판단)'],
+            ['FS 발행일 이후', '반영 불가 (고려 대상 아님)'],
+          ]}
+        />
+      </Section>
+
+      <TrapBox items={[
+        'BS일 이후 주가 폭락 → Type 2 (새로운 조건, 수정 불필요)',
+        'BS일 이전 소송 → 판결이 BS일 이후여도 → Type 1 (수정 필요)',
+        'FS 발행일 이후 사건 → 반영 불가',
+        '주식 추가 발행 (BS일 이후) → Type 2 공시만',
+      ]} />
+    </div>
+  )
+}
+
+function BankRecContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. Overview — Book vs Bank">
+        <Table
+          headers={['조정 대상', '항목', '방향']}
+          rows={[
+            ['Book 조정', 'Interest earned (은행 적립)', '+ 가산'],
+            ['Book 조정', 'NSF check (부도수표)', '− 차감'],
+            ['Book 조정', 'Bank service charges', '− 차감'],
+            ['Book 조정', 'Errors in book', '± 조정'],
+            ['Bank 조정', 'Deposits in transit', '+ 가산'],
+            ['Bank 조정', 'Outstanding checks', '− 차감'],
+            ['Bank 조정', 'Errors by bank', '± 조정'],
+          ]}
+        />
+      </Section>
+
+      <Section title="2. Adjusted Balance 구조">
+        <CodeBlock>{`Book Balance (장부)          XXX
+  + Interest earned            XX
+  − NSF check                  XX
+  − Bank service charges        XX
+  ± Book errors                 XX
+= Adjusted Book Balance       XXX
+
+Bank Balance (은행)           XXX
+  + Deposits in transit         XX
+  − Outstanding checks          XX
+  ± Bank errors                 XX
+= Adjusted Bank Balance       XXX
+
+→ Adjusted Book = Adjusted Bank (반드시 일치)`}</CodeBlock>
+      </Section>
+
+      <Section title="3. 조정 후 분개 (Book 조정 항목만)">
+        <CodeBlock>{`Interest earned:
+  Dr. Cash / Cr. Interest Income
+
+NSF check:
+  Dr. AR (or Receivable) / Cr. Cash
+
+Bank service charges:
+  Dr. Bank Service Expense / Cr. Cash`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        'NSF check → Book 차감 (Bank 아님, 이미 Bank 반영됨)',
+        'Outstanding checks → Bank 차감 (Book은 이미 기록됨)',
+        'Deposits in transit → Bank 가산 (Book은 이미 기록됨)',
+        '분개는 Book 조정 항목만 → Bank 조정 항목은 분개 없음',
+        '조정 후 양쪽 잔액 불일치 → 오류 존재',
+      ]} />
+    </div>
+  )
+}
+
 // ── Content Tab Dispatcher ─────────────────────────────────────────────────────
 function ContentTab({ catId, catLabel }: { catId: CategoryId; catLabel: string }) {
   switch (catId) {
@@ -939,6 +1239,11 @@ function ContentTab({ catId, catLabel }: { catId: CategoryId; catLabel: string }
     case 'gov':         return <GovContent />
     case 'changes':     return <ChangesContent />
     case 'fv':          return <FvContent />
+    case 'fx':          return <FxContent />
+    case 'ratio':       return <RatioContent />
+    case 'consol':      return <ConsolContent />
+    case 'subsequent':  return <SubsequentContent />
+    case 'bankrec':     return <BankRecContent />
     default:            return <ComingSoon label={catLabel} />
   }
 }
