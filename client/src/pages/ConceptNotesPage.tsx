@@ -1046,9 +1046,9 @@ function HarryTab({ catLabel }: { catLabel: string }) {
   const setPendingAutoMessage = useClaudeStore((s) => s.setPendingAutoMessage)
 
   const quickActions = [
-    { label: '개념 확인', msg: `${catLabel} 개념 확인 문제 내줘` },
-    { label: '분개 오류 찾기', msg: `${catLabel} 분개에서 오류 찾기 문제 내줘` },
-    { label: '빈칸 채우기', msg: `${catLabel} 공식 빈칸 채우기 문제 내줘` },
+    { label: '개념 확인', msg: `Give me ONE concept check question about ${catLabel}. Wait for my answer before showing the solution.` },
+    { label: '분개 오류 찾기', msg: `Show me ONE journal entry with exactly one error related to ${catLabel}. Wait for my answer before explaining.` },
+    { label: '빈칸 채우기', msg: `Give me ONE formula with ONE blank to fill in for ${catLabel}. Wait for my answer before showing the answer.` },
   ]
 
   const send = (msg: string) => {

@@ -83,9 +83,9 @@ export interface HarryContext {
   context_name: string | null;
 }
 
-export const PANEL_WIDTH_MIN = 300;
-export const PANEL_WIDTH_MAX = 680;
-export const PANEL_WIDTH_DEFAULT = 360;
+export const PANEL_WIDTH_MIN = 360;
+export const PANEL_WIDTH_MAX = 800;
+export const PANEL_WIDTH_DEFAULT = 480;
 const PANEL_WIDTH_KEY = 'harry_panel_width';
 
 function loadSavedPanelWidth(): number {

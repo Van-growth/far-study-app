@@ -916,9 +916,9 @@ function HarryTab({ userId, pendingMsg, onPendingConsumed }: {
   };
 
   const quickBtns = [
-    { label: '약점 개념 확인', text: 'Ask me a concept check question on my weakest topic' },
-    { label: '분개 오류 찾기', text: 'Show me a journal entry with one error for me to find' },
-    { label: '공식 빈칸 채우기', text: 'Give me a formula completion question' },
+    { label: '약점 개념 확인', text: 'Give me ONE concept check question on my weakest topic. Wait for my answer before showing the solution.' },
+    { label: '분개 오류 찾기', text: 'Show me ONE journal entry with exactly one error for me to find. Wait for my answer before explaining.' },
+    { label: '공식 빈칸 채우기', text: 'Give me ONE formula with ONE blank to fill in. Wait for my answer before showing the answer.' },
   ];
 
   const weakTop3 = [...summary].sort((a, b) => b.total_wrong - a.total_wrong).slice(0, 3);

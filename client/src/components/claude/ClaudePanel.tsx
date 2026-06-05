@@ -397,10 +397,10 @@ SPEED: 30초 풀이 한 줄`;
             {!modal && (
               <>
                 <button
-                  onClick={() => setPanelWidth(560)}
+                  onClick={() => setPanelWidth(680)}
                   title="넓게"
                   className="hidden md:flex w-8 h-8 items-center justify-center rounded-lg text-muted hover:text-[#1a2744] hover:bg-gray-100 text-[11px] font-semibold"
-                  style={{ color: panelWidth >= 500 ? '#1a2744' : undefined }}
+                  style={{ color: panelWidth >= 600 ? '#1a2744' : undefined }}
                 >
                   넓게
                 </button>
@@ -408,7 +408,7 @@ SPEED: 30초 풀이 한 줄`;
                   onClick={() => setPanelWidth(PANEL_WIDTH_DEFAULT)}
                   title="기본"
                   className="hidden md:flex w-8 h-8 items-center justify-center rounded-lg text-muted hover:text-[#1a2744] hover:bg-gray-100 text-[11px] font-semibold"
-                  style={{ color: panelWidth < 500 ? '#1a2744' : undefined }}
+                  style={{ color: panelWidth < 600 ? '#1a2744' : undefined }}
                 >
                   기본
                 </button>
