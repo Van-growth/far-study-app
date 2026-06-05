@@ -316,25 +316,6 @@ SPEED: 30초 풀이 한 줄`;
     return 'show me';
   };
 
-  const triggerSlash = (cmd: '/go' | '/qu' | '/re') => {
-    if (isLoading) return;
-    const msg = cmd === '/re' ? buildReCommand() : cmd === '/qu' ? buildQuCommand() : buildGoCommand();
-    sendMessage(msg);
-  };
-
-  const [toastVisible, setToastVisible] = useState(false);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showDisabledToast = () => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToastVisible(true);
-    toastTimerRef.current = setTimeout(() => setToastVisible(false), 4000);
-  };
-
-  const handleQuickCmd = (cmd: '/go' | '/qu' | '/re') => {
-    if (!activeBankQuestion || isLoading) { showDisabledToast(); return; }
-    triggerSlash(cmd);
-  };
 
   const SHOW_ME_TRIGGERS = /^(show me|비주얼로|숫자로 보여줘|비교해줘|구조화해줘)$/i;
 
@@ -567,36 +548,6 @@ SPEED: 30초 풀이 한 줄`;
         style={{ background: 'transparent', paddingBottom: modal ? 'calc(12px + env(safe-area-inset-bottom, 0px))' : 12 }}
       >
         {/* Quick command buttons */}
-        {toastVisible && (
-          <div className="text-center text-[11px] px-3 py-1.5 rounded-lg mb-2"
-            style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>
-            스프린트 Review에서 문제 펼친 후 활성화됩니다
-          </div>
-        )}
-        <div className="flex gap-2 mb-2">
-          {([
-            { label: '풀이', cmd: '/go' as const },
-            { label: '분석', cmd: '/qu' as const },
-            { label: '복습', cmd: '/re' as const },
-          ]).map(({ label, cmd }) => {
-            const active = !!activeBankQuestion && !isLoading;
-            return (
-              <button
-                key={cmd}
-                onClick={() => handleQuickCmd(cmd)}
-                className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                style={{
-                  background: active ? '#eef2ff' : '#f1f5f9',
-                  color: active ? '#4338ca' : '#94a3b8',
-                  border: `1px solid ${active ? '#c7d2fe' : '#e2e8f0'}`,
-                  cursor: active ? 'pointer' : 'default',
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
         <div className="flex items-end gap-2 rounded-xl px-3 py-2" style={{ border: '1.5px solid #e2e8f0', background: '#f8fafc' }}>
           <textarea
             ref={taRef}
