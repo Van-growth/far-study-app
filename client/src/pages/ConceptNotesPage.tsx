@@ -129,143 +129,256 @@ Discount example (Face $100,000 / Coupon 6% / Market 8% / 5yr):
         <p style={{ color: '#555', marginTop: 8, fontStyle: 'italic' }}>Memory: "Coupon"은 옛날 채권에 달린 실제 쿠폰에서 유래. 만기마다 떼어내서 이자를 수령했음.</p>
       </Section>
 
-      <Section title="Bond CV 흐름 — 한눈에">
-        <div className="bond-diagram" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* SVG 1 — Bond 구조도 */}
-          <svg width="100%" viewBox="0 0 680 520" role="img">
-            <title>Bond — Premium vs Discount structure</title>
-            <desc>Bond 발행부터 만기까지 CV 흐름, 이자 계산 구조 시각화</desc>
-            <defs>
-              <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </marker>
-            </defs>
-            <g className="c-gray">
-              <rect x="240" y="20" width="200" height="44" rx="8" strokeWidth="0.5"/>
-              <text className="th" x="340" y="38" textAnchor="middle" dominantBaseline="central">Bond issuance</text>
-              <text className="ts" x="340" y="54" textAnchor="middle" dominantBaseline="central">Market rate vs Coupon rate</text>
-            </g>
-            <line x1="240" y1="42" x2="160" y2="90" stroke="#534AB7" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
-            <line x1="440" y1="42" x2="520" y2="90" stroke="#993C1D" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
-            <text className="ts" x="170" y="82" textAnchor="middle">Market &lt; Coupon</text>
-            <text className="ts" x="510" y="82" textAnchor="middle">Market &gt; Coupon</text>
-            <g className="c-purple">
-              <rect x="40" y="100" width="200" height="56" rx="8" strokeWidth="0.5"/>
-              <text className="th" x="140" y="122" textAnchor="middle" dominantBaseline="central">Premium</text>
-              <text className="ts" x="140" y="140" textAnchor="middle" dominantBaseline="central">Issue price &gt; Face value</text>
-            </g>
-            <g className="c-purple">
-              <rect x="40" y="190" width="200" height="44" rx="8" strokeWidth="0.5"/>
-              <text className="th" x="140" y="206" textAnchor="middle" dominantBaseline="central">CV starts high</text>
-              <text className="ts" x="140" y="222" textAnchor="middle" dominantBaseline="central">108,000 → 100,000</text>
-            </g>
-            <line x1="140" y1="156" x2="140" y2="188" stroke="#534AB7" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
-            <g className="c-purple">
-              <rect x="40" y="268" width="200" height="56" rx="8" strokeWidth="0.5"/>
-              <text className="th" x="140" y="287" textAnchor="middle" dominantBaseline="central">Interest expense</text>
-              <text className="ts" x="140" y="303" textAnchor="middle" dominantBaseline="central">CV × Market rate</text>
-              <text className="ts" x="140" y="317" textAnchor="middle" dominantBaseline="central">decreases each year</text>
-            </g>
-            <line x1="140" y1="234" x2="140" y2="266" stroke="#534AB7" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
-            <g className="c-gray">
-              <rect x="30" y="358" width="220" height="76" rx="8" strokeWidth="0.5"/>
-              <text className="ts" x="46" y="378">Dr. Interest Expense   4,320</text>
-              <text className="ts" x="46" y="396">Dr. Premium on Bonds   1,680</text>
-              <text className="ts" x="46" y="414">    Cr. Cash                   6,000</text>
-            </g>
-            <line x1="140" y1="324" x2="140" y2="356" stroke="#534AB7" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
-            <g className="c-coral">
-              <rect x="440" y="100" width="200" height="56" rx="8" strokeWidth="0.5"/>
-              <text className="th" x="540" y="122" textAnchor="middle" dominantBaseline="central">Discount</text>
-              <text className="ts" x="540" y="140" textAnchor="middle" dominantBaseline="central">Issue price &lt; Face value</text>
-            </g>
-            <g className="c-coral">
-              <rect x="440" y="190" width="200" height="44" rx="8" strokeWidth="0.5"/>
-              <text className="th" x="540" y="206" textAnchor="middle" dominantBaseline="central">CV starts low</text>
-              <text className="ts" x="540" y="222" textAnchor="middle" dominantBaseline="central">92,000 → 100,000</text>
-            </g>
-            <line x1="540" y1="156" x2="540" y2="188" stroke="#993C1D" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
-            <g className="c-coral">
-              <rect x="440" y="268" width="200" height="56" rx="8" strokeWidth="0.5"/>
-              <text className="th" x="540" y="287" textAnchor="middle" dominantBaseline="central">Interest expense</text>
-              <text className="ts" x="540" y="303" textAnchor="middle" dominantBaseline="central">CV × Market rate</text>
-              <text className="ts" x="540" y="317" textAnchor="middle" dominantBaseline="central">increases each year</text>
-            </g>
-            <line x1="540" y1="234" x2="540" y2="266" stroke="#993C1D" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
-            <g className="c-gray">
-              <rect x="430" y="358" width="220" height="76" rx="8" strokeWidth="0.5"/>
-              <text className="ts" x="446" y="378">Dr. Interest Expense   7,360</text>
-              <text className="ts" x="446" y="396">    Cr. Discount on Bonds  1,360</text>
-              <text className="ts" x="446" y="414">    Cr. Cash                   6,000</text>
-            </g>
-            <line x1="540" y1="324" x2="540" y2="356" stroke="#993C1D" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
-            <g className="c-teal">
-              <rect x="200" y="458" width="280" height="44" rx="8" strokeWidth="0.5"/>
-              <text className="th" x="340" y="476" textAnchor="middle" dominantBaseline="central">At maturity: CV = Face value</text>
-              <text className="ts" x="340" y="492" textAnchor="middle" dominantBaseline="central">Both converge to 100,000</text>
-            </g>
-            <line x1="140" y1="434" x2="280" y2="456" stroke="#534AB7" strokeWidth="1" strokeDasharray="4,3" markerEnd="url(#arr)" fill="none"/>
-            <line x1="540" y1="434" x2="400" y2="456" stroke="#993C1D" strokeWidth="1" strokeDasharray="4,3" markerEnd="url(#arr)" fill="none"/>
-          </svg>
+      <Section title="Bond 타임라인 다이어그램">
+        <div className="bond-diagram" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
 
-          {/* SVG 2 — CV 수렴 그래프 */}
-          <svg width="100%" viewBox="0 0 680 400" role="img">
-            <title>Bond CV convergence to face value over 5 years</title>
-            <desc>Premium bond CV decreases, Discount bond CV increases, both converge to face value at maturity</desc>
-            <line x1="80" y1="30" x2="80" y2="320" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
-            <line x1="80" y1="320" x2="620" y2="320" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
-            <text className="ts" x="72" y="54" textAnchor="end">110,000</text>
-            <text className="ts" x="72" y="124" textAnchor="end">108,000</text>
-            <text className="ts" x="72" y="194" textAnchor="end">100,000</text>
-            <text className="ts" x="72" y="264" textAnchor="end">92,000</text>
-            <text className="ts" x="72" y="304" textAnchor="end">90,000</text>
-            <line x1="80" y1="194" x2="620" y2="194" stroke="var(--color-text-tertiary)" strokeWidth="0.5" strokeDasharray="4,3" fill="none"/>
-            <text className="ts" x="628" y="198" textAnchor="start">Face value</text>
-            <text className="ts" x="80" y="338" textAnchor="middle">0</text>
-            <text className="ts" x="184" y="338" textAnchor="middle">Y1</text>
-            <text className="ts" x="288" y="338" textAnchor="middle">Y2</text>
-            <text className="ts" x="392" y="338" textAnchor="middle">Y3</text>
-            <text className="ts" x="496" y="338" textAnchor="middle">Y4</text>
-            <text className="ts" x="600" y="338" textAnchor="middle">Y5</text>
-            <line x1="184" y1="318" x2="184" y2="324" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
-            <line x1="288" y1="318" x2="288" y2="324" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
-            <line x1="392" y1="318" x2="392" y2="324" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
-            <line x1="496" y1="318" x2="496" y2="324" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
-            <line x1="600" y1="318" x2="600" y2="324" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
-            <polyline points="80,82 184,106 288,130 392,155 496,182 600,194" fill="none" stroke="#534AB7" strokeWidth="2"/>
-            <circle cx="80"  cy="82"  r="4" fill="#534AB7"/>
-            <circle cx="184" cy="106" r="4" fill="#534AB7"/>
-            <circle cx="288" cy="130" r="4" fill="#534AB7"/>
-            <circle cx="392" cy="155" r="4" fill="#534AB7"/>
-            <circle cx="496" cy="182" r="4" fill="#534AB7"/>
-            <circle cx="600" cy="194" r="5" fill="#534AB7"/>
-            <text className="ts" x="80"  y="74"  textAnchor="middle" fill="#534AB7">108,000</text>
-            <text className="ts" x="184" y="98"  textAnchor="middle" fill="#534AB7">106,320</text>
-            <text className="ts" x="288" y="122" textAnchor="middle" fill="#534AB7">104,573</text>
-            <text className="ts" x="392" y="147" textAnchor="middle" fill="#534AB7">102,756</text>
-            <text className="ts" x="496" y="174" textAnchor="middle" fill="#534AB7">100,866</text>
-            <polyline points="80,306 184,287 288,266 392,244 496,220 600,194" fill="none" stroke="#993C1D" strokeWidth="2"/>
-            <circle cx="80"  cy="306" r="4" fill="#993C1D"/>
-            <circle cx="184" cy="287" r="4" fill="#993C1D"/>
-            <circle cx="288" cy="266" r="4" fill="#993C1D"/>
-            <circle cx="392" cy="244" r="4" fill="#993C1D"/>
-            <circle cx="496" cy="220" r="4" fill="#993C1D"/>
-            <circle cx="600" cy="194" r="5" fill="#993C1D"/>
-            <text className="ts" x="80"  y="320" textAnchor="middle" fill="#993C1D">92,000</text>
-            <text className="ts" x="184" y="302" textAnchor="middle" fill="#993C1D">93,360</text>
-            <text className="ts" x="288" y="280" textAnchor="middle" fill="#993C1D">94,829</text>
-            <text className="ts" x="392" y="258" textAnchor="middle" fill="#993C1D">96,415</text>
-            <text className="ts" x="496" y="234" textAnchor="middle" fill="#993C1D">98,128</text>
-            <text className="th" x="608" y="186" textAnchor="start" fill="#085041">100,000</text>
-            <line x1="100" y1="360" x2="130" y2="360" stroke="#534AB7" strokeWidth="2" fill="none"/>
-            <circle cx="115" cy="360" r="4" fill="#534AB7"/>
-            <text className="ts" x="136" y="364">Premium bond (Coupon 6% / Market 4%): CV decreases</text>
-            <line x1="100" y1="380" x2="130" y2="380" stroke="#993C1D" strokeWidth="2" fill="none"/>
-            <circle cx="115" cy="380" r="4" fill="#993C1D"/>
-            <text className="ts" x="136" y="384">Discount bond (Coupon 6% / Market 8%): CV increases</text>
-            <text className="ts" x="350" y="356" textAnchor="middle">Year</text>
-            <text className="ts" x="42" y="180" textAnchor="middle">CV ($)</text>
-          </svg>
+          {/* SVG 1 — Issuer Payment 타임라인 */}
+          <div>
+            <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: '#993C1D' }}>Issuer 관점 — 발행 &amp; 상환</p>
+            <svg width="100%" viewBox="0 0 680 420" role="img">
+              <title>Bond payment timeline — Premium vs Discount</title>
+              <desc>매년 coupon payment와 만기 원금 상환을 타임라인으로 비교</desc>
+              <defs>
+                <marker id="arr1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </marker>
+              </defs>
+              <text className="th" x="40" y="36" fill="#534AB7">Premium Bond</text>
+              <text className="ts" x="40" y="52" fill="#534AB7">Coupon 6% / Market 4% / Face $100,000 / Issue $108,901</text>
+              <text className="th" x="40" y="230" fill="#993C1D">Discount Bond</text>
+              <text className="ts" x="40" y="246" fill="#993C1D">Coupon 6% / Market 8% / Face $100,000 / Issue $92,016</text>
+              <line x1="60" y1="110" x2="640" y2="110" stroke="#534AB7" strokeWidth="1.5" fill="none" markerEnd="url(#arr1)"/>
+              <line x1="80" y1="100" x2="80" y2="120" stroke="#534AB7" strokeWidth="1.5" fill="none"/>
+              <text className="ts" x="80" y="135" textAnchor="middle">Y0</text>
+              <line x1="80" y1="100" x2="80" y2="72" stroke="#534AB7" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-purple"><rect x="30" y="56" width="100" height="22" rx="4" strokeWidth="0.5"/><text className="ts" x="80" y="71" textAnchor="middle">+$108,901</text></g>
+              <text className="ts" x="80" y="90" textAnchor="middle" fill="#534AB7">발행</text>
+              <line x1="180" y1="100" x2="180" y2="120" stroke="#534AB7" strokeWidth="1" fill="none"/>
+              <text className="ts" x="180" y="135" textAnchor="middle">Y1</text>
+              <line x1="180" y1="120" x2="180" y2="148" stroke="#534AB7" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="130" y="148" width="100" height="22" rx="4" strokeWidth="0.5"/><text className="ts" x="180" y="163" textAnchor="middle">−$6,000</text></g>
+              <line x1="280" y1="100" x2="280" y2="120" stroke="#534AB7" strokeWidth="1" fill="none"/>
+              <text className="ts" x="280" y="135" textAnchor="middle">Y2</text>
+              <line x1="280" y1="120" x2="280" y2="148" stroke="#534AB7" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="230" y="148" width="100" height="22" rx="4" strokeWidth="0.5"/><text className="ts" x="280" y="163" textAnchor="middle">−$6,000</text></g>
+              <line x1="380" y1="100" x2="380" y2="120" stroke="#534AB7" strokeWidth="1" fill="none"/>
+              <text className="ts" x="380" y="135" textAnchor="middle">Y3</text>
+              <line x1="380" y1="120" x2="380" y2="148" stroke="#534AB7" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="330" y="148" width="100" height="22" rx="4" strokeWidth="0.5"/><text className="ts" x="380" y="163" textAnchor="middle">−$6,000</text></g>
+              <line x1="480" y1="100" x2="480" y2="120" stroke="#534AB7" strokeWidth="1" fill="none"/>
+              <text className="ts" x="480" y="135" textAnchor="middle">Y4</text>
+              <line x1="480" y1="120" x2="480" y2="148" stroke="#534AB7" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="430" y="148" width="100" height="22" rx="4" strokeWidth="0.5"/><text className="ts" x="480" y="163" textAnchor="middle">−$6,000</text></g>
+              <line x1="600" y1="100" x2="600" y2="120" stroke="#534AB7" strokeWidth="1.5" fill="none"/>
+              <text className="ts" x="600" y="135" textAnchor="middle">Y5 만기</text>
+              <line x1="600" y1="120" x2="600" y2="148" stroke="#534AB7" strokeWidth="1.5" strokeDasharray="3,2" fill="none"/>
+              <g className="c-purple"><rect x="543" y="148" width="114" height="36" rx="4" strokeWidth="0.5"/><text className="ts" x="600" y="163" textAnchor="middle">−$6,000 coupon</text><text className="th" x="600" y="178" textAnchor="middle">−$100,000 원금</text></g>
+              <rect x="40" y="195" width="580" height="22" rx="4" fill="#EEEDFE" stroke="#534AB7" strokeWidth="0.5"/>
+              <text className="ts" x="50" y="210" fill="#3C3489">총 지급: $6,000×5 + $100,000 = $130,000 | 총 수령: $108,901 | 총 이자비용: $21,099</text>
+              <line x1="60" y1="300" x2="640" y2="300" stroke="#993C1D" strokeWidth="1.5" fill="none" markerEnd="url(#arr1)"/>
+              <line x1="80" y1="290" x2="80" y2="310" stroke="#993C1D" strokeWidth="1.5" fill="none"/>
+              <text className="ts" x="80" y="325" textAnchor="middle">Y0</text>
+              <line x1="80" y1="290" x2="80" y2="262" stroke="#993C1D" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-coral"><rect x="30" y="246" width="100" height="22" rx="4" strokeWidth="0.5"/><text className="ts" x="80" y="261" textAnchor="middle">+$92,016</text></g>
+              <text className="ts" x="80" y="282" textAnchor="middle" fill="#993C1D">발행</text>
+              <line x1="180" y1="290" x2="180" y2="310" stroke="#993C1D" strokeWidth="1" fill="none"/>
+              <text className="ts" x="180" y="325" textAnchor="middle">Y1</text>
+              <line x1="180" y1="310" x2="180" y2="338" stroke="#993C1D" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="130" y="338" width="100" height="22" rx="4" strokeWidth="0.5"/><text className="ts" x="180" y="353" textAnchor="middle">−$6,000</text></g>
+              <line x1="280" y1="290" x2="280" y2="310" stroke="#993C1D" strokeWidth="1" fill="none"/>
+              <text className="ts" x="280" y="325" textAnchor="middle">Y2</text>
+              <line x1="280" y1="310" x2="280" y2="338" stroke="#993C1D" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="230" y="338" width="100" height="22" rx="4" strokeWidth="0.5"/><text className="ts" x="280" y="353" textAnchor="middle">−$6,000</text></g>
+              <line x1="380" y1="290" x2="380" y2="310" stroke="#993C1D" strokeWidth="1" fill="none"/>
+              <text className="ts" x="380" y="325" textAnchor="middle">Y3</text>
+              <line x1="380" y1="310" x2="380" y2="338" stroke="#993C1D" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="330" y="338" width="100" height="22" rx="4" strokeWidth="0.5"/><text className="ts" x="380" y="353" textAnchor="middle">−$6,000</text></g>
+              <line x1="480" y1="290" x2="480" y2="310" stroke="#993C1D" strokeWidth="1" fill="none"/>
+              <text className="ts" x="480" y="325" textAnchor="middle">Y4</text>
+              <line x1="480" y1="310" x2="480" y2="338" stroke="#993C1D" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="430" y="338" width="100" height="22" rx="4" strokeWidth="0.5"/><text className="ts" x="480" y="353" textAnchor="middle">−$6,000</text></g>
+              <line x1="600" y1="290" x2="600" y2="310" stroke="#993C1D" strokeWidth="1.5" fill="none"/>
+              <text className="ts" x="600" y="325" textAnchor="middle">Y5 만기</text>
+              <line x1="600" y1="310" x2="600" y2="338" stroke="#993C1D" strokeWidth="1.5" strokeDasharray="3,2" fill="none"/>
+              <g className="c-coral"><rect x="543" y="338" width="114" height="36" rx="4" strokeWidth="0.5"/><text className="ts" x="600" y="353" textAnchor="middle">−$6,000 coupon</text><text className="th" x="600" y="368" textAnchor="middle">−$100,000 원금</text></g>
+              <rect x="40" y="388" width="580" height="22" rx="4" fill="#FAECE7" stroke="#993C1D" strokeWidth="0.5"/>
+              <text className="ts" x="50" y="403" fill="#712B13">총 지급: $6,000×5 + $100,000 = $130,000 | 총 수령: $92,016 | 총 이자비용: $37,984</text>
+            </svg>
+          </div>
+
+          {/* SVG 2 — Issuer Early Retirement */}
+          <div>
+            <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: '#993C1D' }}>Issuer 관점 — Early Retirement</p>
+            <svg width="100%" viewBox="0 0 680 310" role="img">
+              <title>Discount Bond — Early Retirement at Y3</title>
+              <desc>Discount bond 조기 상환 타임라인 Y3 103으로 매입 소각</desc>
+              <defs>
+                <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </marker>
+              </defs>
+              <g className="c-coral"><rect x="40" y="14" width="130" height="22" rx="11" strokeWidth="0.5"/><text className="ts" x="105" y="29" textAnchor="middle">Issuer 관점</text></g>
+              <text className="th" x="182" y="28" fill="#993C1D">Early Retirement (Y3, price 103)</text>
+              <text className="ts" x="182" y="44" fill="#993C1D">Issue $92,016 / Coupon 6% / Market 8% / Y3에 103으로 조기 상환</text>
+              <line x1="60" y1="90" x2="430" y2="90" stroke="#993C1D" strokeWidth="1.5" fill="none"/>
+              <line x1="430" y1="90" x2="620" y2="90" stroke="#993C1D" strokeWidth="1" strokeDasharray="6,4" fill="none" opacity="0.3"/>
+              <text className="ts" x="520" y="82" textAnchor="middle" fill="#888">만기까지 갔다면...</text>
+              <line x1="80" y1="80" x2="80" y2="100" stroke="#993C1D" strokeWidth="1.5" fill="none"/>
+              <text className="ts" x="80" y="114" textAnchor="middle">Y0</text>
+              <line x1="80" y1="80" x2="80" y2="58" stroke="#993C1D" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-coral"><rect x="34" y="44" width="92" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="80" y="58" textAnchor="middle">+$92,016</text></g>
+              <text className="ts" x="80" y="74" textAnchor="middle" fill="#993C1D">발행</text>
+              <line x1="180" y1="80" x2="180" y2="100" stroke="#993C1D" strokeWidth="1" fill="none"/>
+              <text className="ts" x="180" y="114" textAnchor="middle">Y1</text>
+              <line x1="180" y1="100" x2="180" y2="122" stroke="#993C1D" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="134" y="122" width="92" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="180" y="136" textAnchor="middle">−$6,000</text></g>
+              <line x1="300" y1="80" x2="300" y2="100" stroke="#993C1D" strokeWidth="1" fill="none"/>
+              <text className="ts" x="300" y="114" textAnchor="middle">Y2</text>
+              <line x1="300" y1="100" x2="300" y2="122" stroke="#993C1D" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="254" y="122" width="92" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="300" y="136" textAnchor="middle">−$6,000</text></g>
+              <line x1="420" y1="76" x2="420" y2="104" stroke="#993C1D" strokeWidth="2.5" fill="none"/>
+              <text className="ts" x="420" y="118" textAnchor="middle" fill="#993C1D">Y3 조기상환</text>
+              <line x1="420" y1="104" x2="420" y2="130" stroke="#993C1D" strokeWidth="1.5" strokeDasharray="3,2" fill="none"/>
+              <g className="c-coral"><rect x="358" y="130" width="124" height="48" rx="4" strokeWidth="0.5"/><text className="ts" x="420" y="147" textAnchor="middle">−$6,000 coupon</text><text className="th" x="420" y="163" textAnchor="middle">−$103,000 매입가</text><text className="ts" x="420" y="177" textAnchor="middle">103 × $100,000</text></g>
+              <rect x="40" y="200" width="290" height="44" rx="6" fill="#FAECE7" stroke="#993C1D" strokeWidth="0.5"/>
+              <text className="ts" x="52" y="218" fill="#712B13">Y3 Net CV = $100,000 − $3,554 = $96,446</text>
+              <text className="ts" x="52" y="236" fill="#712B13">Reacquisition price = $103,000</text>
+              <rect x="344" y="200" width="296" height="44" rx="6" fill="#fef2f2" stroke="#dc2626" strokeWidth="0.5"/>
+              <text className="ts" x="356" y="218" fill="#A32D2D">Loss = $103,000 − $96,446 = $6,554</text>
+              <text className="ts" x="356" y="236" fill="#A32D2D">Dr. Loss $6,554 + Dr. BP $100,000</text>
+              <rect x="40" y="256" width="600" height="44" rx="6" fill="#f8f9fa" stroke="#e8e8e4" strokeWidth="0.5"/>
+              <text className="ts" x="52" y="274">Dr. Bonds Payable   100,000</text>
+              <text className="ts" x="52" y="290">Dr. Loss on Retirement   6,554</text>
+              <text className="ts" x="320" y="274">Cr. Discount on Bonds   3,554</text>
+              <text className="ts" x="320" y="290">Cr. Cash   103,000</text>
+            </svg>
+          </div>
+
+          {/* SVG 3 — Investor 초기 매입 */}
+          <div>
+            <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: '#0F6E56' }}>Investor 관점 — 초기 매입</p>
+            <svg width="100%" viewBox="0 0 680 440" role="img">
+              <title>Bond — Investor perspective Premium vs Discount purchase</title>
+              <desc>투자자 입장에서 Premium Discount 채권 매입 후 이자 수령 타임라인</desc>
+              <defs>
+                <marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </marker>
+              </defs>
+              <g className="c-teal"><rect x="40" y="14" width="130" height="22" rx="11" strokeWidth="0.5"/><text className="ts" x="105" y="29" textAnchor="middle">Investor 관점</text></g>
+              <text className="th" x="182" y="28" fill="#0F6E56">Premium Bond 매입</text>
+              <text className="ts" x="182" y="44" fill="#0F6E56">Face $100,000 / Coupon 6% / Market 4% → 매입가 $108,901</text>
+              <line x1="60" y1="90" x2="640" y2="90" stroke="#534AB7" strokeWidth="1.5" fill="none" markerEnd="url(#arr3)"/>
+              <line x1="80" y1="80" x2="80" y2="100" stroke="#534AB7" strokeWidth="1.5" fill="none"/>
+              <text className="ts" x="80" y="114" textAnchor="middle">Y0</text>
+              <line x1="80" y1="80" x2="80" y2="52" stroke="#534AB7" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-purple"><rect x="28" y="38" width="104" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="80" y="52" textAnchor="middle">−$108,901 매입</text></g>
+              <text className="ts" x="80" y="74" textAnchor="middle" fill="#534AB7">비쌈</text>
+              <line x1="184" y1="80" x2="184" y2="100" stroke="#534AB7" strokeWidth="1" fill="none"/>
+              <text className="ts" x="184" y="114" textAnchor="middle">Y1</text>
+              <line x1="184" y1="100" x2="184" y2="122" stroke="#534AB7" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="138" y="122" width="92" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="184" y="136" textAnchor="middle">+$6,000</text></g>
+              <line x1="288" y1="80" x2="288" y2="100" stroke="#534AB7" strokeWidth="1" fill="none"/>
+              <text className="ts" x="288" y="114" textAnchor="middle">Y2</text>
+              <line x1="288" y1="100" x2="288" y2="122" stroke="#534AB7" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="242" y="122" width="92" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="288" y="136" textAnchor="middle">+$6,000</text></g>
+              <line x1="392" y1="80" x2="392" y2="100" stroke="#534AB7" strokeWidth="1" fill="none"/>
+              <text className="ts" x="392" y="114" textAnchor="middle">Y3</text>
+              <line x1="392" y1="100" x2="392" y2="122" stroke="#534AB7" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="346" y="122" width="92" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="392" y="136" textAnchor="middle">+$6,000</text></g>
+              <line x1="496" y1="80" x2="496" y2="100" stroke="#534AB7" strokeWidth="1" fill="none"/>
+              <text className="ts" x="496" y="114" textAnchor="middle">Y4</text>
+              <line x1="496" y1="100" x2="496" y2="122" stroke="#534AB7" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="450" y="122" width="92" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="496" y="136" textAnchor="middle">+$6,000</text></g>
+              <line x1="608" y1="80" x2="608" y2="100" stroke="#534AB7" strokeWidth="1.5" fill="none"/>
+              <text className="ts" x="608" y="114" textAnchor="middle">Y5 만기</text>
+              <line x1="608" y1="100" x2="608" y2="122" stroke="#534AB7" strokeWidth="1.5" strokeDasharray="3,2" fill="none"/>
+              <g className="c-purple"><rect x="546" y="122" width="124" height="34" rx="4" strokeWidth="0.5"/><text className="ts" x="608" y="139" textAnchor="middle">+$6,000 coupon</text><text className="th" x="608" y="153" textAnchor="middle">+$100,000 원금</text></g>
+              <rect x="40" y="170" width="600" height="22" rx="4" fill="#EEEDFE" stroke="#534AB7" strokeWidth="0.5"/>
+              <text className="ts" x="52" y="185" fill="#3C3489">총 수령: $130,000 — 매입가: $108,901 — 실제 수익: $21,099 → 실효수익률 = 4%</text>
+              <text className="th" x="182" y="222" fill="#0F6E56">Discount Bond 매입</text>
+              <text className="ts" x="182" y="238" fill="#0F6E56">Face $100,000 / Coupon 6% / Market 8% → 매입가 $92,016</text>
+              <line x1="60" y1="280" x2="640" y2="280" stroke="#993C1D" strokeWidth="1.5" fill="none" markerEnd="url(#arr3)"/>
+              <line x1="80" y1="270" x2="80" y2="290" stroke="#993C1D" strokeWidth="1.5" fill="none"/>
+              <text className="ts" x="80" y="304" textAnchor="middle">Y0</text>
+              <line x1="80" y1="270" x2="80" y2="242" stroke="#993C1D" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-coral"><rect x="28" y="228" width="104" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="80" y="242" textAnchor="middle">−$92,016 매입</text></g>
+              <text className="ts" x="80" y="264" textAnchor="middle" fill="#993C1D">쌈</text>
+              <line x1="184" y1="270" x2="184" y2="290" stroke="#993C1D" strokeWidth="1" fill="none"/>
+              <text className="ts" x="184" y="304" textAnchor="middle">Y1</text>
+              <line x1="184" y1="290" x2="184" y2="312" stroke="#993C1D" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="138" y="312" width="92" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="184" y="326" textAnchor="middle">+$6,000</text></g>
+              <line x1="288" y1="270" x2="288" y2="290" stroke="#993C1D" strokeWidth="1" fill="none"/>
+              <text className="ts" x="288" y="304" textAnchor="middle">Y2</text>
+              <line x1="288" y1="290" x2="288" y2="312" stroke="#993C1D" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="242" y="312" width="92" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="288" y="326" textAnchor="middle">+$6,000</text></g>
+              <line x1="392" y1="270" x2="392" y2="290" stroke="#993C1D" strokeWidth="1" fill="none"/>
+              <text className="ts" x="392" y="304" textAnchor="middle">Y3</text>
+              <line x1="392" y1="290" x2="392" y2="312" stroke="#993C1D" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="346" y="312" width="92" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="392" y="326" textAnchor="middle">+$6,000</text></g>
+              <line x1="496" y1="270" x2="496" y2="290" stroke="#993C1D" strokeWidth="1" fill="none"/>
+              <text className="ts" x="496" y="304" textAnchor="middle">Y4</text>
+              <line x1="496" y1="290" x2="496" y2="312" stroke="#993C1D" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="450" y="312" width="92" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="496" y="326" textAnchor="middle">+$6,000</text></g>
+              <line x1="608" y1="270" x2="608" y2="290" stroke="#993C1D" strokeWidth="1.5" fill="none"/>
+              <text className="ts" x="608" y="304" textAnchor="middle">Y5 만기</text>
+              <line x1="608" y1="290" x2="608" y2="312" stroke="#993C1D" strokeWidth="1.5" strokeDasharray="3,2" fill="none"/>
+              <g className="c-coral"><rect x="546" y="312" width="124" height="34" rx="4" strokeWidth="0.5"/><text className="ts" x="608" y="329" textAnchor="middle">+$6,000 coupon</text><text className="th" x="608" y="343" textAnchor="middle">+$100,000 원금</text></g>
+              <rect x="40" y="360" width="600" height="22" rx="4" fill="#FAECE7" stroke="#993C1D" strokeWidth="0.5"/>
+              <text className="ts" x="52" y="375" fill="#712B13">총 수령: $130,000 — 매입가: $92,016 — 실제 수익: $37,984 → 실효수익률 = 8%</text>
+              <rect x="40" y="392" width="600" height="36" rx="6" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/>
+              <text className="ts" x="52" y="407" fill="#085041">핵심: 매년 받는 Coupon은 동일 ($6,000) — 차이는 초기 매입가</text>
+              <text className="ts" x="52" y="421" fill="#085041">Premium 비싸게 사서 수익률 낮음 (4%) / Discount 싸게 사서 수익률 높음 (8%)</text>
+            </svg>
+          </div>
+
+          {/* SVG 4 — Investor Between-date Purchase */}
+          <div>
+            <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: '#0F6E56' }}>Investor 관점 — Between-date Purchase</p>
+            <svg width="100%" viewBox="0 0 680 360" role="img">
+              <title>Discount Bond — Between-date Purchase Investor perspective</title>
+              <desc>투자자가 Y2와 Y3 사이 10/31에 채권을 매입하는 타임라인</desc>
+              <defs>
+                <marker id="arr4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </marker>
+              </defs>
+              <g className="c-teal"><rect x="40" y="14" width="130" height="22" rx="11" strokeWidth="0.5"/><text className="ts" x="105" y="29" textAnchor="middle">Investor 관점</text></g>
+              <text className="th" x="182" y="28" fill="#0F6E56">Between-date Purchase</text>
+              <text className="ts" x="182" y="44" fill="#0F6E56">Face $100,000 / Coupon 6% / Market 8% / 10/31에 매입 (Y2 6/30 이후)</text>
+              <text className="ts" x="182" y="58" fill="#0F6E56">Coupon dates: 6/30 and 12/31 (반년 지급)</text>
+              <line x1="60" y1="110" x2="630" y2="110" stroke="#0F6E56" strokeWidth="1.5" fill="none" markerEnd="url(#arr4)"/>
+              <line x1="80" y1="100" x2="80" y2="120" stroke="#888" strokeWidth="1" fill="none"/>
+              <text className="ts" x="80" y="134" textAnchor="middle" fill="#888">Y0</text>
+              <text className="ts" x="80" y="146" textAnchor="middle" fill="#888">발행</text>
+              <line x1="160" y1="100" x2="160" y2="120" stroke="#888" strokeWidth="1" fill="none"/>
+              <text className="ts" x="160" y="134" textAnchor="middle" fill="#888">6/30 Y1</text>
+              <line x1="240" y1="100" x2="240" y2="120" stroke="#888" strokeWidth="1" fill="none"/>
+              <text className="ts" x="240" y="134" textAnchor="middle" fill="#888">12/31 Y1</text>
+              <line x1="340" y1="100" x2="340" y2="120" stroke="#888" strokeWidth="1" fill="none"/>
+              <text className="ts" x="340" y="134" textAnchor="middle" fill="#888">6/30 Y2</text>
+              <line x1="340" y1="120" x2="340" y2="142" stroke="#888" strokeWidth="1" strokeDasharray="3,2" fill="none"/>
+              <g className="c-gray"><rect x="294" y="142" width="92" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="340" y="156" textAnchor="middle">$3,000 지급</text></g>
+              <rect x="340" y="86" width="130" height="14" rx="3" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/>
+              <text className="ts" x="405" y="97" textAnchor="middle" fill="#0F6E56">Accrued: 4개월</text>
+              <line x1="470" y1="76" x2="470" y2="124" stroke="#0F6E56" strokeWidth="2.5" fill="none"/>
+              <text className="ts" x="470" y="138" textAnchor="middle" fill="#0F6E56">10/31</text>
+              <text className="th" x="470" y="150" textAnchor="middle" fill="#0F6E56">매입</text>
+              <line x1="470" y1="124" x2="470" y2="170" stroke="#0F6E56" strokeWidth="1.5" strokeDasharray="3,2" fill="none"/>
+              <g className="c-teal"><rect x="390" y="170" width="160" height="48" rx="4" strokeWidth="0.5"/><text className="th" x="470" y="188" textAnchor="middle">매입가 (CV)</text><text className="ts" x="470" y="204" textAnchor="middle">+ Accrued Interest</text><text className="ts" x="470" y="218" textAnchor="middle">$3,000 × 4/6 = $2,000</text></g>
+              <line x1="580" y1="100" x2="580" y2="120" stroke="#0F6E56" strokeWidth="1.5" fill="none"/>
+              <text className="ts" x="580" y="134" textAnchor="middle" fill="#0F6E56">12/31</text>
+              <line x1="580" y1="120" x2="580" y2="142" stroke="#0F6E56" strokeWidth="1.5" strokeDasharray="3,2" fill="none"/>
+              <g className="c-teal"><rect x="524" y="142" width="112" height="34" rx="4" strokeWidth="0.5"/><text className="ts" x="580" y="158" textAnchor="middle">+$3,000 수령</text><text className="ts" x="580" y="172" textAnchor="middle">(전액 현금)</text></g>
+              <rect x="40" y="240" width="600" height="100" rx="8" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/>
+              <text className="th" x="56" y="260" fill="#085041">왜 Accrued Interest를 별도로 지급하나?</text>
+              <text className="ts" x="56" y="278" fill="#0F6E56">6/30 이후 이자는 이미 발생 중 — 매입자가 6/30~10/31 (4개월) 이자를 전 보유자에게 보상</text>
+              <text className="ts" x="56" y="296" fill="#0F6E56">12/31에 $3,000 전액 수령 → 그 중 $2,000은 매입 시 지급한 것 돌려받는 것</text>
+              <text className="ts" x="56" y="314" fill="#0F6E56">실제 이자 수익 = $3,000 − $2,000 = $1,000 (보유 2개월, 10/31~12/31)</text>
+              <text className="th" x="56" y="332" fill="#085041">매입가 = CV (장부가) / Accrued Interest = 별도 자산 계정</text>
+            </svg>
+          </div>
+
         </div>
       </Section>
 
