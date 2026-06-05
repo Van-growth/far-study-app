@@ -17,12 +17,25 @@
   --border-default: #e8e8e4;
   --border-strong:  #d0d0c8;
 
-  --color-trap:       #dc2626;
-  --color-trap-bg:    #fef2f2;
-  --color-speed-bg:   #1a2744;
-  --color-formula-bg: #f0f4ff;
-  --color-trigger-bg: #f5f5f0;
+  --color-trap:         #dc2626;
+  --color-trap-bg:      #fef2f2;
+  --color-speed-bg:     #1a2744;
+  --color-formula-bg:   #f0f4ff;
+  --color-trigger-bg:   #f5f5f0;
+  --color-text-tertiary: #888888;
 }
+
+/* ── Bond diagram SVG styles ──────────────────────────── */
+.bond-diagram svg text.th { font-size: 12px; font-weight: 700; }
+.bond-diagram svg text.ts { font-size: 11px; fill: #444; }
+.bond-diagram svg g.c-gray rect  { fill: #f8f9fa; stroke: #d0d0d0; }
+.bond-diagram svg g.c-gray text  { fill: #333; }
+.bond-diagram svg g.c-purple rect { fill: #f0eeff; stroke: #534AB7; }
+.bond-diagram svg g.c-purple text { fill: #534AB7; }
+.bond-diagram svg g.c-coral rect  { fill: #fff0ec; stroke: #993C1D; }
+.bond-diagram svg g.c-coral text  { fill: #993C1D; }
+.bond-diagram svg g.c-teal rect   { fill: #e6f5f1; stroke: #085041; }
+.bond-diagram svg g.c-teal text   { fill: #085041; }
 
 @layer base {
   * {
