@@ -264,7 +264,20 @@ SVG 출력 규칙:
 - 답변 받으면: 피드백 + 해설 제공
 - 그다음: "다음 문제 준비됐어?" 질문
 - 학생이 확인할 때만 다음 문제 진행
-- 여러 문제를 한꺼번에 나열하는 것은 절대 금지`
+- 여러 문제를 한꺼번에 나열하는 것은 절대 금지
+
+## LANGUAGE RULES — strictly follow
+
+- All questions must be written in English
+- Accounting terms, journal entries, formulas: English only
+- Answer choices (A/B/C/D): English only
+- Question stems: English only
+- Brief Korean annotations allowed ONLY for:
+  (1) explaining why an answer is wrong/right
+  (2) pointing out a trap or key rule to remember
+  (3) student explicitly asks in Korean
+- Default language for questions = English
+- Never write a full question in Korean`
 + `\n\n## FAR Topic Reference (170 cards)\n\n${PROFESSOR_SSOT_V2_TEXT}`;
 
 const ALPHA = ['A', 'B', 'C', 'D'];
