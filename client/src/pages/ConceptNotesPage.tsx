@@ -432,6 +432,492 @@ function ComingSoon({ label }: { label: string }) {
   )
 }
 
+function InventoryContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. Overview">
+        <p>FIFO / LIFO / Weighted Average / Periodic vs Perpetual / LCM(NRV) / Dollar-Value LIFO</p>
+      </Section>
+
+      <Section title="2. 가격 방향 비교 (가격 상승 시)">
+        <Table
+          headers={['Method', 'Ending Inventory', 'COGS', 'Net Income', 'Tax']}
+          rows={[
+            ['FIFO', '↑ 높음', '↓ 낮음', '↑ 높음', '↑ 높음'],
+            ['LIFO', '↓ 낮음', '↑ 높음', '↓ 낮음', '↓ 낮음'],
+            ['AVCO', '중간', '중간', '중간', '중간'],
+          ]}
+        />
+      </Section>
+
+      <Section title="3. Dollar-Value LIFO 3단계">
+        <CodeBlock>{`Step1: Current year EI at base cost = Current EI $ ÷ Current index
+Step2: Compare to prior year base cost → if increase, new layer = increase × current index
+Step3: Add all layers = LIFO cost
+
+예시: Y1 EI $55,000 / Index 1.10
+  Base cost = $55,000 ÷ 1.10 = $50,000
+  New layer = $50,000 × 1.10 = $55,000 (LIFO cost)`}</CodeBlock>
+      </Section>
+
+      <Section title="4. LCM Write-down 분개">
+        <CodeBlock>{`Dr. COGS (or Inventory Loss)   [write-down amount]
+  Cr. Inventory                  [write-down amount]`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        'LIFO reserve = FIFO EI − LIFO EI',
+        'Dollar-Value LIFO: index 방향 실수 주의 (나누기 vs 곱하기)',
+        '"Before allowances" = estimates만 제외',
+        'LIFO → FIFO 전환 시 방향 반전',
+      ]} />
+    </div>
+  )
+}
+
+function PpeContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. Overview">
+        <p>Capitalization vs Expense / Depreciation methods / Interest capitalization / Impairment</p>
+      </Section>
+
+      <Section title="2. 감가상각 비교 (Cost $100,000 / Salvage $10,000 / Life 5yr)">
+        <Table
+          headers={['Method', '공식', 'Y1', 'Y2', '특징']}
+          rows={[
+            ['SL', '(Cost−Salvage)÷Life', '$18,000', '$18,000', '균등'],
+            ['DDB', 'BV × 2/Life', '$40,000', '$24,000', '초기 크고 후기 작음 / Salvage 무시'],
+            ['SYD', '(Cost−Salvage)×remaining/SYD', '$30,000', '$24,000', 'Sum=15, 가속'],
+          ]}
+        />
+      </Section>
+
+      <Section title="3. Interest Capitalization">
+        <CodeBlock>{`- 건설 중 자산에만 해당 (Qualifying asset)
+- Avoidable interest = 자산 지출 × weighted average rate
+- 12/31 지출 → 가중치 0/12 = $0 (연도 말 지출은 이자 없음)
+- Capitalization period: 지출 시작 ~ 완공`}</CodeBlock>
+      </Section>
+
+      <Section title="4. Impairment 2-Step (US GAAP)">
+        <CodeBlock>{`Step1 Recoverability Test (스크리닝):
+  CV > Undiscounted Future CF → impaired (계속 진행)
+  CV ≤ Undiscounted Future CF → not impaired (stop)
+
+Step2 Measurement:
+  Impairment Loss = CV − Fair Value
+
+분개: Dr. Impairment Loss / Cr. Accumulated Impairment Loss`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        'Land = 감가상각 없음',
+        'DDB: Salvage 무시하지만 BV < Salvage 되면 감가상각 중단',
+        'Step1 = Undiscounted CF (PV 아님!)',
+        'US GAAP: impairment write-up 불가 (IFRS는 가능)',
+        'Interest capitalization: 12/31 지출 = $0 (0/12 가중치)',
+      ]} />
+    </div>
+  )
+}
+
+function IntangiblesContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. Overview">
+        <p>Definite vs Indefinite / Internally generated vs Purchased / R&D expense</p>
+      </Section>
+
+      <Section title="2. 자본화 기준">
+        <Table
+          headers={['항목', '처리', '비고']}
+          rows={[
+            ['Purchased intangible', 'Capitalize', 'Cost + legal fees'],
+            ['Internally generated', 'Expense as incurred', 'R&D 전액 비용'],
+            ['Software — Preliminary', 'Expense', ''],
+            ['Software — Application dev', 'Capitalize', '개발 단계만'],
+            ['Software — Post-implementation', 'Expense', ''],
+            ['Patent defense — 승소', 'Capitalize', 'Dr. Patent / Cr. Cash'],
+            ['Patent defense — 패소', 'Expense immediately', ''],
+          ]}
+        />
+      </Section>
+
+      <Section title="3. Goodwill">
+        <CodeBlock>{`No amortization → Annual impairment test
+Step1 (qualitative): any indicators of impairment?
+Step2 (quantitative): if needed → FV of reporting unit vs CV
+Impairment Loss = CV − FV of reporting unit`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        'R&D = 항상 expense (자본화 금지)',
+        'Goodwill = 상각 없음, impairment test만',
+        'Trademark: 법적 10yr ≠ definite (renewal 가능하면 indefinite)',
+        'Software 자본화: application development phase만',
+      ]} />
+    </div>
+  )
+}
+
+function RevenueContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. ASC 606 Five-Step Model">
+        <Table
+          headers={['Step', '내용', '핵심 판단']}
+          rows={[
+            ['Step 1', 'Identify the contract', 'Approved + committed + collectible'],
+            ['Step 2', 'Identify performance obligations', 'Distinct goods/services'],
+            ['Step 3', 'Determine transaction price', 'Variable consideration + constraint'],
+            ['Step 4', 'Allocate to POs', 'Standalone selling price basis'],
+            ['Step 5', 'Recognize revenue', 'When (or as) PO satisfied'],
+          ]}
+        />
+      </Section>
+
+      <Section title="2. Point in Time vs Over Time">
+        <CodeBlock>{`Over Time 조건 (하나라도 해당):
+  1) Customer controls asset as it is created
+  2) Entity has enforceable right to payment for work done
+  3) Asset has no alternative use to entity
+
+Over Time → % completion method (input or output measure)
+Point in Time → control transfer at a specific moment`}</CodeBlock>
+      </Section>
+
+      <Section title="3. Variable Consideration & Constraint">
+        <CodeBlock>{`측정 방법: Expected value OR Most likely amount (중 더 예측력 높은 것)
+Constraint: high probability (significant reversal 없는 경우에만 포함)`}</CodeBlock>
+      </Section>
+
+      <Section title="4. Contract Modification">
+        <CodeBlock>{`Distinct + standalone price → 별도 계약 (prospective)
+그 외 → modification
+  - Remaining goods/services distinct → prospective (catch-up 없음)
+  - 나머지 → cumulative catch-up adjustment`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        '"In addition" → 별도 PO 여부 주의',
+        'Gain contingency = 인식 금지',
+        'Significant financing component (>1yr) → PV 할인',
+        'Principal vs Agent: control 이전 여부 판단',
+      ]} />
+    </div>
+  )
+}
+
+function ScfContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. 활동 분류">
+        <Table
+          headers={['활동', '항목 예시']}
+          rows={[
+            ['Operating', '매출채권/재고/매입채무/이자지급(US)/세금지급'],
+            ['Investing', '장기자산 취득·처분, 대출금 실행·회수'],
+            ['Financing', '부채 차입·상환, 주식 발행·자사주, 배당지급'],
+            ['Non-cash', '자산 취득 + Liability 직접 인수 (별도 공시)'],
+          ]}
+        />
+      </Section>
+
+      <Section title="2. Indirect Method 조정 순서">
+        <CodeBlock>{`Net Income
++ Depreciation / Amortization        (non-cash add-back)
++ Loss on sale / − Gain on sale      (remove investing item)
+− Increase in AR / + Decrease in AR
+− Increase in Inventory / + Decrease
++ Increase in AP / − Decrease in AP
+= Cash from Operations`}</CodeBlock>
+      </Section>
+
+      <Section title="3. Finance Lease SCF 처리">
+        <CodeBlock>{`원금 상환 → Financing Activities
+이자 지급 → Operating Activities`}</CodeBlock>
+      </Section>
+
+      <Section title="4. Non-cash Disclosures">
+        <CodeBlock>{`SCF 본문 제외 → FS 말미에 별도 공시
+예: 토지 취득 + Mortgage 직접 인수 ($500,000)`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        'Notes receivable 회수 = Investing (AR과 혼동 금지)',
+        '배당지급 = Financing / 배당수령 = Operating (US GAAP)',
+        '이자비용 = Operating (US GAAP)',
+        'Non-cash → SCF 본문 제외, 별도 공시만',
+      ]} />
+    </div>
+  )
+}
+
+function InvestmentsContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. 분류 기준">
+        <Table
+          headers={['분류', '측정', 'Unrealized G/L', '지분율']}
+          rows={[
+            ['Trading', 'Fair Value', 'Income Statement', '<20%'],
+            ['AFS', 'Fair Value', 'OCI', '<20%'],
+            ['HTM', 'Amortized Cost', '없음 (채권만)', '<20%'],
+            ['Equity Method', 'Adjusted Cost', 'N/A', '20~50%'],
+          ]}
+        />
+      </Section>
+
+      <Section title="2. Equity Method 계산">
+        <CodeBlock>{`취득: Dr. Investment / Cr. Cash
+
+매년 Equity income 계산:
+  NI × % − Differential amortization = Equity income
+  예: NI $150,000 × 40% = $60,000 − Diff amort $8,000 = $52,000
+
+분개: Dr. Investment $52,000 / Cr. Equity Income $52,000
+배당: Dr. Cash / Cr. Investment (감액 — income 아님!)`}</CodeBlock>
+      </Section>
+
+      <Section title="3. AFS 매각 분개">
+        <CodeBlock>{`Dr. Cash                   [proceeds]
+Dr./Cr. OCI — AFS Unrealized  [제거]
+  Cr. Investment             [amortized cost]
+  Cr./Dr. Gain/Loss on Sale  [plug]
+
+Realized G/L = 매각가 − amortized cost`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        'Equity income = NI×% − differential amortization',
+        '배당 = Investment 감액 (income 아님)',
+        'AFS unrealized → OCI (I/S 아님)',
+        '매각 G/L = 매각가 vs amortized cost (FV 아님)',
+      ]} />
+    </div>
+  )
+}
+
+function EquityContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. Treasury Stock — Cost Method vs Par Value Method">
+        <Table
+          headers={['', 'Cost Method', 'Par Value Method']}
+          rows={[
+            ['매입', 'Dr. TS (cost) / Cr. Cash', 'Dr. CS(par)+APIC+RE / Cr. Cash'],
+            ['재발행 > cost', 'Cr. APIC-TS', 'Cr. CS(par) + APIC'],
+            ['재발행 < cost', 'Dr. APIC-TS → Dr. RE', 'Cr. CS(par) + APIC'],
+          ]}
+        />
+      </Section>
+
+      <Section title="2. Stock Dividend vs Stock Split">
+        <Table
+          headers={['구분', '기준', '분개']}
+          rows={[
+            ['Small stock div', '<20~25%', 'Dr. RE(FMV×sh) / Cr. CS(par×sh) + APIC'],
+            ['Large stock div', '≥20~25%', 'Dr. RE(par×sh) / Cr. CS(par×sh)'],
+            ['Stock split', 'any', 'No journal entry (메모만)'],
+          ]}
+        />
+      </Section>
+
+      <Section title="3. AOCI 구성 항목">
+        <CodeBlock>{`1) AFS unrealized G/L
+2) Pension adjustment (funded status)
+3) Foreign currency translation adjustment
+4) Cash flow hedge (effective portion)`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        'Cost Method 재발행 손실: APIC-TS 먼저 차감 → 부족 시 RE',
+        'Stock split = 분개 없음 (memo entry만)',
+        'Property dividend = FMV 기준 RE 차감 + G/L 인식',
+      ]} />
+    </div>
+  )
+}
+
+function NfpContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. Net Assets 분류">
+        <Table
+          headers={['분류', '설명', '예시']}
+          rows={[
+            ['Without donor restriction', '자유 사용 가능', '일반 기부금, 프로그램 수익'],
+            ['With donor restriction — 일시적', '기간/목적 제한', '특정 프로그램용 기부'],
+            ['With donor restriction — 영구', '원금 보존 필수', 'Endowment 원금'],
+          ]}
+        />
+      </Section>
+
+      <Section title="2. Contribution 인식">
+        <CodeBlock>{`Unconditional → 즉시 인식 (조건 없음)
+  Dr. Receivable / Cr. Contribution Revenue (without restriction)
+
+Conditional → 조건 충족 시 인식
+  조건 충족 전: no recognition
+
+Restriction 해제:
+  Dr. Net Assets with DR / Cr. Net Assets without DR`}</CodeBlock>
+      </Section>
+
+      <Section title="3. Endowment">
+        <CodeBlock>{`원금 = 영구 보존 (지출 불가)
+수익 = 지출 가능 (donor 지정 없으면 unrestricted)
+Investment income → without restriction (별도 지정 없는 경우)`}</CodeBlock>
+      </Section>
+
+      <Section title="4. Functional Expense 분류">
+        <CodeBlock>{`Program services (프로그램 비용)
+Management & General (관리 운영)
+Fundraising (모금 활동)
+→ 3개 열로 분류 공시 필수`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        'Conditional contribution → 조건 충족 전 인식 금지',
+        'Endowment 원금 지출 = 절대 불가',
+        'Exchange transaction → ASC 606 적용 (contribution 아님)',
+      ]} />
+    </div>
+  )
+}
+
+function GovContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. Fund 유형 분류">
+        <Table
+          headers={['유형', 'Fund', '회계 기준']}
+          rows={[
+            ['Governmental', 'General / Special Revenue / Capital Projects / Debt Service / Permanent', 'Modified Accrual'],
+            ['Proprietary', 'Enterprise / Internal Service', 'Full Accrual'],
+            ['Fiduciary', 'Pension Trust / Investment Trust / Private-Purpose / Custodial', 'Full Accrual (no net position)'],
+          ]}
+        />
+      </Section>
+
+      <Section title="2. Modified Accrual 인식 기준">
+        <CodeBlock>{`Revenue: available (60일 이내 수령) AND measurable
+Expenditure: when liability incurred
+
+Property tax:
+  Measurable → levied 시점
+  Available → 60일 이내 수령 가능한 금액만`}</CodeBlock>
+      </Section>
+
+      <Section title="3. Encumbrance 분개">
+        <CodeBlock>{`주문/계약 시 (예약):
+  Dr. Encumbrances              [예상금액]
+    Cr. Fund Balance Reserved   [예상금액]
+
+물품 수령 시 (예약 해제):
+  Dr. Fund Balance Reserved     [예상금액]
+    Cr. Encumbrances            [예상금액]
+
+실제 지출 인식:
+  Dr. Expenditure               [실제금액]
+    Cr. Cash / Vouchers Payable [실제금액]`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        'Modified accrual = available (60일) + measurable 둘 다 필요',
+        'Encumbrance = 예약 (실제 지출 아님)',
+        'Proprietary fund = Full accrual (modified 아님)',
+        'Property tax: measurable at levy, available = 60일',
+      ]} />
+    </div>
+  )
+}
+
+function ChangesContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. 4가지 유형 비교">
+        <Table
+          headers={['유형', '처리 방법', '예시']}
+          rows={[
+            ['Change in Estimate', 'Prospective', '감가상각 내용연수 변경, 회수가능성'],
+            ['Change in Accounting Principle', 'Retrospective', 'FIFO→LIFO, 수익인식 방법'],
+            ['Change in Reporting Entity', 'Retrospective', '연결범위 변경'],
+            ['Error Correction', 'Restatement (prior period)', '수익 이중 인식, 분류 오류'],
+          ]}
+        />
+      </Section>
+
+      <Section title="2. Error Correction 처리">
+        <CodeBlock>{`Prior period error → Restatement
+  Dr./Cr. Retained Earnings (net of tax)   [누적 효과]
+
+공시 필수: 수정 내용, 영향 금액, 이유`}</CodeBlock>
+      </Section>
+
+      <Section title="3. 감가상각법 변경 (Estimate 취급)">
+        <CodeBlock>{`감가상각법 변경 = Change in Estimate (Prospective)
+  새 감가상각비 = 남은 BV ÷ 남은 내용연수
+  (잔존가 차감 후 남은 연수로 나눔)
+
+예시: BV $60,000 / 잔여 3년 / 잔존가 $0
+  → 새 감가상각비 = $60,000 ÷ 3 = $20,000/yr`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        '감가상각법 변경 = Estimate 변경 (Principle 아님!)',
+        'Retrospective = 과거 FS 재작성 (소급 적용)',
+        'Error = Restatement + 공시 필수',
+        '소급 적용 시 세금 효과(net of tax) 고려',
+      ]} />
+    </div>
+  )
+}
+
+function FvContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="1. Fair Value Hierarchy">
+        <Table
+          headers={['Level', '정의', '예시']}
+          rows={[
+            ['Level 1', 'Identical asset/liability + Active market', 'NYSE 상장 주식'],
+            ['Level 2', 'Similar + Active OR Identical + Inactive', 'OTC bond, 유사 자산'],
+            ['Level 3', 'Unobservable / Internal assumptions', 'Internal DCF, 비상장 주식'],
+          ]}
+        />
+      </Section>
+
+      <Section title="2. 3가지 측정 방법">
+        <Table
+          headers={['방법', '설명', '적용']}
+          rows={[
+            ['Market approach', 'Comparable transactions/multiples', '유사 거래 가격 비교'],
+            ['Income approach', 'PV of future cash flows (DCF)', '수익 창출 자산'],
+            ['Cost approach', 'Replacement cost', '특수 자산, 구형 장비'],
+          ]}
+        />
+      </Section>
+
+      <Section title="3. Exit Price 원칙">
+        <CodeBlock>{`Fair Value = Exit price (판매/이전 시 수령 금액)
+           ≠ Entry price (취득 원가)
+
+Principal market: 가장 거래량 많은 시장 우선
+Most advantageous market: principal market 없을 때`}</CodeBlock>
+      </Section>
+
+      <TrapBox items={[
+        'Similar + Active market → L2 (L1 아님)',
+        'Identical + Inactive market → L2 (L1 아님)',
+        '내부 DCF → L3 (복잡해도 L3)',
+        'FV = exit price (entry price 아님!)',
+      ]} />
+    </div>
+  )
+}
+
 // ── Content Tab Dispatcher ─────────────────────────────────────────────────────
 function ContentTab({ catId, catLabel }: { catId: CategoryId; catLabel: string }) {
   switch (catId) {
@@ -441,6 +927,17 @@ function ContentTab({ catId, catLabel }: { catId: CategoryId; catLabel: string }
     case 'aro':         return <AroContent />
     case 'eps':         return <EpsContent />
     case 'tax':         return <TaxContent />
+    case 'inventory':   return <InventoryContent />
+    case 'ppe':         return <PpeContent />
+    case 'intangibles': return <IntangiblesContent />
+    case 'revenue':     return <RevenueContent />
+    case 'scf':         return <ScfContent />
+    case 'investments': return <InvestmentsContent />
+    case 'equity':      return <EquityContent />
+    case 'nfp':         return <NfpContent />
+    case 'gov':         return <GovContent />
+    case 'changes':     return <ChangesContent />
+    case 'fv':          return <FvContent />
     default:            return <ComingSoon label={catLabel} />
   }
 }
