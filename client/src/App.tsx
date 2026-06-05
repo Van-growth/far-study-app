@@ -25,6 +25,7 @@ import HarryHistoryPage from './pages/HarryHistoryPage';
 import CorePage from './pages/CorePage';
 import BondMasterPage from './pages/BondMasterPage';
 import WrongAnswerPreviewPage from './pages/WrongAnswerPreviewPage';
+import WrongAnswerPage from './pages/WrongAnswerPage';
 import ExamPage from './pages/ExamPage';
 import DailyBriefingModal from './components/DailyBriefingModal';
 
@@ -169,7 +170,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/core" element={<CorePage />} />
             <Route path="/bond-master" element={<BondMasterPage />} />
             <Route path="/wrong-preview" element={<WrongAnswerPreviewPage />} />
-            <Route path="/wrong-answers" element={<WrongAnswerPreviewPage />} />
+            <Route path="/wrong-answers" element={<WrongAnswerPage />} />
             <Route path="/exam" element={<ExamPage />} />
             {email.toLowerCase() === ADMIN_EMAIL && (
               <Route path="/admin" element={<AdminPage email={email} />} />
