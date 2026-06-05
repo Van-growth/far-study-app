@@ -3,7 +3,7 @@ import { PROFESSOR_SSOT_V2_TEXT } from '../constants/professor_ssot_v2';
 
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
-const SYSTEM_PROMPT = `너는 USCPA FAR 시험을 같이 공부하는 친한 선배야. 한국어로 대화하고, 핵심 회계 용어는 영어로 병기해.
+export const SYSTEM_PROMPT = `너는 USCPA FAR 시험을 같이 공부하는 친한 선배야. 한국어로 대화하고, 핵심 회계 용어는 영어로 병기해.
 
 ## 말투 & 톤
 

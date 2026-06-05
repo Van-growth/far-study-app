@@ -5862,10 +5862,10 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[경과이자 경제적 실질]\n7/1 이자 지급일에 발행자가 6개월치($50,000) 전액 지급.\n투자자는 4/1부터 보유(3개월)이므로 1/1~4/1 3개월치를 발행 시 미리 지급.\n발행자: 발행 시 $25,000 수령 → 7/1에 $50,000 지급 (순 이자비용 3개월치)\n\n[발행자 분개]\n4/1 발행 시:\nDr. Cash $995,000\n  Cr. Bonds Payable $970,000\n  Cr. Interest Payable $25,000\n\n7/1 이자 지급:\nDr. Interest Payable $25,000\nDr. Interest Expense $25,000\n  Cr. Cash $50,000",
   },
 
-  // [TDR_001] Troubled Debt Restructuring — Asset Transfer: 채무자 관점 두 가지 손익 분리
-  // RULE    : ① 자산 재평가 = 자산 CA − 자산 FV (ordinary loss/gain) ② 구조조정 이익 = 부채 CA − 자산 FV (restructuring gain)
-  // TRIGGER : "gain on restructuring of payables" → 부채 CA − 자산 FV / "loss on transfer of asset" → 자산 CA − 자산 FV
-  // TRAP    : ② 계산 시 자산 CA($100K) 사용 → $50K 오답 / 두 손익 합산하면 안 됨 → 항상 별도 인식
+  // [TDR_001] TDR — Asset Transfer: two separate gains/losses (debtor perspective)
+  // RULE    : ①자산 재평가 (Ordinary gain/loss) = 자산 CA − 자산 FV ②구조조정 이익 (Restructuring gain) = 부채 CA − 자산 FV
+  // TRIGGER : 'gain on restructuring of payables' → 부채 CA − 자산 FV / 'loss on transfer of asset' → 자산 CA − 자산 FV
+  // TRAP    : ② 계산 시 자산 FV 대신 자산 CA 사용 → 오답 / 두 손익 합산 금지 → 항상 별도 인식
   {
     topic_id: "TDR_001",
     book_id: 'IA',
@@ -5874,13 +5874,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     sub_category_id: "U4_TROUBLED_DEBT",
     card_type: 'calculation',
     card_name: "TDR — Asset Transfer: two separate gains/losses (debtor perspective)",
-    rule: "TDR Asset Transfer 시 채무자(debtor)는 두 가지 손익을 별도 인식:\n①자산 재평가 (Ordinary gain/loss) = 자산 CA − 자산 FV\n  CA > FV → ordinary loss / CA < FV → ordinary gain\n②구조조정 이익 (Restructuring gain) = 부채 CA − 자산 FV\n  시험에서 사실상 항상 gain (TDR은 채무자가 불리한 상황이므로 부채 > 자산 FV가 일반적)\n문제가 'gain on restructuring'을 물으면 → ②만 계산 / 'loss on transfer of asset'을 물으면 → ①만 계산",
-    trigger: "'gain on restructuring of payables' / 'gain on extinguishment' → 부채 CA − 자산 FV\n'loss on transfer of real estate' / 'loss on disposal' → 자산 CA − 자산 FV\n'troubled debt restructuring' + 'full liquidation' + 자산 3개 숫자(부채 CA / 자산 CA / 자산 FV) → 두 손익 분리 계산 발동",
-    trap: "② 계산 시 자산 FV 대신 자산 CA($100K) 사용 → $150K−$100K=$50K 오답\n두 손익을 합산해서 하나로 보고하면 안 됨 → I/S에 별도 항목으로 표시\n채권자(creditor) 관점 혼동 → 채권자는 gain 없음, FV로 받은 자산 − 채권 장부금액 = loss만 인식",
+    rule: "TDR Asset Transfer 시 채무자(debtor)는 두 가지 손익을 별도 인식:\n①자산 재평가 (Ordinary gain/loss) = 자산 CA − 자산 FV\n  CA > FV → ordinary loss / CA < FV → ordinary gain\n②구조조정 이익 (Restructuring gain) = 부채 CA − 자산 FV\n  시험에서 사실상 항상 gain\n문제가 'gain on restructuring'을 물으면 → ②만 계산\n'loss on transfer of asset'을 물으면 → ①만 계산",
+    trigger: "'gain on restructuring of payables' / 'gain on extinguishment' → 부채 CA − 자산 FV\n'loss on transfer of real estate' / 'loss on disposal' → 자산 CA − 자산 FV\n'troubled debt restructuring' + 'full liquidation' + 자산 3개 숫자 → 두 손익 분리 계산",
+    trap: "② 계산 시 자산 FV 대신 자산 CA 사용 → 오답\n두 손익 합산 금지 → I/S에 별도 항목\n채권자 관점 혼동 → 채권자는 gain 없음",
     one_sentence: "Restructuring gain = 부채 CA − 자산 FV / Ordinary loss = 자산 CA − 자산 FV → 항상 별도, 절대 합산 금지",
-    example: "부채 CA $150K / 자산 CA $100K / 자산 FV $90K\n① Ordinary loss = $100K − $90K = $(10,000)\n② Restructuring gain = $150K − $90K = $60,000\n→ I/S: Loss on disposal $(10,000) 별도 / Gain on restructuring $60,000 별도",
-    context_background: "TDR은 채무자가 재정적으로 어려운 상황에서 채권자가 조건을 완화해주는 거래. Asset Transfer 유형에서 채무자는 자산을 넘겨 부채를 소멸시키며, 이 과정에서 두 가지 경제적 사건이 동시에 발생: ①자산을 FV로 처분하는 사건(자산 재평가 손익) ②FV보다 큰 부채가 소멸되는 사건(구조조정 이익). 채권자 관점은 반대로 손실만 인식.",
-    speed: "'restructuring gain' 보이면 → 부채 CA − 자산 FV (FV만 쓴다)\n'loss on transfer' 보이면 → 자산 CA − 자산 FV\n숫자 3개(부채CA / 자산CA / 자산FV) 보이면 → 질문이 어느 쪽인지 먼저 확인 후 계산",
+    example: "부채 CA $150K / 자산 CA $100K / 자산 FV $90K\n① Ordinary loss = $100K − $90K = $(10,000)\n② Restructuring gain = $150K − $90K = $60,000",
+    speed: "'restructuring gain' → 부채 CA − 자산 FV\n'loss on transfer' → 자산 CA − 자산 FV\n숫자 3개 보이면 → 질문 방향 먼저 확인",
   },
 
   // ── IMP ────────────────────────────────────────────────────────────────────

@@ -3,7 +3,9 @@ import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { PROFESSOR_SSOT_V2, TopicCard } from '../constants/professor_ssot_v2'
 import useStudyStore from '../store/studyStore'
-import useClaudeStore from '../store/claudeStore'
+import { listConversations, deleteConversation } from '../lib/harryHistory'
+import type { HarryConversation, HarryMessage } from '../lib/harryHistory'
+import { SYSTEM_PROMPT } from '../hooks/useClaudeChat'
 import {
   InterestFamilyViz,
   InventoryCostViz,
@@ -16,6 +18,7 @@ import {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const NAVY = '#1a2744'
+const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001'
 
 const CATEGORIES = [
   { id: 'bond',        label: 'Bond & TDR',                   groups: ['IA_CH8_BOND', 'IA_CH8_TDR'] },
@@ -2013,45 +2016,369 @@ function CardsTab({ activeId }: { activeId: ActiveId }) {
   )
 }
 
-// ── Harry Tab — delegates to global Harry sidebar ──────────────────────────────
+// ── Harry Tab — 2-panel embedded chat ─────────────────────────────────────────
 function HarryTab({ catLabel }: { catLabel: string }) {
-  const openPanel = useClaudeStore((s) => s.openPanel)
-  const setPendingAutoMessage = useClaudeStore((s) => s.setPendingAutoMessage)
+  const userId = useStudyStore((s) => s.userId)
+  const [conversations, setConversations] = useState<HarryConversation[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [msgs, setMsgs] = useState<HarryMessage[]>([])
+  const [search, setSearch] = useState('')
+  const [input, setInput] = useState('')
+  const [streaming, setStreaming] = useState(false)
+  const [hoverId, setHoverId] = useState<string | null>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const streamAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    if (!userId) return
+    refreshList()
+  }, [userId]) // eslint-disable-line
+
+  useEffect(() => {
+    if (!userId) return
+    const t = setTimeout(() => refreshList(), 300)
+    return () => clearTimeout(t)
+  }, [search, userId]) // eslint-disable-line
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [msgs])
+
+  async function refreshList() {
+    const list = await listConversations(userId!, 'concept', search || undefined)
+    setConversations(list)
+  }
+
+  function selectConv(conv: HarryConversation) {
+    setSelectedId(conv.id)
+    setMsgs(conv.messages ?? [])
+  }
+
+  async function createConv() {
+    if (!userId) return
+    const { data, error } = await supabase
+      .from('harry_conversations')
+      .insert({ user_id: userId, context_type: 'concept', context_id: null, context_name: catLabel, messages: [] })
+      .select('*')
+      .single()
+    if (!error && data) {
+      const newConv = data as HarryConversation
+      setConversations(prev => [newConv, ...prev])
+      setSelectedId(newConv.id)
+      setMsgs([])
+    }
+  }
+
+  async function deleteConv(id: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    await deleteConversation(id)
+    const remaining = conversations.filter(c => c.id !== id)
+    setConversations(remaining)
+    if (selectedId === id) {
+      if (remaining.length > 0) { setSelectedId(remaining[0].id); setMsgs(remaining[0].messages ?? []) }
+      else { setSelectedId(null); setMsgs([]) }
+    }
+  }
+
+  async function sendMessage(text: string) {
+    const trimmed = text.trim()
+    if (!trimmed || streaming) return
+
+    let convId = selectedId
+    if (!convId) {
+      const { data, error } = await supabase
+        .from('harry_conversations')
+        .insert({ user_id: userId!, context_type: 'concept', context_id: null, context_name: catLabel, messages: [] })
+        .select('*').single()
+      if (error || !data) return
+      const newConv = data as HarryConversation
+      setConversations(prev => [newConv, ...prev])
+      setSelectedId(newConv.id)
+      convId = newConv.id
+    }
+
+    const userMsg: HarryMessage = { role: 'user', content: trimmed, created_at: new Date().toISOString() }
+    const prevMsgs = [...msgs, userMsg]
+    setMsgs([...prevMsgs, { role: 'assistant', content: '', created_at: new Date().toISOString() }])
+    setInput('')
+    setStreaming(true)
+
+    let fullContent = ''
+    const abortCtrl = new AbortController()
+    streamAbortRef.current = abortCtrl
+
+    try {
+      const resp = await fetch(`${API_URL}/api/claude/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: prevMsgs.map(m => ({ role: m.role, content: m.content })),
+          systemPrompt: SYSTEM_PROMPT + `\n\n현재 실습 중인 카테고리: ${catLabel}`,
+        }),
+        signal: abortCtrl.signal,
+      })
+
+      if (!resp.ok || !resp.body) throw new Error('API error')
+
+      const reader = resp.body.getReader()
+      const decoder = new TextDecoder()
+      let buf = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
+        const lines = buf.split('\n')
+        buf = lines.pop() ?? ''
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const d = JSON.parse(line.slice(6))
+              if (d.text) {
+                fullContent += d.text
+                setMsgs(prev => {
+                  const updated = [...prev]
+                  updated[updated.length - 1] = { ...updated[updated.length - 1], content: fullContent }
+                  return updated
+                })
+              }
+            } catch { /* ignore */ }
+          }
+        }
+      }
+    } catch (e) {
+      if ((e as Error).name !== 'AbortError') {
+        setMsgs(prev => {
+          const updated = [...prev]
+          updated[updated.length - 1] = { ...updated[updated.length - 1], content: '[오류가 발생했습니다]' }
+          return updated
+        })
+      }
+    }
+
+    setStreaming(false)
+
+    const finalMsgs: HarryMessage[] = [
+      ...prevMsgs,
+      { role: 'assistant', content: fullContent, created_at: new Date().toISOString() },
+    ]
+
+    await supabase
+      .from('harry_conversations')
+      .update({ messages: finalMsgs, updated_at: new Date().toISOString() })
+      .eq('id', convId)
+
+    setConversations(prev =>
+      prev.map(c => c.id === convId ? { ...c, messages: finalMsgs, updated_at: new Date().toISOString() } : c)
+        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    )
+  }
+
+  function getTitle(conv: HarryConversation): string {
+    const first = conv.messages?.find(m => m.role === 'user')
+    return first ? first.content.slice(0, 20) : (conv.context_name ?? '새 대화')
+  }
 
   const quickActions = [
     { label: '개념 확인', msg: `Give me ONE concept check question about ${catLabel}. Wait for my answer before showing the solution.` },
     { label: '분개 오류 찾기', msg: `Show me ONE journal entry with exactly one error related to ${catLabel}. Wait for my answer before explaining.` },
-    { label: '빈칸 채우기', msg: `Give me ONE formula with ONE blank to fill in for ${catLabel}. Wait for my answer before showing the answer.` },
+    { label: '공식 빈칸 채우기', msg: `Give me ONE formula with ONE blank to fill in for ${catLabel}. Wait for my answer before showing the answer.` },
   ]
 
-  const send = (msg: string) => {
-    openPanel()
-    setPendingAutoMessage(msg)
-  }
-
   return (
-    <div style={{ padding: '32px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>🧙</div>
-        <p style={{ fontSize: 15, color: '#444', lineHeight: 1.7, margin: 0 }}>
-          우측 <strong style={{ color: NAVY }}>Harry 패널</strong>에서<br />
-          <strong style={{ color: NAVY }}>{catLabel}</strong> 관련 질문을 시작하세요.
-        </p>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 340 }}>
-        {quickActions.map(a => (
-          <button
-            key={a.label}
-            onClick={() => send(a.msg)}
+    <div style={{ display: 'flex', height: '100%', background: '#f8f9fa' }}>
+
+      {/* Left panel — conversation list */}
+      <div style={{
+        width: 240, flexShrink: 0,
+        background: '#f8f9fa', borderRight: '1px solid #e8e8e4',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      }}>
+        <div style={{ padding: '12px 12px 8px', flexShrink: 0 }}>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="대화 검색..."
             style={{
-              padding: '11px 18px', border: `1.5px solid ${NAVY}`, borderRadius: 10,
-              background: '#fff', color: NAVY, fontSize: 13.5, fontWeight: 600,
-              cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between',
+              width: '100%', padding: '7px 10px', fontSize: 12,
+              border: '1px solid #e0e0e0', borderRadius: 8, outline: 'none',
+              background: 'white', boxSizing: 'border-box',
+            }}
+          />
+        </div>
+        <div style={{ padding: '0 12px 8px', flexShrink: 0 }}>
+          <button
+            onClick={createConv}
+            style={{
+              width: '100%', padding: '8px 12px',
+              background: NAVY, color: 'white',
+              border: 'none', borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+              cursor: 'pointer',
             }}
           >
-            {a.label} <span style={{ opacity: 0.5 }}>→</span>
+            + 새 대화
           </button>
-        ))}
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {conversations.length === 0 && (
+            <div style={{ padding: '24px 12px', textAlign: 'center', color: '#999', fontSize: 12 }}>
+              대화가 없어요
+            </div>
+          )}
+          {conversations.map(conv => (
+            <div
+              key={conv.id}
+              onClick={() => selectConv(conv)}
+              onMouseEnter={() => setHoverId(conv.id)}
+              onMouseLeave={() => setHoverId(null)}
+              style={{
+                padding: '10px 12px',
+                cursor: 'pointer',
+                background: selectedId === conv.id ? NAVY : 'transparent',
+                borderBottom: '1px solid #e8e8e4',
+                position: 'relative',
+              }}
+            >
+              <div style={{
+                fontSize: 12.5, fontWeight: selectedId === conv.id ? 600 : 400,
+                color: selectedId === conv.id ? 'white' : '#111',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                marginBottom: 2, paddingRight: 18,
+              }}>
+                {getTitle(conv)}
+              </div>
+              <div style={{
+                fontSize: 10.5,
+                color: selectedId === conv.id ? 'rgba(255,255,255,0.65)' : '#999',
+              }}>
+                {new Date(conv.updated_at).toLocaleDateString('ko', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </div>
+              {(hoverId === conv.id) && (
+                <button
+                  onClick={(e) => deleteConv(conv.id, e)}
+                  style={{
+                    position: 'absolute', top: 8, right: 8,
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontSize: 11, color: selectedId === conv.id ? 'rgba(255,255,255,0.65)' : '#aaa',
+                    padding: '2px 4px', lineHeight: 1,
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right panel — chat area */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'white' }}>
+        {selectedId ? (
+          <>
+            {/* Messages */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+              {msgs.length === 0 && (
+                <div style={{ textAlign: 'center', color: '#999', padding: '48px 0', fontSize: 13 }}>
+                  질문을 시작하세요
+                </div>
+              )}
+              {msgs.map((msg, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    marginBottom: 12,
+                  }}
+                >
+                  <div style={{
+                    maxWidth: '75%',
+                    padding: '10px 14px',
+                    borderRadius: msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                    background: msg.role === 'assistant' ? NAVY : '#f3f3f0',
+                    color: msg.role === 'assistant' ? 'white' : '#111',
+                    fontSize: 13, lineHeight: 1.65,
+                    whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                  }}>
+                    {msg.content || (streaming && i === msgs.length - 1
+                      ? <span style={{ opacity: 0.4, fontSize: 18, letterSpacing: 2 }}>•••</span>
+                      : null)}
+                  </div>
+                </div>
+              ))}
+              <div ref={bottomRef} />
+            </div>
+
+            {/* Quick action buttons */}
+            <div style={{
+              flexShrink: 0, padding: '8px 16px 4px',
+              borderTop: '1px solid #f0f0f0',
+              display: 'flex', gap: 6, flexWrap: 'wrap',
+            }}>
+              {quickActions.map(a => (
+                <button
+                  key={a.label}
+                  onClick={() => sendMessage(a.msg)}
+                  disabled={streaming}
+                  style={{
+                    padding: '5px 11px', fontSize: 11.5, fontWeight: 600,
+                    border: `1px solid ${NAVY}`,
+                    borderRadius: 20, background: 'white', color: NAVY,
+                    cursor: streaming ? 'not-allowed' : 'pointer',
+                    opacity: streaming ? 0.5 : 1,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Input */}
+            <div style={{ flexShrink: 0, padding: '8px 16px 16px', display: 'flex', gap: 8 }}>
+              <input
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) } }}
+                placeholder="메시지 입력..."
+                disabled={streaming}
+                style={{
+                  flex: 1, padding: '9px 14px', fontSize: 13,
+                  border: '1px solid #e0e0e0', borderRadius: 10, outline: 'none',
+                  background: streaming ? '#f8f8f8' : 'white',
+                }}
+              />
+              <button
+                onClick={() => sendMessage(input)}
+                disabled={streaming || !input.trim()}
+                style={{
+                  padding: '9px 18px', background: NAVY, color: 'white',
+                  border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                  cursor: streaming || !input.trim() ? 'not-allowed' : 'pointer',
+                  opacity: streaming || !input.trim() ? 0.5 : 1,
+                  flexShrink: 0,
+                }}
+              >
+                전송
+              </button>
+            </div>
+          </>
+        ) : (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, color: '#999' }}>
+            <div style={{ fontSize: 36 }}>🧙</div>
+            <p style={{ fontSize: 14, margin: 0 }}>새 대화를 시작하세요</p>
+            <button
+              onClick={createConv}
+              style={{
+                padding: '10px 22px', background: NAVY, color: 'white',
+                border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              + 새 대화
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -2226,7 +2553,6 @@ function SuperContentTab({ superId }: { superId: SuperCategoryId }) {
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function ConceptNotesPage() {
   const userId = useStudyStore((s) => s.userId)
-  const openPanel = useClaudeStore((s) => s.openPanel)
   const [searchParams] = useSearchParams()
   const initId = (searchParams.get('cat') ?? 'interest4') as ActiveId
   const [activeId, setActiveId] = useState<ActiveId>(
@@ -2347,14 +2673,14 @@ export default function ConceptNotesPage() {
       </aside>
 
       {/* Main */}
-      <main style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
         {/* Mobile top bar */}
         <div
           className="flex md:hidden"
           style={{
             padding: '10px 16px', background: '#fff', borderBottom: '1px solid #e0e0e0',
-            display: 'flex', alignItems: 'center', gap: 10, position: 'sticky', top: 0, zIndex: 30,
+            display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, zIndex: 30,
           }}
         >
           <button
@@ -2370,25 +2696,16 @@ export default function ConceptNotesPage() {
           <span style={{ fontWeight: 700, fontSize: 15, color: NAVY }}>{displayLabel}</span>
         </div>
 
-        {/* Content area */}
-        <div style={{ flex: 1, padding: '24px 28px', maxWidth: 860 }}>
-
-          {/* Page title (desktop) */}
-          <div
-            className="hidden md:block"
-            style={{ marginBottom: 20 }}
-          >
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: NAVY, margin: 0 }}>
-              {displayLabel}
-            </h1>
+        {/* Header: title + tabs */}
+        <div style={{ flexShrink: 0, padding: '24px 28px 0' }}>
+          <div className="hidden md:block" style={{ marginBottom: 20 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: NAVY, margin: 0 }}>{displayLabel}</h1>
           </div>
-
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e0e0e0', marginBottom: 24 }}>
+          <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e0e0e0' }}>
             {TABS.map(tab => (
               <button
                 key={tab.key}
-                onClick={() => { setActiveTab(tab.key); if (tab.key === 'harry') openPanel(); }}
+                onClick={() => setActiveTab(tab.key)}
                 style={{
                   padding: '9px 20px', fontSize: 13.5, fontWeight: 600,
                   border: 'none', background: 'none', cursor: 'pointer',
@@ -2401,21 +2718,26 @@ export default function ConceptNotesPage() {
               </button>
             ))}
           </div>
-
-          {/* Tab content */}
-          {activeTab === 'content' && isSuper && activeSuperCat && (
-            <SuperContentTab superId={activeSuperCat.id} />
-          )}
-          {activeTab === 'content' && !isSuper && activeCat && (
-            <ContentTab catId={activeCat.id as CategoryId} catLabel={activeCat.label} />
-          )}
-          {activeTab === 'cards' && (
-            <CardsTab activeId={activeId} />
-          )}
-          {activeTab === 'harry' && (
-            <HarryTab key={`harry-${activeId}`} catLabel={displayLabel} />
-          )}
         </div>
+
+        {/* Tab content */}
+        {activeTab === 'harry' ? (
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <HarryTab key={`harry-${activeId}`} catLabel={displayLabel} />
+          </div>
+        ) : (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', maxWidth: 860 }}>
+            {activeTab === 'content' && isSuper && activeSuperCat && (
+              <SuperContentTab superId={activeSuperCat.id} />
+            )}
+            {activeTab === 'content' && !isSuper && activeCat && (
+              <ContentTab catId={activeCat.id as CategoryId} catLabel={activeCat.label} />
+            )}
+            {activeTab === 'cards' && (
+              <CardsTab activeId={activeId} />
+            )}
+          </div>
+        )}
       </main>
     </div>
   )

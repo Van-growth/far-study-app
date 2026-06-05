@@ -74,6 +74,15 @@ function saveLearned(s: Set<string>) {
   localStorage.setItem(LS_KEY, JSON.stringify([...s]));
 }
 
+const LS_SIDEBAR_KEY = 'far-concept-map-sidebar-collapsed';
+function loadSidebarCollapsed(): boolean {
+  if (typeof window !== 'undefined' && window.innerWidth < 768) return true;
+  try {
+    const v = localStorage.getItem(LS_SIDEBAR_KEY);
+    return v === 'true';
+  } catch { return false; }
+}
+
 // ── Highlight helper ──────────────────────────────────────────
 
 function hl(text: string | undefined, q: string): React.ReactNode {
@@ -104,10 +113,14 @@ export default function ConceptMapPage() {
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set(['IA_CH2']));
   const [learned, setLearned]                 = useState<Set<string>>(loadLearned);
   const [mobileOpen, setMobileOpen]           = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(loadSidebarCollapsed);
   const [bounceDir, setBounceDir]             = useState<'left' | 'right' | null>(null);
   const touchStartX                           = useRef<number>(0);
 
   useEffect(() => { saveLearned(learned); }, [learned]);
+  useEffect(() => {
+    try { localStorage.setItem(LS_SIDEBAR_KEY, String(sidebarCollapsed)); } catch { /* ignore */ }
+  }, [sidebarCollapsed]);
 
   // Auto-select first topic on mount
   useEffect(() => {
@@ -222,6 +235,14 @@ export default function ConceptMapPage() {
       {/* ── Search bar ─────────────────────────────────────── */}
       <div style={{ flexShrink: 0, background: 'white', borderBottom: '1px solid #e2e8f0', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
         <button
+          className="hidden md:inline-flex"
+          onClick={() => setSidebarCollapsed((v) => !v)}
+          title={sidebarCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
+          style={{ flexShrink: 0, padding: '5px 9px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc', fontSize: 16, color: '#374151', cursor: 'pointer', lineHeight: 1, alignItems: 'center' }}
+        >
+          ≡
+        </button>
+        <button
           className="md:hidden"
           onClick={() => setMobileOpen((v) => !v)}
           style={{ flexShrink: 0, padding: '5px 10px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc', fontSize: 12, color: '#374151', cursor: 'pointer' }}
@@ -251,7 +272,15 @@ export default function ConceptMapPage() {
         {/* ── Sidebar (desktop) ────────────────────────────── */}
         <aside
           className="hidden md:flex"
-          style={{ flexDirection: 'column', width: 260, flexShrink: 0, background: 'white', borderRight: '1px solid #e2e8f0', overflow: 'hidden' }}
+          style={{
+            flexDirection: 'column',
+            width: sidebarCollapsed ? 0 : 260,
+            flexShrink: 0,
+            background: 'white',
+            borderRight: '1px solid #e2e8f0',
+            overflow: 'hidden',
+            transition: 'width 0.2s ease',
+          }}
         >
           <div style={{ padding: '8px 12px 6px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
