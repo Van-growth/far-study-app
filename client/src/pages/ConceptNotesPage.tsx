@@ -21,7 +21,8 @@ const NAVY = '#1a2744'
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001'
 
 const CATEGORIES = [
-  { id: 'bond',        label: 'Bond & TDR',                   groups: ['IA_CH8_BOND', 'IA_CH8_TDR'] },
+  { id: 'bond',        label: 'Bond',                         groups: ['IA_CH8_BOND'] },
+  { id: 'tdr',         label: 'TDR (Troubled Debt Restructuring)', groups: ['IA_CH8_TDR'] },
   { id: 'lease',       label: 'Lease',                        groups: ['IA_CH8_LEASE'] },
   { id: 'note',        label: 'Note Payable & Interest',      groups: ['IA_CH8_NOTE', 'IA_CH8_INT'] },
   { id: 'aro',         label: 'ARO',                          groups: ['IA_CH8_ARO'] },
@@ -65,7 +66,7 @@ const SUPER_CATEGORIES = [
   {
     id: 'interest4' as SuperCategoryId,
     label: '이자비용 4형제',
-    children: ['bond', 'lease', 'note', 'aro'] as CategoryId[],
+    children: ['bond', 'tdr', 'lease', 'note', 'aro'] as CategoryId[],
   },
   {
     id: 'inventory-cost' as SuperCategoryId,
@@ -264,6 +265,95 @@ Gain/Loss = Net CV − Reacquisition Price
             ['Premium on Bonds', 'Unamortized premium', 'B/S에서 Bonds Payable 가산'],
             ['Discount on Bonds', 'Unamortized discount', 'B/S에서 Bonds Payable 차감'],
             ['Early retirement', 'Extinguishment / Redemption before maturity', 'Gain/Loss → I/S'],
+          ]}
+        />
+      </Section>
+    </div>
+  )
+}
+
+function TdrContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Section title="Concept & Context">
+        <p><strong>What is TDR?</strong> Troubled Debt Restructuring = 채무자 재정 어려움 시 채권자가 조건을 완화해주는 거래.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>(채권자 입장에서는 손해 감수, 채무자 입장에서는 이익)</p>
+        <p style={{ marginTop: 12 }}><strong>Two types:</strong></p>
+        <Table
+          headers={['Type', '설명']}
+          rows={[
+            ['① Asset Transfer', '자산을 넘겨 부채 소멸'],
+            ['② Debt Modification', '이자율/만기 조건 변경'],
+          ]}
+        />
+      </Section>
+
+      <Section title="1. Asset Transfer — Debtor 관점">
+        <p>두 가지 손익 항상 별도 인식:</p>
+        <Table
+          headers={['손익', '공식', '방향']}
+          rows={[
+            ['① Ordinary gain/loss', '자산 CA − 자산 FV', 'CA > FV → loss'],
+            ['② Restructuring gain', '부채 CA − 자산 FV', '시험에서 사실상 항상 gain'],
+          ]}
+        />
+        <p style={{ marginTop: 12 }}><strong>예시:</strong> 부채 CA $150,000 / 자산 CA $100,000 / 자산 FV $90,000</p>
+        <CodeBlock>{`① Ordinary loss    = $100,000 − $90,000 = $(10,000)
+② Restructuring gain = $150,000 − $90,000 = $60,000
+
+Journal Entry:
+Dr. Liability                150,000
+Dr. Loss on asset transfer    10,000
+  Cr. Real Estate (at FV)              90,000
+  Cr. Gain on restructuring            60,000
+  Cr. Real Estate write-down           10,000`}</CodeBlock>
+      </Section>
+
+      <Section title="2. Debt Modification — Debtor 관점">
+        <p>Future cash flows (이자 + 원금) 합계 vs 부채 장부가 비교:</p>
+        <Table
+          headers={['비교 결과', '처리']}
+          rows={[
+            ['Future CF > 부채 CV', 'No gain (이자율 조정만)'],
+            ['Future CF < 부채 CV', 'Gain on restructuring 인식'],
+          ]}
+        />
+      </Section>
+
+      <Section title="3. Creditor 관점">
+        <p>채권자는 gain 없음.</p>
+        <p style={{ marginTop: 4 }}>FV of asset received − 채권 장부가 = Loss만 인식.</p>
+      </Section>
+
+      <DefaultBox items={[
+        { default: 'Debtor 관점 (default)', changed: '"creditor" 명시 시 → loss만 인식' },
+      ]} />
+
+      <TrapBox items={[
+        '"gain on restructuring" → ② 부채 CA − 자산 FV',
+        '"loss on transfer" → ① 자산 CA − 자산 FV',
+        '② 계산 시 자산 CA 사용 → 오답 (반드시 FV 기준)',
+        '두 손익 합산 → 오답 (I/S에 별도 항목)',
+        'Creditor gain 인식 → 오답',
+      ]} />
+
+      <Section title="⏱ SPEED">
+        <CodeBlock>{`숫자 3개 (부채CA / 자산CA / 자산FV) 보이면:
+→ 질문 방향 먼저 확인 (① or ②)
+→ 항상 FV 기준으로 계산`}</CodeBlock>
+      </Section>
+
+      <Section title="Key Terms — TDR">
+        <Table
+          headers={['Term', 'Note']}
+          rows={[
+            ['TDR', 'Troubled Debt Restructuring'],
+            ['Debtor', '채무자 — 두 가지 gain/loss 인식'],
+            ['Creditor', '채권자 — loss만 인식'],
+            ['Restructuring gain', '부채 CA − 자산 FV'],
+            ['Ordinary loss', '자산 CA − 자산 FV'],
+            ['Asset Transfer', '자산으로 부채 소멸'],
+            ['Debt Modification', '조건 변경 (이자율/만기)'],
           ]}
         />
       </Section>
@@ -1884,6 +1974,7 @@ Bank service charges:
 function ContentTab({ catId, catLabel }: { catId: CategoryId; catLabel: string }) {
   switch (catId) {
     case 'bond':        return <BondContent />
+    case 'tdr':         return <TdrContent />
     case 'lease':       return <LeaseContent />
     case 'note':        return <NoteContent />
     case 'aro':         return <AroContent />
