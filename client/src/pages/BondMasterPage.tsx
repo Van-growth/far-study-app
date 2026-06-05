@@ -1,9 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
-
-const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
+import { useState } from 'react';
 
 type SectionKey = 'bond' | 'finance-lease' | 'operating-lease' | 'note-payable' | 'aro' | 'comparison';
-interface Msg { role: 'user' | 'assistant'; content: string; }
 
 const TABS: { key: SectionKey; label: string }[] = [
   { key: 'bond', label: 'Bond' },
@@ -13,53 +10,6 @@ const TABS: { key: SectionKey; label: string }[] = [
   { key: 'aro', label: 'ARO' },
   { key: 'comparison', label: '4형제 비교' },
 ];
-
-const HARRY_PROMPT = `You are Harry, a FAR exam tutor. The user is currently studying Bond/Lease/Note/ARO accounting.
-You can: explain concepts, give practice MCQ problems on demand, grade user answers, and conduct retrospective review.
-When user says '문제 내줘' or 'give me a problem', generate an MCQ with 4 choices labeled A) B) C) D).
-When user says '복습' or 'review', ask about today's key concepts one by one.
-Respond in Korean (한국어), with key accounting terms in English alongside. Be concise and exam-focused.`;
-
-async function streamChat(
-  body: object,
-  onChunk: (text: string) => void,
-  onDone: () => void,
-  onError: (e: string) => void,
-) {
-  try {
-    const res = await fetch(`${API_URL}/api/claude/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok || !res.body) { onError(`HTTP ${res.status}`); onDone(); return; }
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
-      for (const line of lines) {
-        const t = line.trim();
-        if (!t.startsWith('data: ')) continue;
-        const d = t.slice(6);
-        if (d === '[DONE]') { onDone(); return; }
-        try {
-          const p = JSON.parse(d) as { text?: string; error?: string };
-          if (p.text) onChunk(p.text);
-          if (p.error) onError(p.error);
-        } catch { /* skip */ }
-      }
-    }
-    onDone();
-  } catch {
-    onError('서버에 연결할 수 없습니다.');
-    onDone();
-  }
-}
 
 // ── Shared UI ────────────────────────────────────────────────────
 const NAVY = '#1a2744';
@@ -766,63 +716,6 @@ function ComparisonSection() {
 // ── Main Page ─────────────────────────────────────────────────────
 export default function BondMasterPage() {
   const [activeSection, setActiveSection] = useState<SectionKey>('bond');
-  const [msgs, setMsgs] = useState<Msg[]>([]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [msgs]);
-
-  const sendMessage = (directText?: string) => {
-    const trimmed = (directText ?? input).trim();
-    if (!trimmed || isLoading) return;
-
-    const userMsg: Msg = { role: 'user', content: trimmed };
-    const history = msgs.slice(-19);
-    const newHistory: Msg[] = [...history, userMsg];
-
-    setMsgs([...newHistory, { role: 'assistant', content: '' }]);
-    if (!directText) setInput('');
-    setIsLoading(true);
-
-    let accumulated = '';
-    streamChat(
-      { messages: newHistory.map((m) => ({ role: m.role, content: m.content })), systemPrompt: HARRY_PROMPT },
-      (text) => {
-        accumulated += text;
-        setMsgs((prev) => {
-          const updated = [...prev];
-          updated[updated.length - 1] = { role: 'assistant', content: accumulated };
-          return updated;
-        });
-      },
-      () => {
-        setIsLoading(false);
-        if (!accumulated) {
-          setMsgs((prev) => {
-            const updated = [...prev];
-            updated[updated.length - 1] = { role: 'assistant', content: '응답을 받지 못했습니다.' };
-            return updated;
-          });
-        }
-      },
-      (error) => {
-        setMsgs((prev) => {
-          const updated = [...prev];
-          updated[updated.length - 1] = { role: 'assistant', content: `❌ ${error}` };
-          return updated;
-        });
-        setIsLoading(false);
-      },
-    );
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  };
 
   return (
     <div style={{ background: '#fff', minHeight: '100%', display: 'flex', flexDirection: 'column', color: TEXT }}>
@@ -855,118 +748,13 @@ export default function BondMasterPage() {
       </div>
 
       {/* Section Content */}
-      <div style={{ flex: 1, padding: '24px', maxWidth: 960, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+      <div style={{ flex: 1, padding: '24px', paddingBottom: 48, maxWidth: 960, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         {activeSection === 'bond' && <BondSection />}
         {activeSection === 'finance-lease' && <FinanceLeaseSection />}
         {activeSection === 'operating-lease' && <OperatingLeaseSection />}
         {activeSection === 'note-payable' && <NotePayableSection />}
         {activeSection === 'aro' && <AROSection />}
         {activeSection === 'comparison' && <ComparisonSection />}
-      </div>
-
-      {/* Harry Chat Panel — sticky bottom */}
-      <div
-        style={{
-          position: 'sticky',
-          bottom: 0,
-          background: '#fff',
-          borderTop: `2px solid ${NAVY}`,
-          height: 280,
-          display: 'flex',
-          flexDirection: 'column',
-          zIndex: 10,
-          boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ background: NAVY, color: '#fff', padding: '8px 16px', fontSize: 14, fontWeight: 600, flexShrink: 0 }}>
-          Harry AI 튜터 — Bond · Lease · Note · ARO
-        </div>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px', fontSize: 13, lineHeight: 1.6 }}>
-          {msgs.length === 0 && (
-            <p style={{ color: '#888', fontStyle: 'italic', marginTop: 8 }}>
-              "문제 내줘" → MCQ 즉시 출제 &nbsp;|&nbsp; "복습" → 개념 체크 &nbsp;|&nbsp; 자유롭게 질문하세요
-            </p>
-          )}
-          {msgs.map((m, i) => (
-            <div key={i} style={{ marginBottom: 8 }}>
-              <span style={{ fontWeight: 700, color: m.role === 'user' ? NAVY : '#444' }}>
-                {m.role === 'user' ? '나  ' : 'Harry  '}
-              </span>
-              <span style={{ whiteSpace: 'pre-wrap' }}>{m.content}</span>
-            </div>
-          ))}
-          {isLoading && msgs[msgs.length - 1]?.content === '' && (
-            <span style={{ color: '#888', fontStyle: 'italic' }}>Harry가 입력 중...</span>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Quick action buttons */}
-        <div style={{ display: 'flex', gap: 6, padding: '6px 12px', borderTop: `1px solid #e0e0e0`, flexShrink: 0, flexWrap: 'wrap' }}>
-          {[
-            {
-              label: '빈칸 문제 내줘',
-              text: 'Give me a fill-in-the-blank problem.\nPick one of: Bond Premium, Bond Discount, Finance Lease, Note Payable, ARO.\nShow me the setup (Face value, rate, years) and the journal entry or amortization table with blanks (___).\nWait for my answer before showing the solution.',
-            },
-            {
-              label: '내 답 채점해줘',
-              text: 'Please grade my answer above.\nShow: correct numbers, where I went wrong, and the one key rule I should remember.',
-            },
-            {
-              label: '이 파트 MCQ 내줘',
-              text: 'Give me one MCQ (4 choices, A-D) on the topic we just covered.\nInclude a TRAP in the wrong choices.\nWait for my answer before explaining.',
-            },
-          ].map((btn) => (
-            <button
-              key={btn.label}
-              onClick={() => sendMessage(btn.text)}
-              disabled={isLoading}
-              onMouseEnter={() => setHoveredBtn(btn.label)}
-              onMouseLeave={() => setHoveredBtn(null)}
-              style={{
-                padding: '5px 10px',
-                fontSize: 13,
-                border: `1px solid ${NAVY}`,
-                borderRadius: 5,
-                cursor: isLoading ? 'default' : 'pointer',
-                background: hoveredBtn === btn.label ? NAVY : '#fff',
-                color: hoveredBtn === btn.label ? '#fff' : NAVY,
-                opacity: isLoading ? 0.5 : 1,
-                transition: 'background 0.12s, color 0.12s',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {btn.label}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', padding: '8px 12px', borderTop: `1px solid #e0e0e0`, gap: 8, flexShrink: 0 }}>
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder='"문제 내줘" / "복습" 또는 자유 질문...'
-            style={{
-              flex: 1, padding: '8px 12px', border: '1px solid #e0e0e0',
-              borderRadius: 6, fontSize: 13, outline: 'none', color: TEXT,
-            }}
-          />
-          <button
-            onClick={() => sendMessage()}
-            disabled={isLoading || !input.trim()}
-            style={{
-              padding: '8px 18px', background: NAVY, color: '#fff',
-              border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600,
-              cursor: isLoading || !input.trim() ? 'default' : 'pointer',
-              opacity: isLoading || !input.trim() ? 0.5 : 1,
-            }}
-          >
-            전송
-          </button>
-        </div>
       </div>
     </div>
   );
