@@ -133,19 +133,39 @@ Discount example (Face $100,000 / Coupon 6% / Market 8% / 5yr):
         />
       </Section>
 
-      <Section title="2. PV Calculation">
+      <Section title="2. PV Calculation — Factor Sources">
         <p style={{ marginBottom: 8 }}>
-          <strong>Issue Price = PV of Coupons + PV of Principal</strong>
+          <strong>Issue Price = PV of Coupons (Ordinary Annuity) + PV of Principal (PV of $1)</strong>
         </p>
-        <CodeBlock>{`Premium (coupon 6%, market 4%, 5yr):
-  $6,000 × 4.4518  = $26,711
-  $100,000 × 0.8219 = $82,190
-  Issue Price       = $108,901
+        <CodeBlock>{`Step 1: Coupon = Face × Coupon rate (고정, 절대 안 바뀜)
+  $100,000 × 6% = $6,000/yr
 
-Discount (coupon 6%, market 8%, 5yr):
-  $6,000 × 3.9927  = $23,956
-  $100,000 × 0.6806 = $68,060
-  Issue Price       = $92,016`}</CodeBlock>
+Step 2: PV of Coupons = Coupon × Ordinary Annuity factor
+  Factor source: rate = MARKET RATE (yield), n = lease term
+  ⚠ Coupon rate 6%로 factor 찾으면 → 오답
+
+Step 3: PV of Principal = Face × PV of $1 factor
+  Factor source: rate = MARKET RATE (yield), n = years to maturity
+
+Premium (Coupon 6% / Market 4% / 5yr):
+  PV of Coupons   = $6,000 × 4.4518 = $26,711
+                            ↑ Annuity factor (rate=4%, n=5)
+  PV of Principal = $100,000 × 0.8219 = $82,190
+                              ↑ PV of $1 factor (rate=4%, n=5)
+  Issue Price = $108,901 → Premium $8,901
+
+Discount (Coupon 6% / Market 8% / 5yr):
+  PV of Coupons   = $6,000 × 3.9927 = $23,956
+                            ↑ Annuity factor (rate=8%, n=5)
+  PV of Principal = $100,000 × 0.6806 = $68,060
+                              ↑ PV of $1 factor (rate=8%, n=5)
+  Issue Price = $92,016 → Discount $7,984`}</CodeBlock>
+        <TrapBox items={[
+          'Coupon $6,000 계산 → Coupon rate 6% 사용 ✓ (고정)',
+          'PV factor 선택 → Market rate (yield) 기준 ✓',
+          'PV factor를 Coupon rate 6%로 찾으면 → 오답 ✗',
+          '"sold to yield X%" → X%가 PV factor 기준 (yield = market rate)',
+        ]} />
       </Section>
 
       <Section title="3. Journal Entries — Issuance">
@@ -213,6 +233,20 @@ Gain/Loss = Net CV − Reacquisition Price
         'Never omit Principal PV from issue price calculation',
         'SL vs EI: BV differs at interim dates → early retirement produces different gain/loss',
       ]} />
+      <Section title="Key Terms — Bond">
+        <Table
+          headers={['Term', 'Also known as', 'Note']}
+          rows={[
+            ['Coupon rate', 'Stated rate / Nominal rate / Contract rate', '고정, 절대 안 바뀜'],
+            ['Market rate', 'Yield / Effective rate / Required rate of return', 'PV factor 기준'],
+            ['Face value', 'Par value / Maturity value / Principal / Stated value', '만기 상환 원금'],
+            ['Carrying value', 'Carrying amount / Book value / Amortized cost', 'Face ± Unamortized prem/disc'],
+            ['Premium on Bonds', 'Unamortized premium', 'B/S에서 Bonds Payable 가산'],
+            ['Discount on Bonds', 'Unamortized discount', 'B/S에서 Bonds Payable 차감'],
+            ['Early retirement', 'Extinguishment / Redemption before maturity', 'Gain/Loss → I/S'],
+          ]}
+        />
+      </Section>
     </div>
   )
 }
@@ -288,6 +322,28 @@ ROU Amortization (plug):
         'Implicit rate available → must use it, not IBR',
         'Operating lease: I/S = SL expense; B/S liability = EI basis (different!)',
       ]} />
+      <Section title="Key Terms — Lease">
+        <Table
+          headers={['Term', 'Also known as', 'Note']}
+          rows={[
+            ['Implicit rate', 'Rate implicit in the lease', 'Lessee가 알면 반드시 사용'],
+            ['IBR', 'Incremental Borrowing Rate', 'Implicit rate 모를 때만'],
+            ['ROU Asset', 'Right-of-Use Asset', 'Finance Lease B/S 인식 자산'],
+            ['Annuity Due', 'Payments in advance, beginning of period', '첫 납부 이자 없음'],
+            ['Ordinary Annuity', 'Annuity in arrears, end of period', '디폴트 — 명시 없으면 기말'],
+            ['BPO', 'Bargain Purchase Option', 'reasonably certain 행사 조건 필요'],
+            ['RVG', 'Residual Value Guarantee', 'PV of $1 factor 적용 (Annuity 아님)'],
+          ]}
+        />
+        <CodeBlock>{`Finance Lease Initial Liability / ROU Asset:
+= PV of lease payments (using Implicit rate or IBR)
+= Ordinary Annuity payments × PVA factor (rate, n)
+  + RVG × PV of $1 factor (rate, n)
+
+Rate precedence: Implicit rate > IBR
+75% test: Lease term ÷ Economic useful life ≥ 75%
+90% test: PV of payments ÷ Fair value ≥ 90%`}</CodeBlock>
+      </Section>
     </div>
   )
 }
@@ -369,6 +425,24 @@ Accretion = Beginning ARO Balance × credit-adjusted rate`}</CodeBlock>
         'Accretion ≠ depreciation — they are separate expense lines',
         'Rate changes: new layer approach for revisions',
       ]} />
+      <Section title="Key Terms — ARO">
+        <Table
+          headers={['Term', 'Also known as', 'Note']}
+          rows={[
+            ['ARO', 'Decommissioning liability / Abandonment obligation', '법적 의무'],
+            ['Accretion expense', 'Unwinding of discount', 'Beg ARO × credit-adj rate'],
+            ['Credit-adjusted rate', 'Entity-specific rate', 'Risk-free + credit risk ≠ plain risk-free'],
+          ]}
+        />
+        <CodeBlock>{`Day 1 PV:
+= Future cost × PV of $1 factor
+  rate = credit-adjusted risk-free rate
+       = risk-free rate + company credit risk premium
+         (≠ risk-free rate 단독)
+  n = asset useful life
+
+Annual Accretion = Beginning ARO × credit-adjusted rate`}</CodeBlock>
+      </Section>
     </div>
   )
 }
@@ -394,8 +468,15 @@ function EpsContent() {
         <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Diluted EPS = 항상 Basic EPS 이하 (dilutive). Antidilutive → 제외.</p>
       </Section>
       <Section title="Basic EPS">
-        <CodeBlock>{`Basic EPS = Net Income Available to Common ÷ WASO
-  (WASO = Weighted Average Shares Outstanding)`}</CodeBlock>
+        <CodeBlock>{`Basic EPS = (NI − Preferred Dividends) ÷ WASO
+
+WASO = Σ(shares × months held ÷ 12)
+Example:
+  Jan 1:  100,000 shares × 12/12 = 100,000
+  Apr 1:  +30,000 shares ×  9/12 =  22,500
+  WASO =                           122,500
+
+Basic EPS = ($500,000 − $20,000) ÷ 122,500 = $3.92`}</CodeBlock>
       </Section>
 
       <Section title="Diluted EPS — Convertible Bonds">
@@ -426,6 +507,28 @@ Example: 1,000 options @ $20 exercise, $25 avg market
         'Convertible preferred: no tax shield → add back full dividend amount',
         'Options in-the-money → always dilutive; out-of-the-money → antidilutive',
       ]} />
+      <Section title="Key Terms — EPS">
+        <Table
+          headers={['Term', 'Also known as', 'Note']}
+          rows={[
+            ['WASO', 'Weighted Average Shares Outstanding', '보통주만 (우선주 제외)'],
+            ['Basic EPS', 'Primary EPS (구 표현)', '(NI − Pref Div) ÷ WASO'],
+            ['Diluted EPS', 'Fully diluted EPS', '희석증권 전환 가정 최악 EPS'],
+            ['Antidilutive', 'Anti-dilutive', 'EPS 높이는 증권 → 제외'],
+            ['Treasury stock method', 'Buy-back method', 'Net shares = Options × (1 − Ex/Market)'],
+          ]}
+        />
+        <CodeBlock>{`Convertible bond numerator adjustment:
+  + Interest expense × (1 − enacted tax rate)   ← after-tax (세금 절약 있음)
+
+Convertible preferred numerator adjustment:
+  + Preferred dividend (세전 금액 그대로)       ← no tax shield (배당 = 세후 처리)
+
+Treasury stock method net new shares:
+  = Options × (1 − Exercise price ÷ Average market price)
+  Example: 1,000 options / Exercise $20 / Market $25
+  = 1,000 × (1 − 20/25) = 200 net new shares`}</CodeBlock>
+      </Section>
     </div>
   )
 }
@@ -479,6 +582,25 @@ Valuation Allowance:
         'All deferred taxes = non-current (no current/non-current split under ASC 740)',
         'Valuation allowance: "more likely than not" = > 50% chance of non-realization',
       ]} />
+      <Section title="Key Terms — Deferred Tax">
+        <Table
+          headers={['Term', 'Also known as', 'Note']}
+          rows={[
+            ['Enacted rate', 'Legislatively enacted rate', '확정된 세율만 사용 (proposed 아님)'],
+            ['Temporary difference', 'Timing difference (구 표현)', '미래에 해소 → DTA/DTL'],
+            ['Permanent difference', 'Non-reversing difference', '해소 안 됨 → deferred tax 없음'],
+            ['Valuation allowance', 'VA, Contra-DTA', '항상 Credit entry'],
+            ['DTA', 'Deferred Tax Asset', 'Deductible × enacted rate'],
+            ['DTL', 'Deferred Tax Liability', 'Taxable × enacted rate'],
+          ]}
+        />
+        <CodeBlock>{`DTA = Deductible temporary difference × enacted rate
+DTL = Taxable temporary difference × enacted rate
+
+Enacted rate = 차이가 해소되는 미래 연도의 확정 세율
+             ≠ 현재 적용 세율
+             ≠ 제안 중인(proposed) 세율`}</CodeBlock>
+      </Section>
     </div>
   )
 }
@@ -625,6 +747,25 @@ Step3: Add all layers = LIFO cost
         '"Before allowances" = estimates만 제외',
         'LIFO → FIFO 전환 시 방향 반전',
       ]} />
+      <Section title="Key Terms — Inventory">
+        <Table
+          headers={['Term', 'Also known as', 'Note']}
+          rows={[
+            ['NRV', 'Net Realizable Value', '예상 판매가 − 완성/판매 비용'],
+            ['LCM', 'Lower of Cost or NRV (현행)', '구 표현: Lower of Cost or Market'],
+            ['Price index', 'Deflator / Conversion factor', 'DV LIFO 계산 기준'],
+            ['DV LIFO', 'Dollar-Value LIFO', '수량 아닌 달러 금액 기준 LIFO'],
+          ]}
+        />
+        <CodeBlock>{`Dollar-Value LIFO price index:
+= Current year cost ÷ Base year cost
+
+Step 1: EI at base-year cost
+= EI at current cost ÷ Current year price index
+
+Step 3: New layer at LIFO cost
+= New layer at base-year cost × Current year index`}</CodeBlock>
+      </Section>
     </div>
   )
 }
@@ -685,6 +826,28 @@ Step2 Measurement:
         'US GAAP: impairment write-up 불가 (IFRS는 가능)',
         'Interest capitalization: 12/31 지출 = $0 (0/12 가중치)',
       ]} />
+      <Section title="Key Terms — PP&E">
+        <Table
+          headers={['Term', 'Also known as', 'Note']}
+          rows={[
+            ['Salvage value', 'Residual value / Scrap value', 'SL/SYD 차감 / DDB 무시'],
+            ['Useful life', 'Service life / Economic life', '물리적 내용연수와 다를 수 있음'],
+            ['DDB', 'Double Declining Balance / 200% DB', 'BV × 2/Life'],
+            ['SYD', 'Sum-of-Years-Digits', 'SYD 합계 = n(n+1)÷2'],
+          ]}
+        />
+        <CodeBlock>{`Impairment Step 1: CV vs Undiscounted future CF
+  CV = Carrying value (장부금액, 감가상각 후)
+  Undiscounted = PV factor 미적용 (PV 사용 → 오답, 스크리닝용)
+
+Impairment Step 2: Loss = CV − Fair Value
+  Fair Value = exit price
+
+Interest Capitalization rate:
+= Specific borrowing rate (특정 차입금 있으면 우선)
+  or Weighted-avg interest rate (타 차입금 가중평균)
+Note: Dec 31 지출 → 0/12 가중치`}</CodeBlock>
+      </Section>
     </div>
   )
 }
@@ -870,6 +1033,26 @@ function ScfContent() {
         '이자비용 = Operating (US GAAP)',
         'Non-cash → SCF 본문 제외, 별도 공시만',
       ]} />
+      <Section title="Key Terms — SCF">
+        <Table
+          headers={['Term', 'Also known as', 'Note']}
+          rows={[
+            ['Indirect method', 'Reconciliation method', 'NI에서 시작해서 조정'],
+            ['Direct method', 'Cash receipts/payments method', '실제 현금 항목 직접 나열'],
+            ['Non-cash transactions', 'Non-cash investing/financing', '별도 공시 (SCF 본문 아님)'],
+          ]}
+        />
+        <CodeBlock>{`Working capital 조정 방향 (Indirect method):
+  자산↑ → Cash−   자산↓ → Cash+
+  부채↑ → Cash+   부채↓ → Cash−
+
+Key classification traps:
+  Notes receivable collected → Investing (AR과 혼동 금지)
+  Interest paid             → Operating (US GAAP)
+  Finance lease principal   → Financing
+  Dividends paid            → Financing
+  Dividends received        → Operating (US GAAP)`}</CodeBlock>
+      </Section>
     </div>
   )
 }
@@ -1462,6 +1645,26 @@ Upstream (sub → parent): parent + NCI 비례 배분`}</CodeBlock>
         'Upstream: Sub가 판매 → NCI에도 미실현이익 배분',
         'Intercompany receivable/payable → 연결 B/S에서 상계 제거',
       ]} />
+      <Section title="Key Terms — Consolidation">
+        <Table
+          headers={['Term', 'Also known as', 'Note']}
+          rows={[
+            ['NCI', 'Non-controlling interest / Minority interest (구)', '지배주주 외 나머지 지분'],
+            ['Goodwill', 'Purchase price premium', '상각 없음, annual impairment'],
+            ['Downstream', 'Parent → Sub 거래', '미실현이익 100% parent'],
+            ['Upstream', 'Sub → Parent 거래', 'parent + NCI 비율 배분'],
+          ]}
+        />
+        <CodeBlock>{`Goodwill = Acquisition price
+         − FV of net identifiable assets × parent ownership %
+
+NCI = FV of subsidiary × NCI %
+    (NCI % = 1 − parent ownership %)
+
+Upstream unrealized profit elimination:
+  Parent NI → × parent ownership % 제거
+  NCI       → × NCI % 제거`}</CodeBlock>
+      </Section>
     </div>
   )
 }
