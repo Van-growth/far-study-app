@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { PROFESSOR_SSOT_V2, TopicCard } from '../constants/professor_ssot_v2'
 import useStudyStore from '../store/studyStore'
@@ -1088,7 +1089,11 @@ function HarryTab({ catLabel }: { catLabel: string }) {
 export default function ConceptNotesPage() {
   const userId = useStudyStore((s) => s.userId)
   const openPanel = useClaudeStore((s) => s.openPanel)
-  const [selectedCatId, setSelectedCatId] = useState<CategoryId>('bond')
+  const [searchParams] = useSearchParams()
+  const initCat = (searchParams.get('cat') ?? 'bond') as CategoryId
+  const [selectedCatId, setSelectedCatId] = useState<CategoryId>(
+    CATEGORIES.some(c => c.id === initCat) ? initCat : 'bond'
+  )
   const [activeTab, setActiveTab] = useState<TabKey>('content')
   const [wrongCounts, setWrongCounts] = useState<Record<string, number>>({})
   const [sidebarOpen, setSidebarOpen] = useState(false)
