@@ -23,6 +23,7 @@ import ConceptMapPage from './pages/ConceptMapPage';
 import TBSPage from './pages/TBSPage';
 import HarryHistoryPage from './pages/HarryHistoryPage';
 import CorePage from './pages/CorePage';
+import BondMasterPage from './pages/BondMasterPage';
 import DailyBriefingModal from './components/DailyBriefingModal';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
@@ -254,6 +255,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/tbs" element={<TBSPage />} />
             <Route path="/harry-history" element={<HarryHistoryPage />} />
             <Route path="/core" element={<CorePage />} />
+            <Route path="/bond-master" element={<BondMasterPage />} />
             {email.toLowerCase() === ADMIN_EMAIL && (
               <Route path="/admin" element={<AdminPage email={email} />} />
             )}

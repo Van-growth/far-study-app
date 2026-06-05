@@ -1,4 +1,5 @@
 export const MORE_MENU_ITEMS = [
+  { label: '📘 Bond · Lease 마스터', path: '/bond-master' },
   { label: '🔑 Core Principles', path: '/core' },
   { label: '📊 분석', path: '/analyze' },
   { label: '🗂️ TBS', path: '/tbs' },
