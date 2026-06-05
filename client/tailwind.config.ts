@@ -5,14 +5,17 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"DM Sans"', 'sans-serif'],
+        sans: ['"Noto Sans KR"', '"Noto Sans"', '-apple-system', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {
-        bg: '#f0f4f8',
+        bg: '#fafaf8',
         surface: '#ffffff',
+        surface2: '#f3f3f0',
         primary: '#4f6ef7',
-        muted: '#64748b',
-        border: '#e2e8f0',
+        muted: '#555555',
+        border: '#e8e8e4',
+        'border-strong': '#d0d0c8',
         correct: { DEFAULT: '#22c55e', light: '#f0fdf4' },
         wrong: { DEFAULT: '#ef4444', light: '#fff5f5' },
         warn: { DEFAULT: '#f59e0b', light: '#fffbeb' },

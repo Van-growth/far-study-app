@@ -2,62 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── CSS Variables ────────────────────────────────────── */
+:root {
+  --bg-primary:    #fafaf8;
+  --bg-surface:    #ffffff;
+  --bg-surface2:   #f3f3f0;
+  --bg-hover:      #f0efeb;
+
+  --text-primary:   #1a1a1a;
+  --text-secondary: #555555;
+  --text-tertiary:  #888888;
+  --text-navy:      #1a2744;
+
+  --border-default: #e8e8e4;
+  --border-strong:  #d0d0c8;
+
+  --color-trap:       #dc2626;
+  --color-trap-bg:    #fef2f2;
+  --color-speed-bg:   #1a2744;
+  --color-formula-bg: #f0f4ff;
+  --color-trigger-bg: #f5f5f0;
+}
+
 @layer base {
   * {
     box-sizing: border-box;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
   }
+
   /* iOS Safari input zoom prevention — font-size < 16px triggers auto-zoom */
   input, textarea, select {
     font-size: 16px;
   }
+
   body {
-    font-family: 'DM Sans', sans-serif;
-    background-color: #f0f4f8;
-    color: #0f172a;
+    font-family: 'Noto Sans KR', 'Noto Sans', -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     margin: 0;
     padding: 0;
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
   }
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+
+  code, pre, .monospace, .je, .formula {
+    font-family: 'JetBrains Mono', monospace;
   }
-  ::-webkit-scrollbar-track {
-    background: #f0f4f8;
+
+  h1 { font-size: 22px; font-weight: 600; color: var(--text-primary); }
+  h2 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+  h3 { font-size: 13px; font-weight: 600; color: var(--text-navy); }
+  p  { color: var(--text-secondary); line-height: 1.7; }
+
+  :focus-visible {
+    outline: 2px solid #1a2744;
+    outline-offset: 2px;
   }
-  ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 3px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #1a2744; }
 }
 
 @layer utilities {
   .formula-block {
-    font-family: 'Courier New', Courier, monospace;
-    background: #ecfdf5;
-    color: #065f46;
-    border: 1px solid #a7f3d0;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    background: var(--color-formula-bg);
+    color: #1a2744;
+    border: 1px solid #c7d2fe;
     border-radius: 8px;
     padding: 10px 14px;
     font-size: 0.875rem;
     line-height: 1.6;
   }
   .trigger-block {
-    font-family: 'Courier New', Courier, monospace;
-    background: #f5f3ff;
-    color: #4c1d95;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    background: var(--color-trigger-bg);
+    color: #333;
     border-radius: 8px;
     padding: 8px 12px;
     font-size: 0.85rem;
   }
   .card {
-    background: #ffffff;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 14px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
+  .content-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .content-card.bond     { border-top: 4px solid #7c3aed; }
+  .content-card.lease    { border-top: 4px solid #16a34a; }
+  .content-card.note     { border-top: 4px solid #d97706; }
+  .content-card.aro      { border-top: 4px solid #ea580c; }
+  .content-card.tax      { border-top: 4px solid #059669; }
+  .content-card.eps      { border-top: 4px solid #2563eb; }
+  .content-card.inventory{ border-top: 4px solid #a21caf; }
 }
 
 /* Mobile modal slide-up animation */

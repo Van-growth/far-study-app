@@ -145,7 +145,7 @@ function AppLayout({ email }: { email: string }) {
         {/* Main content — extra bottom padding on mobile for tab bar */}
         <main
           className="flex-1 overflow-auto min-w-0 pt-[44px] md:pt-0"
-          style={{ background: '#f0f4f8' }}
+          style={{ background: 'var(--bg-primary)' }}
         >
           <Routes>
             <Route path="/" element={<HomePage />} />
