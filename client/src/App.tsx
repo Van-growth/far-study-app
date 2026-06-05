@@ -33,9 +33,7 @@ const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 import useClaudeStore from './store/claudeStore';
 import useStudyStore from './store/studyStore';
 
-const PANEL_MIN = 280;
-const PANEL_MAX = 600;
-const PANEL_DEFAULT = 340;
+import { PANEL_WIDTH_MIN, PANEL_WIDTH_MAX } from './store/claudeStore';
 
 // ── Bottom Tab Bar (mobile only) ──────────────────────────────
 const MOBILE_TABS = [
@@ -105,9 +103,10 @@ function AppLayout({ email }: { email: string }) {
   const location = useLocation();
   const isScience = location.pathname === '/science';
   const isPanelOpen = useClaudeStore((s) => s.isOpen);
+  const panelWidth = useClaudeStore((s) => s.panelWidth);
+  const setPanelWidth = useClaudeStore((s) => s.setPanelWidth);
   const userId = useStudyStore((s) => s.userId);
 
-  const [panelWidth, setPanelWidth] = useState(PANEL_DEFAULT);
   const isDragging = useRef(false);
   const startX = useRef(0);
   const startW = useRef(0);
@@ -124,9 +123,9 @@ function AppLayout({ email }: { email: string }) {
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDragging.current) return;
     const delta = startX.current - e.clientX;
-    const next = Math.min(PANEL_MAX, Math.max(PANEL_MIN, startW.current + delta));
+    const next = Math.min(PANEL_WIDTH_MAX, Math.max(PANEL_WIDTH_MIN, startW.current + delta));
     setPanelWidth(next);
-  }, []);
+  }, [setPanelWidth]);
 
   const onPointerUp = useCallback(() => {
     isDragging.current = false;

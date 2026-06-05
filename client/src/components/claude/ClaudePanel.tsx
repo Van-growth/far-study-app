@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, KeyboardEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import useClaudeStore, { HarryContext } from '../../store/claudeStore';
+import useClaudeStore, { HarryContext, PANEL_WIDTH_DEFAULT } from '../../store/claudeStore';
 import useStudyStore from '../../store/studyStore';
 import { useClaudeChat, TutorDbContext } from '../../hooks/useClaudeChat';
 import { getTopicById } from '../../data/far-topics';
@@ -58,6 +58,8 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const harryContext = useClaudeStore((s) => s.harryContext);
   const harryConversationId = useClaudeStore((s) => s.harryConversationId);
   const setHarryContext = useClaudeStore((s) => s.setHarryContext);
+  const panelWidth = useClaudeStore((s) => s.panelWidth);
+  const setPanelWidth = useClaudeStore((s) => s.setPanelWidth);
   const setHarryConversationId = useClaudeStore((s) => s.setHarryConversationId);
   const setMessages = useClaudeStore((s) => s.setMessages);
 
@@ -391,6 +393,28 @@ SPEED: 30초 풀이 한 줄`;
             {contextLoading && <span className="text-[10px] text-[#94a3b8]">학습 현황 로딩 중</span>}
           </div>
           <div className="flex items-center gap-0.5">
+            {/* Width presets — desktop only */}
+            {!modal && (
+              <>
+                <button
+                  onClick={() => setPanelWidth(560)}
+                  title="넓게"
+                  className="hidden md:flex w-8 h-8 items-center justify-center rounded-lg text-muted hover:text-[#1a2744] hover:bg-gray-100 text-[11px] font-semibold"
+                  style={{ color: panelWidth >= 500 ? '#1a2744' : undefined }}
+                >
+                  넓게
+                </button>
+                <button
+                  onClick={() => setPanelWidth(PANEL_WIDTH_DEFAULT)}
+                  title="기본"
+                  className="hidden md:flex w-8 h-8 items-center justify-center rounded-lg text-muted hover:text-[#1a2744] hover:bg-gray-100 text-[11px] font-semibold"
+                  style={{ color: panelWidth < 500 ? '#1a2744' : undefined }}
+                >
+                  기본
+                </button>
+                <div className="hidden md:block w-px h-4 bg-border mx-0.5" />
+              </>
+            )}
             <button
               onClick={() => { closePanel(); navigate('/harry-history'); }}
               className="w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:text-[#0f172a] hover:bg-gray-100 text-sm"

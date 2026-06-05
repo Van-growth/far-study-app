@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { PROFESSOR_SSOT_V2, TopicCard } from '../constants/professor_ssot_v2'
 import useStudyStore from '../store/studyStore'
+import useClaudeStore from '../store/claudeStore'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const NAVY = '#1a2744'
-const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001'
 
 const CATEGORIES = [
   { id: 'bond',        label: 'Bond & TDR',                   groups: ['IA_CH8_BOND', 'IA_CH8_TDR'] },
@@ -30,11 +30,6 @@ const CATEGORIES = [
 
 type CategoryId = typeof CATEGORIES[number]['id']
 type TabKey = 'content' | 'cards' | 'harry'
-
-interface ChatMessage {
-  role: 'user' | 'assistant'
-  content: string
-}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function getCardsForCategory(cat: typeof CATEGORIES[number]): TopicCard[] {
@@ -548,159 +543,45 @@ function CardsTab({ cat }: { cat: typeof CATEGORIES[number] }) {
   )
 }
 
-// ── Harry Tab ──────────────────────────────────────────────────────────────────
+// ── Harry Tab — delegates to global Harry sidebar ──────────────────────────────
 function HarryTab({ catLabel }: { catLabel: string }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const openPanel = useClaudeStore((s) => s.openPanel)
+  const setPendingAutoMessage = useClaudeStore((s) => s.setPendingAutoMessage)
 
-  const systemPrompt = `You are Harry, a FAR CPA exam tutor. Current topic: ${catLabel}. Focus exclusively on concepts in this category. Be concise, use examples with numbers, and guide the student to understand. If asked for a visual, respond with a clear ASCII diagram or table.`
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  async function sendMessage(text: string) {
-    if (!text.trim() || isLoading) return
-    const userMsg: ChatMessage = { role: 'user', content: text }
-    const updated = [...messages, userMsg]
-    setMessages(updated)
-    setInput('')
-    setIsLoading(true)
-
-    try {
-      const res = await fetch(`${API_URL}/api/claude/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updated, systemPrompt }),
-      })
-
-      if (!res.ok || !res.body) throw new Error('Stream failed')
-
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      let assistantText = ''
-      setMessages(prev => [...prev, { role: 'assistant', content: '' }])
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const payload = line.slice(6).trim()
-            if (payload === '[DONE]') continue
-            try {
-              const parsed = JSON.parse(payload)
-              const delta = parsed?.choices?.[0]?.delta?.content
-                ?? parsed?.delta?.text
-                ?? parsed?.content
-                ?? ''
-              assistantText += delta
-              setMessages(prev => {
-                const copy = [...prev]
-                copy[copy.length - 1] = { role: 'assistant', content: assistantText }
-                return copy
-              })
-            } catch { /* ignore parse errors */ }
-          }
-        }
-      }
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ 응답을 가져오지 못했습니다. 다시 시도해주세요.' }])
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const quickButtons = [
-    { label: '개념 확인', prompt: `Ask me a fill-in-the-blank question about ${catLabel}` },
-    { label: '분개 오류 찾기', prompt: `Show me a journal entry with one error related to ${catLabel}` },
-    { label: '빈칸 채우기', prompt: `Give me a formula completion question for ${catLabel}` },
+  const quickActions = [
+    { label: '개념 확인', msg: `${catLabel} 개념 확인 문제 내줘` },
+    { label: '분개 오류 찾기', msg: `${catLabel} 분개에서 오류 찾기 문제 내줘` },
+    { label: '빈칸 채우기', msg: `${catLabel} 공식 빈칸 채우기 문제 내줘` },
   ]
 
+  const send = (msg: string) => {
+    openPanel()
+    setPendingAutoMessage(msg)
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 500 }}>
-      <div style={{ display: 'flex', gap: 8, padding: '12px 0', flexWrap: 'wrap' }}>
-        {quickButtons.map(btn => (
+    <div style={{ padding: '32px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>🧙</div>
+        <p style={{ fontSize: 15, color: '#444', lineHeight: 1.7, margin: 0 }}>
+          우측 <strong style={{ color: NAVY }}>Harry 패널</strong>에서<br />
+          <strong style={{ color: NAVY }}>{catLabel}</strong> 관련 질문을 시작하세요.
+        </p>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 340 }}>
+        {quickActions.map(a => (
           <button
-            key={btn.label}
-            onClick={() => sendMessage(btn.prompt)}
-            disabled={isLoading}
+            key={a.label}
+            onClick={() => send(a.msg)}
             style={{
-              padding: '6px 14px', borderRadius: 20, border: `1px solid ${NAVY}`,
-              background: '#fff', color: NAVY, fontSize: 12.5, fontWeight: 600,
-              cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.5 : 1,
+              padding: '11px 18px', border: `1.5px solid ${NAVY}`, borderRadius: 10,
+              background: '#fff', color: NAVY, fontSize: 13.5, fontWeight: 600,
+              cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between',
             }}
           >
-            {btn.label}
+            {a.label} <span style={{ opacity: 0.5 }}>→</span>
           </button>
         ))}
-      </div>
-
-      <div style={{
-        flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12,
-        padding: '8px 0', minHeight: 300, maxHeight: 480,
-      }}>
-        {messages.length === 0 && (
-          <div style={{ color: '#aaa', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
-            Harry에게 {catLabel} 관련 질문을 해보세요
-          </div>
-        )}
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            style={{
-              display: 'flex',
-              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            }}
-          >
-            <div
-              style={{
-                maxWidth: '82%',
-                padding: '10px 14px',
-                borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                background: msg.role === 'user' ? '#e8edf5' : NAVY,
-                color: msg.role === 'user' ? '#111' : '#fff',
-                fontSize: 13,
-                lineHeight: 1.6,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-              }}
-            >
-              {msg.content || (isLoading && i === messages.length - 1 ? '...' : '')}
-            </div>
-          </div>
-        ))}
-        <div ref={bottomRef} />
-      </div>
-
-      <div style={{ display: 'flex', gap: 8, paddingTop: 12, borderTop: '1px solid #e0e0e0' }}>
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) } }}
-          placeholder={`${catLabel} 관련 질문 입력...`}
-          disabled={isLoading}
-          style={{
-            flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #e0e0e0',
-            fontSize: 13, outline: 'none',
-          }}
-        />
-        <button
-          onClick={() => sendMessage(input)}
-          disabled={isLoading || !input.trim()}
-          style={{
-            padding: '8px 18px', borderRadius: 8, border: 'none',
-            background: NAVY, color: '#fff', fontSize: 13, fontWeight: 600,
-            cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer',
-            opacity: isLoading || !input.trim() ? 0.5 : 1,
-          }}
-        >
-          전송
-        </button>
       </div>
     </div>
   )
@@ -709,6 +590,7 @@ function HarryTab({ catLabel }: { catLabel: string }) {
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function ConceptNotesPage() {
   const userId = useStudyStore((s) => s.userId)
+  const openPanel = useClaudeStore((s) => s.openPanel)
   const [selectedCatId, setSelectedCatId] = useState<CategoryId>('bond')
   const [activeTab, setActiveTab] = useState<TabKey>('content')
   const [wrongCounts, setWrongCounts] = useState<Record<string, number>>({})
@@ -853,7 +735,7 @@ export default function ConceptNotesPage() {
             {TABS.map(tab => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => { setActiveTab(tab.key); if (tab.key === 'harry') openPanel(); }}
                 style={{
                   padding: '9px 20px', fontSize: 13.5, fontWeight: 600,
                   border: 'none', background: 'none', cursor: 'pointer',

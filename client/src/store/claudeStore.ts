@@ -83,6 +83,19 @@ export interface HarryContext {
   context_name: string | null;
 }
 
+export const PANEL_WIDTH_MIN = 300;
+export const PANEL_WIDTH_MAX = 680;
+export const PANEL_WIDTH_DEFAULT = 360;
+const PANEL_WIDTH_KEY = 'harry_panel_width';
+
+function loadSavedPanelWidth(): number {
+  try {
+    const v = localStorage.getItem(PANEL_WIDTH_KEY);
+    if (v) return Math.min(PANEL_WIDTH_MAX, Math.max(PANEL_WIDTH_MIN, parseInt(v, 10)));
+  } catch { /* ignore */ }
+  return PANEL_WIDTH_DEFAULT;
+}
+
 interface ClaudeStore {
   isOpen: boolean;
   messages: Message[];
@@ -96,6 +109,7 @@ interface ClaudeStore {
   currentTBSPattern: CurrentTBSPattern | null;
   harryContext: HarryContext | null;
   harryConversationId: string | null;
+  panelWidth: number;
 
   togglePanel: () => void;
   openPanel: () => void;
@@ -115,6 +129,7 @@ interface ClaudeStore {
   setHarryContext: (ctx: HarryContext | null) => void;
   setHarryConversationId: (id: string | null) => void;
   setMessages: (msgs: Message[]) => void;
+  setPanelWidth: (w: number) => void;
 }
 
 const useClaudeStore = create<ClaudeStore>((set) => ({
@@ -130,10 +145,16 @@ const useClaudeStore = create<ClaudeStore>((set) => ({
   currentTBSPattern: null,
   harryContext: null,
   harryConversationId: null,
+  panelWidth: loadSavedPanelWidth(),
 
   togglePanel: () => set((s) => ({ isOpen: !s.isOpen })),
   openPanel: () => set({ isOpen: true }),
   closePanel: () => set({ isOpen: false }),
+  setPanelWidth: (w) => {
+    const clamped = Math.min(PANEL_WIDTH_MAX, Math.max(PANEL_WIDTH_MIN, w));
+    try { localStorage.setItem(PANEL_WIDTH_KEY, String(clamped)); } catch { /* ignore */ }
+    set({ panelWidth: clamped });
+  },
   setPendingQuiz: (ctx) => set({ pendingQuiz: ctx }),
   setAnalyzeContext: (ctx) => set({ analyzeContext: ctx }),
   setReviewCardContext: (ctx) => set({ reviewCardContext: ctx }),
