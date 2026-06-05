@@ -129,6 +129,148 @@ Discount example (Face $100,000 / Coupon 6% / Market 8% / 5yr):
         <p style={{ color: '#555', marginTop: 8, fontStyle: 'italic' }}>Memory: "Coupon"은 옛날 채권에 달린 실제 쿠폰에서 유래. 만기마다 떼어내서 이자를 수령했음.</p>
       </Section>
 
+      <Section title="Bond CV 흐름 — 한눈에">
+        <div className="bond-diagram" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* SVG 1 — Bond 구조도 */}
+          <svg width="100%" viewBox="0 0 680 520" role="img">
+            <title>Bond — Premium vs Discount structure</title>
+            <desc>Bond 발행부터 만기까지 CV 흐름, 이자 계산 구조 시각화</desc>
+            <defs>
+              <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </marker>
+            </defs>
+            <g className="c-gray">
+              <rect x="240" y="20" width="200" height="44" rx="8" strokeWidth="0.5"/>
+              <text className="th" x="340" y="38" textAnchor="middle" dominantBaseline="central">Bond issuance</text>
+              <text className="ts" x="340" y="54" textAnchor="middle" dominantBaseline="central">Market rate vs Coupon rate</text>
+            </g>
+            <line x1="240" y1="42" x2="160" y2="90" stroke="#534AB7" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
+            <line x1="440" y1="42" x2="520" y2="90" stroke="#993C1D" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
+            <text className="ts" x="170" y="82" textAnchor="middle">Market &lt; Coupon</text>
+            <text className="ts" x="510" y="82" textAnchor="middle">Market &gt; Coupon</text>
+            <g className="c-purple">
+              <rect x="40" y="100" width="200" height="56" rx="8" strokeWidth="0.5"/>
+              <text className="th" x="140" y="122" textAnchor="middle" dominantBaseline="central">Premium</text>
+              <text className="ts" x="140" y="140" textAnchor="middle" dominantBaseline="central">Issue price &gt; Face value</text>
+            </g>
+            <g className="c-purple">
+              <rect x="40" y="190" width="200" height="44" rx="8" strokeWidth="0.5"/>
+              <text className="th" x="140" y="206" textAnchor="middle" dominantBaseline="central">CV starts high</text>
+              <text className="ts" x="140" y="222" textAnchor="middle" dominantBaseline="central">108,000 → 100,000</text>
+            </g>
+            <line x1="140" y1="156" x2="140" y2="188" stroke="#534AB7" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
+            <g className="c-purple">
+              <rect x="40" y="268" width="200" height="56" rx="8" strokeWidth="0.5"/>
+              <text className="th" x="140" y="287" textAnchor="middle" dominantBaseline="central">Interest expense</text>
+              <text className="ts" x="140" y="303" textAnchor="middle" dominantBaseline="central">CV × Market rate</text>
+              <text className="ts" x="140" y="317" textAnchor="middle" dominantBaseline="central">decreases each year</text>
+            </g>
+            <line x1="140" y1="234" x2="140" y2="266" stroke="#534AB7" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
+            <g className="c-gray">
+              <rect x="30" y="358" width="220" height="76" rx="8" strokeWidth="0.5"/>
+              <text className="ts" x="46" y="378">Dr. Interest Expense   4,320</text>
+              <text className="ts" x="46" y="396">Dr. Premium on Bonds   1,680</text>
+              <text className="ts" x="46" y="414">    Cr. Cash                   6,000</text>
+            </g>
+            <line x1="140" y1="324" x2="140" y2="356" stroke="#534AB7" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
+            <g className="c-coral">
+              <rect x="440" y="100" width="200" height="56" rx="8" strokeWidth="0.5"/>
+              <text className="th" x="540" y="122" textAnchor="middle" dominantBaseline="central">Discount</text>
+              <text className="ts" x="540" y="140" textAnchor="middle" dominantBaseline="central">Issue price &lt; Face value</text>
+            </g>
+            <g className="c-coral">
+              <rect x="440" y="190" width="200" height="44" rx="8" strokeWidth="0.5"/>
+              <text className="th" x="540" y="206" textAnchor="middle" dominantBaseline="central">CV starts low</text>
+              <text className="ts" x="540" y="222" textAnchor="middle" dominantBaseline="central">92,000 → 100,000</text>
+            </g>
+            <line x1="540" y1="156" x2="540" y2="188" stroke="#993C1D" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
+            <g className="c-coral">
+              <rect x="440" y="268" width="200" height="56" rx="8" strokeWidth="0.5"/>
+              <text className="th" x="540" y="287" textAnchor="middle" dominantBaseline="central">Interest expense</text>
+              <text className="ts" x="540" y="303" textAnchor="middle" dominantBaseline="central">CV × Market rate</text>
+              <text className="ts" x="540" y="317" textAnchor="middle" dominantBaseline="central">increases each year</text>
+            </g>
+            <line x1="540" y1="234" x2="540" y2="266" stroke="#993C1D" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
+            <g className="c-gray">
+              <rect x="430" y="358" width="220" height="76" rx="8" strokeWidth="0.5"/>
+              <text className="ts" x="446" y="378">Dr. Interest Expense   7,360</text>
+              <text className="ts" x="446" y="396">    Cr. Discount on Bonds  1,360</text>
+              <text className="ts" x="446" y="414">    Cr. Cash                   6,000</text>
+            </g>
+            <line x1="540" y1="324" x2="540" y2="356" stroke="#993C1D" strokeWidth="1" markerEnd="url(#arr)" fill="none"/>
+            <g className="c-teal">
+              <rect x="200" y="458" width="280" height="44" rx="8" strokeWidth="0.5"/>
+              <text className="th" x="340" y="476" textAnchor="middle" dominantBaseline="central">At maturity: CV = Face value</text>
+              <text className="ts" x="340" y="492" textAnchor="middle" dominantBaseline="central">Both converge to 100,000</text>
+            </g>
+            <line x1="140" y1="434" x2="280" y2="456" stroke="#534AB7" strokeWidth="1" strokeDasharray="4,3" markerEnd="url(#arr)" fill="none"/>
+            <line x1="540" y1="434" x2="400" y2="456" stroke="#993C1D" strokeWidth="1" strokeDasharray="4,3" markerEnd="url(#arr)" fill="none"/>
+          </svg>
+
+          {/* SVG 2 — CV 수렴 그래프 */}
+          <svg width="100%" viewBox="0 0 680 400" role="img">
+            <title>Bond CV convergence to face value over 5 years</title>
+            <desc>Premium bond CV decreases, Discount bond CV increases, both converge to face value at maturity</desc>
+            <line x1="80" y1="30" x2="80" y2="320" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
+            <line x1="80" y1="320" x2="620" y2="320" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
+            <text className="ts" x="72" y="54" textAnchor="end">110,000</text>
+            <text className="ts" x="72" y="124" textAnchor="end">108,000</text>
+            <text className="ts" x="72" y="194" textAnchor="end">100,000</text>
+            <text className="ts" x="72" y="264" textAnchor="end">92,000</text>
+            <text className="ts" x="72" y="304" textAnchor="end">90,000</text>
+            <line x1="80" y1="194" x2="620" y2="194" stroke="var(--color-text-tertiary)" strokeWidth="0.5" strokeDasharray="4,3" fill="none"/>
+            <text className="ts" x="628" y="198" textAnchor="start">Face value</text>
+            <text className="ts" x="80" y="338" textAnchor="middle">0</text>
+            <text className="ts" x="184" y="338" textAnchor="middle">Y1</text>
+            <text className="ts" x="288" y="338" textAnchor="middle">Y2</text>
+            <text className="ts" x="392" y="338" textAnchor="middle">Y3</text>
+            <text className="ts" x="496" y="338" textAnchor="middle">Y4</text>
+            <text className="ts" x="600" y="338" textAnchor="middle">Y5</text>
+            <line x1="184" y1="318" x2="184" y2="324" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
+            <line x1="288" y1="318" x2="288" y2="324" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
+            <line x1="392" y1="318" x2="392" y2="324" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
+            <line x1="496" y1="318" x2="496" y2="324" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
+            <line x1="600" y1="318" x2="600" y2="324" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
+            <polyline points="80,82 184,106 288,130 392,155 496,182 600,194" fill="none" stroke="#534AB7" strokeWidth="2"/>
+            <circle cx="80"  cy="82"  r="4" fill="#534AB7"/>
+            <circle cx="184" cy="106" r="4" fill="#534AB7"/>
+            <circle cx="288" cy="130" r="4" fill="#534AB7"/>
+            <circle cx="392" cy="155" r="4" fill="#534AB7"/>
+            <circle cx="496" cy="182" r="4" fill="#534AB7"/>
+            <circle cx="600" cy="194" r="5" fill="#534AB7"/>
+            <text className="ts" x="80"  y="74"  textAnchor="middle" fill="#534AB7">108,000</text>
+            <text className="ts" x="184" y="98"  textAnchor="middle" fill="#534AB7">106,320</text>
+            <text className="ts" x="288" y="122" textAnchor="middle" fill="#534AB7">104,573</text>
+            <text className="ts" x="392" y="147" textAnchor="middle" fill="#534AB7">102,756</text>
+            <text className="ts" x="496" y="174" textAnchor="middle" fill="#534AB7">100,866</text>
+            <polyline points="80,306 184,287 288,266 392,244 496,220 600,194" fill="none" stroke="#993C1D" strokeWidth="2"/>
+            <circle cx="80"  cy="306" r="4" fill="#993C1D"/>
+            <circle cx="184" cy="287" r="4" fill="#993C1D"/>
+            <circle cx="288" cy="266" r="4" fill="#993C1D"/>
+            <circle cx="392" cy="244" r="4" fill="#993C1D"/>
+            <circle cx="496" cy="220" r="4" fill="#993C1D"/>
+            <circle cx="600" cy="194" r="5" fill="#993C1D"/>
+            <text className="ts" x="80"  y="320" textAnchor="middle" fill="#993C1D">92,000</text>
+            <text className="ts" x="184" y="302" textAnchor="middle" fill="#993C1D">93,360</text>
+            <text className="ts" x="288" y="280" textAnchor="middle" fill="#993C1D">94,829</text>
+            <text className="ts" x="392" y="258" textAnchor="middle" fill="#993C1D">96,415</text>
+            <text className="ts" x="496" y="234" textAnchor="middle" fill="#993C1D">98,128</text>
+            <text className="th" x="608" y="186" textAnchor="start" fill="#085041">100,000</text>
+            <line x1="100" y1="360" x2="130" y2="360" stroke="#534AB7" strokeWidth="2" fill="none"/>
+            <circle cx="115" cy="360" r="4" fill="#534AB7"/>
+            <text className="ts" x="136" y="364">Premium bond (Coupon 6% / Market 4%): CV decreases</text>
+            <line x1="100" y1="380" x2="130" y2="380" stroke="#993C1D" strokeWidth="2" fill="none"/>
+            <circle cx="115" cy="380" r="4" fill="#993C1D"/>
+            <text className="ts" x="136" y="384">Discount bond (Coupon 6% / Market 8%): CV increases</text>
+            <text className="ts" x="350" y="356" textAnchor="middle">Year</text>
+            <text className="ts" x="42" y="180" textAnchor="middle">CV ($)</text>
+          </svg>
+        </div>
+      </Section>
+
+      <hr style={{ border: 'none', borderTop: '2px solid #e0e0e0', margin: '8px 0' }} />
+
       <Section title="Bond 타임라인 다이어그램">
         <div className="bond-diagram" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
 
