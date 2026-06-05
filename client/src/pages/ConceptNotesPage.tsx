@@ -2652,7 +2652,10 @@ export default function ConceptNotesPage() {
   )
   const [activeTab, setActiveTab] = useState<TabKey>('content')
   const [wrongCounts, setWrongCounts] = useState<Record<string, number>>({})
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return true
+    try { return localStorage.getItem('far-concept-notes-sidebar-collapsed') === 'true' } catch { return false }
+  })
   const prevIdRef = useRef<ActiveId>(activeId)
 
   useEffect(() => {
@@ -2677,6 +2680,10 @@ export default function ConceptNotesPage() {
       setActiveTab('content')
     }
   }, [activeId])
+
+  useEffect(() => {
+    try { localStorage.setItem('far-concept-notes-sidebar-collapsed', String(sidebarCollapsed)) } catch { /* ignore */ }
+  }, [sidebarCollapsed])
 
   const isSuper = SUPER_CATEGORIES.some(s => s.id === activeId)
   const activeSuperCat = isSuper ? SUPER_CATEGORIES.find(s => s.id === activeId) : null
@@ -2711,52 +2718,22 @@ export default function ConceptNotesPage() {
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#f8f9fb' }}>
 
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div
-          onClick={() => setSidebarOpen(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 40 }}
-        />
-      )}
-
-      {/* Sidebar — desktop always visible, mobile slide-over */}
-      <aside style={{
-        width: 240,
-        background: '#fff',
-        borderRight: '1px solid #e0e0e0',
-        overflowY: 'auto',
-        flexShrink: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        position: undefined,
-        zIndex: 50,
-      }}
+      {/* Sidebar */}
+      <aside
         className="hidden md:flex"
+        style={{
+          width: sidebarCollapsed ? 0 : 240,
+          flexShrink: 0,
+          background: '#fff',
+          borderRight: '1px solid #e0e0e0',
+          overflow: 'hidden',
+          transition: 'width 0.2s ease',
+          flexDirection: 'column',
+        }}
       >
         <SidebarContent
           activeId={activeId}
           onSelect={id => { setActiveId(id); setActiveTab('content') }}
-          getCardCount={getCardCountForCat}
-          getWrongCount={getWrongCountForCat}
-          getSuperWrongCount={getSuperWrongCount}
-        />
-      </aside>
-
-      {/* Mobile slide sidebar */}
-      <aside
-        style={{
-          position: 'fixed', top: 0, left: 0, bottom: 0, width: 260,
-          background: '#fff', borderRight: '1px solid #e0e0e0',
-          overflowY: 'auto', zIndex: 50,
-          transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-          transition: 'transform 0.22s ease',
-          display: 'flex', flexDirection: 'column',
-        }}
-        className="md:hidden"
-      >
-        <SidebarContent
-          activeId={activeId}
-          onSelect={id => { setActiveId(id); setActiveTab('content'); setSidebarOpen(false) }}
           getCardCount={getCardCountForCat}
           getWrongCount={getWrongCountForCat}
           getSuperWrongCount={getSuperWrongCount}
@@ -2775,7 +2752,7 @@ export default function ConceptNotesPage() {
           }}
         >
           <button
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => setSidebarCollapsed(v => !v)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -2789,7 +2766,14 @@ export default function ConceptNotesPage() {
 
         {/* Header: title + tabs */}
         <div style={{ flexShrink: 0, padding: '24px 28px 0' }}>
-          <div className="hidden md:block" style={{ marginBottom: 20 }}>
+          <div className="hidden md:flex" style={{ alignItems: 'center', gap: 10, marginBottom: 20 }}>
+            <button
+              onClick={() => setSidebarCollapsed(v => !v)}
+              title={sidebarCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
+              style={{ flexShrink: 0, padding: '5px 9px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc', fontSize: 16, color: '#374151', cursor: 'pointer', lineHeight: 1 }}
+            >
+              ≡
+            </button>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: NAVY, margin: 0 }}>{displayLabel}</h1>
           </div>
           <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e0e0e0' }}>
