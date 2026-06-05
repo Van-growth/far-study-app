@@ -135,12 +135,12 @@ Discount example (Face $100,000 / Coupon 6% / Market 8% / 5yr):
 
       <Section title="2. PV Calculation — Factor Sources">
         <p style={{ marginBottom: 8 }}>
-          <strong>Issue Price = PV of Coupons (Ordinary Annuity) + PV of Principal (PV of $1)</strong>
+          <strong>Issue Price = PV of Coupons (Annuity factor) + PV of Principal (PV of $1 factor)</strong>
         </p>
         <CodeBlock>{`Step 1: Coupon = Face × Coupon rate (고정, 절대 안 바뀜)
   $100,000 × 6% = $6,000/yr
 
-Step 2: PV of Coupons = Coupon × Ordinary Annuity factor
+Step 2: PV of Coupons = Coupon × Annuity factor (Ordinary or Due — see table below)
   Factor source: rate = MARKET RATE (yield), n = lease term
   ⚠ Coupon rate 6%로 factor 찾으면 → 오답
 
@@ -160,6 +160,19 @@ Discount (Coupon 6% / Market 8% / 5yr):
   PV of Principal = $100,000 × 0.6806 = $68,060
                               ↑ PV of $1 factor (rate=8%, n=5)
   Issue Price = $92,016 → Discount $7,984`}</CodeBlock>
+        <Table
+          headers={['조건', 'Factor', '신호 키워드']}
+          rows={[
+            ['기말 납부 (default)', 'Ordinary Annuity factor', '명시 없으면 항상 이것'],
+            ['기초 납부', 'Annuity Due factor', '"first payment on issue date" / "beginning of period"'],
+          ]}
+        />
+        <p style={{ fontSize: 12.5, marginTop: 8 }}>
+          <strong>Annuity Due factor 계산 (PV table 제공 시):</strong>
+        </p>
+        <CodeBlock>{`Method 1 (권장): PV factor(n−1, rate) + 1.0000
+Method 2:         PV factor(n, rate) × (1 + rate)
+→ 두 방법 동일 결과, Method 1이 소수점 오차 없음`}</CodeBlock>
         <TrapBox items={[
           'Coupon $6,000 계산 → Coupon rate 6% 사용 ✓ (고정)',
           'PV factor 선택 → Market rate (yield) 기준 ✓',
@@ -228,6 +241,10 @@ Gain/Loss = Net CV − Reacquisition Price
 → Reported on Income Statement (ordinary item)`}</CodeBlock>
       </Section>
 
+      <DefaultBox items={[
+        { default: '상각법: Effective Interest Method', changed: '"straight-line method" 명시 시만 SL 사용' },
+        { default: '납부 시점: Ordinary Annuity / 기말', changed: '"first payment on issue date" → Annuity Due' },
+      ]} />
       <TrapBox items={[
         '"sold to yield X%" → use X% as the discount factor only',
         'Never omit Principal PV from issue price calculation',
@@ -317,6 +334,11 @@ ROU Amortization (plug):
   ROU Amort = SL Expense − Interest Expense`}</CodeBlock>
       </Section>
 
+      <DefaultBox items={[
+        { default: 'Rate: IBR', changed: '"rate implicit in the lease known to lessee" → Implicit rate 우선 (IBR 사용 불가)' },
+        { default: '납부 시점: Ordinary Annuity / 기말', changed: '"first payment on commencement date" → Annuity Due (첫 납부 이자 없음)' },
+        { default: 'ROU 상각 기간: Lease term', changed: 'T(title transfer) 또는 B(BPO) 충족 시 → Useful life로 상각' },
+      ]} />
       <TrapBox items={[
         'Annuity Due vs Ordinary: Due → first payment today → higher PV',
         'Implicit rate available → must use it, not IBR',
@@ -576,6 +598,9 @@ Valuation Allowance:
   → Contra asset reduces DTA to expected realizable amount`}</CodeBlock>
       </Section>
 
+      <DefaultBox items={[
+        { default: 'Tax rate: Enacted future rate (deferred 계산)', changed: '"current portion of tax expense"만 물을 때 → 당기 enacted rate 사용' },
+      ]} />
       <TrapBox items={[
         'Use enacted rate (not proposed or current rate)',
         'Permanent differences never create DTA or DTL',
@@ -682,6 +707,29 @@ function TrapBox({ items }: { items: string[] }) {
   )
 }
 
+function DefaultBox({ items }: { items: { default: string; changed: string }[] }) {
+  return (
+    <div style={{
+      background: '#eff6ff', border: '1px solid #1d4ed8',
+      borderRadius: 8, padding: '12px 16px', marginBottom: 12,
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#1d4ed8', marginBottom: 8 }}>
+        ⚡ Default vs 명시 시 변경 (US GAAP)
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {items.map((item, i) => (
+          <div key={i} style={{ fontSize: 12.5 }}>
+            <span style={{ color: '#1a2744', fontWeight: 600 }}>Default: </span>
+            <span style={{ color: '#333' }}>{item.default}</span>
+            <span style={{ color: '#1d4ed8', fontWeight: 700 }}> → </span>
+            <span style={{ color: '#1a2744' }}>{item.changed}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ComingSoon({ label }: { label: string }) {
   return (
     <div style={{
@@ -741,6 +789,9 @@ Step3: Add all layers = LIFO cost
   Cr. Inventory                  [write-down amount]`}</CodeBlock>
       </Section>
 
+      <DefaultBox items={[
+        { default: 'Cost flow: 문제 명시 방법 사용 (FIFO/LIFO/WA 모두 허용)', changed: '방법 변경 시 → Retrospective (Change in Accounting Principle)' },
+      ]} />
       <TrapBox items={[
         'LIFO reserve = FIFO EI − LIFO EI',
         'Dollar-Value LIFO: index 방향 실수 주의 (나누기 vs 곱하기)',
@@ -819,6 +870,12 @@ Step2 Measurement:
 분개: Dr. Impairment Loss / Cr. Accumulated Impairment Loss`}</CodeBlock>
       </Section>
 
+      <DefaultBox items={[
+        { default: '감가상각법: SL (명시 없으면 가정)', changed: '"double declining balance" → DDB / "sum-of-years-digits" → SYD' },
+        { default: 'Patent defense: Expense', changed: '"successfully defended" 명시 → Capitalize (기존 BV + 소송비용, 잔여내용연수 상각)' },
+        { default: 'Software Preliminary → Expense', changed: '"application development stage" → Capitalize' },
+        { default: 'Software Post-implementation → Expense', changed: '고정 (변경 없음)' },
+      ]} />
       <TrapBox items={[
         'Land = 감가상각 없음',
         'DDB: Salvage 무시하지만 BV < Salvage 되면 감가상각 중단',
@@ -1027,6 +1084,12 @@ function ScfContent() {
 예: 토지 취득 + Mortgage 직접 인수 ($500,000)`}</CodeBlock>
       </Section>
 
+      <DefaultBox items={[
+        { default: 'Interest paid → Operating (US GAAP 고정)', changed: '선택 없음 (변경 불가)' },
+        { default: 'Interest received → Operating (US GAAP 고정)', changed: '선택 없음 (변경 불가)' },
+        { default: 'Dividends paid → Financing (US GAAP 고정)', changed: '선택 없음 (변경 불가)' },
+        { default: 'Dividends received → Operating (US GAAP 고정)', changed: '선택 없음 (변경 불가)' },
+      ]} />
       <TrapBox items={[
         'Notes receivable 회수 = Investing (AR과 혼동 금지)',
         '배당지급 = Financing / 배당수령 = Operating (US GAAP)',
@@ -1250,6 +1313,10 @@ Fundraising (모금 활동)
 → 3개 열로 분류 공시 필수`}</CodeBlock>
       </Section>
 
+      <DefaultBox items={[
+        { default: 'Contribution 분류: With donor restriction', changed: '"no strings attached" / "unrestricted" 명시 → Without donor restriction' },
+        { default: 'Conditional contribution: 인식 안 함', changed: '조건 충족 시 인식' },
+      ]} />
       <TrapBox items={[
         'Conditional contribution → 조건 충족 전 인식 금지',
         'Endowment 원금 지출 = 절대 불가',
@@ -1309,6 +1376,10 @@ Property tax:
     Cr. Cash / Vouchers Payable [실제금액]`}</CodeBlock>
       </Section>
 
+      <DefaultBox items={[
+        { default: 'Accrual basis: Modified accrual (Governmental funds)', changed: 'Proprietary funds (Enterprise/Internal Service) → Full accrual 적용' },
+        { default: 'Revenue: available (60일) + measurable 동시 충족', changed: '조건 미충족 → 인식 불가' },
+      ]} />
       <TrapBox items={[
         'Modified accrual = available (60일) + measurable 둘 다 필요',
         'Encumbrance = 예약 (실제 지출 아님)',
@@ -1501,6 +1572,9 @@ function FxContent() {
         />
       </Section>
 
+      <DefaultBox items={[
+        { default: 'JE 시점: Title transfer date', changed: '"payment date" 또는 "contract date" 언급 → 함정 (오답) — title transfer 기준 유지' },
+      ]} />
       <TrapBox items={[
         '"units of foreign currency per dollar" 숫자↓ = 외화 강세 (직관과 반대!)',
         'AR + 외화 강세 → FX Gain (외화로 더 받으니까)',
@@ -1638,6 +1712,10 @@ Upstream (sub → parent): parent + NCI 비례 배분`}</CodeBlock>
         />
       </Section>
 
+      <DefaultBox items={[
+        { default: '>50% 지분 → Consolidation', changed: '"significant influence only" 명시 → Equity method (20~50%)' },
+        { default: 'VIE: 지분율 무관', changed: 'Primary beneficiary → 무조건 연결' },
+      ]} />
       <TrapBox items={[
         'Goodwill = 취득가 − FV of net assets (BV 아님!)',
         'Consolidated dividend = Parent 배당만 (Sub 배당은 제거)',
@@ -1716,6 +1794,10 @@ Type 2 — 공시만 (분개 없음):
         />
       </Section>
 
+      <DefaultBox items={[
+        { default: 'FS issuance date 기준 (Public company)', changed: 'Private company → FS available to be issued date' },
+        { default: 'Type 1: B/S일 이전 조건 존재 → 수정', changed: 'Type 2: B/S일 이후 새로운 조건 → 주석 공시만' },
+      ]} />
       <TrapBox items={[
         'BS일 이후 주가 폭락 → Type 2 (새로운 조건, 수정 불필요)',
         'BS일 이전 소송 → 판결이 BS일 이후여도 → Type 1 (수정 필요)',
