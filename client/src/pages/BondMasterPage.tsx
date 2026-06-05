@@ -118,21 +118,21 @@ function Tbl({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Th({ children, center }: { children: React.ReactNode; center?: boolean }) {
+function Th({ children, center, style }: { children: React.ReactNode; center?: boolean; style?: React.CSSProperties }) {
   return (
     <th style={{ padding: '8px 12px', border: BORDER, background: NAVY, color: '#fff',
-      textAlign: center ? 'center' : 'left', whiteSpace: 'nowrap' }}>
+      textAlign: center ? 'center' : 'left', whiteSpace: 'nowrap', ...style }}>
       {children}
     </th>
   );
 }
 
-function Td({ children, center, right, bold }: {
-  children: React.ReactNode; center?: boolean; right?: boolean; bold?: boolean;
+function Td({ children, center, bold, style }: {
+  children: React.ReactNode; center?: boolean; bold?: boolean; style?: React.CSSProperties;
 }) {
   return (
-    <td style={{ padding: '8px 12px', border: BORDER, textAlign: center ? 'center' : right ? 'right' : 'left',
-      fontWeight: bold ? 700 : undefined }}>
+    <td style={{ padding: '8px 12px', border: BORDER, textAlign: 'left',
+      fontWeight: bold ? 700 : undefined, ...(center ? { textAlign: 'center' } : {}), ...style }}>
       {children}
     </td>
   );
@@ -261,24 +261,24 @@ function BondSection() {
         <thead>
           <tr>
             <Th center>Year</Th>
-            <Th right>Cash Paid</Th>
-            <Th right>Amort</Th>
-            <Th right>Int Exp (Premium)</Th>
-            <Th right>CV (Premium)</Th>
-            <Th right>Int Exp (Discount)</Th>
-            <Th right>CV (Discount)</Th>
+            <Th style={{ textAlign: 'right' }}>Cash Paid</Th>
+            <Th style={{ textAlign: 'right' }}>Amort</Th>
+            <Th style={{ textAlign: 'right' }}>Int Exp (Premium)</Th>
+            <Th style={{ textAlign: 'right' }}>CV (Premium)</Th>
+            <Th style={{ textAlign: 'right' }}>Int Exp (Discount)</Th>
+            <Th style={{ textAlign: 'right' }}>CV (Discount)</Th>
           </tr>
         </thead>
         <tbody>
           {[1,2,3,4,5].map((yr) => (
             <tr key={yr} style={{ background: yr % 2 === 0 ? '#f8f8f8' : '#fff' }}>
               <Td center>{yr}</Td>
-              <Td right>$6,000</Td>
-              <Td right>$1,600</Td>
-              <Td right>$4,400</Td>
-              <Td right>${(108000 - yr * 1600).toLocaleString()}</Td>
-              <Td right>$7,600</Td>
-              <Td right>${(92000 + yr * 1600).toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>$6,000</Td>
+              <Td style={{ textAlign: 'right' }}>$1,600</Td>
+              <Td style={{ textAlign: 'right' }}>$4,400</Td>
+              <Td style={{ textAlign: 'right' }}>${(108000 - yr * 1600).toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>$7,600</Td>
+              <Td style={{ textAlign: 'right' }}>${(92000 + yr * 1600).toLocaleString()}</Td>
             </tr>
           ))}
         </tbody>
@@ -291,8 +291,8 @@ function BondSection() {
       <Tbl>
         <thead>
           <tr>
-            <Th center>Year</Th><Th right>Beg CV</Th><Th right>Int Exp (×4%)</Th>
-            <Th right>Cash</Th><Th right>Prem Amort</Th><Th right>End CV</Th>
+            <Th center>Year</Th><Th style={{ textAlign: 'right' }}>Beg CV</Th><Th style={{ textAlign: 'right' }}>Int Exp (×4%)</Th>
+            <Th style={{ textAlign: 'right' }}>Cash</Th><Th style={{ textAlign: 'right' }}>Prem Amort</Th><Th style={{ textAlign: 'right' }}>End CV</Th>
           </tr>
         </thead>
         <tbody>
@@ -305,11 +305,11 @@ function BondSection() {
           ].map((r) => (
             <tr key={r.yr} style={{ background: r.yr % 2 === 0 ? '#f8f8f8' : '#fff' }}>
               <Td center>{r.yr}</Td>
-              <Td right>${r.beg.toLocaleString()}</Td>
-              <Td right>${r.exp.toLocaleString()}</Td>
-              <Td right>$6,000</Td>
-              <Td right>${r.amort.toLocaleString()}</Td>
-              <Td right>${r.end.toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>${r.beg.toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>${r.exp.toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>$6,000</Td>
+              <Td style={{ textAlign: 'right' }}>${r.amort.toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>${r.end.toLocaleString()}</Td>
             </tr>
           ))}
         </tbody>
@@ -321,8 +321,8 @@ function BondSection() {
       <Tbl>
         <thead>
           <tr>
-            <Th center>Year</Th><Th right>Beg CV</Th><Th right>Int Exp (×8%)</Th>
-            <Th right>Cash</Th><Th right>Disc Amort</Th><Th right>End CV</Th>
+            <Th center>Year</Th><Th style={{ textAlign: 'right' }}>Beg CV</Th><Th style={{ textAlign: 'right' }}>Int Exp (×8%)</Th>
+            <Th style={{ textAlign: 'right' }}>Cash</Th><Th style={{ textAlign: 'right' }}>Disc Amort</Th><Th style={{ textAlign: 'right' }}>End CV</Th>
           </tr>
         </thead>
         <tbody>
@@ -335,11 +335,11 @@ function BondSection() {
           ].map((r) => (
             <tr key={r.yr} style={{ background: r.yr % 2 === 0 ? '#f8f8f8' : '#fff' }}>
               <Td center>{r.yr}</Td>
-              <Td right>${r.beg.toLocaleString()}</Td>
-              <Td right>${r.exp.toLocaleString()}</Td>
-              <Td right>$6,000</Td>
-              <Td right>${r.amort.toLocaleString()}</Td>
-              <Td right>${r.end.toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>${r.beg.toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>${r.exp.toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>$6,000</Td>
+              <Td style={{ textAlign: 'right' }}>${r.amort.toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>${r.end.toLocaleString()}</Td>
             </tr>
           ))}
         </tbody>
@@ -457,19 +457,19 @@ function FinanceLeaseSection() {
       <Tbl>
         <thead>
           <tr>
-            <Th center>Year</Th><Th right>Beg Liability</Th><Th right>Int Exp (6%)</Th>
-            <Th right>Payment</Th><Th right>Principal ↓</Th><Th right>End Liability</Th>
+            <Th center>Year</Th><Th style={{ textAlign: 'right' }}>Beg Liability</Th><Th style={{ textAlign: 'right' }}>Int Exp (6%)</Th>
+            <Th style={{ textAlign: 'right' }}>Payment</Th><Th style={{ textAlign: 'right' }}>Principal ↓</Th><Th style={{ textAlign: 'right' }}>End Liability</Th>
           </tr>
         </thead>
         <tbody>
           {leaseRows.map((r) => (
             <tr key={r.yr} style={{ background: r.yr % 2 === 0 ? '#f8f8f8' : '#fff' }}>
               <Td center>{r.yr}</Td>
-              <Td right>${r.beg.toLocaleString()}</Td>
-              <Td right>${r.int.toLocaleString()}</Td>
-              <Td right>${r.pay.toLocaleString()}</Td>
-              <Td right>${r.prin.toLocaleString()}</Td>
-              <Td right>${r.end.toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>${r.beg.toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>${r.int.toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>${r.pay.toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>${r.prin.toLocaleString()}</Td>
+              <Td style={{ textAlign: 'right' }}>${r.end.toLocaleString()}</Td>
             </tr>
           ))}
         </tbody>
@@ -603,7 +603,7 @@ function NotePayableSection() {
       <Tbl>
         <thead>
           <tr>
-            <Th>회계연도</Th><Th>해당 기간</Th><Th right>이자비용</Th><Th right>12/31 미지급이자</Th>
+            <Th>회계연도</Th><Th>해당 기간</Th><Th style={{ textAlign: 'right' }}>이자비용</Th><Th style={{ textAlign: 'right' }}>12/31 미지급이자</Th>
           </tr>
         </thead>
         <tbody>
@@ -615,8 +615,8 @@ function NotePayableSection() {
             <tr key={r.yr} style={{ background: i % 2 === 0 ? '#fff' : '#f8f8f8' }}>
               <Td bold>{r.yr}</Td>
               <Td>{r.period}</Td>
-              <Td right>{r.exp}</Td>
-              <Td right>{r.accrual}</Td>
+              <Td style={{ textAlign: 'right' }}>{r.exp}</Td>
+              <Td style={{ textAlign: 'right' }}>{r.accrual}</Td>
             </tr>
           ))}
         </tbody>
@@ -955,7 +955,7 @@ export default function BondMasterPage() {
             }}
           />
           <button
-            onClick={sendMessage}
+            onClick={() => sendMessage()}
             disabled={isLoading || !input.trim()}
             style={{
               padding: '8px 18px', background: NAVY, color: '#fff',
