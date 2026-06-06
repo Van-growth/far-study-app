@@ -2281,7 +2281,7 @@ Series B+ 감사 시 핵심 검토 항목`,
   // TRIGGER : "2-for-1 stock split" + "cash dividend per share" → split 후 주식 수 먼저
   // TRAP    : pre-split 주식 수($50K) / FV 포함($850K·$950K)
   {
-    topic_id: "EQUITY_008",
+    topic_id: "EQUITY_028",
     book_id: 'AA',
     chapter_id: 'AA_CH3',
     topic_group: 'AA_CH3_STKEQ',
@@ -2308,7 +2308,7 @@ Series B+ 감사 시 핵심 검토 항목`,
   },
 
   {
-    topic_id: "EQUITY_018",
+    topic_id: "EQUITY_029",
     book_id: 'AA',
     chapter_id: 'AA_CH3',
     topic_group: 'AA_CH3_STKEQ_TS',
@@ -3015,7 +3015,7 @@ Series B+ 감사 시 핵심 검토 항목`,
   // TRIGGER : 'intercompany accrual omitted' → Dr.Payable / Cr.Receivable → 양쪽 감소
   // TRAP    : No adjustment(A) / 부채 증가(B) / 양쪽 증가(C) — 모두 제거 방향 오류
   {
-    topic_id: "CONSOL_010",
+    topic_id: "CONSOL_014",
     book_id: 'AA',
     chapter_id: 'AA_CH2',
     topic_group: 'AA_CH2_CONSOL',
@@ -3645,7 +3645,7 @@ Series B+ 감사 시 핵심 검토 항목`,
   // TRIGGER : 'net patient service revenue' → Gross − charity care − contractual adj
   // TRAP    : credit loss provision을 contra-revenue로 차감(B) / charity care 미차감(C)
   {
-    topic_id: "NFP_015",
+    topic_id: "NFP_026",
     book_id: 'GN',
     chapter_id: 'GN_CH2',
     topic_group: 'GN_CH2_NFP',
@@ -5236,12 +5236,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[발생주의 적용]\n외화 AP는 결제 전이라도 환율이 바뀌면 그 변동분을 즉시 손익으로 인식.\n현금이 아직 안 나갔어도 경제적 손실(더 많은 달러를 줘야 함)이 발생했으므로 Loss 인식.\n\n[AP vs AR 방향 직관]\nAP(갚아야 할 돈): 환율 상승 → 더 많은 달러 필요 → Loss\nAP(갚아야 할 돈): 환율 하락 → 더 적은 달러 필요 → Gain\nAR(받을 돈): 환율 상승 → 더 많은 달러 수취 → Gain\nAR(받을 돈): 환율 하락 → 더 적은 달러 수취 → Loss\n\n[분개 구조]\n재측정 분개(결제일): Dr. FX gains and losses $50 / Cr. AP $50\n결제 분개: Dr. AP $850 / Cr. Cash $900 (+ Dr. FX Loss $50 통합 가능)\n→ 통합 시: Dr. AP $850 + Dr. FX Loss $50 / Cr. Cash $900",
   },
 
-  // [FC_009] Foreign currency AP remeasurement — year-end gain when foreign currency weakens
+  // [FC_019] Foreign currency AP remeasurement — year-end gain when foreign currency weakens
   // RULE    : AP 외화 약세 → 달러 환산 부채 감소 → Gain / C$ face × Δrate = G/L
   // TRIGGER : AP + 환율 하락(US$/외화 감소) → Dr.AP / Cr.FX Gain
   // TRAP    : 환율 하락을 Loss로 착각(A) / AP 장부금액 기준 계산(D)
   {
-    topic_id: "FC_009",
+    topic_id: "FC_019",
     book_id: 'GN',
     chapter_id: 'GN_CH7',
     topic_group: 'GN_CH7_FC',
@@ -5622,12 +5622,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[채권 분류 체계]\n채권은 여러 기준으로 분류된다. 시험에서 자주 혼동되는 4가지:\n\n① Serial bonds (만기 분산)\n단일 발행이지만 만기일이 여러 개로 분산. 예: $1,000,000 발행 → 매년 $200,000씩 5년에 걸쳐 순차 상환. 발행자 입장에서 한꺼번에 큰 금액을 상환할 필요 없어 유동성 부담 감소.\n\n② Term bonds (만기 단일)\n발행된 채권 전체가 동일한 만기일에 일시 상환. 가장 일반적인 형태. 만기 시 큰 현금 유출 발생.\n\n③ Sinking fund bonds (적립 상환)\n만기 구조와 무관. 발행자가 매 기간 일정 금액을 적립 펀드에 넣어 만기 상환 재원을 마련하는 방식. Term bond에 sinking fund 조항이 붙는 형태가 일반적.\n\n④ Debenture bonds (무담보 사채)\n만기 구조와 무관. 특정 자산을 담보로 제공하지 않는 채권. 발행자의 신용도에만 의존. 반대 개념: Mortgage bond(담보 사채).",
   },
 
-  // [BOND_010] Bond Discount — Interest Expense vs Cash Interest Paid
+  // [BOND_032] Bond Discount — Interest Expense vs Cash Interest Paid
   // RULE    : Interest Expense = Cash paid + Discount 상각 / Premium이면 반대
   // TRIGGER : 'issued below face value' → Plus discount
   // TRAP    : Minus discount(C) → Premium 로직 혼동 / Par value 포함(A·B) → 무관
   {
-    topic_id: "BOND_010",
+    topic_id: "BOND_032",
     book_id: 'IA',
     chapter_id: 'IA_CH8',
     topic_group: 'IA_CH8_BOND',
@@ -7337,7 +7337,7 @@ Series B+ 감사 시 핵심 검토 항목`,
   // TRIGGER : held for sale 분류 질문 → 6가지 체크리스트 / 미충족 항목 찾기
   // TRAP    : "hopes to sell" → probable 아님 / active marketing 없으면 ③ 미충족
   {
-    topic_id: "PPE_012",
+    topic_id: "PPE_028",
     book_id: 'IA',
     chapter_id: 'IA_CH4',
     topic_group: 'IA_CH4_PPE',
@@ -7390,7 +7390,7 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[Land cost 구성 원칙]\n토지를 건설 용도로 사용 가능한 상태로 만들기까지의 순비용(net cost)이 Land cost.\n\n[항목별 처리]\n✅ Land cost 가산:\n- Purchase price\n- Title fees, legal fees, survey costs\n- Demolition/clearing costs (철거·정지 비용)\n- Grading, back-filling\n\n➖ Land cost 차감:\n- Proceeds from sale of existing structure (기존 건물 매각수익)\n- Scrap proceeds from demolition (고철 매각수익)\n- Proceeds from sale of timber/soil\n\n[이 문제의 케이스]\n기존 건물을 매수자가 직접 구매 후 철거 → 회사 입장에서는 건물 매각대금 수령 → Land cost 차감\n\n[왜 other income이 아닌가]\n매각수익은 토지를 취득하는 과정에서 발생한 부수적 수입으로, 토지 취득의 순비용을 줄여주는 항목이다. 별도 수익으로 인식하면 Land cost가 과대계상된다.",
   },
   {
-    topic_id: "PPE_011",
+    topic_id: "PPE_026",
     sub_category_id: "U3_PPE",
     book_id: 'IA',
     chapter_id: 'IA_CH4',
@@ -7406,12 +7406,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "상업적 실질(Commercial Substance)이 없는 거래란 교환 전후로 미래 현금흐름이 실질적으로 바뀌지 않는 거래. 예: 트럭A → 트럭B (같은 용도). 실질 없는 거래에서 Gain 인식 허용 시 이익 조작 가능성 → GAAP이 원칙적으로 Gain defer. 단 현금 수수가 있으면 그만큼 실현된 부분이 있으므로 비율만큼 인식 허용.",
   },
 
-  // [PPE_012] Cost of Land — acquisition vs building construction costs
+  // [PPE_027] Cost of Land — acquisition vs building construction costs
   // RULE    : Land = 취득원가 + 취득 부대비용 + 토지 사용 준비 비용 (철거 net of salvage 포함)
   // TRIGGER : "removal of old building" + land → Land cost / "excavation" → Building cost
   // TRAP    : 문제 나열 순서 함정 — Excavation 다음에 Removal이 나와도 Removal은 Land
   {
-    topic_id: "PPE_012",
+    topic_id: "PPE_027",
     book_id: 'IA',
     chapter_id: 'IA_CH1',
     topic_group: 'IA_CH1_PPE',
@@ -7843,13 +7843,13 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "CV $3.75M / 매각가 $4.5M(시장 일치) / 중개인 고용 / 8개월 내 예상 / 수리 불필요 / 계획 변경 없음\n→ 6가지 ALL ✅ → Held for sale",
   },
 
-  // [PPE_013] Interest Capitalization — MIN Rule
+  // [PPE_029] Interest Capitalization — MIN Rule
   // RULE    : Capitalized Interest = MIN(Total Interest Incurred, Avoidable Interest)
   // TRIGGER : "constructing for its own use" + "specific construction debt" + "weighted-average accumulated expenditures"
   // TRAP    : Specific debt 이자 그대로 자본화 오답 / Total interest 전액 자본화 오답 — MIN 적용 필수
   // EXAMPLE : Total $70,000 vs Avoidable $40,000 → MIN = $40,000 자본화
   {
-    topic_id: "PPE_013",
+    topic_id: "PPE_029",
     category: "PP&E",
     topic_name: "Interest Capitalization — MIN Rule",
     summary: "자산 직접 건설 시 자본화 이자 = MIN(Total Interest Incurred, Avoidable Interest)",
@@ -8149,13 +8149,13 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[2단계 구조 이해]\nCECL(allowance method)은 손실을 두 단계로 처리:\n1단계 — 예상 손실 인식: Dr. Credit Loss Expense / Cr. Allowance → I/S 비용 인식\n2단계 — 실제 write-off: Dr. Allowance / Cr. AR → B/S만 변동, I/S 무관\n\n비용은 1단계에서 이미 잡혔으므로 write-off 시 추가 I/S 영향 없음.\n\n[Write-off vs Recovery 직관]\nWrite-off = AR을 장부에서 지우는 것 → Allowance 소진(감소)\nRecovery = 지웠던 AR 되살리는 것 → Allowance 복원(증가)\n둘 다 net income 무관 — B/S 내 자산 계정끼리 이동.\n\n[혼동 포인트]\nWrite-off 시 Allowance가 '증가'한다고 착각하기 쉬움.\nAllowance는 대손 '쿠션' 역할 → write-off 시 쿠션 소진 → 감소.\nRecovery 시 쿠션 보충 → 증가.",
   },
 
-  // [REC_006] Allowance for Discounts — Gross Method
+  // [REC_016] Allowance for Discounts — Gross Method
   // RULE    : 할인 기간 내 AR만 × 할인 사용 % × 할인율 / Collectible % = 무관
   // TRIGGER : 'gross method' + 'X/Y, net Z' → Allowance for discounts
   //           Y일 이내 AR만 추출 / collectible % → 무시
   // TRAP    : 전체 AR 적용 / collectible % 곱하는 오류 / 할인 사용 % 누락 / 회수가능성 혼동
   {
-    topic_id: "REC_006",
+    topic_id: "REC_016",
     book_id: 'IA',
     chapter_id: 'IA_CH7',
     topic_group: 'IA_CH7_REC',
@@ -8756,12 +8756,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "① Governmental fund → income 측정 X → Income = No\n② Current financial resources = Yes\n③ Financial Position = Yes\n④ 정답 C",
   },
 
-  // [GOV_021] Governmental external financial reports — three primary user groups
+  // [GOV_023] Governmental external financial reports — three primary user groups
   // RULE    : 3대 user = Citizens(관할) + Legislative/oversight + Investors/creditors
   // TRIGGER : 'primary user groups of governmental external reports' → 3개 암기
   // TRAP    : 이웃 주 시민(A) / 보고서 작성자(B) / 내부 관리자(C) — 모두 제외
   {
-    topic_id: "GOV_021",
+    topic_id: "GOV_023",
     book_id: 'GN',
     chapter_id: 'GN_CH1',
     topic_group: 'GN_CH1_GOV',
@@ -8873,12 +8873,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "매입가 $780,000 − goodwill $156,000 = FV acquired $624,000 / $624,000 ÷ $2,080,000 = 30%",
   },
 
-  // [EQM_004] Equity method — goodwill: acquisition-date SE reverse-engineering
+  // [EQM_012] Equity method — goodwill: acquisition-date SE reverse-engineering
   // RULE    : Goodwill = 취득가 − (취득일 FV of net assets × 지분율) / 취득일 SE 역산 필수
   // TRIGGER : "goodwill associated with purchase" → 취득일 SE 역산 → + FV excess → × 지분율
   // TRAP    : 연말 SE 그대로 사용(C) / 지분율 미적용(B) / FV excess 누락(D)
   {
-    topic_id: "EQM_004",
+    topic_id: "EQM_012",
     book_id: 'AA',
     chapter_id: 'AA_CH5',
     topic_group: 'AA_CH5_EQM',
@@ -9064,12 +9064,12 @@ Series B+ 감사 시 핵심 검토 항목`,
   },
 
   // ── INV ────────────────────────────────────────────────────────────────────
-  // [INV_001] Inventory — FIFO to LIFO Change in Rising Prices
+  // [INV_020] Inventory — FIFO to LIFO Change in Rising Prices
   // RULE    : 물가 상승기 FIFO→LIFO = COGS↑ → Net Income↓ / Ending Inventory↓
   // TRIGGER : 'rising prices' + 'FIFO to LIFO' → 둘 다 Decrease
   // TRAP    : Ending Inventory 증가 착각(A,C) / Net Income 증가 착각(D) / 물가 방향 무시
   {
-    topic_id: "INV_001",
+    topic_id: "INV_020",
     book_id: 'IA',
     chapter_id: 'IA_CH3',
     topic_group: 'IA_CH3_INV',
@@ -9223,12 +9223,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "Y1 ending $900K / Y1 layer $200K → 기초 $700K\n$700K×1.0 + $200K×1.4 + $250K×1.5 = $700K+$280K+$375K = $1,355K",
   },
 
-  // [INV_009] Gross Profit Method — Estimating Inventory Loss
+  // [INV_021] Gross Profit Method — Estimating Inventory Loss
   // RULE    : GAFS − (Sales × (1−GP%)) = 추정 EI → 추정 EI − undamaged = 손실액
   // TRIGGER : flood/fire + gross profit % / 'inventory not damaged' → undamaged 차감
   // TRAP    : undamaged 차감 누락(A) / COGS값 그대로(B) / 순서 오류(C)
   {
-    topic_id: "INV_009",
+    topic_id: "INV_021",
     book_id: 'IA',
     chapter_id: 'IA_CH9',
     topic_group: 'IA_CH9_INV',
@@ -9243,12 +9243,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "BI $52,500 + Purchase $300,000 = GAFS $352,500 / COGS $225,000 / 추정 EI $127,500 / 손실 = $127,500 − $45,000 = $82,500",
   },
 
-  // [INV_009] LCNRV — application unit: each item gives lowest, total gives highest
+  // [INV_022] LCNRV — application unit: each item gives lowest, total gives highest
   // RULE    : Each item → 가장 낮음 / Groups → 중간 / Total → 가장 높음
   // TRIGGER : "which application results in lowest?" → each item
   // TRAP    : Groups 선택(중간값) / Total 선택(가장 높음) / 모두 동일 착각
   {
-    topic_id: "INV_009",
+    topic_id: "INV_022",
     book_id: 'IA',
     chapter_id: 'IA_CH3',
     topic_group: 'IA_CH3_INV',
@@ -9263,12 +9263,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[왜 Each item이 가장 낮은가]\n개별 적용 시 NRV > Cost인 품목(예: Item A)은 Cost로 기록하고 끝. NRV 초과분이 다른 품목의 손실을 메워주지 못한다. 반면 Total 방식에서는 Item A의 NRV 초과분($20)이 Item B, C의 NRV 부족분과 상쇄되어 write-down 폭이 줄어든다.\n\n[숫자 예시]\nItem A: Cost $100 / NRV $120\nItem B: Cost $200 / NRV $150\nItem C: Cost $300 / NRV $240\n\nEach item: $100 + $150 + $240 = $490\nTotal: Lower of $600 vs $510 = $510\n차이 $20 = Item A의 NRV 초과분이 Total에서만 상쇄됨\n\n[실무 의미]\nEach item → 가장 보수적(conservative) → US GAAP 권장\nTotal → 가장 관대 → 재고 과대계상 위험",
   },
 
-  // [INV_010] LIFO vs FIFO — current cost approximation for COGS vs Ending Inventory
+  // [INV_023] LIFO vs FIFO — current cost approximation for COGS vs Ending Inventory
   // RULE    : COGS current cost → LIFO / Ending Inventory current cost → FIFO
   // TRIGGER : "approximates current cost" + COGS → LIFO / + EI → FIFO
   // TRAP    : LIFO/LIFO(C) — EI도 LIFO라 착각 / FIFO/FIFO(A) — COGS도 FIFO라 착각
   {
-    topic_id: "INV_010",
+    topic_id: "INV_023",
     book_id: 'IA',
     chapter_id: 'IA_CH3',
     topic_group: 'IA_CH3_INV',
@@ -9625,12 +9625,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "① 'bought for $750,000' → 상각 기준 확정\n② 'estimated 75 years' → 상각 기간 확정\n③ Seller's $570,000 → 무시\n④ $750,000 ÷ 75 = $10,000 → 정답 C",
   },
 
-  // [INT_010] Patent Amortization — Cost Extension: Shorter of Legal or Useful Life
+  // [INT_015] Patent Amortization — Cost Extension: Shorter of Legal or Useful Life
   // RULE    : 추가비용 → BV에 가산 / New useful = 기존 remaining + 연장연수 / Shorter of legal vs new useful
   // TRIGGER : 'costs to extend economic value' → BV + 추가비용 합산 후 shorter of legal/useful로 나눔
   // TRAP    : useful life 사용(legal 무시) / 추가비용만 별도 상각 / remaining useful 그대로 사용
   {
-    topic_id: "INT_010",
+    topic_id: "INT_015",
     book_id: 'IA',
     chapter_id: 'IA_CH4',
     topic_group: 'IA_CH4_INTANG',
@@ -9815,12 +9815,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "내부거래 이익 제거 = 총내부이익 × (기말재고 / 총매출)",
   },
 
-  // [EPS_010] SEC Filing Forms — 10-K / 10-Q / Form 4 / Form 11-K
+  // [EPS_017] SEC Filing Forms — 10-K / 10-Q / Form 4 / Form 11-K
   // RULE    : 10-K: 연간·audited / 10-Q: 분기·condensed / Form 4: insider 지분 변동 / Form 11-K: 직원 플랜
   // TRIGGER : "condensed financial statements" → Form 10-Q / "audited annual" → 10-K / "insider ownership change" → Form 4 / "employee stock purchase plan" → Form 11-K
   // TRAP    : 10-K도 FS 포함이지만 condensed 아님 / Form 4·11-K는 FS 없음
   {
-    topic_id: "EPS_010",
+    topic_id: "EPS_017",
     book_id: 'AA',
     chapter_id: 'AA_CH4',
     topic_group: 'AA_CH4_EPS',
@@ -9838,12 +9838,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "condensed → 10-Q 즉시 / audited annual → 10-K",
   },
 
-  // [EPS_011] EPS Disclosure — Where to Report (Face vs Notes)
+  // [EPS_018] EPS Disclosure — Where to Report (Face vs Notes)
   // RULE    : Continuing ops·Net income EPS → I/S 본문 필수 / Discontinued ops EPS → I/S 본문 or 주석 선택
   // TRIGGER : "should be reported" + "discontinued/continuing operations" → 둘 다 Yes
   // TRAP    : Discontinued EPS 주석 허용 = 공시 면제 아님, 위치 선택권일 뿐
   {
-    topic_id: "EPS_011",
+    topic_id: "EPS_018",
     book_id: 'AA',
     chapter_id: 'AA_CH4',
     topic_group: 'AA_CH4_EPS',
@@ -9992,7 +9992,7 @@ Series B+ 감사 시 핵심 검토 항목`,
   },
 
   {
-    topic_id: "REV_015",
+    topic_id: "REV_018",
     book_id: "IA",
     chapter_id: "IA_CH2",
     topic_group: "IA_CH2_REV",
