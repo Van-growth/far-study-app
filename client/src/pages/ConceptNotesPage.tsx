@@ -3064,30 +3064,31 @@ function HarryTab({ catLabel }: { catLabel: string }) {
                     maxWidth: '75%',
                     padding: '10px 14px',
                     borderRadius: msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                    background: msg.role === 'assistant' ? NAVY : '#f3f3f0',
-                    color: msg.role === 'assistant' ? 'white' : '#111',
-                    fontSize: 13, lineHeight: 1.65,
+                    background: msg.role === 'assistant' ? 'var(--color-background-secondary, #f8f8f6)' : '#f3f3f0',
+                    color: '#111',
+                    fontSize: 13, lineHeight: 1.7,
                     wordBreak: 'break-word',
+                    border: msg.role === 'assistant' ? '1px solid var(--color-border-tertiary, #e8e8e4)' : 'none',
                     ...(msg.role === 'user' ? { whiteSpace: 'pre-wrap' as const } : {}),
                   }}>
                     {msg.role === 'assistant' ? (
                       msg.content ? (
                         <ReactMarkdown
                           components={{
-                            p: ({ children }: { children?: React.ReactNode }) => <p style={{ margin: '0 0 6px', color: 'inherit', lineHeight: 1.65 }}>{children}</p>,
-                            strong: ({ children }: { children?: React.ReactNode }) => <strong style={{ fontWeight: 600, color: 'inherit' }}>{children}</strong>,
-                            em: ({ children }: { children?: React.ReactNode }) => <em style={{ fontStyle: 'italic', color: 'inherit' }}>{children}</em>,
-                            ul: ({ children }: { children?: React.ReactNode }) => <ul style={{ paddingLeft: 16, margin: '4px 0' }}>{children}</ul>,
-                            ol: ({ children }: { children?: React.ReactNode }) => <ol style={{ paddingLeft: 16, margin: '4px 0' }}>{children}</ol>,
-                            li: ({ children }: { children?: React.ReactNode }) => <li style={{ marginBottom: 2, color: 'inherit' }}>{children}</li>,
-                            h3: ({ children }: { children?: React.ReactNode }) => <h3 style={{ fontSize: 13, fontWeight: 700, margin: '8px 0 4px', color: 'inherit' }}>{children}</h3>,
-                            h2: ({ children }: { children?: React.ReactNode }) => <h2 style={{ fontSize: 13, fontWeight: 700, margin: '8px 0 4px', color: 'inherit' }}>{children}</h2>,
-                            code: ({ children }: { children?: React.ReactNode }) => <code style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace', fontSize: 12, color: 'inherit' }}>{children}</code>,
-                            pre: ({ children }: { children?: React.ReactNode }) => <pre style={{ background: 'rgba(255,255,255,0.1)', padding: 10, borderRadius: 6, overflow: 'auto', fontSize: 12, margin: '8px 0', color: 'inherit' }}>{children}</pre>,
-                            blockquote: ({ children }: { children?: React.ReactNode }) => <blockquote style={{ borderLeft: '3px solid rgba(255,255,255,0.4)', paddingLeft: 10, margin: '6px 0', color: 'inherit' }}>{children}</blockquote>,
+                            p: ({ children }: { children?: React.ReactNode }) => <p style={{ margin: '0 0 8px', color: '#111', lineHeight: 1.7 }}>{children}</p>,
+                            strong: ({ children }: { children?: React.ReactNode }) => <strong style={{ fontWeight: 600, color: '#111' }}>{children}</strong>,
+                            em: ({ children }: { children?: React.ReactNode }) => <em style={{ fontStyle: 'italic', color: '#111' }}>{children}</em>,
+                            ul: ({ children }: { children?: React.ReactNode }) => <ul style={{ paddingLeft: 18, margin: '4px 0 8px' }}>{children}</ul>,
+                            ol: ({ children }: { children?: React.ReactNode }) => <ol style={{ paddingLeft: 18, margin: '4px 0 8px' }}>{children}</ol>,
+                            li: ({ children }: { children?: React.ReactNode }) => <li style={{ marginBottom: 6, color: '#111', lineHeight: 1.7 }}>{children}</li>,
+                            h3: ({ children }: { children?: React.ReactNode }) => <h3 style={{ fontSize: 13, fontWeight: 700, margin: '10px 0 4px', color: '#111' }}>{children}</h3>,
+                            h2: ({ children }: { children?: React.ReactNode }) => <h2 style={{ fontSize: 14, fontWeight: 700, margin: '10px 0 4px', color: '#111' }}>{children}</h2>,
+                            code: ({ children }: { children?: React.ReactNode }) => <code style={{ fontFamily: 'monospace', fontSize: 12, color: '#333' }}>{children}</code>,
+                            pre: ({ children }: { children?: React.ReactNode }) => <pre style={{ background: '#f1f1ee', border: '1px solid #e4e4e0', padding: 10, borderRadius: 6, overflow: 'auto', fontSize: 12, margin: '8px 0', color: '#222' }}>{children}</pre>,
+                            blockquote: ({ children }: { children?: React.ReactNode }) => <blockquote style={{ borderLeft: '3px solid #ccc', paddingLeft: 10, margin: '6px 0', color: '#555' }}>{children}</blockquote>,
                             table: ({ children }: { children?: React.ReactNode }) => <table style={{ borderCollapse: 'collapse', width: '100%', margin: '8px 0', fontSize: 12 }}>{children}</table>,
-                            th: ({ children }: { children?: React.ReactNode }) => <th style={{ border: '1px solid rgba(255,255,255,0.3)', padding: '4px 8px', background: 'rgba(255,255,255,0.1)', color: 'inherit' }}>{children}</th>,
-                            td: ({ children }: { children?: React.ReactNode }) => <td style={{ border: '1px solid rgba(255,255,255,0.2)', padding: '4px 8px', color: 'inherit' }}>{children}</td>,
+                            th: ({ children }: { children?: React.ReactNode }) => <th style={{ border: '1px solid #ddd', padding: '4px 8px', background: '#f5f5f2', color: '#111' }}>{children}</th>,
+                            td: ({ children }: { children?: React.ReactNode }) => <td style={{ border: '1px solid #e4e4e0', padding: '4px 8px', color: '#222' }}>{children}</td>,
                           } as never}
                         >{msg.content}</ReactMarkdown>
                       ) : (
