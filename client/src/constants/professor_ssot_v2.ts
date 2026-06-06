@@ -5745,13 +5745,13 @@ Series B+ 감사 시 핵심 검토 항목`,
     sub_category_id: "U4_BONDS",
     card_type: 'calculation',
     card_name: "Bond with Detachable Stock Warrants — Allocation to Debt vs Equity",
-    rule: "Detachable warrant 포함 채권 발행 시:\n① 총 발행액 = Face × issue price%\n② Warrant FV = 개수 × FV per warrant → APIC-Warrants(자본)\n③ 채권 CV = 총 발행액 − Warrant FV → Long-term debt\n\n[행사가 무관한 이유]\n행사가($12) = 나중에 Warrant 행사 시 내는 돈\n발행 시점 = Warrant FV($1 × 개수)만 APIC에 배분, 행사가 무관\n\n[상각 기준]\n채권 CV = $3,840,000 (Warrant 배분 후)\nFace = $4,000,000\n→ 겉보기 Premium 발행이지만 실질 Discount 효과\n→ $3,840,000 → $4,000,000으로 만기까지 상각\n\n[Detachable vs Non-detachable]\nDetachable: 분리 가능 → 별도 FV → 자본 배분 ✅\nConvertible(Non-detachable): US GAAP 전액 부채 ❌",
+    rule: "Detachable warrant 포함 채권 발행 시:\n① 총 발행액 = Face × issue price%\n② Warrant FV = 개수 × FV per warrant → APIC-Warrants(자본)\n③ 채권 CV = 총 발행액 − Warrant FV → Long-term debt\n\n[행사가 무관한 이유]\n행사가($12) = 나중에 Warrant 행사 시 내는 돈\n발행 시점 = Warrant FV($1 × 개수)만 APIC에 배분, 행사가 무관\n\n[상각 기준]\n채권 CV = $3,840,000 (Warrant 배분 후)\nFace = $4,000,000\n→ 겉보기 Premium 발행이지만 실질 Discount 효과\n→ $3,840,000 → $4,000,000으로 만기까지 상각\n\n[Detachable vs Non-detachable]\nDetachable: 분리 가능 → 별도 FV → APIC 선인식 → 행사 시 C/S + APIC 재분류\nNon-detachable: 채권과 운명 공동체 → 분리 불가 → 전액 부채 → 행사 시 채권 → 자본 전환\n\n[Non-detachable 행사 시 분개]\n행사된 비율만큼 부채 제거:\nDr. Bonds Payable (행사 비율만큼)\n    Cr. Common Stock\n    Cr. APIC\n부분 행사 가능 → 행사된 워런트 비율만큼만 전환, 나머지는 만기까지 부채 유지\n\n[No par C/S 처리]\nPar value C/S: Dr. Cash → Cr. C/S(par) + Cr. APIC(초과분)\nNo par C/S: Dr. Cash → Cr. Common Stock 전액 (APIC 구분 없음)",
     trigger: '"detachable stock warrants" → 총 발행액에서 Warrant FV 차감\n"fair value of $X per warrant" × 개수 → APIC-Warrants\n"long-term debt increase" → 총액 − Warrant FV\n행사가($12) → 발행 시점 무관, 행사 시점에만 사용',
     trap: "전액 부채(C): Warrant $200K 배분 없이 $4,040,000 전액 → 가장 흔한 오류\nFace 그대로(A): 발행가 101% + Warrant 둘 다 무시\nWarrant 가산(D): $4M + $200K → 의미 없는 계산\n공통 함정: Convertible bond(전액 부채) 논리 적용 → Detachable은 반드시 분리 배분",
     one_sentence: "Detachable warrant = FV만큼 APIC 배분; 채권 CV = 총 발행액 − Warrant FV; 상각도 이 CV 기준.",
     speed: "① 총 발행액: $4M × 101% = $4,040,000\n② Warrant FV: 200,000 × $1 = $200,000 → APIC\n③ 채권 CV: $4,040,000 − $200,000 = $3,840,000\n④ 상각 기준: $3,840,000 → $4,000,000",
     example: "Face $4M / 101 발행 / Warrant 200,000개 × $1\n총액 $4,040,000 − $200,000 = $3,840,000\nDr. Cash $4,040,000\n    Cr. Bonds Payable $3,840,000\n    Cr. APIC-Warrants $200,000",
-    context_background: "[왜 Warrant 붙여서 발행하는가 — 자금조달 전략]\nWarrant = 투자자에게 주는 인센티브(나중에 주식을 싸게 살 권리).\n덕분에 발행자는 더 낮은 쿠폰율로 자금 조달 가능.\n대신 Warrant 행사 시 기존 주주 지분 희석 위험 감수.\n→ 현재 이자 부담 ↓ vs 미래 지분 희석 위험 ↑ 트레이드오프.\n\n[받은 돈 안에서 나누는 구조]\n투자자는 $4,040,000 하나만 납입 (추가 납입 없음).\n그 안에 채권 값 + Warrant 값이 섞여있으므로 FV 기준 분리.\n편의점 세트 상품을 개별 원가로 나누는 것과 동일 논리.\n\n[겉보기 Premium vs 실질 Discount]\n발행가 101 = 표면상 Premium.\n그러나 Warrant $200K 배분 후 채권 CV = $3,840,000 < Face $4,000,000.\n→ 채권 자체로는 Discount 발행 효과.\n→ 낮은 금리로 조달한 대가가 여기서 나타남.\n\n[상각 기준 CV]\n만기까지 $3,840,000 → $4,000,000으로 Discount 상각.\nWarrant는 APIC-Warrants에서 별도 관리.\n행사 시: Dr. Cash(행사가 × 주수) / Cr. CS / Cr. APIC → Warrant 가치 추가 인식.",
+    context_background: "[왜 Warrant 붙여서 발행하는가 — 자금조달 전략]\nWarrant = 투자자에게 주는 인센티브(나중에 주식을 싸게 살 권리).\n덕분에 발행자는 더 낮은 쿠폰율로 자금 조달 가능.\n대신 Warrant 행사 시 기존 주주 지분 희석 위험 감수.\n→ 현재 이자 부담 ↓ vs 미래 지분 희석 위험 ↑ 트레이드오프.\n\n[받은 돈 안에서 나누는 구조]\n투자자는 $4,040,000 하나만 납입 (추가 납입 없음).\n그 안에 채권 값 + Warrant 값이 섞여있으므로 FV 기준 분리.\n편의점 세트 상품을 개별 원가로 나누는 것과 동일 논리.\n\n[겉보기 Premium vs 실질 Discount]\n발행가 101 = 표면상 Premium.\n그러나 Warrant $200K 배분 후 채권 CV = $3,840,000 < Face $4,000,000.\n→ 채권 자체로는 Discount 발행 효과.\n→ 낮은 금리로 조달한 대가가 여기서 나타남.\n\n[상각 기준 CV]\n만기까지 $3,840,000 → $4,000,000으로 Discount 상각.\nWarrant는 APIC-Warrants에서 별도 관리.\n행사 시: Dr. Cash(행사가 × 주수) / Cr. CS / Cr. APIC → Warrant 가치 추가 인식.\n\n[Warrant vs Stock Options — 구조 비교]\n공통점: 둘 다 TSM(Treasury Stock Method) 적용 / In the money → Dilutive → WASO 증가\n차이점:\n  Warrant    → 외부 투자자 대상 / 자금 조달 목적 / 발행 시 APIC 직접 인식(비용 아님)\n  Stock Option → 임직원 보상 목적 / 발행 시 Compensation Expense + APIC 인식\n\n[In the money 개념]\n시장가 > 행사가 → In the money → 행사하면 이득 → Dilutive\n시장가 < 행사가 → Out of the money → 행사하면 손해 → 아무도 안 함 → Antidilutive → 제외\n시장가 = 행사가 → At the money → TSM 순증가 = 0\n\n[TSM 적용 시 WASO 증가 이유]\n① 워런트 행사 가정 → 신주 발행 → WASO 증가\n② 받은 현금(행사가)으로 시장가에 자사주 매입 가정 → WASO 감소\n③ 순증가 = 발행 주식수 − 자사주 매입 주식수 = 항상 양수(In the money 조건)\n→ 시장가 > 행사가이면 받은 돈으로 살 수 있는 주식 < 새로 발행한 주식 → 순증가 항상 양수\n→ WASO 증가 → Diluted EPS 분모 증가 → EPS 감소",
   },
 
   // [BOND_026] Callable Bond — Issuer Option, Refinancing Logic, Rate Relationship
@@ -5858,6 +5858,26 @@ Series B+ 감사 시 핵심 검토 항목`,
     one_sentence: "Premium 상각 누락 → CV Overstate → Interest Expense(=CV×market rate) Overstate → 둘 다 Overstate.",
     speed: "Premium 상각 안 함 → CV 못 줄임 → Interest Expense도 못 줄임 → 둘 다 Overstate → D",
     context_background: "[프리미엄 채권 발행자 구조]\n프리미엄 채권 = 쿠폰금리 > 시장금리 → 투자자들이 웃돈을 얹어 매입 → 발행자는 액면 초과금액 수령\n이 초과금액(Premium)은 부채(liability)로 인식 → 매기 상각해서 만기에 액면가로 수렴\n\n[상각 분개]\nDr. Interest Expense    (CV × market rate, 작은 금액)\nDr. Premium on Bonds Payable  (상각액)\n    Cr. Cash             (액면 × 쿠폰율, 큰 금액)\n\n상각액 = Cash - Interest Expense = 쿠폰이자 - 유효이자\n\n[상각 누락 시 연쇄 효과]\n① Premium 잔액 유지 → ② CV(= 액면 + 미상각 Premium) Overstate → ③ 다음 기 Interest Expense(= CV × market rate) Overstate\n→ CV와 Interest Expense는 항상 같은 방향\n\n[발행자 vs 투자자 시점 비교]\n발행자: 프리미엄 = 비싸게 팔아서 더 받은 돈 → 부채 증가 → 상각하면 CV 감소\n투자자: 프리미엄 = 비싸게 사서 더 준 돈 → 자산 감소 방향 (이 문제와 무관)",
+  },
+
+  // [BOND_029] Non-detachable Warrant — Full Liability, Conversion to Equity at Exercise
+  // RULE    : Non-detachable → 전액 부채 / 행사 시 채권 → 자본 전환 / 부분 행사 가능
+  // TRIGGER : "non-detachable" / "detachable" 없음 → 전액 Bonds Payable
+  // TRAP    : Detachable 로직(APIC 선인식) 적용 오류 / 전액 전환 가정 — 부분 행사 가능
+  {
+    topic_id: "BOND_029",
+    book_id: 'IA',
+    chapter_id: 'IA_CH8',
+    topic_group: 'IA_CH8_BOND',
+    sub_category_id: "U4_BONDS",
+    card_type: 'concept',
+    card_name: "Non-detachable Warrant vs Detachable — Liability Recognition and Conversion Timing",
+    rule: "Detachable: 채권과 분리 거래 가능 → 발행 시 Warrant FV만큼 APIC 선인식\nNon-detachable: 채권과 항상 같이 움직임 → 분리 불가 → 전액 Bonds Payable\n\n[발행 시 비교]\nDetachable:     Dr. Cash / Cr. Bonds Payable(차감) + Cr. APIC-Warrants\nNon-detachable: Dr. Cash / Cr. Bonds Payable(전액)\n\n[행사 시 비교]\nDetachable:     Dr. Cash(행사가) + Dr. APIC-Warrants / Cr. C/S + Cr. APIC-C/S\nNon-detachable: Dr. Bonds Payable / Cr. C/S + Cr. APIC (부채 → 자본 전환)\n\n[부분 행사]\n전체 워런트 중 일부만 행사 가능\n→ 행사된 비율만큼 Bonds Payable 제거\n→ 나머지는 만기까지 부채 유지 후 현금 상환",
+    trigger: "'detachable' 없음 → Non-detachable → 전액 Bonds Payable\n'non-detachable' 명시 → APIC 배분 없음\n행사 시 → Bonds Payable 제거 → C/S + APIC 인식\n'partial exercise' → 행사 비율만큼만 전환",
+    trap: "Detachable 로직 적용 → APIC 선인식 오류 (Non-detachable은 전액 부채)\n전액 전환 가정 → 부분 행사 가능, 나머지는 만기 상환\n자본 인식 시점 혼동: Detachable = 발행 시 / Non-detachable = 행사 시",
+    one_sentence: "Non-detachable = 채권과 운명 공동체 → 전액 부채 → 행사 시에만 자본 전환; 부분 행사 가능.",
+    speed: "'detachable' 단어 없음 → 전액 Bonds Payable → 행사 시 Dr. Bonds Payable / Cr. C/S + APIC",
+    context_background: "[이름에 답이 있다]\nDetachable = de(분리) + tachable(붙다) → 떼어낼 수 있다 → 독립 거래 가능 → 발행 시 분리 인식\nNon-detachable = 떼어낼 수 없다 → 채권 없으면 워런트도 없음 → 채권 전환 시 같이 자본으로\n\n[자본 인식 타이밍 차이]\nDetachable:     발행 시 APIC 선인식 → 행사 시 APIC-Warrants → C/S + APIC-C/S 재분류\nNon-detachable: 발행 시 전액 부채 → 행사 시 부채 → 자본 전환\n최종 결과는 동일, 인식 타이밍만 다름\n\n[No par C/S 행사 시]\nPar value: Dr. Bonds Payable / Cr. C/S(par) + Cr. APIC(초과분)\nNo par:    Dr. Bonds Payable / Cr. Common Stock 전액 (APIC 구분 없음)\n\n[EPS 연결]\n워런트(Detachable/Non-detachable 모두) → In the money → TSM 적용 → WASO 증가 → Dilutive\nIn the money = 시장가 > 행사가 → 행사하면 이득 → 행사 가정\nOut of the money = 시장가 < 행사가 → 아무도 안 함 → Antidilutive → 제외",
   },
 
   // [BOND_024] Bond Issuance Between Interest Dates — Accrued Interest
@@ -8586,6 +8606,27 @@ Series B+ 감사 시 핵심 검토 항목`,
     one_sentence: "정부 외부 재무보고서 3대 user: ① 관할 시민 ② 입법·감독 기관 ③ 투자자·채권자.",
     speed: "① 관할 구역 내 시민/시민단체 → ✓\n② 입법·감독 기관 → ✓\n③ 투자자·채권자 → ✓\n이웃 주 시민 / 작성자 / 내부관리자 → 전부 ✗",
     context_background: "[왜 이 3개가 primary user인가]\n\n① Citizens: 세금을 내는 주체로서 정부가 자원을 효율적으로 사용했는지 알 권리가 있다. 선거권자이기도 하므로 정부 책임성(accountability) 평가의 핵심 주체.\n\n② Legislative/oversight bodies: 예산 편성·승인 권한을 가진 입법부와 감독 기관은 재무정보를 바탕으로 정책 결정과 감독을 수행한다.\n\n③ Investors/creditors: 지방채(municipal bonds)를 매입하거나 대출을 제공하는 투자자·채권자는 정부의 채무 상환 능력을 평가하기 위해 재무보고서를 사용한다.\n\n[제외 대상 논리]\n이웃 주 시민: 해당 정부의 세금을 내지 않고 서비스를 받지도 않으므로 직접적 이해관계 없음\n보고서 작성자: 정보를 생산하는 주체이지 소비하는 주체가 아님\n내부 관리자: 예산 집행·운영 정보를 별도로 접근 가능한 내부 주체 → external report의 타겟이 아님",
+  },
+
+  // [GOV_022] Government Fund Types — Real-World Examples by Fund
+  // RULE    : 11개 기금 유형 각각 실제 사업 예시 1~2개로 기억
+  // TRIGGER : "which fund" + 사업 설명 → 기금 유형 매칭
+  // TRAP    : Enterprise vs Internal Service 혼동 (외부 이용자 vs 내부 부서)
+  {
+    topic_id: "GOV_022",
+    book_id: 'GN',
+    chapter_id: 'GN_CH3',
+    topic_group: 'GN_CH3_GOVFUND',
+    sub_category_id: "U6_GOVERNMENTAL_FUND",
+    card_type: 'concept',
+    card_name: "Government fund types — real-world examples for each of the 11 funds",
+    rule: "【Governmental Funds — Modified Accrual (GRaSPP)】\n① General Fund\n   Police & Fire Dept. — core government operations funded by general taxes\n   Public School Operations — day-to-day instructional costs\n② Special Revenue Fund\n   Federal Highway Grant — gas tax proceeds restricted to road maintenance\n   Housing Development Grant — federal funds restricted to affordable housing\n③ Debt Service Fund\n   Municipal Bond Repayment — principal & interest on city bonds\n   G.O. Bond Debt Service — general obligation bond annual payments\n④ Capital Projects Fund\n   New City Hall Construction — long-term capital facility project\n   Bridge & Road Expansion — infrastructure capital project funded by bond proceeds\n⑤ Permanent Fund\n   Park Maintenance Endowment — principal preserved forever; only investment income spent\n   Cemetery Perpetual Care Fund — earnings used for ongoing maintenance\n\n【Proprietary Funds — Full Accrual (SE)】\n⑥ Enterprise Fund\n   Municipal Water & Sewer — city utility charging residents usage fees\n   City Airport — charges airlines and passengers landing/terminal fees\n   Public Transit (Bus/Rail) — fare-based city transportation system\n⑦ Internal Service Fund\n   Fleet Management — maintains city vehicles; charges other departments\n   Central IT Services — provides tech support to city departments internally\n   Central Print Shop — printing services billed to city departments\n\n【Fiduciary Funds — Full Accrual (CIPPE)】\n⑧ Pension Trust Fund\n   Public Employee Retirement System — manages pension assets for city employees\n⑨ Investment Trust Fund\n   Multi-Government Investment Pool — pooled investment fund for several local governments\n⑩ Private-Purpose Trust Fund\n   Scholarship Trust for Specific Family — benefits designated private individuals\n   Cemetery Trust (private) — for the benefit of specific private parties\n⑪ Custodial Fund\n   Property Tax Collection — collects taxes then remits to school districts & other entities",
+    trigger: "'water & sewer / airport / public transit' → Enterprise Fund (외부 이용자 요금)\n'fleet / IT / print shop' → Internal Service Fund (내부 부서 간)\n'bond principal & interest' → Debt Service Fund\n'construction / infrastructure project' → Capital Projects Fund\n'federal grant restricted to specific purpose' → Special Revenue Fund\n'pension assets / retirement system' → Pension Trust Fund\n'collects and remits to other governments' → Custodial Fund\n'principal preserved / earnings only' → Permanent Fund",
+    trap: "Enterprise vs Internal Service:\n→ Enterprise: charges EXTERNAL users (citizens, airlines, passengers)\n→ Internal Service: charges INTERNAL government departments only\n\nGeneral Fund scope:\n→ Only one General Fund per government\n→ All activities NOT required to be in another fund\n→ Special-purpose funds (grants, bond repayment) → separate fund\n\nPermanent Fund vs Private-Purpose Trust:\n→ Permanent Fund: benefits the PUBLIC (parks, cemeteries open to all)\n→ Private-Purpose Trust: benefits specific PRIVATE individuals or organizations",
+    one_sentence: "Match fund name to real activity: Enterprise=airport/utility / Internal Service=city IT/fleet / Debt Service=bond repayment / Capital Projects=construction.",
+    speed: "External fee → Enterprise / Internal dept → Internal Service / Construction → Capital Projects / Bond repayment → Debt Service / General taxes → General Fund",
+    example: "Municipal water utility charging residents → Enterprise Fund\nCity IT department billing police dept → Internal Service Fund\nG.O. bond interest payment → Debt Service Fund\nNew library construction → Capital Projects Fund\nPolice & fire operations → General Fund\nPublic employee pension assets → Pension Trust Fund\nCounty collecting property tax for school district → Custodial Fund",
+    context_background: "[Why different accounting bases per fund]\nGovernmental Funds: tax-funded → budget control is the goal → Modified Accrual\nProprietary Funds: fee-for-service → profitability tracking needed → Full Accrual\nFiduciary Funds: managing others' assets → Full Accrual (no net position reported)\n\n[Enterprise vs Internal Service — the key cut]\nEnterprise: citizen or business pays directly → external transaction\nInternal Service: Police Dept. orders copies from City Print Shop → internal transaction\n\n[General Fund = the catch-all]\nOne per government. Everything not legally required to be elsewhere goes here.",
   },
 
   // ── EQM ────────────────────────────────────────────────────────────────────

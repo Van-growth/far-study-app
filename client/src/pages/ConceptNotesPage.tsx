@@ -651,6 +651,58 @@ Gain/Loss = Net CV − Reacquisition Price
         'Never omit Principal PV from issue price calculation',
         'SL vs EI: BV differs at interim dates → early retirement produces different gain/loss',
       ]} />
+      <Section title="Stock Warrants with Bonds">
+        <Table
+          headers={['구분', 'Detachable', 'Non-detachable']}
+          rows={[
+            ['분리 거래', '가능', '불가'],
+            ['발행 시', 'Warrant FV → APIC 선인식', '전액 Bonds Payable'],
+            ['행사 시', 'APIC-Warrants → C/S + APIC 재분류', 'Bonds Payable → C/S + APIC'],
+            ['자본 인식 시점', '발행 시', '행사 시'],
+            ['부분 행사', '가능', '가능'],
+          ]}
+        />
+        <p style={{ fontWeight: 700, margin: '16px 0 6px' }}>[Detachable 발행 시 계산]</p>
+        <CodeBlock>{`총 발행액 = Face × issue price%
+Warrant FV = 개수 × FV per warrant → APIC
+채권 CV = 총 발행액 − Warrant FV → Long-term debt
+
+예시: Face $4M × 101% = $4,040,000 / Warrant 200,000개 × $1 = $200,000
+→ 채권 CV = $4,040,000 − $200,000 = $3,840,000`}</CodeBlock>
+        <p style={{ fontWeight: 700, margin: '16px 0 6px' }}>[분개]</p>
+        <CodeBlock>{`발행 시 (Detachable):
+Dr. Cash                 $4,040,000
+    Cr. Bonds Payable    $3,840,000
+    Cr. APIC-Warrants      $200,000
+
+행사 시 (Detachable, no par C/S):
+Dr. Cash (행사가 × 주수)
+Dr. APIC-Warrants
+    Cr. Common Stock (전액)
+
+발행 시 (Non-detachable):
+Dr. Cash                 $4,040,000
+    Cr. Bonds Payable    $4,040,000
+
+행사 시 (Non-detachable):
+Dr. Bonds Payable (행사 비율)
+    Cr. Common Stock
+    Cr. APIC`}</CodeBlock>
+        <p style={{ fontWeight: 700, margin: '16px 0 6px' }}>[Warrant &amp; EPS 연결]</p>
+        <CodeBlock>{`In the money (시장가 > 행사가) → TSM 적용 → WASO 증가 → Dilutive
+Out of the money (시장가 < 행사가) → 아무도 행사 안 함 → Antidilutive → 제외
+
+TSM 순증가 주식수 = 발행 주식수 − (행사대금 / 시장가)`}</CodeBlock>
+        <p style={{ fontWeight: 700, margin: '16px 0 6px' }}>[Warrant vs Stock Options]</p>
+        <CodeBlock>{`공통: TSM 적용 / In the money → Dilutive / 행사 시 C/S + APIC
+차이:
+  Warrant      → 외부 투자자 / 자금 조달 / 발행 시 APIC 직접 인식 (비용 아님)
+  Stock Option → 임직원 보상 / 발행 시 Compensation Expense + APIC`}</CodeBlock>
+        <p style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: '8px 14px', color: '#0369a1', fontStyle: 'italic', marginTop: 12 }}>
+          Memory: "detachable = 발행 시 분리 / non-detachable = 행사 시 같이 전환"
+        </p>
+      </Section>
+
       <Section title="Key Terms — Bond">
         <Table
           headers={['Term', 'Also known as', 'Note']}
@@ -1833,14 +1885,107 @@ function GovContent() {
         <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Modified accrual = "거의 현금주의". Revenue available = 60일 내 수령 가능.</p>
       </Section>
       <Section title="1. Fund 유형 분류">
-        <Table
-          headers={['유형', 'Fund', '회계 기준']}
-          rows={[
-            ['Governmental', 'General / Special Revenue / Capital Projects / Debt Service / Permanent', 'Modified Accrual'],
-            ['Proprietary', 'Enterprise / Internal Service', 'Full Accrual'],
-            ['Fiduciary', 'Pension Trust / Investment Trust / Private-Purpose / Custodial', 'Full Accrual (no net position)'],
-          ]}
-        />
+        <p style={{ fontWeight: 700, marginBottom: 6 }}>[Governmental Funds] — Modified Accrual</p>
+        <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.9, color: '#334155' }}>
+          <li><strong>General Fund</strong> — Police, fire, public schools, general administration <span style={{ color: '#64748b' }}>// 특정 기금 불필요한 모든 일반 활동</span></li>
+          <li><strong>Special Revenue Fund</strong> — Federal highway grants, housing development grants <span style={{ color: '#64748b' }}>// 특정 목적 지정 세입·보조금</span></li>
+          <li><strong>Debt Service Fund</strong> — Municipal bond principal &amp; interest payments <span style={{ color: '#64748b' }}>// 지방채 원리금 상환 전용</span></li>
+          <li><strong>Capital Projects Fund</strong> — City hall construction, bridge &amp; road projects, new school building <span style={{ color: '#64748b' }}>// 대규모 자본사업 한정</span></li>
+          <li><strong>Permanent Fund</strong> — Park endowment fund (principal preserved; only earnings spent) <span style={{ color: '#64748b' }}>// 원금 영구 보존, 이자만 공공 목적</span></li>
+        </ul>
+        <p style={{ fontWeight: 700, margin: '14px 0 6px' }}>[Proprietary Funds] — Full Accrual</p>
+        <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.9, color: '#334155' }}>
+          <li><strong>Enterprise Fund</strong> — Water/sewer utility, municipal airport, public transit, electric utility <span style={{ color: '#64748b' }}>// 외부 이용자에게 요금 부과</span></li>
+          <li><strong>Internal Service Fund</strong> — Fleet management, IT services, central printing shop <span style={{ color: '#64748b' }}>// 내부 부서 간 서비스, 원가 회수</span></li>
+        </ul>
+        <p style={{ fontWeight: 700, margin: '14px 0 6px' }}>[Fiduciary Funds] — Full Accrual (no net position)</p>
+        <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.9, color: '#334155' }}>
+          <li><strong>Pension Trust Fund</strong> — Public employee pension assets <span style={{ color: '#64748b' }}>// 공무원 연금 자산 수탁</span></li>
+          <li><strong>Investment Trust Fund</strong> — Multi-government investment pool <span style={{ color: '#64748b' }}>// 복수 지방정부 공동 투자 운영</span></li>
+          <li><strong>Private-Purpose Trust Fund</strong> — Scholarship trust for specific individuals/orgs <span style={{ color: '#64748b' }}>// 특정 개인·단체 이익 목적 신탁</span></li>
+          <li><strong>Custodial Fund</strong> — Property tax collected then distributed to school districts <span style={{ color: '#64748b' }}>// 대신 징수 후 타 기관 배분, 단순 보관</span></li>
+        </ul>
+      </Section>
+
+      <Section title="Fund Types — Real-World Examples">
+        {/* Governmental Funds */}
+        <p style={{ fontWeight: 700, fontSize: 13, color: '#fff', background: '#4f46e5', borderRadius: 6, padding: '3px 10px', display: 'inline-block', marginBottom: 10 }}>Governmental Funds — Modified Accrual</p>
+        {[
+          { fund: 'General Fund', items: ['Police & Fire Dept. — core government operations funded by general taxes', 'Public School Operations — day-to-day instructional costs'] },
+          { fund: 'Special Revenue Fund', items: ['Federal Highway Grant — gas tax proceeds restricted to road maintenance', 'Housing Development Grant — federal funds restricted to affordable housing'] },
+          { fund: 'Debt Service Fund', items: ['Municipal Bond Repayment — principal & interest on city bonds', 'G.O. Bond Debt Service — general obligation bond annual payments'] },
+          { fund: 'Capital Projects Fund', items: ['New City Hall Construction — long-term capital facility project', 'Bridge & Road Expansion — infrastructure project funded by bond proceeds'] },
+          { fund: 'Permanent Fund', items: ['Park Maintenance Endowment — principal preserved; only investment income spent', 'Cemetery Perpetual Care Fund — earnings used for ongoing maintenance'] },
+        ].map(({ fund, items }) => (
+          <div key={fund} style={{ marginBottom: 10, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 14px' }}>
+            <p style={{ fontWeight: 700, color: '#1e293b', margin: '0 0 4px' }}>{fund}</p>
+            <ul style={{ margin: 0, paddingLeft: 18 }}>
+              {items.map(item => <li key={item} style={{ color: '#475569', fontSize: 13, lineHeight: 1.7 }}>{item}</li>)}
+            </ul>
+          </div>
+        ))}
+
+        {/* Proprietary Funds */}
+        <p style={{ fontWeight: 700, fontSize: 13, color: '#fff', background: '#0891b2', borderRadius: 6, padding: '3px 10px', display: 'inline-block', margin: '14px 0 10px' }}>Proprietary Funds — Full Accrual</p>
+        {[
+          { fund: 'Enterprise Fund', items: ['Municipal Water & Sewer — city utility charging residents usage fees', 'City Airport — charges airlines and passengers landing/terminal fees', 'Public Transit (Bus/Rail) — fare-based city transportation system'] },
+          { fund: 'Internal Service Fund', items: ['Fleet Management — maintains city vehicles; charges other departments', 'Central IT Services — tech support billed to city departments internally', 'Central Print Shop — printing services billed to city departments'] },
+        ].map(({ fund, items }) => (
+          <div key={fund} style={{ marginBottom: 10, background: '#f0fdff', border: '1px solid #bae6fd', borderRadius: 8, padding: '8px 14px' }}>
+            <p style={{ fontWeight: 700, color: '#1e293b', margin: '0 0 4px' }}>{fund}</p>
+            <ul style={{ margin: 0, paddingLeft: 18 }}>
+              {items.map(item => <li key={item} style={{ color: '#475569', fontSize: 13, lineHeight: 1.7 }}>{item}</li>)}
+            </ul>
+          </div>
+        ))}
+
+        {/* Fiduciary Funds */}
+        <p style={{ fontWeight: 700, fontSize: 13, color: '#fff', background: '#7c3aed', borderRadius: 6, padding: '3px 10px', display: 'inline-block', margin: '14px 0 10px' }}>Fiduciary Funds — Full Accrual</p>
+        {[
+          { fund: 'Pension Trust Fund', items: ['Public Employee Retirement System — manages pension assets for city employees'] },
+          { fund: 'Investment Trust Fund', items: ['Multi-Government Investment Pool — pooled investment for several local governments'] },
+          { fund: 'Private-Purpose Trust Fund', items: ['Scholarship Trust for Specific Family — benefits designated private individuals'] },
+          { fund: 'Custodial Fund', items: ['Property Tax Collection — collects taxes then remits to school districts & other entities'] },
+        ].map(({ fund, items }) => (
+          <div key={fund} style={{ marginBottom: 10, background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 8, padding: '8px 14px' }}>
+            <p style={{ fontWeight: 700, color: '#1e293b', margin: '0 0 4px' }}>{fund}</p>
+            <ul style={{ margin: 0, paddingLeft: 18 }}>
+              {items.map(item => <li key={item} style={{ color: '#475569', fontSize: 13, lineHeight: 1.7 }}>{item}</li>)}
+            </ul>
+          </div>
+        ))}
+
+        {/* Key TIP */}
+        <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8, padding: '10px 14px', marginTop: 6 }}>
+          <p style={{ fontWeight: 700, color: '#92400e', margin: '0 0 6px' }}>Key Distinction TIP</p>
+          <p style={{ color: '#78350f', fontSize: 13, lineHeight: 1.7, margin: 0 }}>
+            <strong>Enterprise vs Internal Service:</strong><br />
+            → Enterprise = charges <strong>EXTERNAL</strong> users (citizens, airlines)<br />
+            → Internal Service = charges <strong>INTERNAL</strong> government departments only<br /><br />
+            <strong>Permanent Fund vs Private-Purpose Trust:</strong><br />
+            → Permanent = benefits the <strong>PUBLIC</strong><br />
+            → Private-Purpose = benefits specific <strong>PRIVATE</strong> individuals
+          </p>
+        </div>
+      </Section>
+
+      <Section title="왜 기금마다 회계 기준이 다른가?">
+        <p style={{ fontWeight: 700, marginBottom: 4 }}>[Governmental Funds → Modified Accrual 이유]</p>
+        <p style={{ color: '#334155', lineHeight: 1.7, marginBottom: 8 }}>
+          정부 세금으로 운영되는 기금의 핵심 질문은 <strong>"올해 예산을 적절히 사용했는가?"</strong>임.<br />
+          수익성이 아니라 당해 연도 <strong>예산 통제(budgetary control)</strong>가 목적.<br />
+          → 현금에 가까운 유동자원(current financial resources)만 추적하면 충분<br />
+          → Modified Accrual: 수익은 available(60일 내 수령 가능)할 때만 인식, 지출은 부채 발생 시 인식
+        </p>
+        <p style={{ fontWeight: 700, marginBottom: 4 }}>[Proprietary &amp; Fiduciary Funds → Full Accrual 이유]</p>
+        <p style={{ color: '#334155', lineHeight: 1.7, marginBottom: 10 }}>
+          Enterprise Fund(상하수도 등)는 요금을 받고 서비스를 제공하는 비즈니스와 동일한 구조 → <strong>수익성·원가 파악</strong>이 필요<br />
+          → 민간기업과 동일하게 Full Accrual + Economic resources measurement focus<br />
+          → 장기 자산·부채(감가상각, 장기채무 등)까지 전부 인식
+        </p>
+        <p style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: '8px 14px', color: '#0369a1', fontStyle: 'italic' }}>
+          Memory tip: "세금으로 예산 집행 → Modified / 요금 받고 장사 → Full Accrual"
+        </p>
       </Section>
 
       <Section title="2. Modified Accrual 인식 기준">
@@ -1876,6 +2021,24 @@ Property tax:
         'Proprietary fund = Full accrual (modified 아님)',
         'Property tax: measurable at levy, available = 60일',
       ]} />
+
+      <Section title="용어 정리">
+        <dl style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {[
+            { term: 'GASB (Governmental Accounting Standards Board)', def: '미국 주·지방정부 회계기준 제정 기관. 민간기업의 FASB에 해당. 정부회계는 FASB가 아닌 GASB 기준 적용.' },
+            { term: 'Modified Accrual', def: '수정발생주의. 수익은 measurable + available(60일 내 수령)할 때 인식. 지출은 부채 발생 시 인식. Governmental funds 적용.' },
+            { term: 'Full Accrual', def: '완전발생주의. 민간기업 GAAP과 동일. 수익·비용 발생 기준 인식. Proprietary · Fiduciary funds 적용.' },
+            { term: 'Measurement Focus', def: 'Current financial resources: 유동자원만 추적 (Governmental funds) / Economic resources: 장기 자산·부채 포함 전체 경제적 자원 추적 (Proprietary · Fiduciary)' },
+            { term: 'Fund Accounting', def: '정부가 자원을 목적별로 분리해 관리하는 회계 방식. 각 fund는 독립된 회계 단위로 별도 재무제표 작성.' },
+            { term: 'Available', def: 'Modified accrual에서 수익 인식 요건: 60일 이내 수령 가능한 상태.' },
+          ].map(({ term, def }) => (
+            <div key={term} style={{ borderLeft: '3px solid #6366f1', paddingLeft: 12 }}>
+              <dt style={{ fontWeight: 700, color: '#1e293b', marginBottom: 2 }}>{term}</dt>
+              <dd style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>{def}</dd>
+            </div>
+          ))}
+        </dl>
+      </Section>
     </div>
   )
 }
