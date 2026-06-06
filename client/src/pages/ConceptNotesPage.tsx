@@ -717,6 +717,56 @@ TSM 순증가 주식수 = 발행 주식수 − (행사대금 / 시장가)`}</Cod
           ]}
         />
       </Section>
+
+      <Section title="Question Type → Speed Guide">
+        <p style={{ marginBottom: 12, color: '#555', fontSize: 13 }}>
+          Bond 문제는 동일한 숫자 세트로 6가지 다른 것을 물어본다. 질문 첫 줄에서 유형을 파악하면 계산 로직이 즉시 결정된다.
+        </p>
+        <Table
+          headers={['질문 키워드', '즉각 풀이 로직', '주의']}
+          rows={[
+            [
+              '① "bonds payable on the balance sheet"',
+              'CV = Face ± unamortized disc/prem',
+              'face value 그대로 = 오답'
+            ],
+            [
+              '② "interest expense for the period"',
+              'Beginning CV × market rate × m/12',
+              'face × coupon rate 혼동 금지'
+            ],
+            [
+              '③ "cash paid for interest"',
+              'Face × coupon rate × m/12',
+              'CV와 무관 — 항상 face 기준'
+            ],
+            [
+              '④ "carrying value at [interim date]"',
+              '연간상각액 = (CV×market) − (Face×coupon) → ×m/12 → CV ± 상각액',
+              'interim date → 반드시 ×m/12'
+            ],
+            [
+              '⑤ "gain or loss on early retirement"',
+              'CV at retirement date 먼저 계산 → Gain/Loss = CV − reacquisition price',
+              'CV 계산 생략하면 틀림'
+            ],
+            [
+              '⑥ issuer vs investor',
+              'Issuer: Bonds Payable / Interest Expense | Investor: Bond Investment / Interest Income',
+              '"issued" → issuer / "purchased" → investor'
+            ],
+          ]}
+        />
+        <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8, padding: '12px 16px', marginTop: 16 }}>
+          <p style={{ fontWeight: 700, marginBottom: 6, color: '#92400e' }}>⚡ 1-line Speed Rule</p>
+          <CodeBlock>{`B/S       → CV (never face alone)
+Int Exp   → BegCV × market rate
+Cash Int  → Face × coupon rate
+Interim   → annual amort × m/12
+Retire    → CV − reacquisition price
+Issuer    → liability side / Investor → asset side`}</CodeBlock>
+        </div>
+      </Section>
     </div>
   )
 }

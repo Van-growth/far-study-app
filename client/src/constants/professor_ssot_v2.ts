@@ -5902,6 +5902,48 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[경과이자 경제적 실질]\n7/1 이자 지급일에 발행자가 6개월치($50,000) 전액 지급.\n투자자는 4/1부터 보유(3개월)이므로 1/1~4/1 3개월치를 발행 시 미리 지급.\n발행자: 발행 시 $25,000 수령 → 7/1에 $50,000 지급 (순 이자비용 3개월치)\n\n[발행자 분개]\n4/1 발행 시:\nDr. Cash $995,000\n  Cr. Bonds Payable $970,000\n  Cr. Interest Payable $25,000\n\n7/1 이자 지급:\nDr. Interest Payable $25,000\nDr. Interest Expense $25,000\n  Cr. Cash $50,000",
   },
 
+  // [BOND_030] Bond Discount CV at Interim Date — Effective Interest Method, m/12 Adjustment
+  // RULE    : CV = 발행가 + 누적 상각액 / 연간 상각액 먼저 계산 → ×m/12 / B/S = CV (net), face value 아님
+  // TRIGGER : "balance sheet" + discount bond → CV로 답 / interim date(6/30 등) → ×m/12
+  // TRAP    : face value $500,000 그대로 = B/P 장부기록용 / B/S 표시는 CV / SL법 적용 오류
+  {
+    topic_id: "BOND_030",
+    book_id: 'IA',
+    chapter_id: 'IA_CH8',
+    topic_group: 'IA_CH8_BOND',
+    sub_category_id: "U4_BONDS",
+    card_type: 'calculation',
+    card_name: "Bond discount CV at interim date — effective interest method with m/12 adjustment",
+    rule: "【풀이 순서 — 권장 방식】\n① 연간 상각액 계산\n   Interest Expense = 발행가(CV) × 유효이자율\n   Cash = 액면 × 쿠폰율\n   연간 상각액 = Interest Expense − Cash\n② interim date 조정\n   상각액 × m/12\n③ CV 계산\n   CV = 발행가 + 상각액(×m/12)\n\n【B/S 표시 원칙】\n분개 장부: Bonds Payable = $500,000 (face)\nB/S 표시: Bonds Payable = CV = face − unamortized discount\n→ 'on the balance sheet' 문구 보이면 항상 CV로 답",
+    trigger: "'on the balance sheet' + discount bond → CV (face value 아님)\n'June 30 balance sheet' + 'interest payable annually on December 31' → ×½ 적용\n'effective interest method' → CV × 유효이자율로 이자비용 계산\n'bonds payable' 금액 질문 → 장부기록(face) vs B/S표시(CV) 구분",
+    trap: "face value $500,000 그대로 → 장부기록용, B/S 표시 아님\nSL법 적용 → effective interest method 명시 시 사용 금지\n연간 상각액을 그대로 사용 → interim date면 반드시 ×m/12\n'Bonds Payable = face value' 혼동:\n→ 발행 시 분개에서 Bonds Payable = $500,000으로 기록하지만\n→ B/S 표시는 항상 CV = face − unamortized discount",
+    one_sentence: "B/S Bonds Payable = CV = 발행가 + 누적상각액 / 연간상각액 먼저 계산 후 ×m/12.",
+    key_formula: "연간상각액 = (발행가 × 유효이자율) − (액면 × 쿠폰율)\nCV = 발행가 + 상각액 × m/12",
+    example: "액면 $500,000 / 발행가 $469,500 / 쿠폰 9% / 유효이자율 10% / 이자 연 1회(12/31)\nJune 30 B/S 기준:\n① 연간상각액 = ($469,500×10%) − ($500,000×9%) = $1,950\n② ×½ = $975\n③ CV = $469,500 + $975 = $470,475 → Bonds Payable on B/S",
+    speed: "'on the balance sheet' → CV / interim date → ×m/12\n연간상각액 먼저 → ×m/12 → 발행가에 가산",
+    context_background: "[Bonds Payable 두 가지 얼굴]\n발행 시 분개:\nDr. Cash              $469,500\nDr. Discount on B/P    $30,500\n    Cr. Bonds Payable            $500,000 ← 장부기록 = face value\n\nB/S 표시:\nBonds Payable (net)  $470,475 ← CV\n\n→ 장부에는 $500,000으로 기록하지만 B/S에는 CV만 표시\n\n[Discount 상각 방향]\nDiscount: CV 발행가 → 만기 face로 증가 (매기 +)\nPremium: CV 발행가 → 만기 face로 감소 (매기 −)\n\n[Interim date 주의]\n이자 지급 연 1회(12/31) + B/S 6/30 → ×½\n이자 지급 반기(6/30, 12/31) + B/S 6/30 → ×1",
+  },
+
+  // [BOND_031] Bond Question Type → Speed Guide (6 Types)
+  // RULE    : 질문 유형 키워드 → 즉각 풀이 로직 발동
+  // TRIGGER : "on the balance sheet" / "interest expense" / "cash paid" / "carrying value at" / "gain or loss" / issuer vs investor
+  // TRAP    : B/S = face value / interest expense = face × coupon / CV 계산 없이 gain/loss 계산
+  {
+    topic_id: "BOND_031",
+    book_id: 'IA',
+    chapter_id: 'IA_CH8',
+    topic_group: 'IA_CH8_BOND',
+    sub_category_id: "U4_BONDS",
+    card_type: 'concept',
+    card_name: "Bond question type → speed guide: 6 question patterns and immediate solve logic",
+    rule: "【질문 유형별 즉각 풀이 로직】\n\n① 'Bonds payable on the balance sheet'\n   → CV = Face ± unamortized prem/disc (never face value alone)\n\n② 'Interest expense for the period'\n   → Beginning CV × market rate × m/12\n\n③ 'Cash paid for interest'\n   → Face × coupon rate × m/12 (fixed, CV irrelevant)\n\n④ 'Carrying value at [interim date]'\n   → Step 1: annual amort = (CV × market rate) − (Face × coupon rate)\n   → Step 2: × m/12\n   → Step 3: CV = issue price + amort (discount) or − amort (premium)\n\n⑤ 'Gain or loss on early retirement'\n   → Step 1: CV at retirement date (issue price ± accumulated amort)\n   → Step 2: Gain/Loss = CV − reacquisition price\n   → Loss if reacquisition > CV / Gain if reacquisition < CV\n\n⑥ 'Issuer vs investor?'\n   → Issuer: Bonds Payable / Interest Expense / Gain/Loss on retirement\n   → Investor: Bond Investment / Interest Income / Gain/Loss on sale",
+    trigger: "'on the balance sheet' → ① CV 계산\n'interest expense' → ② Beginning CV × market rate\n'cash paid' / 'cash interest' → ③ Face × coupon rate (CV 무관)\n'carrying value at June 30' / interim date → ④ 연간상각액 → ×m/12\n'gain' / 'loss' + 'retire' / 'redeem' → ⑤ CV 먼저 계산\n'issued' / 'borrowed' → issuer 관점 / 'purchased' / 'invested' → investor 관점",
+    trap: "① B/S = face value → 절대 오답, 항상 CV\n② interest expense = face × coupon rate → SL 혼동, beginning CV × market rate\n③ cash paid를 CV 기준으로 계산 → face × coupon rate 고정\n④ interim date에 연간 상각액 그대로 사용 → 반드시 ×m/12\n⑤ gain/loss = reacquisition − face → CV 계산 생략 오류",
+    one_sentence: "질문 첫 줄에서 유형 파악 → 해당 공식 즉시 발동 → 숫자 대입.",
+    speed: "B/S → CV / Interest exp → BegCV×market / Cash → Face×coupon / Interim CV → 연간상각×m/12 / Retire → CV−재취득가",
+    context_background: "[왜 6가지를 구분해야 하나]\nBond 문제는 동일한 숫자 세트(face, coupon, market, issue price)로\n전혀 다른 것을 물어볼 수 있음.\n\n같은 문제에서:\n'interest expense' → BegCV × market rate\n'cash paid' → Face × coupon rate\n'bonds payable on B/S' → CV (net)\n→ 질문 유형 파악이 계산보다 먼저\n\n[Issuer vs Investor 구분]\nIssuer(발행자): 돈을 빌린 쪽\n→ Bonds Payable(부채) / Interest Expense(비용) 인식\nInvestor(투자자): 돈을 빌려준 쪽\n→ Bond Investment(자산) / Interest Income(수익) 인식\n→ 문제에 'issued' → issuer / 'purchased' → investor",
+  },
+
   // [TDR_001] TDR — Asset Transfer: two separate gains/losses (debtor perspective)
   // RULE    : ①자산 재평가 (Ordinary gain/loss) = 자산 CA − 자산 FV ②구조조정 이익 (Restructuring gain) = 부채 CA − 자산 FV
   // TRIGGER : 'gain on restructuring of payables' → 부채 CA − 자산 FV / 'loss on transfer of asset' → 자산 CA − 자산 FV
