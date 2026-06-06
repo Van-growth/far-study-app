@@ -35,7 +35,8 @@ const CATEGORIES = [
   { id: 'eps',         label: 'EPS',                          groups: ['IA_CH9_EPS'] },
   { id: 'scf',         label: 'SCF',                          groups: ['IA_CH7_SCF'] },
   { id: 'investments', label: 'Investments & Equity Method',  groups: ['IA_CH6_INVEST'] },
-  { id: 'equity',      label: "Stockholders' Equity",         groups: ['IA_CH9_EQUITY'] },
+  { id: 'equity',        label: "Stockholders' Equity",         groups: ['IA_CH9_EQUITY'] },
+  { id: 'partnerships',  label: 'Partnerships',                  groups: ['AA_CH9_PART'] },
   { id: 'nfp',         label: 'NFP Accounting',               groups: ['IB_NFP'] },
   { id: 'gov',         label: 'Governmental Accounting',      groups: ['IB_GOV'] },
   { id: 'changes',     label: 'Accounting Changes & Errors',  groups: ['IA_CH11_CHANGE'] },
@@ -77,7 +78,7 @@ const SUPER_CATEGORIES = [
   {
     id: 'equity-capital' as SuperCategoryId,
     label: '지분 & 자본',
-    children: ['equity', 'eps', 'investments', 'consol'] as CategoryId[],
+    children: ['equity', 'eps', 'investments', 'consol', 'partnerships'] as CategoryId[],
   },
   {
     id: 'tax-adjustment' as SuperCategoryId,
@@ -767,6 +768,156 @@ Retire    → CV − reacquisition price
 Issuer    → liability side / Investor → asset side`}</CodeBlock>
         </div>
       </Section>
+    </div>
+  )
+}
+
+function PartnershipContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+      <Section title="Overview — Partnership">
+        <p><strong>Partnership</strong> = 2인 이상이 공동으로 영위하는 사업체. 법인세 없음, 손익은 파트너 자본계정으로 직접 배분.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>Pass-through entity: 세금은 각 파트너 개인 소득세로 과세됨.</p>
+        <p style={{ marginTop: 12, fontWeight: 600 }}>5단계 Lifecycle:</p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+          {['① Formation', '② Income Allocation', '③ Admission', '④ Withdrawal', '⑤ Liquidation'].map((s, i) => (
+            <span key={i} style={{ background: '#eef0ff', color: '#4338ca', borderRadius: 6, padding: '4px 10px', fontSize: 13, fontWeight: 600 }}>{s}</span>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="① Formation (설립)">
+        <p><strong>Capital Account = FMV of assets contributed − liabilities assumed</strong></p>
+        <p style={{ color: '#555', marginTop: 4 }}>장부가·원가 무관. 이익배분비율 ≠ Capital 잔액.</p>
+        <p style={{ marginTop: 12, fontWeight: 600 }}>예시:</p>
+        <Table
+          headers={['파트너', '기여 자산', 'Capital']}
+          rows={[
+            ['Reed', 'Cash $80,000', '$80,000'],
+            ['Stone', 'Equipment FMV $120,000 − Mortgage $50,000', '$70,000'],
+          ]}
+        />
+        <CodeBlock>{`Dr. Cash               80,000
+Dr. Equipment         120,000
+    Cr. Mortgage Payable          50,000
+    Cr. Capital-Reed              80,000
+    Cr. Capital-Stone             70,000`}</CodeBlock>
+        <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', marginTop: 12 }}>
+          <p style={{ fontWeight: 700, color: '#dc2626', marginBottom: 4 }}>Trap</p>
+          <p style={{ fontSize: 13, color: '#555' }}>장부가 사용 → 오답 / Mortgage 미차감 → 오답 / 이익배분비율 = Capital 혼동 → 오답</p>
+        </div>
+      </Section>
+
+      <Section title="② Income Allocation (이익 배분)">
+        <p><strong>순서:</strong> ① Salary allowance → ② Interest on capital → ③ 잔여 P&L ratio</p>
+        <p style={{ color: '#555', marginTop: 4 }}>잔여 {'>'} 0 → profit ratio / 잔여 {'<'} 0 → <strong>loss ratio</strong> (profit ratio 아님)</p>
+        <p style={{ marginTop: 12, fontWeight: 600 }}>예시 — 잔여 음수 케이스:</p>
+        <CodeBlock>{`NI $80,000 / Reed salary $60,000 / Stone salary $40,000
+잔여 = $80,000 − $100,000 = −$20,000 (Loss)
+
+Reed:  $60,000 − ($20,000 × 60%) = $48,000
+Stone: $40,000 − ($20,000 × 40%) = $32,000
+합계: $80,000 ✓`}</CodeBlock>
+        <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', marginTop: 12 }}>
+          <p style={{ fontWeight: 700, color: '#dc2626', marginBottom: 4 }}>Trap</p>
+          <p style={{ fontSize: 13, color: '#555' }}>잔여 음수인데 profit ratio 적용 → 오답 / Salary를 이익 내에서만 지급한다고 착각 → 오답</p>
+        </div>
+      </Section>
+
+      <Section title="③ / ④ Admission & Withdrawal — Bonus vs Goodwill">
+        <Table
+          headers={['항목', 'Bonus Method', 'Goodwill Method']}
+          rows={[
+            ['총자산 변화', '없음', 'Goodwill만큼 증가'],
+            ['나머지 파트너 자본', '조정됨 (±)', '변동 없음'],
+            ['Goodwill 인식', '없음', '있음'],
+            ['나머지 자본 감소 가능', 'Yes', 'No'],
+          ]}
+        />
+        <p style={{ marginTop: 16, fontWeight: 600 }}>Admission — Bonus Method</p>
+        <p style={{ color: '#555', fontSize: 13, marginBottom: 6 }}>Reed $100,000 / Stone $100,000 / Lane $70,000 납입 → 30% 약정</p>
+        <CodeBlock>{`Lane 취득자본 = ($200,000 + $70,000) × 30% = $81,000
+차액 $11,000 → Reed·Stone 각 $5,500 차감
+
+Dr. Cash              70,000
+Dr. Capital-Reed       5,500
+Dr. Capital-Stone      5,500
+    Cr. Capital-Lane          81,000`}</CodeBlock>
+        <p style={{ marginTop: 12, fontWeight: 600 }}>Admission — Goodwill Method</p>
+        <CodeBlock>{`implied FMV = $70,000 ÷ 30% = $233,333
+Goodwill = $233,333 − $200,000 = $33,333
+
+Dr. Cash              70,000
+Dr. Goodwill          33,333
+    Cr. Capital-Reed          16,667
+    Cr. Capital-Stone         16,667
+    Cr. Capital-Lane          70,000`}</CodeBlock>
+        <p style={{ marginTop: 12, fontWeight: 600 }}>Withdrawal — Bonus Method</p>
+        <p style={{ color: '#555', fontSize: 13, marginBottom: 6 }}>Reed 자본 $100,000 / 지급 $130,000 / 초과 $30,000</p>
+        <CodeBlock>{`Dr. Capital-Reed     100,000
+Dr. Capital-Stone     15,000
+Dr. Capital-Lane      15,000
+    Cr. Cash                  130,000
+→ 나머지 자본 감소`}</CodeBlock>
+        <p style={{ marginTop: 12, fontWeight: 600 }}>Withdrawal — Goodwill Method</p>
+        <CodeBlock>{`Dr. Goodwill          30,000
+Dr. Capital-Reed     100,000
+    Cr. Cash                  130,000
+→ 나머지 자본 변동 없음`}</CodeBlock>
+        <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8, padding: '10px 14px', marginTop: 12 }}>
+          <p style={{ fontWeight: 700, color: '#92400e', marginBottom: 4 }}>Key</p>
+          <p style={{ fontSize: 13, color: '#555' }}>나머지 자본 <strong>감소</strong> → Bonus only / 나머지 자본 <strong>불변</strong> → Goodwill only</p>
+        </div>
+      </Section>
+
+      <Section title="⑤ Liquidation (해체)">
+        <p><strong>지급 우선순위:</strong></p>
+        <Table
+          headers={['순위', '대상', '비고']}
+          rows={[
+            ['1순위', '외부 채권자 (Creditors)', '전액 상환 후 다음 단계'],
+            ['2순위', '파트너 대여금 (Partner loans)', '파트너가 파트너십에 빌려준 돈'],
+            ['3순위', '파트너 자본계정 (Capital)', 'P&L 비율로 배분'],
+          ]}
+        />
+        <p style={{ marginTop: 12, fontWeight: 600 }}>예시:</p>
+        <CodeBlock>{`자산 $200,000 / 채권자 $80,000 / Partner loans $40,000
+잔여 Capital $80,000 (Reed 60% / Stone 40%)
+
+① Dr. Liabilities         80,000 / Cr. Cash  80,000
+② Dr. Partner Loans       40,000 / Cr. Cash  40,000
+③ Dr. Capital-Reed        48,000
+   Dr. Capital-Stone       32,000
+       Cr. Cash                    80,000`}</CodeBlock>
+        <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', marginTop: 12 }}>
+          <p style={{ fontWeight: 700, color: '#dc2626', marginBottom: 4 }}>Trap</p>
+          <p style={{ fontSize: 13, color: '#555' }}>채권자 미상환 후 파트너 분배 → 오답 / loans와 Capital 순서 바꿈 → 오답</p>
+        </div>
+      </Section>
+
+      <Section title="Sole Proprietorship — Capital Account">
+        <p><strong>Capital = 매입가 + 순이익 − Drawings</strong></p>
+        <p style={{ color: '#555', marginTop: 4 }}>장부가(carrying amount)·시장가(market value) → 무관, 절대 사용 금지.</p>
+        <p style={{ marginTop: 12, fontWeight: 600 }}>예시:</p>
+        <CodeBlock>{`Smith가 Jones' Cleaning을 $350,000에 매입
+순이익 $60,000 / Drawings $20,000
+
+Capital-Smith = $350,000 + $60,000 − $20,000 = $390,000
+(장부가 $375,000, 시장가 $360,000 → 둘 다 무관)`}</CodeBlock>
+        <Table
+          headers={['항목', '설명']}
+          rows={[
+            ['매입가 기준 이유', '새 소유자 Smith의 투자원금 = 실제 지불액 / 이전 소유자 장부가와 무관'],
+            ['Drawings', '법인의 Dividends와 동일 구조 → 자본 직접 차감 / Expense 아님'],
+          ]}
+        />
+        <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8, padding: '10px 14px', marginTop: 12 }}>
+          <p style={{ fontWeight: 700, color: '#92400e', marginBottom: 4 }}>Speed Rule</p>
+          <p style={{ fontSize: 13, color: '#555' }}>매입가 시작 → +순이익 → −Drawings → 끝 / 다른 숫자 전부 무시</p>
+        </div>
+      </Section>
+
     </div>
   )
 }
@@ -2688,8 +2839,9 @@ function ContentTab({ catId, catLabel }: { catId: CategoryId; catLabel: string }
     case 'revenue':     return <RevenueContent />
     case 'scf':         return <ScfContent />
     case 'investments': return <InvestmentsContent />
-    case 'equity':      return <EquityContent />
-    case 'nfp':         return <NfpContent />
+    case 'equity':        return <EquityContent />
+    case 'partnerships':  return <PartnershipContent />
+    case 'nfp':           return <NfpContent />
     case 'gov':         return <GovContent />
     case 'changes':     return <ChangesContent />
     case 'fv':          return <FvContent />

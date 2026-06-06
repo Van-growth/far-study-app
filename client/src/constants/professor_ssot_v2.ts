@@ -4221,6 +4221,49 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[Tiered allocation 구조]\n약정서에 명시된 순서대로 배분. 각 단계마다 잔액이 줄어들고, 그 잔액을 다음 단계의 기준으로 사용.\n\n['remaining income over $X' 트랩]\n이 표현이 나오면 반드시 '해당 시점 잔액'을 기준으로 $X 초과분 계산.\nNI 원래 금액을 기준으로 계산하면 오답.\n\n[검증]\n모든 파트너 배분 합계 = NI 총액이 되어야 함.\n$108,000 + $71,000 + $71,000 = $250,000 ✓",
   },
 
+  // [PART_012] Partnership — 5 Lifecycle Stages + Bonus vs Goodwill
+  // RULE    : Formation=FMV / Income=Salary먼저→잔여P&L / Admission·Withdrawal=Bonus or Goodwill / Liquidation=채권자→loans→Capital
+  // TRIGGER : "partnership formed" / "admitted" / "withdrew" / "liquidation" → 단계 확인 후 해당 로직
+  // TRAP    : Formation 장부가 사용 / Salary 범위 내에서만 지급 / Goodwill이 나머지 자본 감소시킨다고 착각
+  {
+    topic_id: "PART_012",
+    book_id: 'AA',
+    chapter_id: 'AA_CH9',
+    topic_group: 'AA_CH9_PART',
+    sub_category_id: "U5_PARTNERSHIPS",
+    card_type: 'concept',
+    card_name: "Partnership lifecycle — formation, income allocation, admission, withdrawal, liquidation",
+    rule: "【① Formation (설립)】\nCapital = FMV of assets contributed − liabilities assumed\n장부가·원가 무관 / 이익배분비율 ≠ Capital 잔액\n\nDr. Cash / Dr. Equipment(FMV)\n    Cr. Mortgage Payable\n    Cr. Capital-Reed\n    Cr. Capital-Stone\n\n【② Income Allocation (이익 배분)】\n순서: Salary → Interest on capital → 잔여(P&L ratio)\n잔여 > 0 → profit ratio / 잔여 < 0 → loss ratio\n각 파트너 최종 = Salary ± 잔여배분 / 합계 = NI 검증\n\n【③ Admission (신규 영입) — Bonus Method】\nLane 취득 자본 = (기존총자본 + 납입액) × 약정지분율\n납입 < 취득자본 → 차액을 기존 파트너에서 P&L 비율로 차감\n총자산 변화 없음\n\n【③ Admission — Goodwill Method】\nimplied FMV = 납입액 ÷ 약정지분율\nGoodwill = implied FMV − 기존 장부 총자본\nGoodwill을 기존 파트너 P&L 비율로 배분\n총자산 증가\n\n【④ Withdrawal (탈퇴) — Bonus Method】\n초과 지급분 = 잔류 파트너 자본에서 P&L 비율로 차감\n총자산 변화 없음 / 나머지 자본 감소\n\n【④ Withdrawal — Goodwill Method】\n초과 지급분 = Goodwill 자산 인식\n나머지 파트너 자본 변동 없음 / 총자산 증가\n\n【⑤ Liquidation (해체)】\n지급 우선순위:\n1순위: 외부 채권자 전액\n2순위: 파트너 대여금(loans)\n3순위: 파트너 자본계정 잔액",
+    trigger: "'partnership was formed' → Formation: Capital = FMV − 부채\n'admitted as a partner' → Admission: Bonus or Goodwill\n'withdrew from the partnership' → Withdrawal: Bonus or Goodwill\n'partnership was liquidated' → 1순위 채권자\n'salary allowance' → Income Allocation: Salary 먼저\n'capital accounts of remaining partners decreased' → Bonus method만",
+    trap: "Formation: 장부가 사용 오답 → 반드시 FMV\nIncome Allocation: Salary > NI → 잔여 음수 → loss ratio (profit ratio 아님)\nAdmission Bonus: 납입액을 그대로 Capital-Lane으로 기록 오답\nWithdrawal: Goodwill method가 나머지 자본 감소시킨다고 착각\n→ Goodwill method = 나머지 자본 불변 / Bonus method = 나머지 자본 감소\nLiquidation: 파트너에게 먼저 분배 오답 → 채권자 전액 상환이 무조건 1순위",
+    one_sentence: "Formation=FMV / Income=Salary먼저 / Admission·Withdrawal=Bonus(자산불변)or Goodwill(자산증가) / Liquidation=채권자우선.",
+    speed: "Formation → FMV − 부채\nIncome → Salary 먼저 → 잔여 부호 확인 → P&L ratio\nAdmission Bonus → (총자본+납입) × % = 취득자본\nWithdrawal → 나머지 자본 감소 = Bonus only\nLiquidation → 채권자 → loans → Capital",
+    example: "【Formation】\nReed: Cash $80,000 → Capital $80,000\nStone: Equipment FMV $120,000 − Mortgage $50,000 → Capital $70,000\n\n【Income Allocation】\nNI $80,000 / Reed salary $60,000 / Stone salary $40,000\n잔여 = $80,000 − $100,000 = −$20,000 (Loss)\nReed: $60,000 − $12,000 = $48,000\nStone: $40,000 − $8,000 = $32,000\n\n【Admission — Bonus Method】\nReed $100,000 / Stone $100,000 / Lane $70,000 납입 → 30% 약정\nLane 취득자본 = $270,000 × 30% = $81,000\n차액 $11,000 → Reed·Stone 각 $5,500 차감\n\n【Admission — Goodwill Method】\nimplied FMV = $70,000 ÷ 30% = $233,333\nGoodwill = $33,333 → Reed·Stone 각 $16,667 가산\n\n【Withdrawal — Bonus】\nReed 자본 $100,000 / 지급 $130,000\nStone·Lane 각 $15,000 차감\n\n【Withdrawal — Goodwill】\nGoodwill $30,000 인식 / Stone·Lane 자본 불변\n\n【Liquidation】\n채권자 $80,000 → Partner loans $40,000 → Capital $80,000 (Reed 60%/Stone 40%)",
+    context_background: "[Bonus vs Goodwill 한눈에]\n항목              Bonus Method     Goodwill Method\n총자산 변화         없음              Goodwill만큼 증가\n나머지 파트너 자본   조정됨(±)         변동 없음\nGoodwill 인식      없음              있음\n나머지 자본 감소    가능              불가\n\n[Income Allocation 핵심]\nSalary allowance = 실제 급여 아님, 배분 우선순위 도구\nSalary > NI → 잔여 음수 → loss ratio 자동 전환\nprofit ratio ≠ loss ratio일 수 있으므로 항상 구분 확인\n\n[Liquidation 우선순위 이유]\n채권자는 계약상 청구권 보유 → 파트너보다 법적 우선\n파트너 loans = 파트너가 파트너십에 빌려준 돈 → 자본보다 먼저\nCapital = 잔여 청구권 → 마지막",
+  },
+
+  // [PART_013] Sole Proprietorship — Capital Account Calculation
+  // RULE    : Capital = 매입가 + 순이익 − 인출 / 장부가·시장가 무관
+  // TRIGGER : "sole proprietorship" + "capital account" → 매입가 기준 시작
+  // TRAP    : 장부가·시장가를 시작 잔액으로 사용 / Drawings를 가산
+  {
+    topic_id: "PART_013",
+    book_id: 'AA',
+    chapter_id: 'AA_CH9',
+    topic_group: 'AA_CH9_PART',
+    sub_category_id: "U5_PARTNERSHIPS",
+    card_type: 'calculation',
+    card_name: "Sole proprietorship — capital account = purchase price + net income − drawings",
+    rule: "Capital Account = 매입가(purchase price) + 순이익 − 인출(drawings)\n\n매입가 = 실제 지불한 금액 → 시작 잔액\n장부가(carrying amount) / 시장가(market value) → 무관, 사용 금지\nDrawings = 사업주 인출 = 법인의 배당과 동일 구조 → 자본 직접 차감\n\n분개:\nDr. Capital-Smith   $20,000\n    Cr. Cash                   $20,000",
+    trigger: "'purchased net assets for $X' → Capital 시작 = $X (매입가)\n'revenues in excess of expenses' → 순이익 → Capital 가산\n'drawings during the year' → Capital 차감\n'sole proprietorship' + 'capital account' → 매입가 기준",
+    trap: "장부가 $375,000 사용 → 오답 / 시장가 $360,000 사용 → 오답\nDrawings $20,000 가산 → 반대 방향, 반드시 차감\nDrawings = Expense로 혼동 → 자본 직접 차감, I/S 항목 아님",
+    one_sentence: "Sole Prop Capital = 매입가 + 순이익 − Drawings / 장부가·시장가 절대 사용 금지.",
+    key_formula: "Capital(기말) = 매입가 + 순이익 − Drawings",
+    example: "Smith가 Jones' Cleaning을 $350,000에 매입\n순이익 $60,000 / Drawings $20,000\nCapital-Smith = $350,000 + $60,000 − $20,000 = $390,000\n(장부가 $375,000, 시장가 $360,000 → 둘 다 무관)",
+    speed: "매입가 시작 → +순이익 → −Drawings → 끝 / 다른 숫자 전부 무시",
+    context_background: "[Sole Proprietorship이란]\n미국 개인사업자 = 소유자와 사업체가 법적으로 분리되지 않음\n한국 개인사업자와 동일 구조\n자본계정 = Capital-[소유자 이름]\n\n[Drawings vs Dividends]\nDrawings(개인사업자·파트너십) = Dividends(법인)\n둘 다 자본 직접 차감 / I/S 항목 아님\n\n[매입가 기준 이유]\n새 소유자 Smith가 $350,000을 지불 → 그 금액이 Smith의 투자원금\n이전 소유자 Jones의 장부가·시장가는 Smith와 무관\n새 출발 = 매입가 기준",
+  },
+
   // ── TBS ────────────────────────────────────────────────────────────────────
   {
     topic_id: "TBS_001",
