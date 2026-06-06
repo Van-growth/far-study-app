@@ -96,6 +96,10 @@
 .inv-diagram svg g.c-teal text   { fill: #085041; }
 .inv-diagram svg g.c-amber rect  { fill: #FEF3C7; stroke: #D97706; }
 .inv-diagram svg g.c-amber text  { fill: #92400E; }
+.inv-diagram svg g.c-blue rect   { fill: #EFF6FF; stroke: #1D4ED8; }
+.inv-diagram svg g.c-blue text   { fill: #1E3A8A; }
+.inv-diagram svg g.c-coral rect  { fill: #fff0ec; stroke: #993C1D; }
+.inv-diagram svg g.c-coral text  { fill: #993C1D; }
 
 /* ── FX diagram SVG styles ──────────────────────────────── */
 .fx-diagram svg text.th { font-size: 12px; font-weight: 700; fill: #1a1a1a; }

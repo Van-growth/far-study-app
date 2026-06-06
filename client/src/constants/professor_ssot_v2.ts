@@ -9439,6 +9439,28 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[재고 실사(Physical Count)가 누락하는 항목]\n창고 기준 실사 → 운송 중·외부 위탁·외부 판매 재고 누락 가능\n→ 소유권 기준으로 재조정 필수\n\n[FOB 직관]\nFOB Shipping Point: '출발하면 네 거'\nFOB Destination: '도착해야 네 거'\n\n[Consignment 방향 기억법]\nTO = 내가 상대방에게 보낸 것 → 내 소유\nBY = 상대방이 나에게 보낸 것 → 상대방 소유\nFOR = 상대방을 위해 내가 보관 → 상대방 소유\n\n[전체 조정 요약]\nFOB s.p. 매입 운송 중 → ✅ 포함\nFOB s.p. 판매 운송 중 → ❌ 제외\nFOB dest 매입 운송 중 → ❌ 제외\nFOB dest 판매 운송 중 → ✅ 포함\nConsignment OUT → ✅ 포함\nConsignment IN → ❌ 제외\nBill and Hold (조건 충족) → ❌ 제외\nBill and Hold (조건 미충족) → ✅ 포함\nPledged inventory → ✅ 포함\nPublic warehouse → ✅ 포함\nPurchase commitment → ❌ 재고 아님\nFreight In → ✅ 원가 포함\nFreight Out → ❌ 판매비용",
   },
 
+  // [INV_019] Dollar-Value LIFO — Layer Calculation and Price Index Effect
+  // RULE    : Ending base-year cost → added layers 차감 → base layer (plug-in) / 각 layer × 해당 연도 index
+  // TRIGGER : "dollar-value LIFO" / "price index" / "base-year cost" / "added LIFO layers"
+  // TRAP    : base layer에 index 적용 / 다른 연도 index 혼용 / ending base-year cost를 base layer로 착각
+  {
+    topic_id: "INV_019",
+    book_id: 'IA',
+    chapter_id: 'IA_CH3',
+    topic_group: 'IA_CH3_INV',
+    sub_category_id: "U3_INVENTORY",
+    card_type: 'calculation',
+    card_name: "Dollar-value LIFO — plug-in base layer, each added layer × its own year index",
+    rule: "【왜 DV LIFO를 쓰는가】\nLIFO를 수량 단위로 적용하면 제품 종류 변경 시 layer 관리가 복잡.\nDV LIFO = 달러 금액 기준으로 LIFO 적용 → 수량 변화 없어도 물가 상승 반영 가능.\n→ 물가 상승기: index 효과로 재고 평가액이 현재 원가에 더 가깝게 측정\n→ COGS = 최근 원가 반영 (LIFO 취지 유지)\n\n【3단계 계산】\nStep 1: Base layer (plug-in)\n  = Y1 ending base-year cost − Y1 added layer\n  예: $610,000 − $125,000 = $485,000\n  → Base layer는 index 없음 (× 1.0)\n\nStep 2: 각 layer × 해당 연도 index\n  Base:  $485,000 × 1.0 = $485,000\n  Y1:    $125,000 × 1.3 = $162,500\n  Y2:    $175,000 × 1.2 = $210,000\n\nStep 3: 합산 = DV LIFO ending inventory\n  $485,000 + $162,500 + $210,000 = $857,500\n\n【Without index vs With index 비교】\nWithout: $485K + $125K + $175K = $785,000\nWith:    $485K + $162.5K + $210K = $857,500\nDifference: +$72,500 = index 효과 (물가 상승 반영)",
+    trigger: "'dollar-value LIFO' → 3단계 계산\n'price index for Year X was Y' → 해당 연도 layer에만 적용\n'added LIFO layers at base-year cost' → 각 layer 별도 관리\n'base-year cost of ending inventory' → added layers 차감 → base layer plug-in\n'computed price index' → Step 2에서 각 layer에 적용",
+    trap: "Base layer에 index 적용: $485,000 × 1.3 → 오류, base는 × 1.0\nY1 index를 Y2 layer에 적용: 혼용 금지, 각 layer는 해당 연도 index만\nEnding base-year cost를 base layer로 착각: 반드시 added layers 차감 후 plug-in\nY2 index 1.2를 Y1 layer에 적용: 오류",
+    one_sentence: "DV LIFO = 달러 기준 LIFO / base layer는 plug-in × 1.0 / 각 added layer × 해당 연도 index / 합산.",
+    key_formula: "Base layer = Ending base-year cost − Σ added layers\nDV LIFO = Σ (each layer × its year index)",
+    speed: "Ending base-year cost → added layers 차감 → base layer\n각 layer × 해당 index → 합산 → DV LIFO",
+    example: "Y1 ending base-year = $610,000 / Y1 added = $125,000 / Y2 added = $175,000\nIndex: Y1=1.3, Y2=1.2\n\nBase: $610,000 − $125,000 = $485,000 × 1.0 = $485,000\nY1:   $125,000 × 1.3 = $162,500\nY2:   $175,000 × 1.2 = $210,000\nTotal = $857,500\n\nWithout index: $485K + $125K + $175K = $785,000\nIndex 효과: $857,500 − $785,000 = +$72,500",
+    context_background: "[DV LIFO를 쓰는 이유]\n일반 LIFO는 동일 제품의 수량 단위로 layer를 관리 → 제품 종류 변경 시 layer 붕괴 위험.\nDV LIFO = 달러 금액 기준으로 layer 관리 → 제품 mix 변경에도 안정적.\n\n[Price index의 역할]\nBase-year cost = 물가 변동 제거한 실질 금액 (현재 금액 ÷ index)\nDV LIFO cost = base-year cost × index = 현재 물가 수준으로 환원\n→ 각 연도 layer가 그 연도의 물가 수준을 반영\n\n[Without vs With index 직관]\nWithout index: 수량 증가만 반영 (물가 무시)\nWith index: 수량 증가 + 물가 상승 동시 반영\n→ 물가 상승기에 COGS가 더 높게 측정 → 세금 절감 (LIFO 취지)",
+  },
+
   // ── CASH (Cash & Cash Equivalents) ─────────────────────────────────────────
   // [CASH_001] Cash and Cash Equivalents — Balance Sheet Classification
   // RULE    : Petty cash + Checking + Depository + Savings + MMF + 만기 3개월 이내 T-bills/CD만 포함
@@ -9887,6 +9909,28 @@ Series B+ 감사 시 핵심 검토 항목`,
     rule_items: ["선언 시 FMV 재측정", "Gain(FMV-BV) → I/S → closing → RE+", "Dividend at FMV → RE-", "Net = -BV"],
     key_formula: "RE impact = Gain - FMV dividend = (FMV-BV) - FMV = -BV",
   },
+
+  // [EQUITY_027] Common Stock Issuance for Services — Par Value vs Total Proceeds
+  // RULE    : Common stock 계정 = shares × par value (항상) / Total proceeds → Common stock + APIC로 분리
+  // TRIGGER : "common stock account increase" → shares × par / FMV or service value는 APIC에
+  // TRAP    : book value 사용 / service FMV 전액을 common stock에 / hours × billing rate를 common stock에
+  {
+    topic_id: "EQUITY_027",
+    book_id: 'AA',
+    chapter_id: 'AA_CH3',
+    topic_group: 'AA_CH3_STKEQ',
+    sub_category_id: "U1_STOCKHOLDERS_EQUITY",
+    card_type: 'concept',
+    card_name: "Common stock issuance for services — common stock = par value only, excess goes to APIC",
+    rule: "【Common stock 계정 = 항상 par value 기준】\nCommon stock = shares issued × par value\n→ 발행 대가(FMV)와 무관하게 항상 par value\n\n【발행 대가 기준 (FMV 측정)】\n상장사: Stock market price (FMV) 우선\n비상장사: 받은 서비스/자산의 FMV 기준\n          (service hours × billing rate, real estate appraisal 등)\n\n【계정 분리】\nTotal proceeds (FMV) = Common stock (par) + APIC\n\n【분개 예시】\n서비스 FMV $6,000 / par $5 / 1,000주:\nDr. Legal Expense             $6,000\n    Cr. Common Stock (1,000×$5)       $5,000\n    Cr. APIC                          $1,000",
+    trigger: "'common stock account increase' → shares × par value만\n'par value $X per share' 제시 → Common stock = shares × par\n서비스·재산 대가 수령 → 총액은 FMV / Common stock은 par만\n'book value' 제시 → 트랩 (Common stock과 무관)\n비상장사 + 서비스 대가 → 서비스 FMV = total proceeds",
+    trap: "Book value 사용: 1,000 × $4 = $4,000 → Common stock은 book value와 무관\n서비스 FMV 전액: $6,000 → Common stock이 아닌 total proceeds (APIC 포함)\nHours × rate: 48 × $125 = $6,000 → total proceeds이지 common stock 아님\n핵심: 'common stock account' = par value 기준만 / 나머지는 APIC",
+    one_sentence: "Common stock account = shares × par value / 초과분 = APIC / book value·FMV·hours×rate는 common stock 아님.",
+    speed: "Common stock = shares × par → 끝 / 나머지는 전부 APIC",
+    example: "1,000 shares × $5 par / service FMV $6,000 / book value $4:\nCommon stock: 1,000 × $5 = $5,000 ✅\nAPIC: $6,000 − $5,000 = $1,000\nBook value 오답: 1,000 × $4 = $4,000 ❌\nService FMV 오답: $6,000 ❌ (total proceeds, not common stock)",
+    context_background: "[Common stock 계정의 역할]\nCommon stock(자본금)은 발행 주식의 법정 자본(legal capital)을 나타냄.\n법정 자본 = 주식 수 × par value → 채권자 보호를 위한 최소 유보 자본.\n→ 발행 대가가 얼마든 par value만 Common stock, 초과분은 APIC.\n\n[비상장사 FMV 측정]\n상장사: 시장가격이 신뢰할 수 있어 stock market price 우선.\n비상장사: 시장가격 없음 → 받은 서비스·자산의 공정가치(FMV) 사용.\n→ 이 문제: 비상장 + 서비스 대가 → 서비스 FMV = 48h × $125 = $6,000 = total proceeds.\n→ 그러나 common stock 계정 = 1,000 × $5 par = $5,000.\n\n[APIC 역할]\nAPIC(Additional Paid-in Capital) = 발행 대가 − par value\n= $6,000 − $5,000 = $1,000\n→ 자본 초과 납입금으로 B/S 자본 항목에 표시.",
+  },
+
   {
     topic_id: "EPS_015",
     book_id: "AA",

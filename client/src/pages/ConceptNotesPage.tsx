@@ -1575,14 +1575,124 @@ function InventoryContent() {
         />
       </Section>
 
-      <Section title="3. Dollar-Value LIFO 3단계">
-        <CodeBlock>{`Step1: Current year EI at base cost = Current EI $ ÷ Current index
-Step2: Compare to prior year base cost → if increase, new layer = increase × current index
-Step3: Add all layers = LIFO cost
-
-예시: Y1 EI $55,000 / Index 1.10
-  Base cost = $55,000 ÷ 1.10 = $50,000
-  New layer = $50,000 × 1.10 = $55,000 (LIFO cost)`}</CodeBlock>
+      <Section title="3. Dollar-Value LIFO — Layer Calculation">
+        <p><strong>Why DV LIFO?</strong> 일반 LIFO는 수량 단위 관리 → 제품 종류 변경 시 layer 붕괴 위험. DV LIFO = 달러 금액 기준 → 제품 mix 변경에도 안정적.</p>
+        <p style={{ marginTop: 4 }}><strong>Index 효과:</strong> Without index = 수량 증가만 반영 / With index = 수량 + 물가 상승 동시 반영 → 물가 상승기 COGS 높게 측정 → LIFO 취지 유지</p>
+        <CodeBlock>{`Base layer = Ending base-year cost − Σ added layers  (× 1.0, no index)
+Each added layer × its own year index
+DV LIFO = Σ (each layer × its year index)`}</CodeBlock>
+        <div className="inv-diagram" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 12 }}>
+          <svg width="100%" viewBox="0 0 680 320" role="img">
+            <title>Dollar-value LIFO layer calculation table</title>
+            <desc>DV LIFO 각 layer의 base-year cost, index, DV LIFO cost 계산 테이블</desc>
+            <defs>
+              <marker id="arrow-dvl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </marker>
+            </defs>
+            <text className="th" x="340" y="24" textAnchor="middle">DV LIFO — layer calculation</text>
+            <text className="ts" x="340" y="42" textAnchor="middle">Ending base-year cost → added layers 차감 → base layer (plug-in) → × index</text>
+            <g className="c-gray"><rect x="20" y="56" width="140" height="28" rx="6" strokeWidth="0.5"/><text className="th" x="90" y="70" textAnchor="middle" dominantBaseline="central">Layer</text></g>
+            <g className="c-gray"><rect x="172" y="56" width="160" height="28" rx="6" strokeWidth="0.5"/><text className="th" x="252" y="70" textAnchor="middle" dominantBaseline="central">Base-year cost</text></g>
+            <g className="c-gray"><rect x="344" y="56" width="100" height="28" rx="6" strokeWidth="0.5"/><text className="th" x="394" y="70" textAnchor="middle" dominantBaseline="central">× Index</text></g>
+            <g className="c-gray"><rect x="456" y="56" width="204" height="28" rx="6" strokeWidth="0.5"/><text className="th" x="558" y="70" textAnchor="middle" dominantBaseline="central">= DV LIFO cost</text></g>
+            <g className="c-gray"><rect x="20" y="94" width="140" height="48" rx="6" strokeWidth="0.5"/><text className="th" x="90" y="112" textAnchor="middle" dominantBaseline="central">1/1/Y1 (base)</text><text className="ts" x="90" y="132" textAnchor="middle" dominantBaseline="central">plug-in</text></g>
+            <g className="c-gray"><rect x="172" y="94" width="160" height="48" rx="6" strokeWidth="0.5"/><text className="th" x="252" y="112" textAnchor="middle" dominantBaseline="central">$485,000</text><text className="ts" x="252" y="132" textAnchor="middle" dominantBaseline="central">$610K − $125K</text></g>
+            <g className="c-gray"><rect x="344" y="94" width="100" height="48" rx="6" strokeWidth="0.5"/><text className="th" x="394" y="118" textAnchor="middle" dominantBaseline="central">× 1.0</text></g>
+            <g className="c-gray"><rect x="456" y="94" width="204" height="48" rx="6" strokeWidth="0.5"/><text className="th" x="558" y="118" textAnchor="middle" dominantBaseline="central">$485,000</text></g>
+            <g className="c-blue"><rect x="20" y="152" width="140" height="48" rx="6" strokeWidth="0.5"/><text className="th" x="90" y="170" textAnchor="middle" dominantBaseline="central">Y1 added</text><text className="ts" x="90" y="190" textAnchor="middle" dominantBaseline="central">Y1 index</text></g>
+            <g className="c-blue"><rect x="172" y="152" width="160" height="48" rx="6" strokeWidth="0.5"/><text className="th" x="252" y="176" textAnchor="middle" dominantBaseline="central">$125,000</text></g>
+            <g className="c-blue"><rect x="344" y="152" width="100" height="48" rx="6" strokeWidth="0.5"/><text className="th" x="394" y="176" textAnchor="middle" dominantBaseline="central">× 1.3</text></g>
+            <g className="c-blue"><rect x="456" y="152" width="204" height="48" rx="6" strokeWidth="0.5"/><text className="th" x="558" y="176" textAnchor="middle" dominantBaseline="central">$162,500</text></g>
+            <g className="c-teal"><rect x="20" y="210" width="140" height="48" rx="6" strokeWidth="0.5"/><text className="th" x="90" y="228" textAnchor="middle" dominantBaseline="central">Y2 added</text><text className="ts" x="90" y="248" textAnchor="middle" dominantBaseline="central">Y2 index</text></g>
+            <g className="c-teal"><rect x="172" y="210" width="160" height="48" rx="6" strokeWidth="0.5"/><text className="th" x="252" y="234" textAnchor="middle" dominantBaseline="central">$175,000</text></g>
+            <g className="c-teal"><rect x="344" y="210" width="100" height="48" rx="6" strokeWidth="0.5"/><text className="th" x="394" y="234" textAnchor="middle" dominantBaseline="central">× 1.2</text></g>
+            <g className="c-teal"><rect x="456" y="210" width="204" height="48" rx="6" strokeWidth="0.5"/><text className="th" x="558" y="234" textAnchor="middle" dominantBaseline="central">$210,000</text></g>
+            <line x1="456" y1="268" x2="660" y2="268" stroke="#888" strokeWidth="1"/>
+            <g className="c-amber"><rect x="456" y="276" width="204" height="36" rx="6" strokeWidth="0.5"/><text className="th" x="558" y="290" textAnchor="middle" dominantBaseline="central">$857,500</text><text className="ts" x="558" y="306" textAnchor="middle" dominantBaseline="central">Y2 DV LIFO</text></g>
+          </svg>
+          <svg width="100%" viewBox="0 0 680 440" role="img">
+            <title>DV LIFO without vs with index comparison</title>
+            <desc>Index 미적용과 DV LIFO 적용 비교 — 초기부터 누적 막대 그래프</desc>
+            <defs>
+              <marker id="arrow-dvc" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </marker>
+            </defs>
+            <g className="c-gray"><rect x="100" y="10" width="200" height="28" rx="8" strokeWidth="0.5"/><text className="th" x="200" y="24" textAnchor="middle" dominantBaseline="central">Without index</text></g>
+            <g className="c-amber"><rect x="380" y="10" width="200" height="28" rx="8" strokeWidth="0.5"/><text className="th" x="480" y="24" textAnchor="middle" dominantBaseline="central">With index (DV LIFO)</text></g>
+            <line x1="340" y1="10" x2="340" y2="400" stroke="#d0d0d0" strokeWidth="0.5" strokeDasharray="4 3"/>
+            <line x1="60" y1="340" x2="60" y2="50" stroke="#888" strokeWidth="1" markerEnd="url(#arrow-dvc)"/>
+            <line x1="60" y1="340" x2="320" y2="340" stroke="#888" strokeWidth="1"/>
+            <text className="ts" x="56" y="54" textAnchor="end">$</text>
+            <text className="ts" x="52" y="344" textAnchor="end">0</text>
+            <text className="ts" x="52" y="278" textAnchor="end">200K</text>
+            <line x1="56" y1="274" x2="64" y2="274" stroke="#888" strokeWidth="0.5"/>
+            <text className="ts" x="52" y="212" textAnchor="end">400K</text>
+            <line x1="56" y1="208" x2="64" y2="208" stroke="#888" strokeWidth="0.5"/>
+            <text className="ts" x="52" y="146" textAnchor="end">600K</text>
+            <line x1="56" y1="142" x2="64" y2="142" stroke="#888" strokeWidth="0.5"/>
+            <text className="ts" x="52" y="80" textAnchor="end">800K</text>
+            <line x1="56" y1="76" x2="64" y2="76" stroke="#888" strokeWidth="0.5"/>
+            <rect x="80" y="180" width="70" height="160" rx="4" fill="#888780" opacity="0.7"/>
+            <text className="ts" x="115" y="264" textAnchor="middle" style={{fill:'#2C2C2A'}}>$485K</text>
+            <text className="ts" x="115" y="358" textAnchor="middle">1/1/Y1</text>
+            <text className="ts" x="115" y="372" textAnchor="middle">$485K</text>
+            <rect x="165" y="180" width="70" height="160" rx="4" fill="#888780" opacity="0.7"/>
+            <rect x="165" y="138" width="70" height="42" rx="4" fill="#378ADD" opacity="0.7"/>
+            <text className="ts" x="200" y="264" textAnchor="middle" style={{fill:'#2C2C2A'}}>$485K</text>
+            <text className="ts" x="200" y="156" textAnchor="middle" style={{fill:'#042C53'}}>$125K</text>
+            <text className="ts" x="200" y="358" textAnchor="middle">Y1 end</text>
+            <text className="ts" x="200" y="372" textAnchor="middle">$610K</text>
+            <rect x="250" y="180" width="70" height="160" rx="4" fill="#888780" opacity="0.7"/>
+            <rect x="250" y="138" width="70" height="42" rx="4" fill="#378ADD" opacity="0.7"/>
+            <rect x="250" y="80" width="70" height="58" rx="4" fill="#1D9E75" opacity="0.7"/>
+            <text className="ts" x="285" y="264" textAnchor="middle" style={{fill:'#2C2C2A'}}>$485K</text>
+            <text className="ts" x="285" y="156" textAnchor="middle" style={{fill:'#042C53'}}>$125K</text>
+            <text className="ts" x="285" y="107" textAnchor="middle" style={{fill:'#04342C'}}>$175K</text>
+            <text className="ts" x="285" y="358" textAnchor="middle">Y2 end</text>
+            <text className="ts" x="285" y="372" textAnchor="middle">$785K</text>
+            <line x1="360" y1="340" x2="360" y2="50" stroke="#888" strokeWidth="1" markerEnd="url(#arrow-dvc)"/>
+            <line x1="360" y1="340" x2="630" y2="340" stroke="#888" strokeWidth="1"/>
+            <text className="ts" x="356" y="54" textAnchor="end">$</text>
+            <text className="ts" x="352" y="344" textAnchor="end">0</text>
+            <text className="ts" x="352" y="278" textAnchor="end">200K</text>
+            <line x1="356" y1="274" x2="364" y2="274" stroke="#888" strokeWidth="0.5"/>
+            <text className="ts" x="352" y="212" textAnchor="end">400K</text>
+            <line x1="356" y1="208" x2="364" y2="208" stroke="#888" strokeWidth="0.5"/>
+            <text className="ts" x="352" y="146" textAnchor="end">600K</text>
+            <line x1="356" y1="142" x2="364" y2="142" stroke="#888" strokeWidth="0.5"/>
+            <text className="ts" x="352" y="80" textAnchor="end">800K</text>
+            <line x1="356" y1="76" x2="364" y2="76" stroke="#888" strokeWidth="0.5"/>
+            <rect x="380" y="180" width="70" height="160" rx="4" fill="#888780" opacity="0.85"/>
+            <text className="ts" x="415" y="264" textAnchor="middle" style={{fill:'#2C2C2A'}}>$485K</text>
+            <text className="ts" x="415" y="358" textAnchor="middle">1/1/Y1</text>
+            <text className="ts" x="415" y="372" textAnchor="middle">$485K</text>
+            <rect x="465" y="180" width="70" height="160" rx="4" fill="#888780" opacity="0.85"/>
+            <rect x="465" y="126" width="70" height="54" rx="4" fill="#378ADD" opacity="0.85"/>
+            <text className="ts" x="500" y="264" textAnchor="middle" style={{fill:'#2C2C2A'}}>$485K</text>
+            <text className="ts" x="500" y="150" textAnchor="middle" style={{fill:'#042C53'}}>$162.5K</text>
+            <text className="ts" x="500" y="358" textAnchor="middle">Y1 end</text>
+            <text className="ts" x="500" y="372" textAnchor="middle">$647.5K</text>
+            <rect x="550" y="180" width="70" height="160" rx="4" fill="#888780" opacity="0.85"/>
+            <rect x="550" y="126" width="70" height="54" rx="4" fill="#378ADD" opacity="0.85"/>
+            <rect x="550" y="56" width="70" height="70" rx="4" fill="#1D9E75" opacity="0.85"/>
+            <text className="ts" x="585" y="264" textAnchor="middle" style={{fill:'#2C2C2A'}}>$485K</text>
+            <text className="ts" x="585" y="150" textAnchor="middle" style={{fill:'#042C53'}}>$162.5K</text>
+            <text className="ts" x="585" y="88" textAnchor="middle" style={{fill:'#04342C'}}>$210K</text>
+            <text className="ts" x="585" y="358" textAnchor="middle">Y2 end</text>
+            <text className="ts" x="585" y="372" textAnchor="middle">$857.5K</text>
+            <path d="M320 80 L380 56" fill="none" stroke="#D85A30" strokeWidth="1.2" strokeDasharray="4 3" markerEnd="url(#arrow-dvc)"/>
+            <g className="c-coral"><rect x="290" y="52" width="136" height="22" rx="11" strokeWidth="0.5"/><text className="ts" x="358" y="63" textAnchor="middle" dominantBaseline="central">+$72.5K index 효과</text></g>
+            <rect x="80" y="400" width="12" height="12" rx="2" fill="#888780" opacity="0.8"/>
+            <text className="ts" x="96" y="410" textAnchor="start">Base layer</text>
+            <rect x="195" y="400" width="12" height="12" rx="2" fill="#378ADD" opacity="0.85"/>
+            <text className="ts" x="211" y="410" textAnchor="start">Y1 added</text>
+            <rect x="305" y="400" width="12" height="12" rx="2" fill="#1D9E75" opacity="0.85"/>
+            <text className="ts" x="321" y="410" textAnchor="start">Y2 added</text>
+            <text className="ts" x="460" y="410" textAnchor="start" style={{fill:'#993C1D'}}>index = 물가 상승 반영</text>
+          </svg>
+        </div>
       </Section>
 
       <Section title="4. LCM Write-down 분개">
@@ -2194,6 +2304,26 @@ AFS 매각 시 reclassify (OCI → I/S):
         'AFS → Unrealized → OCI / Realized (매각 시) → I/S',
         'Cash flow hedge → OCI / Fair value hedge → I/S',
       ]} />
+      <Section title="5. Common Stock Issuance — Par Value vs Total Proceeds">
+        <p><strong>Rule:</strong> Common stock account = shares × par value (항상, 발행 대가와 무관)</p>
+        <p style={{ marginTop: 4 }}>Total proceeds (FMV) = Common stock (par) + APIC</p>
+        <Table
+          headers={['FMV 기준', '방법']}
+          rows={[
+            ['상장사', 'Stock market price 우선'],
+            ['비상장사', '서비스/자산의 FMV (hours × billing rate, appraisal 등)'],
+          ]}
+        />
+        <CodeBlock>{`Journal entry (1,000주 × $5 par / 서비스 FMV $6,000):
+Dr. Legal Expense             $6,000
+    Cr. Common Stock                  $5,000   ← shares × par only
+    Cr. APIC                          $1,000   ← FMV − par`}</CodeBlock>
+        <p style={{ marginTop: 8, color: '#dc2626', fontWeight: 600, fontSize: 13 }}>Trap:</p>
+        <CodeBlock>{`Book value 사용 → Common stock과 무관 (par value만 사용)
+Service FMV 전액 → Common stock 아님 (total proceeds)
+Hours × rate → total proceeds이지 common stock 아님`}</CodeBlock>
+        <p style={{ marginTop: 4, color: '#555', fontStyle: 'italic', fontSize: 13 }}>Speed: Common stock = shares × par → 끝 / 나머지는 APIC</p>
+      </Section>
     </div>
   )
 }
