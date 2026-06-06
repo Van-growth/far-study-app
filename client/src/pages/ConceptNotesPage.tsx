@@ -1871,6 +1871,98 @@ Fundraising (모금 활동)
 function GovContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* Who pays? interactive tree */}
+      <style>{`
+        .gov-tree *{box-sizing:border-box}
+        .gov-tree{padding:16px 0 24px;font-family:inherit}
+        .gov-tree .who{font-size:13px;font-weight:500;color:var(--color-text-secondary,#888);margin:0 0 16px;padding:0 0 12px;border-bottom:0.5px solid var(--color-border-tertiary,#eee)}
+        .gov-tree .card{border-radius:8px;border:0.5px solid var(--color-border-tertiary,#eee);padding:10px 14px;background:var(--color-background-secondary,#f9f9f9);min-width:160px}
+        .gov-tree .card.root{background:var(--color-background-primary,#fff);border:1.5px solid var(--color-border-primary,#ccc);min-width:120px;text-align:center}
+        .gov-tree .card.gov{border-left:3px solid #378ADD}
+        .gov-tree .card.prop-ext{border-left:3px solid #1D9E75}
+        .gov-tree .card.prop-int{border-left:3px solid #5DCAA5}
+        .gov-tree .card.fid{border-left:3px solid #EF9F27}
+        .gov-tree .card-title{font-size:13px;font-weight:500;margin:0 0 2px}
+        .gov-tree .badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:20px;margin-bottom:6px}
+        .gov-tree .badge.mod{background:#E6F1FB;color:#185FA5}
+        .gov-tree .badge.full{background:#E1F5EE;color:#0F6E56}
+        .gov-tree .badge.fid-b{background:#FAEEDA;color:#854F0B}
+        .gov-tree .ex{font-size:11px;color:#888;line-height:1.6;padding-left:8px;position:relative}
+        .gov-tree .ex::before{content:"·";position:absolute;left:1px}
+        .gov-tree .payer-label{font-size:12px;font-weight:500;padding:6px 12px;border-radius:20px;border:0.5px solid var(--color-border-secondary,#ddd);background:var(--color-background-primary,#fff);white-space:nowrap;margin:6px 0;display:inline-block}
+        .gov-tree .purpose{font-size:11px;padding:4px 10px;border-radius:6px;margin:2px 0 8px;display:inline-block}
+        .gov-tree .purpose.gov-p{background:#E6F1FB;color:#185FA5}
+        .gov-tree .purpose.ext-p{background:#E1F5EE;color:#0F6E56}
+        .gov-tree .purpose.int-p{background:#E1F5EE;color:#0F6E56}
+        .gov-tree .purpose.fid-p{background:#FAEEDA;color:#854F0B}
+        .gov-tree .branch{display:flex;align-items:flex-start;gap:0;margin-bottom:24px}
+        .gov-tree .hline{height:1.5px;width:36px;background:var(--color-border-secondary,#ddd);margin-top:20px;flex-shrink:0}
+        .gov-tree .cards-wrap{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+        .gov-tree .vline{width:1.5px;background:var(--color-border-secondary,#ddd)}
+      `}</style>
+      <div className="gov-tree">
+        <div className="who">Who pays? — 결제 주체 + 관리 목적으로 기금 이해하기</div>
+        <div style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}>
+          <div className="card root">
+            <div className="card-title">Government funds</div>
+            <div style={{fontSize:11,color:'#888',margin:0}}>11 fund types</div>
+          </div>
+          <div className="vline" style={{height:20}}></div>
+        </div>
+        <div style={{display:'flex',gap:0,alignItems:'flex-start'}}>
+          <div className="vline" style={{alignSelf:'stretch'}}></div>
+          <div style={{display:'flex',flexDirection:'column',gap:0}}>
+            <div className="branch">
+              <div className="hline"></div>
+              <div>
+                <div className="payer-label" style={{color:'#185FA5'}}>시민이 세금으로 납부</div>
+                <div className="purpose gov-p">관리 포인트: 연간 예산을 목적에 맞게 잘 집행했는가? (current financial resources)</div>
+                <div className="cards-wrap">
+                  <div className="card gov"><div className="card-title">General fund</div><span className="badge mod">Modified accrual</span><div className="ex">Police &amp; fire dept.</div><div className="ex">Public school operations</div></div>
+                  <div className="card gov"><div className="card-title">Special revenue fund</div><span className="badge mod">Modified accrual</span><div className="ex">Federal highway grant</div><div className="ex">Housing development grant</div></div>
+                  <div className="card gov"><div className="card-title">Debt service fund</div><span className="badge mod">Modified accrual</span><div className="ex">Municipal bond repayment</div><div className="ex">G.O. bond debt service</div></div>
+                  <div className="card gov"><div className="card-title">Capital projects fund</div><span className="badge mod">Modified accrual</span><div className="ex">New city hall construction</div><div className="ex">Bridge &amp; road expansion</div></div>
+                  <div className="card gov"><div className="card-title">Permanent fund</div><span className="badge mod">Modified accrual</span><div className="ex">Park maintenance endowment</div><div className="ex">Cemetery perpetual care</div></div>
+                </div>
+              </div>
+            </div>
+            <div className="branch">
+              <div className="hline"></div>
+              <div>
+                <div className="payer-label" style={{color:'#0F6E56'}}>시민이 요금으로 납부 (외부)</div>
+                <div className="purpose ext-p">관리 포인트: 요금으로 원가를 회수하고 있는가? 수익성 파악 (economic resources)</div>
+                <div className="cards-wrap">
+                  <div className="card prop-ext"><div className="card-title">Enterprise fund</div><span className="badge full">Full accrual</span><div className="ex">Municipal water &amp; sewer</div><div className="ex">City airport</div><div className="ex">Public transit (bus/rail)</div></div>
+                </div>
+              </div>
+            </div>
+            <div className="branch">
+              <div className="hline"></div>
+              <div>
+                <div className="payer-label" style={{color:'#0F6E56'}}>내부 정부 부서가 납부</div>
+                <div className="purpose int-p">관리 포인트: 내부 서비스 원가를 부서별로 정확히 배분하고 있는가? (economic resources)</div>
+                <div className="cards-wrap">
+                  <div className="card prop-int"><div className="card-title">Internal service fund</div><span className="badge full">Full accrual</span><div className="ex">Fleet management</div><div className="ex">Central IT services</div><div className="ex">Central print shop</div></div>
+                </div>
+              </div>
+            </div>
+            <div className="branch">
+              <div className="hline"></div>
+              <div>
+                <div className="payer-label" style={{color:'#854F0B'}}>남의 자산을 대신 관리</div>
+                <div className="purpose fid-p">관리 포인트: 수탁 자산을 수익자를 위해 충실히 운용하고 있는가? (economic resources, no net position)</div>
+                <div className="cards-wrap">
+                  <div className="card fid"><div className="card-title">Pension trust fund</div><span className="badge fid-b">Full accrual</span><div className="ex">Public employee retirement</div></div>
+                  <div className="card fid"><div className="card-title">Investment trust fund</div><span className="badge fid-b">Full accrual</span><div className="ex">Multi-govt investment pool</div></div>
+                  <div className="card fid"><div className="card-title">Private-purpose trust</div><span className="badge fid-b">Full accrual</span><div className="ex">Scholarship for specific family</div></div>
+                  <div className="card fid"><div className="card-title">Custodial fund</div><span className="badge fid-b">Full accrual</span><div className="ex">Property tax → remit to schools</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Section title="Concept & Context">
         <p><strong>What is Governmental Accounting?</strong> GASB governed (not FASB). Focus on stewardship of public resources, not profit.</p>
         <p style={{ color: '#555', marginTop: 6 }}>FASB 아닌 GASB 기준 / 이익 아닌 공공 자원 수탁 책임. Modified Accrual = Governmental funds / Full Accrual = Proprietary funds.</p>
