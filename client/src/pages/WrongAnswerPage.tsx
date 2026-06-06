@@ -97,13 +97,13 @@ function parseWrongAnswers(text: string): ParsedCard[] {
   return blocks.map(block => {
     const questionNum = block.match(/Q(\d+)/i)?.[1] ?? '';
     const questionText =
-      block.match(/문제[:\s]+(.+?)(?=내\s*답|정답|풀이|$)/s)?.[1]?.trim()
-      ?? block.match(/문제 원문[:\s]+(.+?)(?=내\s*답|정답|풀이|$)/s)?.[1]?.trim()
+      block.match(/문제[:\s]+(.+?)(?=내\s*답|정답|틀린\s*이유\s*:|풀이\s*:|이유\s*:|explanation\s*:|why\s*:|reason\s*:|$)/si)?.[1]?.trim()
+      ?? block.match(/문제 원문[:\s]+(.+?)(?=내\s*답|정답|틀린\s*이유\s*:|풀이\s*:|이유\s*:|explanation\s*:|why\s*:|reason\s*:|$)/si)?.[1]?.trim()
       ?? block.split('\n')[0]?.trim()
       ?? '';
-    const myAnswer = block.match(/내\s*답[:\s]+(.+?)(?=정답|풀이|$)/s)?.[1]?.trim() ?? '';
-    const correctAnswer = block.match(/정답[:\s]+(.+?)(?=풀이|$)/s)?.[1]?.trim() ?? '';
-    const explanation = block.match(/풀이[:\s]+(.+?)$/s)?.[1]?.trim() ?? '';
+    const myAnswer = block.match(/내\s*답[:\s]+(.+?)(?=정답|틀린\s*이유\s*:|풀이\s*:|이유\s*:|explanation\s*:|why\s*:|reason\s*:|$)/si)?.[1]?.trim() ?? '';
+    const correctAnswer = block.match(/정답[:\s]+(.+?)(?=틀린\s*이유\s*:|풀이\s*:|이유\s*:|explanation\s*:|why\s*:|reason\s*:|$)/si)?.[1]?.trim() ?? '';
+    const explanation = block.match(/(?:틀린\s*이유|풀이|이유|explanation|why|reason)\s*:\s*(.+?)$/si)?.[1]?.trim() ?? '';
     const topicTag = detectTopic(questionText + ' ' + explanation);
     const errorPattern = detectPattern(block);
     return {
