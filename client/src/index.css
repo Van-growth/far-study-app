@@ -129,6 +129,20 @@
 .note-diagram svg g.c-amber rect  { fill: #FEF3C7; stroke: #D97706; }
 .note-diagram svg g.c-amber text  { fill: #92400E; }
 
+/* ── Interest (4형제) diagram SVG styles ────────────────── */
+.int-diagram svg text.th { font-size: 12px; font-weight: 700; fill: #1a1a1a; }
+.int-diagram svg text.ts { font-size: 11px; fill: #444; }
+.int-diagram svg g.c-gray rect   { fill: #f8f9fa; stroke: #d0d0d0; }
+.int-diagram svg g.c-gray text   { fill: #333; }
+.int-diagram svg g.c-blue rect   { fill: #EFF6FF; stroke: #1D4ED8; }
+.int-diagram svg g.c-blue text   { fill: #1E3A8A; }
+.int-diagram svg g.c-purple rect { fill: #f0eeff; stroke: #534AB7; }
+.int-diagram svg g.c-purple text { fill: #534AB7; }
+.int-diagram svg g.c-teal rect   { fill: #e6f5f1; stroke: #085041; }
+.int-diagram svg g.c-teal text   { fill: #085041; }
+.int-diagram svg g.c-amber rect  { fill: #FEF3C7; stroke: #D97706; }
+.int-diagram svg g.c-amber text  { fill: #92400E; }
+
 @layer base {
   * {
     box-sizing: border-box;

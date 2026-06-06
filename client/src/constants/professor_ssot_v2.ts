@@ -5173,6 +5173,48 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[결제 통화 = 리스크 배분 기준]\n외화로 결제해야 하는 쪽 = 환전 필요 = 환율 변동 리스크 부담\n자기 통화로 받는 쪽 = 환전 불필요 = 리스크 없음\n\n[결제 통화 변경 시 리스크 이전]\n유로 결제 → Cedar 리스크\n달러 결제 → Milano 리스크\n→ 결제 통화 협상이 곧 리스크 배분 협상\n\n[USD 강세/약세 직관]\nUSD 강세 = 달러의 구매력 증가 = 외화 싸게 살 수 있음\n→ 외화 구매자(달러 사용자) gain\nUSD 약세 = 달러의 구매력 감소 = 외화 비싸게 사야 함\n→ 외화 구매자(달러 사용자) loss",
   },
 
+  // [FC_017] Foreign Currency AR — Initial Recognition at Spot Rate on Transaction Date
+  // RULE    : AR 최초 인식 = 거래일 spot rate × 외화금액 / Forward rate 사용 금지 / 결제일 rate도 아님
+  // TRIGGER : "sold on [date]" + spot rate 두 개 제공 → 거래일 spot rate만 사용
+  // TRAP    : Forward rate 사용 / 결제일 spot rate 사용 / 환율 미적용 액면 외화금액 그대로 사용
+  {
+    topic_id: "FC_017",
+    book_id: 'GN',
+    chapter_id: 'GN_CH7',
+    topic_group: 'GN_CH7_FC',
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
+    card_type: 'concept',
+    card_name: "Foreign currency AR initial recognition — transaction date spot rate only, never forward rate",
+    rule: "AR 최초 인식 = 거래일 spot rate × 외화금액\n\n✅ 사용:\n- Transaction date spot rate (거래일 현물환율)\n\n❌ 사용 금지:\n- Forward rate (선물환율) → 헷지 계약용, AR 인식과 무관\n- Settlement date spot rate → 결제 시 FX gain/loss 계산에 사용\n- 외화 액면금액 그대로 → 환율 미적용\n\n[3시점 처리]\n① Transaction date: AR = FC × spot rate (거래일)\n② B/S date: AR remeasure at current spot rate → FX G/L\n③ Settlement date: Cash = FC × spot rate (결제일) / AR 제거 → FX G/L",
+    trigger: "'sold and delivered on [date]' → 거래일 spot rate으로 AR 인식\n'spot rate' 두 개 제공 → 거래일 것만 사용 (결제일 spot rate = 트랩)\n'30-day forward rate' 제공 → 무시, AR 인식에 사용 금지\n'what amount should be recorded as AR' → transaction date spot rate × FC amount",
+    trap: "A: forward rate 사용 → AR 인식에 절대 사용 금지\nB: settlement date spot rate 사용 → 결제 시 FX G/L 계산용\nC: 환율 미적용, 외화 액면금액 그대로 → 달러 환산 누락\n핵심: spot rate 두 개 중 거래일 것만 / forward rate은 항상 무시",
+    one_sentence: "AR initial recognition = transaction date spot rate × FC amount / forward rate 절대 금지.",
+    speed: "AR 인식일 spot rate × FC amount → 끝 / forward rate 보이면 즉시 무시",
+    example: "June 19 sold 200,000 euros\nSpot rate June 19: $0.988 / July 19: $0.995\nForward rate: $0.990\n→ AR = 200,000 × $0.988 = $197,600 (June 19 spot rate만 사용)\n→ FX Gain on July 19: 200,000 × ($0.995 − $0.988) = $1,400",
+    context_background: "[왜 거래일 spot rate인가]\nAR은 그 날 발생한 채권. 그 날 실제 시장에서 거래 가능한 환율(spot rate)로 환산.\nForward rate은 미래 특정일에 거래하기로 약속한 환율 → 오늘 AR 가치와 무관.\n\n[Forward rate vs Spot rate]\nSpot rate: 오늘 즉시 환전 시 환율 → AR/AP 인식·재측정에 사용\nForward rate: 미래 특정일 환전 약속 환율 → 헷지(hedge) 계약에만 사용\n\n[3시점 환율 요약]\n거래일: spot rate → AR 최초 인식\nB/S일: current spot rate → 재측정 → FX G/L\n결제일: spot rate → Cash 인식 / AR 제거 → FX G/L",
+  },
+
+  // [FC_018] FX Gain/Loss Matrix — AR/AP × FC Appreciate/Depreciate
+  // RULE    : AR + FC 강세 = Gain / AR + FC 약세 = Loss / AP는 반대
+  // TRIGGER : AR/AP 보유 + 환율 변동 → 4가지 조합으로 즉시 판단
+  // TRAP    : 직접법(FC per $) 숫자 방향 반직관 / 간접법($ per FC) 방향 혼동
+  {
+    topic_id: "FC_018",
+    book_id: 'GN',
+    chapter_id: 'GN_CH7',
+    topic_group: 'GN_CH7_FC',
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
+    card_type: 'conditional',
+    card_name: "FX gain/loss matrix — AR/AP × FC appreciate/depreciate: 4-case decision grid",
+    rule: "【AR/AP × 환율 변동 4가지 조합】\n\nAR (외화 받을 예정):\n  FC appreciate (달러 약세) → 받을 외화 가치↑ → FX Gain\n  FC depreciate (달러 강세) → 받을 외화 가치↓ → FX Loss\n\nAP (외화 줄 예정):\n  FC appreciate (달러 약세) → 줄 외화 가치↑ → FX Loss\n  FC depreciate (달러 강세) → 줄 외화 가치↓ → FX Gain\n\n【직관】\nAR: 받는 입장 → FC 강세 = 더 많이 받음 = Gain\nAP: 주는 입장 → FC 강세 = 더 많이 줘야 함 = Loss\n\n【직접법 / 간접법 대응】\n직접법 (FC per $1): 숫자↓ = FC 강세 (반직관 주의!)\n간접법 ($ per 1FC): 숫자↑ = FC 강세 (직관과 일치)\n→ 같은 현상, 표현 방향만 반대",
+    trigger: "'accounts receivable' + 환율 변동 → AR + FC 방향 매칭\n'accounts payable' + 환율 변동 → AP + FC 방향 매칭\n'units of FC per dollar' 숫자↓ → FC 강세 (직접법 트랩)\n'dollars per FC' 숫자↑ → FC 강세 (간접법, 직관 일치)\n달러 강세 = FC 약세 = AR Loss / AP Gain",
+    trap: "직접법 함정: 'FC per $' 숫자 증가 = FC 약세 (직관과 반대)\n→ 숫자가 커지면 $1로 더 많은 FC → 달러 강세 → FC 약세\n간접법 혼동: '$ per FC' 숫자 감소 = FC 약세\nAR/AP 방향 혼동: AR = 받는 입장 / AP = 주는 입장 항상 구분\n'달러 강세 = Gain' 과잉 일반화 → AR이면 Loss, AP이면 Gain",
+    one_sentence: "AR: FC 강세 = Gain / FC 약세 = Loss / AP: 완전 반대 / 직접법 숫자↓ = FC 강세 (반직관).",
+    speed: "AR → FC 강세(dollar 약세) = Gain / AP → FC 강세 = Loss\n직접법 숫자↓ = FC 강세 / 간접법 숫자↑ = FC 강세",
+    example: "AR 보유, $1 = 80엔 → $1 = 78엔 (엔 강세, FC appreciate)\n→ 받을 800,000엔의 달러 가치↑ → FX Gain\n\nAP 보유, $1 = 80엔 → $1 = 82엔 (엔 약세, FC depreciate)\n→ 줄 800,000엔의 달러 비용↓ → FX Gain\n\nJE (AR + FC 강세):\nDr. Cash (new rate)         $10,256\n    Cr. AR (original rate)           $10,000\n    Cr. FX Gain                           $256",
+    context_background: "[AR vs AP 직관]\nAR = 외화 받을 예정 = 외화 가치 오를수록 유리\nAP = 외화 줄 예정 = 외화 가치 내릴수록 유리\n→ 같은 FC 강세에 AR은 Gain, AP는 Loss\n\n[직접법 트랩 심화]\n직접법: $1 = X FC (달러 기준)\n$1 = 80엔 → $1 = 78엔: 숫자↓ = 달러로 살 수 있는 엔↓ = 달러 약세 = 엔 강세\n→ 숫자가 줄었는데 FC가 강해짐 → 반직관\n\n[간접법이 더 직관적]\n간접법: 1FC = $Y (외화 기준)\n1엔 = $0.0125 → 1엔 = $0.0128: 숫자↑ = 엔의 달러 가치↑ = 엔 강세\n→ 숫자 올라가면 FC 강세 → 직관과 일치",
+  },
+
   // [FC_015] Foreign Currency AP — Remeasurement at Settlement Date
   // RULE    : 외화 AP 결제일 분개 = 재측정(FX Loss/Gain) + 실제 지급(Cash) 합산
   // TRIGGER : "purchased on account" + FCU + 두 개의 환율 + 결제일

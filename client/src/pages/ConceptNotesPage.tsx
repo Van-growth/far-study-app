@@ -3892,6 +3892,95 @@ function Interest4Content() {
           <InterestFamilyViz />
         </div>
       </Section>
+      <Section title="Bond / Note / Lease 연결도">
+        <div className="int-diagram" style={{ marginTop: 8 }}>
+          <svg width="100%" viewBox="0 0 680 740" role="img">
+            <title>Bond Note Finance Lease connection map</title>
+            <desc>Bond, Note, Finance Lease 세 개념의 공통 구조와 연결점</desc>
+            <defs>
+              <marker id="arrow-bnl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </marker>
+            </defs>
+            <g className="c-blue">
+              <rect x="20" y="20" width="270" height="160" rx="12" strokeWidth="0.5"/>
+              <text className="th" x="155" y="46" textAnchor="middle" dominantBaseline="central">Bond payable</text>
+              <text className="ts" x="155" y="68" textAnchor="middle" dominantBaseline="central">초기 BV = PV of coupons (annuity)</text>
+              <text className="ts" x="155" y="86" textAnchor="middle" dominantBaseline="central">+ PV of face value ($1 table)</text>
+              <text className="ts" x="155" y="104" textAnchor="middle" dominantBaseline="central">Premium / Discount 상각</text>
+              <text className="ts" x="155" y="122" textAnchor="middle" dominantBaseline="central">원금 만기 일시 상환</text>
+              <text className="ts" x="155" y="140" textAnchor="middle" dominantBaseline="central">SL or Effective method</text>
+              <text className="ts" x="155" y="158" textAnchor="middle" dominantBaseline="central">Coupon rate ≠ Market rate</text>
+            </g>
+            <g className="c-purple">
+              <rect x="390" y="20" width="270" height="190" rx="12" strokeWidth="0.5"/>
+              <text className="th" x="525" y="46" textAnchor="middle" dominantBaseline="central">Finance lease</text>
+              <text className="ts" x="525" y="68" textAnchor="middle" dominantBaseline="central">초기 BV = PV of payments (annuity)</text>
+              <text className="ts" x="525" y="86" textAnchor="middle" dominantBaseline="central">+ PV of purchase option ($1 table)</text>
+              <text className="ts" x="525" y="104" textAnchor="middle" dominantBaseline="central">ROU asset → 별도 상각</text>
+              <text className="ts" x="525" y="122" textAnchor="middle" dominantBaseline="central">useful life (option 행사 예상 시)</text>
+              <text className="ts" x="525" y="140" textAnchor="middle" dominantBaseline="central">Lease liability → Note처럼 분해</text>
+              <text className="ts" x="525" y="158" textAnchor="middle" dominantBaseline="central">I/S = Interest + Amortization</text>
+              <text className="ts" x="525" y="176" textAnchor="middle" dominantBaseline="central">Implicit rate or IBR (낮은 것)</text>
+            </g>
+            <line x1="290" y1="80" x2="390" y2="80" stroke="#888780" strokeWidth="1" strokeDasharray="5 3"/>
+            <g className="c-gray">
+              <rect x="298" y="64" width="84" height="28" rx="14" strokeWidth="0.5"/>
+              <text className="ts" x="340" y="78" textAnchor="middle" dominantBaseline="central">PV 구조 동일</text>
+            </g>
+            <g className="c-gray">
+              <rect x="160" y="300" width="360" height="110" rx="12" strokeWidth="1"/>
+              <text className="th" x="340" y="324" textAnchor="middle" dominantBaseline="central">공통 핵심 로직</text>
+              <text className="ts" x="340" y="346" textAnchor="middle" dominantBaseline="central">Interest = Beginning CV × rate × m/12</text>
+              <text className="ts" x="340" y="364" textAnchor="middle" dominantBaseline="central">Principal = Payment − Interest  ← plug-in</text>
+              <text className="ts" x="340" y="382" textAnchor="middle" dominantBaseline="central">Ending balance = Beginning − Principal</text>
+            </g>
+            <path d="M155 180 L155 270 L260 300" fill="none" stroke="#185FA5" strokeWidth="1.5" strokeDasharray="5 3" markerEnd="url(#arrow-bnl)"/>
+            <g className="c-blue">
+              <rect x="74" y="252" width="140" height="24" rx="12" strokeWidth="0.5"/>
+              <text className="ts" x="144" y="264" textAnchor="middle" dominantBaseline="central">PV 계산 구조 공유</text>
+            </g>
+            <path d="M525 210 L525 270 L420 300" fill="none" stroke="#534AB7" strokeWidth="1.5" strokeDasharray="5 3" markerEnd="url(#arrow-bnl)"/>
+            <g className="c-purple">
+              <rect x="466" y="252" width="140" height="24" rx="12" strokeWidth="0.5"/>
+              <text className="ts" x="536" y="264" textAnchor="middle" dominantBaseline="central">Payment 분해 공유</text>
+            </g>
+            <g className="c-teal">
+              <rect x="20" y="500" width="270" height="150" rx="12" strokeWidth="0.5"/>
+              <text className="th" x="155" y="526" textAnchor="middle" dominantBaseline="central">Note payable</text>
+              <text className="ts" x="155" y="548" textAnchor="middle" dominantBaseline="central">Payment 고정 (문제에서 주어짐)</text>
+              <text className="ts" x="155" y="566" textAnchor="middle" dominantBaseline="central">Interest 먼저 → Principal plug-in</text>
+              <text className="ts" x="155" y="584" textAnchor="middle" dominantBaseline="central">매 기간 원금 일부 상환</text>
+              <text className="ts" x="155" y="602" textAnchor="middle" dominantBaseline="central">Effective method only</text>
+              <text className="ts" x="155" y="620" textAnchor="middle" dominantBaseline="central">Interest Expense만 I/S</text>
+            </g>
+            <path d="M155 500 L155 440 L260 410" fill="none" stroke="#1D9E75" strokeWidth="1.5" strokeDasharray="5 3" markerEnd="url(#arrow-bnl)"/>
+            <g className="c-teal">
+              <rect x="74" y="430" width="140" height="24" rx="12" strokeWidth="0.5"/>
+              <text className="ts" x="144" y="442" textAnchor="middle" dominantBaseline="central">Interest → plug-in 공유</text>
+            </g>
+            <g className="c-purple">
+              <rect x="390" y="500" width="270" height="110" rx="12" strokeWidth="0.5"/>
+              <text className="th" x="525" y="526" textAnchor="middle" dominantBaseline="central">Lease liability 상환</text>
+              <text className="ts" x="525" y="548" textAnchor="middle" dominantBaseline="central">Payment = Interest + Principal</text>
+              <text className="ts" x="525" y="566" textAnchor="middle" dominantBaseline="central">Interest 먼저 → plug-in</text>
+              <text className="ts" x="525" y="584" textAnchor="middle" dominantBaseline="central">Effective only (SL 없음)</text>
+              <text className="ts" x="525" y="602" textAnchor="middle" dominantBaseline="central">= Note payable과 완전히 동일</text>
+            </g>
+            <line x1="290" y1="590" x2="390" y2="590" stroke="#888780" strokeWidth="1" strokeDasharray="5 3"/>
+            <g className="c-gray">
+              <rect x="291" y="574" width="98" height="28" rx="14" strokeWidth="0.5"/>
+              <text className="ts" x="340" y="588" textAnchor="middle" dominantBaseline="central">Payment 분해 동일</text>
+            </g>
+            <g className="c-amber">
+              <rect x="20" y="688" width="640" height="36" rx="8" strokeWidth="0.5"/>
+              <text className="th" x="340" y="702" textAnchor="middle" dominantBaseline="central">Finance Lease = Bond 자산 구조 + Note 부채 상환 구조</text>
+              <text className="ts" x="340" y="718" textAnchor="middle" dominantBaseline="central">Interest 항상 먼저 / Lease는 Implicit rate or IBR / Payment = 이자비용으로 오답</text>
+            </g>
+          </svg>
+        </div>
+      </Section>
+
       <Section title="4형제 비교표">
         <Table
           headers={['항목', 'Bond', 'Finance Lease', 'Note Payable', 'ARO']}
