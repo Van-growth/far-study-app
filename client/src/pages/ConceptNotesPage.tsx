@@ -3572,17 +3572,10 @@ function SidebarContent({
   getWrongCount: (cat: typeof CATEGORIES[number]) => number
   getSuperWrongCount: (superCat: typeof SUPER_CATEGORIES[number]) => number
 }) {
-  const [openSupers, setOpenSupers] = useState<Set<SuperCategoryId>>(
-    new Set(['interest4' as SuperCategoryId])
-  )
+  const [expandedSuper, setExpandedSuper] = useState<SuperCategoryId | null>(null)
 
   function toggleSuper(id: SuperCategoryId) {
-    setOpenSupers(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+    setExpandedSuper(prev => prev === id ? null : id)
   }
 
   return (
@@ -3594,17 +3587,14 @@ function SidebarContent({
       </div>
       <nav style={{ flex: 1, padding: '4px 0' }}>
         {SUPER_CATEGORIES.map(superCat => {
-          const isOpen = openSupers.has(superCat.id)
+          const isOpen = expandedSuper === superCat.id
           const isSuperActive = activeId === superCat.id
           const superWrong = getSuperWrongCount(superCat)
           return (
             <div key={superCat.id}>
               {/* 상위 카테고리 헤더 */}
               <button
-                onClick={() => {
-                  onSelect(superCat.id)
-                  toggleSuper(superCat.id)
-                }}
+                onClick={() => toggleSuper(superCat.id)}
                 style={{
                   width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
                   background: isSuperActive ? '#162038' : NAVY,
