@@ -3105,6 +3105,7 @@ export default function ConceptNotesPage() {
     if (typeof window !== 'undefined' && window.innerWidth < 768) return true
     try { return localStorage.getItem('sidebar-collapsed') === 'true' } catch { return false }
   })
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const prevIdRef = useRef<ActiveId>(activeId)
 
   useEffect(() => {
@@ -3193,6 +3194,36 @@ export default function ConceptNotesPage() {
         />
       </aside>
 
+      {/* Mobile sidebar overlay */}
+      {mobileSidebarOpen && (
+        <div
+          className="md:hidden"
+          style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex' }}
+        >
+          {/* Backdrop */}
+          <div
+            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }}
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+          {/* Sidebar panel */}
+          <aside
+            style={{
+              position: 'relative', zIndex: 51, width: 260, height: '100%',
+              background: '#fff', borderRight: '1px solid #e0e0e0',
+              display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            }}
+          >
+            <SidebarContent
+              activeId={activeId}
+              onSelect={id => { setActiveId(id); setActiveTab('content'); setMobileSidebarOpen(false) }}
+              getCardCount={getCardCountForCat}
+              getWrongCount={getWrongCountForCat}
+              getSuperWrongCount={getSuperWrongCount}
+            />
+          </aside>
+        </div>
+      )}
+
       {/* Main */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
@@ -3205,8 +3236,8 @@ export default function ConceptNotesPage() {
           }}
         >
           <button
-            onClick={() => setSidebarCollapsed(v => !v)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+            onClick={() => setMobileSidebarOpen(v => !v)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, zIndex: 31 }}
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <rect x="2" y="4" width="16" height="2" rx="1" fill={NAVY} />

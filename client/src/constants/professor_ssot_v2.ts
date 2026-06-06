@@ -5840,6 +5840,26 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[왜 이자와 원금 둘 다 PV 하는가]\n채권 투자자가 받게 되는 현금은 두 종류:\n매년 이자 $40,000 × 5회 → 연금(annuity) PV\n만기 원금 $500,000 × 1회 → 단일금액(lump sum) PV\n둘 다 미래에 받을 돈 → 둘 다 현재가치로 할인 필수.\n발행가 = 투자자가 지불할 의향이 있는 금액 = 미래 현금흐름 전체의 PV.\n\n[시장금리 factor를 쓰는 이유]\n발행가는 '시장 참여자들이 요구하는 수익률(yield)'로 할인.\n쿠폰금리는 이자 계산에만 사용 — PV 할인율 아님.\n\n[Ordinary annuity 디폴트 원칙]\n'별도 언급 없음 = 기간 말 지급 = ordinary annuity'\n실생활: 월급도 일한 달이 끝나고 받음 (선지급 아님)\n채권 이자도 동일 논리.\nin advance / at the beginning / annuity due 중 하나 명시 시에만 annuity due 사용.\n\n[Premium 개념의 역할]\nPremium = 선지 필터링 도구 (액면가 선지 제거)\n정확한 발행가 = PV 계산으로만 확정 가능.",
   },
 
+  // [BOND_028] Premium Bond — Failure to Amortize: Effect on CV & Interest Expense
+  // RULE    : 상각 누락 → Premium 잔액 유지 → CV Overstate → Interest Expense(=CV×market rate) Overstate
+  // TRIGGER : "neglected to amortize" / "failure to record premium amortization" → CV + Interest Expense 둘 다 Overstate
+  // TRAP    : 발행자(issuer) 시점 혼동 / Interest Expense만 Overstate라고 생각 / CV는 Understate라고 혼동
+  {
+    topic_id: "BOND_028",
+    book_id: 'IA',
+    chapter_id: 'IA_CH9',
+    topic_group: 'IA_CH9_BOND',
+    sub_category_id: "U4_BONDS",
+    card_type: 'concept',
+    card_name: "Premium Bond: What happens if amortization is skipped?",
+    rule: "Premium 상각 분개: Dr. Interest Expense + Dr. Premium on Bonds Payable / Cr. Cash\n상각을 하면: Premium 감소 → CV 감소 → Interest Expense 감소 (세 항목 동시)\n상각을 안 하면: Premium 잔액 유지 → CV Overstate → Interest Expense(= CV × market rate) Overstate\n→ CV와 Interest Expense는 항상 같은 방향으로 움직임",
+    trigger: "'neglected to amortize' / 'failure to record premium amortization' → CV + Interest Expense 둘 다 Overstate\n'premium on bonds payable' + 'carrying value effect' → 상각 방향 확인\n'interest expense and carrying value, respectively' → 두 항목 동시 판단",
+    trap: "① 발행자(issuer) 시점 혼동 — '프리미엄 = 비싸게 발행해서 더 받은 돈 = 부채' 시점 유지\n② Interest Expense만 Overstate, CV는 정상이라고 혼동\n③ CV는 Understate된다고 혼동 — 상각 안 하면 Premium 잔액이 그대로 → CV 높게 유지\n④ Overstate/Understate 방향: 상각 안 함 → 줄어야 할 게 안 줄음 → 둘 다 Overstate",
+    one_sentence: "Premium 상각 누락 → CV Overstate → Interest Expense(=CV×market rate) Overstate → 둘 다 Overstate.",
+    speed: "Premium 상각 안 함 → CV 못 줄임 → Interest Expense도 못 줄임 → 둘 다 Overstate → D",
+    context_background: "[프리미엄 채권 발행자 구조]\n프리미엄 채권 = 쿠폰금리 > 시장금리 → 투자자들이 웃돈을 얹어 매입 → 발행자는 액면 초과금액 수령\n이 초과금액(Premium)은 부채(liability)로 인식 → 매기 상각해서 만기에 액면가로 수렴\n\n[상각 분개]\nDr. Interest Expense    (CV × market rate, 작은 금액)\nDr. Premium on Bonds Payable  (상각액)\n    Cr. Cash             (액면 × 쿠폰율, 큰 금액)\n\n상각액 = Cash - Interest Expense = 쿠폰이자 - 유효이자\n\n[상각 누락 시 연쇄 효과]\n① Premium 잔액 유지 → ② CV(= 액면 + 미상각 Premium) Overstate → ③ 다음 기 Interest Expense(= CV × market rate) Overstate\n→ CV와 Interest Expense는 항상 같은 방향\n\n[발행자 vs 투자자 시점 비교]\n발행자: 프리미엄 = 비싸게 팔아서 더 받은 돈 → 부채 증가 → 상각하면 CV 감소\n투자자: 프리미엄 = 비싸게 사서 더 준 돈 → 자산 감소 방향 (이 문제와 무관)",
+  },
+
   // [BOND_024] Bond Issuance Between Interest Dates — Accrued Interest
   // RULE    : 총 수령액 = 발행가 + 경과이자(액면×연이율×경과월/12)
   // TRIGGER : "bonds dated [date]" + "issued [later date]" → 경과이자 발생
@@ -7407,6 +7427,49 @@ Series B+ 감사 시 핵심 검토 항목`,
     example: "Purchase $52,500 + Commission $3,150 + Back taxes $4,500 + Demolition $3,750 − Salvage $750 = Land $63,150\nFence $6,000 → Land improvement (별도 자산, 감가상각 대상)",
     context_background: "[Land vs Land improvement 구분의 경제적 실질]\n\nLand는 비상각 자산 — 영구적으로 사용 가능하므로 감가상각 없음.\nLand improvement는 상각 자산 — 포장, 울타리, 조명 등은 시간이 지나면 닳거나 노후화되므로 내용연수에 걸쳐 감가상각.\n\n철거비를 Land에 포함하는 이유:\n→ 기존 구조물을 제거하는 것은 토지 자체를 사용 가능 상태로 만드는 과정\n→ 새 건물 건설 목적의 철거 → 건물 취득원가에 포함 (토지 아님)\n→ 토지 사용 목적의 철거 → Land에 포함\n\n미납세금(delinquent taxes)을 Land에 포함하는 이유:\n→ 취득 시 매도인 대신 인수하는 부채 → 취득원가의 일부\n→ 취득 후 발생하는 재산세 → 기간비용(expense)",
     journal_entry: "취득 시:\nDr. Land [purchase + commission + taxes + demolition net]\nDr. Land Improvement [paving + fencing]\nCr. Cash [총 지출액]",
+  },
+
+  // [PPE_024] PPE Installation Costs — Direct Costs to Get Asset Ready: Capitalize Regardless of Useful Life
+  // RULE    : 설치 목적 직접비용 전액 자본화 — "내용연수 증가 없음"은 함정, intended use 기준이 올바른 판단 기준
+  // TRIGGER : "to install the equipment" + rearrangement / removal / wall → 전액 자본화
+  // TRAP    : "did not increase the life" → expense 처리 함정 — 효율성 향상만으로도 자본화 충족
+  {
+    topic_id: "PPE_024",
+    book_id: 'IA',
+    chapter_id: 'IA_CH4',
+    topic_group: 'IA_CH4_PPE',
+    sub_category_id: "U3_PPE",
+    card_type: 'calculation',
+    card_name: "PPE Installation Costs — all direct costs to get asset to intended use are capitalized",
+    rule: "자산 원가(Cost of Asset) = 자산을 의도한 장소에, 의도한 상태로 만들기 위한 모든 직접비용 포함\n\n✅ Capitalize:\n① Equipment invoice price\n② Rearrangement cost (to install the equipment)\n③ Removal / demolition cost (to install the equipment)\n\n❌ Expense:\n- Ordinary maintenance (현상 유지만, 자산 향상 없음)\n\n[핵심 원칙]\n'내용연수 증가 없음'은 자본화 배제 사유가 아님\n→ 효율성 향상(efficiency improvement)만으로도 자본화 요건 충족\n→ 설치 목적 직접비용 = 전액 자본화",
+    trigger: "'to install the equipment' → 설치 목적 비용 → 전액 자본화\n'rearrangement cost' / 'wall removal' / 'removal cost' → 설치 직접비 → capitalize\n'did not increase the life but made it more efficient' → 효율성 향상 → capitalize (내용연수 함정 무시)\n'What amount should be capitalized' → equipment cost + 모든 설치 직접비 합산",
+    trap: "'did not increase the useful life' → expense 처리해야 한다고 혼동\n→ 자본화 기준은 useful life 증가가 아니라 intended use 상태로 만드는 직접비용 여부\n'rearrangement / removal'을 기간비용으로 처리 → 설치 목적이면 전액 자본화\n장비 invoice만 포함, 설치 부대비용 누락 → $175,000만 선택하는 함정(D)",
+    one_sentence: "설치 목적 직접비용 전액 자본화 — useful life 증가 불필요, intended use 상태 달성이 기준.",
+    key_formula: "Capitalized cost = Equipment cost + Rearrangement cost + Removal cost",
+    example: "Equipment $175,000 + Rearrangement $12,000 + Wall removal $3,000 = $190,000 자본화\n내용연수 증가 없어도 효율성 향상 → 전액 capitalize",
+    speed: "'to install' 목적 비용 전부 합산 → $175,000 + $12,000 + $3,000 = $190,000 → B",
+    context_background: "[intended use 원칙]\nUS GAAP PPE 자산 원가 = '자산을 의도한 장소에, 의도한 상태(condition for intended use)로 만들기 위한 모든 비용'. 설치를 위해 불가피하게 발생한 비용은 자산 없이는 발생하지 않았을 직접비용 → 자본화.\n\n[useful life 증가 ≠ 자본화 유일 요건]\nUS GAAP 자본화 기준 3가지 중 하나만 충족하면 됨:\n① Useful life 증가\n② 효율성·생산성 향상 (efficiency/productivity improvement)\n③ 새로운 기능 추가 (new capability)\n→ 이 문제: 효율성 향상 → ② 충족 → 전액 자본화\n\n[오답 해부]\nA $178,000: wall removal $3,000 누락\nC $187,000: rearrangement $12,000 누락, wall removal만 포함\nD $175,000: 설치 부대비용 전액 누락 → equipment invoice만 계상\n→ 정답 B $190,000",
+  },
+
+  // [PPE_025] PPE Cost Capitalization — In Transit Insurance & Testing: Both Capitalized
+  // RULE    : 취득 완성 전 발생 비용 전부 자본화 — 필수 여부 무관, "취득 과정 중" 여부가 기준
+  // TRIGGER : "while in transit" → 자본화 / "testing and preparation for use" → 자본화
+  // TRAP    : "보험 없이도 운송 가능 → 비필수 → No" 함정 — 필수 여부 아니라 취득 과정 중 발생 여부가 기준
+  {
+    topic_id: "PPE_025",
+    book_id: 'IA',
+    chapter_id: 'IA_CH4',
+    topic_group: 'IA_CH4_PPE',
+    sub_category_id: "U3_PPE",
+    card_type: 'conditional',
+    card_name: "PPE Cost Capitalization — In-Transit Insurance and Testing: Both Capitalized",
+    rule: "PPE 자산 원가 = 자산을 의도한 장소에, 의도한 상태(ready for intended use)로 만들기까지의 모든 직접비용\n\n✅ Capitalize (취득 완성 전 발생):\n① Insurance while in transit → 운송 과정 직접비용\n② Testing and preparation for use → ready for use 직접비용\n③ Freight / delivery charges → 운송 직접비용\n\n❌ Expense (취득 완성 후 발생):\n- Annual insurance premium → 기간비용\n- Routine maintenance → 현상 유지\n\n[판단 기준]\n필수 여부(mandatory/optional) → 무관\n취득 완성 전이냐 후이냐 → 이것만 본다",
+    trigger: "'while in transit' → 운송 과정 = 취득 완성 전 → 자본화\n'testing and preparation for use' → ready for use = 취득 완성 전 → 자본화\n두 항목 모두 취득 완성 전 → Yes / Yes → B",
+    trap: "'insurance는 없어도 운송 가능 → 비필수 → expense' 함정\n→ 자본화 기준은 필수 여부가 아니라 취득 과정 중 발생 여부\n→ 운송비도 없이 운송 가능하지만 자본화 — 보험료도 동일 논리\n'testing만 자본화, insurance는 expense' → D 선택 함정\n'취득 후 보험료'와 '운송 중 보험료' 혼동 → 취득 후 = expense / 취득 중 = capitalize",
+    one_sentence: "취득 완성 전 발생 비용 전부 자본화 — 필수 여부 무관, in transit + for use = 둘 다 Yes.",
+    speed: "'in transit' + 'for use' → 둘 다 취득 완성 전 직접비용 → Yes / Yes → B",
+    context_background: "[취득 완성 전 vs 후 — 자본화 경계선]\n\n자산 취득 타임라인:\n발주 → 운송 중(in transit) → 도착 → 설치·테스트 → Ready for use → 사용 시작\n                                                                          ↑\n                                              이 선 이전 = 자본화 / 이후 = expense\n\n[Insurance while in transit 자본화 이유]\n보험료가 법적으로 필수냐 아니냐는 무관.\n운송 중 보험료는 자산이 회사에 안전하게 도착하기까지의 과정에서 발생한 비용 → 취득원가의 일부.\n운송비(freight)도 없이 운송 가능하지만 자본화하는 것과 동일한 논리.\n\n[Testing and preparation 자본화 이유]\n'preparation for use' = 자산을 실제 사용 가능 상태로 만드는 직접 행위.\n테스트 없이 가동할 수도 있지만, 이 비용은 ready for use를 달성하기 위한 직접비용 → 자본화.\n\n[취득 후 발생하면 expense로 전환]\n동일한 보험이라도:\n운송 중 보험료 → 자본화 ✅\n사용 시작 후 연간 보험료 → 기간비용 ❌\n→ 같은 항목이라도 '언제 발생했냐'가 자본화 여부를 결정",
+    example: "Insurance while in transit $500 → Dr. Equipment $500 (자본화)\nTesting and preparation $2,000 → Dr. Equipment $2,000 (자본화)\n사용 시작 후 연간 보험료 $1,200 → Dr. Insurance Expense $1,200 (expense)",
   },
 
   // [PPE_022] Sum-of-the-Years'-Digits Depreciation — Accumulated Depreciation Calculation
