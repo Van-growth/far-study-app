@@ -3504,18 +3504,8 @@ export default function ConceptNotesPage() {
           <span style={{ fontWeight: 700, fontSize: 15, color: NAVY }}>{displayLabel}</span>
         </div>
 
-        {/* Header: title + tabs */}
-        <div style={{ flexShrink: 0, padding: '24px 28px 0' }}>
-          <div className="hidden md:flex" style={{ alignItems: 'center', gap: 10, marginBottom: 20 }}>
-            <button
-              onClick={() => setSidebarCollapsed(v => !v)}
-              title={sidebarCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
-              style={{ flexShrink: 0, padding: '5px 9px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc', fontSize: 16, color: '#374151', cursor: 'pointer', lineHeight: 1 }}
-            >
-              ≡
-            </button>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: NAVY, margin: 0 }}>{displayLabel}</h1>
-          </div>
+        {/* Tabs */}
+        <div style={{ flexShrink: 0, padding: '0 28px', paddingTop: 12 }}>
           <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e0e0e0' }}>
             {TABS.map(tab => (
               <button
