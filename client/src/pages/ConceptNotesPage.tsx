@@ -1134,8 +1134,66 @@ Example: Borrowed $1,000,000 on Sep 30 @ 9%
   → 3 months remain in year
   → Interest = $1,000,000 × 9% × 3/12 = $22,500`}</CodeBlock>
       </Section>
+      <Section title="3-Step Amortization — Visualization">
+        <div className="note-diagram" style={{ marginTop: 8 }}>
+          <svg width="100%" viewBox="0 0 680 580" role="img">
+            <title>Note payable amortization — 3-step calculation and chart</title>
+            <desc>3단계 계산 흐름, 분개, 시험 질문 유형, 미니 차트</desc>
+            <defs>
+              <marker id="arrow-np" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </marker>
+            </defs>
+            <g className="c-purple"><rect x="20" y="10" width="640" height="36" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="22" textAnchor="middle" dominantBaseline="central">Note payable — $500,000 / 12% annual / payment $11,122 fixed</text><text className="ts" x="340" y="38" textAnchor="middle" dominantBaseline="central">12% ÷ 12 = 1% monthly rate</text></g>
+            <text className="th" x="30" y="72" textAnchor="start">Calculation — always this order</text>
+            <g className="c-teal"><rect x="20" y="82" width="300" height="64" rx="8" strokeWidth="0.5"/><text className="th" x="170" y="100" textAnchor="middle" dominantBaseline="central">① Interest first</text><text className="ts" x="170" y="118" textAnchor="middle" dominantBaseline="central">Beginning balance × 1%</text><text className="ts" x="170" y="136" textAnchor="middle" dominantBaseline="central">$500,000 × 1% = $5,000</text></g>
+            <line x1="170" y1="146" x2="170" y2="168" stroke="#1D9E75" strokeWidth="1.5" markerEnd="url(#arrow-np)"/>
+            <g className="c-blue"><rect x="20" y="170" width="300" height="64" rx="8" strokeWidth="0.5"/><text className="th" x="170" y="188" textAnchor="middle" dominantBaseline="central">② Principal (plug-in)</text><text className="ts" x="170" y="208" textAnchor="middle" dominantBaseline="central">Payment − Interest</text><text className="ts" x="170" y="224" textAnchor="middle" dominantBaseline="central">$11,122 − $5,000 = $6,122</text></g>
+            <line x1="170" y1="234" x2="170" y2="256" stroke="#185FA5" strokeWidth="1.5" markerEnd="url(#arrow-np)"/>
+            <g className="c-gray"><rect x="20" y="258" width="300" height="64" rx="8" strokeWidth="0.5"/><text className="th" x="170" y="276" textAnchor="middle" dominantBaseline="central">③ Ending balance</text><text className="ts" x="170" y="296" textAnchor="middle" dominantBaseline="central">Beginning − Principal</text><text className="ts" x="170" y="312" textAnchor="middle" dominantBaseline="central">$500,000 − $6,122 = $493,878</text></g>
+            <g className="c-gray"><rect x="20" y="340" width="300" height="54" rx="8" strokeWidth="0.5"/><text className="th" x="170" y="358" textAnchor="middle" dominantBaseline="central">Month 2 — same steps</text><text className="ts" x="170" y="376" textAnchor="middle" dominantBaseline="central">$493,878 × 1% = $4,939 (interest ↓)</text><text className="ts" x="170" y="392" textAnchor="middle" dominantBaseline="central">$11,122 − $4,939 = $6,183 (principal ↑)</text></g>
+            <text className="th" x="360" y="72" textAnchor="start">Journal entry (month 1)</text>
+            <g className="c-amber"><rect x="350" y="82" width="310" height="82" rx="8" strokeWidth="0.5"/><text className="ts" x="420" y="108" textAnchor="start">Dr. Interest Expense   $5,000</text><text className="ts" x="420" y="126" textAnchor="start">Dr. Notes Payable      $6,122</text><text className="ts" x="440" y="144" textAnchor="start">Cr. Cash                      $11,122</text><text className="ts" x="610" y="118" textAnchor="middle">payment</text><text className="ts" x="610" y="134" textAnchor="middle">fixed</text></g>
+            <text className="th" x="360" y="186" textAnchor="start">Exam question types</text>
+            <g className="c-coral"><rect x="350" y="196" width="310" height="130" rx="8" strokeWidth="0.5"/><text className="ts" x="505" y="218" textAnchor="middle">"Interest expense"</text><text className="ts" x="505" y="234" textAnchor="middle">→ Beg. balance × rate × m/12</text><text className="ts" x="505" y="256" textAnchor="middle">"Note payable on B/S"</text><text className="ts" x="505" y="272" textAnchor="middle">→ Ending balance</text><text className="ts" x="505" y="294" textAnchor="middle">"Principal reduction"</text><text className="ts" x="505" y="310" textAnchor="middle">→ Payment − interest (plug-in)</text></g>
+            <line x1="20" y1="416" x2="660" y2="416" stroke="#d0d0c8" strokeWidth="0.5" strokeDasharray="4 3"/>
+            <text className="th" x="340" y="436" textAnchor="middle">Payment = Interest + Principal (always $11,122)</text>
+            <line x1="65" y1="458" x2="610" y2="458" stroke="#555" strokeWidth="1" strokeDasharray="5 3"/>
+            <text className="ts" x="618" y="462" textAnchor="start">$11,122</text>
+            <rect x="80" y="498" width="52" height="32" rx="3" fill="#378ADD" opacity="0.85"/>
+            <rect x="80" y="458" width="52" height="40" rx="3" fill="#1D9E75" opacity="0.85"/>
+            <text className="ts" x="106" y="544" textAnchor="middle">M1</text>
+            <rect x="175" y="500" width="52" height="30" rx="3" fill="#378ADD" opacity="0.85"/>
+            <rect x="175" y="458" width="52" height="42" rx="3" fill="#1D9E75" opacity="0.85"/>
+            <text className="ts" x="201" y="544" textAnchor="middle">M6</text>
+            <rect x="270" y="502" width="52" height="28" rx="3" fill="#378ADD" opacity="0.85"/>
+            <rect x="270" y="458" width="52" height="44" rx="3" fill="#1D9E75" opacity="0.85"/>
+            <text className="ts" x="296" y="544" textAnchor="middle">M12</text>
+            <rect x="365" y="507" width="52" height="23" rx="3" fill="#378ADD" opacity="0.85"/>
+            <rect x="365" y="458" width="52" height="49" rx="3" fill="#1D9E75" opacity="0.85"/>
+            <text className="ts" x="391" y="544" textAnchor="middle">M30</text>
+            <rect x="460" y="529" width="52" height="1" rx="1" fill="#378ADD" opacity="0.85"/>
+            <rect x="460" y="458" width="52" height="71" rx="3" fill="#1D9E75" opacity="0.85"/>
+            <text className="ts" x="486" y="544" textAnchor="middle">M60</text>
+            <path d="M106 514 Q201 515 296 516 Q391 520 486 530" fill="none" stroke="#185FA5" strokeWidth="1" strokeDasharray="4 3" opacity="0.6"/>
+            <rect x="80" y="556" width="12" height="12" rx="2" fill="#378ADD"/>
+            <text className="ts" x="96" y="566" textAnchor="start">Interest (decreases)</text>
+            <rect x="240" y="556" width="12" height="12" rx="2" fill="#1D9E75"/>
+            <text className="ts" x="256" y="566" textAnchor="start">Principal (increases)</text>
+            <line x1="400" y1="562" x2="428" y2="562" stroke="#555" strokeWidth="1" strokeDasharray="4 3"/>
+            <text className="ts" x="434" y="566" textAnchor="start">Fixed payment total</text>
+          </svg>
+        </div>
+      </Section>
       <Section title="Key Rule">
         <p>Use <strong>Beginning Balance × rate × time fraction</strong>. Never use payment amount directly for interest calculation.</p>
+        <CodeBlock>{`3-step order (always):
+① Interest    = Beginning balance × (annual rate ÷ 12)
+② Principal   = Payment − Interest          ← plug-in
+③ Ending bal. = Beginning balance − Principal
+
+Payment = Interest + Principal (fixed total — never changes)
+Annual rate ÷ 12 = monthly rate (never use annual rate directly)`}</CodeBlock>
       </Section>
       <TrapBox items={[
         'Accrued interest at year-end: use days/months outstanding, not full year',
@@ -1559,6 +1617,74 @@ Step 1: EI at base-year cost
 
 Step 3: New layer at LIFO cost
 = New layer at base-year cost × Current year index`}</CodeBlock>
+      </Section>
+
+      <Section title="5. Physical Count — FOB & Consignment 조정">
+        <p>재고 실사(physical count) = 창고 기준 → 운송 중·외부 위탁 재고 누락 가능<br/>→ FOB 조건 + Consignment 방향으로 실질 소유권 판단 후 조정</p>
+        <div className="inv-diagram" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 12 }}>
+          <svg width="100%" viewBox="0 0 680 340" role="img">
+            <title>FOB shipping point vs destination</title>
+            <desc>FOB 조건별 소유권 경계 간소화 버전</desc>
+            <defs>
+              <marker id="arrow-fob" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </marker>
+            </defs>
+            <text className="th" x="340" y="26" textAnchor="middle">FOB — 운송 중 소유권 경계</text>
+            <text className="ts" x="80" y="50" textAnchor="middle">판매자</text>
+            <text className="ts" x="340" y="50" textAnchor="middle">운송 중</text>
+            <text className="ts" x="600" y="50" textAnchor="middle">구매자</text>
+            <rect x="142" y="62" width="498" height="80" rx="8" fill="#E1F5EE" opacity="0.45"/>
+            <g className="c-gray"><rect x="30" y="74" width="100" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="80" y="96" textAnchor="middle" dominantBaseline="central">판매자</text></g>
+            <line x1="130" y1="96" x2="538" y2="96" stroke="#1D9E75" strokeWidth="2" markerEnd="url(#arrow-fob)"/>
+            <line x1="142" y1="62" x2="142" y2="142" stroke="#1D9E75" strokeWidth="1.5" strokeDasharray="5 3"/>
+            <g className="c-teal"><rect x="550" y="74" width="100" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="600" y="90" textAnchor="middle" dominantBaseline="central">구매자</text><text className="ts" x="600" y="108" textAnchor="middle" dominantBaseline="central">✅ 재고</text></g>
+            <text className="th" x="330" y="82" textAnchor="middle" style={{ fill: '#0F6E56', fontSize: '12px' }}>FOB shipping point — 선적 시 이전</text>
+            <text className="ts" x="330" y="100" textAnchor="middle" style={{ fill: '#0F6E56' }}>운송 중 = 구매자 소유 | Freight In → 재고 원가</text>
+            <text className="ts" x="80" y="138" textAnchor="middle" style={{ fill: '#888780', fontSize: '11px' }}>판매자 소유</text>
+            <text className="ts" x="360" y="138" textAnchor="middle" style={{ fill: '#0F6E56', fontSize: '11px' }}>구매자 소유 (운송 중에도)</text>
+            <rect x="30" y="170" width="508" height="80" rx="8" fill="#EEEDFE" opacity="0.45"/>
+            <g className="c-purple"><rect x="30" y="182" width="100" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="80" y="198" textAnchor="middle" dominantBaseline="central">판매자</text><text className="ts" x="80" y="216" textAnchor="middle" dominantBaseline="central">✅ 재고</text></g>
+            <line x1="130" y1="204" x2="538" y2="204" stroke="#534AB7" strokeWidth="2" markerEnd="url(#arrow-fob)"/>
+            <line x1="538" y1="170" x2="538" y2="250" stroke="#534AB7" strokeWidth="1.5" strokeDasharray="5 3"/>
+            <g className="c-gray"><rect x="550" y="182" width="100" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="600" y="204" textAnchor="middle" dominantBaseline="central">구매자</text></g>
+            <text className="th" x="290" y="190" textAnchor="middle" style={{ fill: '#3C3489', fontSize: '12px' }}>FOB destination — 도착 시 이전</text>
+            <text className="ts" x="290" y="208" textAnchor="middle" style={{ fill: '#3C3489' }}>운송 중 = 판매자 소유 | Freight Out → 판매비용</text>
+            <text className="ts" x="270" y="246" textAnchor="middle" style={{ fill: '#534AB7', fontSize: '11px' }}>판매자 소유 (운송 중에도)</text>
+            <text className="ts" x="600" y="246" textAnchor="middle" style={{ fill: '#888780', fontSize: '11px' }}>도착 후</text>
+            <g className="c-amber"><rect x="30" y="268" width="620" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="284" textAnchor="middle" dominantBaseline="central">문장 해석</text><text className="ts" x="340" y="302" textAnchor="middle" dominantBaseline="central">"purchased by Widget" + FOB s.p. → ✅ | "purchased by a customer" + FOB s.p. → ❌</text></g>
+          </svg>
+          <svg width="100%" viewBox="0 0 680 380" role="img">
+            <title>Consignment direction — Widget fixed left</title>
+            <desc>Widget 왼쪽 고정, 화살표 방향으로 OUT/IN 구분</desc>
+            <defs>
+              <marker id="arrow-con" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </marker>
+            </defs>
+            <text className="th" x="340" y="26" textAnchor="middle">Consignment — 방향이 소유권</text>
+            <g className="c-teal"><rect x="40" y="60" width="110" height="220" rx="8" strokeWidth="0.5"/><text className="th" x="95" y="165" textAnchor="middle" dominantBaseline="central">Widget</text><text className="ts" x="95" y="185" textAnchor="middle" dominantBaseline="central">(our company)</text></g>
+            <rect x="168" y="60" width="472" height="96" rx="8" fill="#E1F5EE" opacity="0.4"/>
+            <line x1="152" y1="100" x2="460" y2="100" stroke="#1D9E75" strokeWidth="2.5" markerEnd="url(#arrow-con)"/>
+            <g className="c-gray"><rect x="464" y="72" width="120" height="56" rx="8" strokeWidth="0.5"/><text className="th" x="524" y="96" textAnchor="middle" dominantBaseline="central">타사 창고</text><text className="ts" x="524" y="114" textAnchor="middle" dominantBaseline="central">보관만 함</text></g>
+            <text className="th" x="300" y="88" textAnchor="middle" style={{ fill: '#0F6E56' }}>TO — Consignment OUT</text>
+            <text className="ts" x="300" y="106" textAnchor="middle" style={{ fill: '#0F6E56' }}>Widget 소유 유지</text>
+            <text className="th" x="300" y="122" textAnchor="middle" style={{ fill: '#0F6E56' }}>✅ 재고 포함</text>
+            <rect x="168" y="184" width="472" height="96" rx="8" fill="#F1EFE8" opacity="0.5"/>
+            <line x1="460" y1="232" x2="152" y2="232" stroke="#888780" strokeWidth="2.5" markerEnd="url(#arrow-con)"/>
+            <g className="c-gray"><rect x="464" y="204" width="120" height="56" rx="8" strokeWidth="0.5"/><text className="th" x="524" y="228" textAnchor="middle" dominantBaseline="central">타사</text><text className="ts" x="524" y="246" textAnchor="middle" dominantBaseline="central">소유 유지</text></g>
+            <text className="th" x="300" y="220" textAnchor="middle" style={{ fill: '#5F5E5A' }}>BY / FOR — Consignment IN</text>
+            <text className="ts" x="300" y="238" textAnchor="middle" style={{ fill: '#5F5E5A' }}>타사 소유</text>
+            <text className="th" x="300" y="254" textAnchor="middle" style={{ fill: '#5F5E5A' }}>❌ 재고 제외</text>
+            <g className="c-amber"><rect x="40" y="300" width="600" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="318" textAnchor="middle" dominantBaseline="central">기억법</text><text className="ts" x="340" y="336" textAnchor="middle" dominantBaseline="central">TO = 내가 보낸 것 → 내 것 ✅ | BY · FOR = 남이 보낸 것 → 남의 것 ❌</text></g>
+          </svg>
+        </div>
+        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: '#444' }}>
+          <p><strong>Bill and Hold:</strong> 조건 4가지 충족(구매자 요청·별도 보관·즉시 인도·일정 확정) → 판매자 재고 제외 / 미충족 → 포함</p>
+          <p><strong>Freight In</strong> (매입 운임) → 재고 원가 포함 / <strong>Freight Out</strong> (판매 운임) → 판매비용</p>
+          <p><strong>Pledged inventory · Public warehouse</strong> → 소유권 있음 → 재고 포함</p>
+          <p><strong>Purchase commitment</strong> → 아직 받지 않은 주문 → 재고 아님</p>
+        </div>
       </Section>
     </div>
   )
@@ -2764,6 +2890,121 @@ function FxContent() {
   Dr. Cash (new rate)    XXX
   Dr. FX Loss            XXX
     Cr. AR (original rate)     XXX`}</CodeBlock>
+      </Section>
+
+      <Section title="4. AR & AP — FX Gain/Loss Visualization">
+        <div className="fx-diagram" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <svg width="100%" viewBox="0 0 680 660" role="img">
+            <title>FX AR visualization</title>
+            <desc>AR 거래 숫자 설명과 간접법 그래프</desc>
+            <defs>
+              <marker id="arrow-ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </marker>
+            </defs>
+            <g className="c-purple"><rect x="20" y="10" width="640" height="32" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="26" textAnchor="middle" dominantBaseline="central">AR — Expecting to receive 800,000 yen (US company)</text></g>
+            <g className="c-gray"><rect x="20" y="54" width="174" height="72" rx="8" strokeWidth="0.5"/><text className="th" x="107" y="72" textAnchor="middle" dominantBaseline="central">Transaction date</text><text className="ts" x="107" y="90" textAnchor="middle" dominantBaseline="central">$1 = 80 yen</text><text className="th" x="107" y="114" textAnchor="middle" dominantBaseline="central">AR = $10,000</text></g>
+            <text className="ts" x="107" y="138" textAnchor="middle">800,000 ÷ 80 = $10,000</text>
+            <line x1="194" y1="90" x2="226" y2="90" stroke="#888" strokeWidth="1.5" markerEnd="url(#arrow-ar)"/>
+            <g className="c-coral"><rect x="230" y="54" width="200" height="32" rx="8" strokeWidth="0.5"/><text className="th" x="330" y="70" textAnchor="middle" dominantBaseline="central">Case A: $1 = 82 yen</text></g>
+            <g className="c-coral"><rect x="230" y="94" width="200" height="42" rx="8" strokeWidth="0.5"/><text className="th" x="330" y="112" textAnchor="middle" dominantBaseline="central">Received: $9,756</text><text className="ts" x="330" y="128" textAnchor="middle" dominantBaseline="central">800,000 ÷ 82</text></g>
+            <g className="c-coral"><rect x="230" y="144" width="200" height="28" rx="6" strokeWidth="0.5"/><text className="th" x="330" y="158" textAnchor="middle" dominantBaseline="central">FX Loss $244 — received less</text></g>
+            <text className="ts" x="330" y="186" textAnchor="middle">Dr. Cash                $9,756</text>
+            <text className="ts" x="330" y="202" textAnchor="middle">Dr. FX Loss               $244</text>
+            <text className="ts" x="340" y="218" textAnchor="middle">Cr. AR                          $10,000</text>
+            <g className="c-teal"><rect x="450" y="54" width="210" height="32" rx="8" strokeWidth="0.5"/><text className="th" x="555" y="70" textAnchor="middle" dominantBaseline="central">Case B: $1 = 78 yen</text></g>
+            <g className="c-teal"><rect x="450" y="94" width="210" height="42" rx="8" strokeWidth="0.5"/><text className="th" x="555" y="112" textAnchor="middle" dominantBaseline="central">Received: $10,256</text><text className="ts" x="555" y="128" textAnchor="middle" dominantBaseline="central">800,000 ÷ 78</text></g>
+            <g className="c-teal"><rect x="450" y="144" width="210" height="28" rx="6" strokeWidth="0.5"/><text className="th" x="555" y="158" textAnchor="middle" dominantBaseline="central">FX Gain $256 — received more</text></g>
+            <text className="ts" x="555" y="186" textAnchor="middle">Dr. Cash               $10,256</text>
+            <text className="ts" x="565" y="202" textAnchor="middle">Cr. AR                         $10,000</text>
+            <text className="ts" x="565" y="218" textAnchor="middle">Cr. FX Gain                      $256</text>
+            <line x1="20" y1="238" x2="660" y2="238" stroke="#d0d0c8" strokeWidth="0.5" strokeDasharray="4 3"/>
+            <line x1="100" y1="256" x2="100" y2="500" stroke="#555" strokeWidth="1" markerEnd="url(#arrow-ar)"/>
+            <line x1="100" y1="480" x2="640" y2="480" stroke="#555" strokeWidth="1" markerEnd="url(#arrow-ar)"/>
+            <text className="ts" x="96" y="260" textAnchor="end">$ per FC</text>
+            <text className="ts" x="96" y="274" textAnchor="end">(indirect)</text>
+            <text className="ts" x="640" y="494" textAnchor="start">time</text>
+            <text className="ts" x="92" y="308" textAnchor="end">$0.0128</text>
+            <line x1="96" y1="308" x2="104" y2="308" stroke="#555" strokeWidth="0.5"/>
+            <text className="ts" x="92" y="378" textAnchor="end">$0.0125</text>
+            <line x1="96" y1="378" x2="104" y2="378" stroke="#555" strokeWidth="0.5"/>
+            <text className="ts" x="92" y="448" textAnchor="end">$0.0122</text>
+            <line x1="96" y1="448" x2="104" y2="448" stroke="#555" strokeWidth="0.5"/>
+            <line x1="100" y1="378" x2="625" y2="378" stroke="#d0d0c8" strokeWidth="0.5" strokeDasharray="4 3"/>
+            <text className="ts" x="627" y="375" textAnchor="start">base</text>
+            <rect x="120" y="358" width="200" height="122" fill="#FAECE7" opacity="0.4"/>
+            <line x1="120" y1="378" x2="300" y2="448" stroke="#D85A30" strokeWidth="2.5"/>
+            <circle cx="120" cy="378" r="5" fill="#D85A30"/>
+            <circle cx="300" cy="448" r="5" fill="#D85A30"/>
+            <text className="ts" x="210" y="268" textAnchor="middle" style={{ fill: '#993C1D' }}>FC depreciates</text>
+            <text className="ts" x="210" y="282" textAnchor="middle" style={{ fill: '#993C1D' }}>Dollar up</text>
+            <g className="c-coral"><rect x="162" y="454" width="96" height="24" rx="12" strokeWidth="0.5"/><text className="th" x="210" y="466" textAnchor="middle" dominantBaseline="central">AR Loss</text></g>
+            <rect x="360" y="258" width="240" height="222" fill="#E1F5EE" opacity="0.4"/>
+            <line x1="360" y1="378" x2="560" y2="308" stroke="#1D9E75" strokeWidth="2.5"/>
+            <circle cx="360" cy="378" r="5" fill="#1D9E75"/>
+            <circle cx="560" cy="308" r="5" fill="#1D9E75"/>
+            <text className="ts" x="480" y="268" textAnchor="middle" style={{ fill: '#0F6E56' }}>FC appreciates</text>
+            <text className="ts" x="480" y="282" textAnchor="middle" style={{ fill: '#0F6E56' }}>Dollar down</text>
+            <g className="c-teal"><rect x="432" y="294" width="96" height="24" rx="12" strokeWidth="0.5"/><text className="th" x="480" y="306" textAnchor="middle" dominantBaseline="central">AR Gain</text></g>
+            <g className="c-amber"><rect x="20" y="510" width="640" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="526" textAnchor="middle" dominantBaseline="central">Speed — AR</text><text className="ts" x="340" y="544" textAnchor="middle" dominantBaseline="central">FC up (graph up) = receive more = Gain / FC down (graph down) = receive less = Loss</text></g>
+            <g className="c-gray"><rect x="20" y="564" width="640" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="580" textAnchor="middle" dominantBaseline="central">Direct quote trap</text><text className="ts" x="340" y="598" textAnchor="middle" dominantBaseline="central">"units of FC per $" up = FC weakens (opposite of graph) — denominator is FC</text></g>
+          </svg>
+          <svg width="100%" viewBox="0 0 680 660" role="img">
+            <title>FX AP visualization</title>
+            <desc>AP 거래 숫자 설명과 간접법 그래프</desc>
+            <defs>
+              <marker id="arrow-ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </marker>
+            </defs>
+            <g className="c-blue"><rect x="20" y="10" width="640" height="32" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="26" textAnchor="middle" dominantBaseline="central">AP — Expecting to pay 800,000 yen (US company)</text></g>
+            <g className="c-gray"><rect x="20" y="54" width="174" height="72" rx="8" strokeWidth="0.5"/><text className="th" x="107" y="72" textAnchor="middle" dominantBaseline="central">Transaction date</text><text className="ts" x="107" y="90" textAnchor="middle" dominantBaseline="central">$1 = 80 yen</text><text className="th" x="107" y="114" textAnchor="middle" dominantBaseline="central">AP = $10,000</text></g>
+            <text className="ts" x="107" y="138" textAnchor="middle">800,000 ÷ 80 = $10,000</text>
+            <line x1="194" y1="90" x2="226" y2="90" stroke="#888" strokeWidth="1.5" markerEnd="url(#arrow-ap)"/>
+            <g className="c-teal"><rect x="230" y="54" width="200" height="32" rx="8" strokeWidth="0.5"/><text className="th" x="330" y="70" textAnchor="middle" dominantBaseline="central">Case A: $1 = 82 yen</text></g>
+            <g className="c-teal"><rect x="230" y="94" width="200" height="42" rx="8" strokeWidth="0.5"/><text className="th" x="330" y="112" textAnchor="middle" dominantBaseline="central">Paid: $9,756</text><text className="ts" x="330" y="128" textAnchor="middle" dominantBaseline="central">800,000 ÷ 82</text></g>
+            <g className="c-teal"><rect x="230" y="144" width="200" height="28" rx="6" strokeWidth="0.5"/><text className="th" x="330" y="158" textAnchor="middle" dominantBaseline="central">FX Gain $244 — paid less</text></g>
+            <text className="ts" x="330" y="186" textAnchor="middle">Dr. AP                 $10,000</text>
+            <text className="ts" x="340" y="202" textAnchor="middle">Cr. Cash                          $9,756</text>
+            <text className="ts" x="340" y="218" textAnchor="middle">Cr. FX Gain                        $244</text>
+            <g className="c-coral"><rect x="450" y="54" width="210" height="32" rx="8" strokeWidth="0.5"/><text className="th" x="555" y="70" textAnchor="middle" dominantBaseline="central">Case B: $1 = 78 yen</text></g>
+            <g className="c-coral"><rect x="450" y="94" width="210" height="42" rx="8" strokeWidth="0.5"/><text className="th" x="555" y="112" textAnchor="middle" dominantBaseline="central">Paid: $10,256</text><text className="ts" x="555" y="128" textAnchor="middle" dominantBaseline="central">800,000 ÷ 78</text></g>
+            <g className="c-coral"><rect x="450" y="144" width="210" height="28" rx="6" strokeWidth="0.5"/><text className="th" x="555" y="158" textAnchor="middle" dominantBaseline="central">FX Loss $256 — paid more</text></g>
+            <text className="ts" x="555" y="186" textAnchor="middle">Dr. AP                 $10,000</text>
+            <text className="ts" x="555" y="202" textAnchor="middle">Dr. FX Loss                $256</text>
+            <text className="ts" x="565" y="218" textAnchor="middle">Cr. Cash                         $10,256</text>
+            <line x1="20" y1="238" x2="660" y2="238" stroke="#d0d0c8" strokeWidth="0.5" strokeDasharray="4 3"/>
+            <line x1="100" y1="256" x2="100" y2="500" stroke="#555" strokeWidth="1" markerEnd="url(#arrow-ap)"/>
+            <line x1="100" y1="480" x2="640" y2="480" stroke="#555" strokeWidth="1" markerEnd="url(#arrow-ap)"/>
+            <text className="ts" x="96" y="260" textAnchor="end">$ per FC</text>
+            <text className="ts" x="96" y="274" textAnchor="end">(indirect)</text>
+            <text className="ts" x="640" y="494" textAnchor="start">time</text>
+            <text className="ts" x="92" y="308" textAnchor="end">$0.0128</text>
+            <line x1="96" y1="308" x2="104" y2="308" stroke="#555" strokeWidth="0.5"/>
+            <text className="ts" x="92" y="378" textAnchor="end">$0.0125</text>
+            <line x1="96" y1="378" x2="104" y2="378" stroke="#555" strokeWidth="0.5"/>
+            <text className="ts" x="92" y="448" textAnchor="end">$0.0122</text>
+            <line x1="96" y1="448" x2="104" y2="448" stroke="#555" strokeWidth="0.5"/>
+            <line x1="100" y1="378" x2="625" y2="378" stroke="#d0d0c8" strokeWidth="0.5" strokeDasharray="4 3"/>
+            <text className="ts" x="627" y="375" textAnchor="start">base</text>
+            <rect x="120" y="258" width="200" height="222" fill="#E1F5EE" opacity="0.4"/>
+            <line x1="120" y1="378" x2="300" y2="308" stroke="#1D9E75" strokeWidth="2.5"/>
+            <circle cx="120" cy="378" r="5" fill="#1D9E75"/>
+            <circle cx="300" cy="308" r="5" fill="#1D9E75"/>
+            <text className="ts" x="210" y="268" textAnchor="middle" style={{ fill: '#0F6E56' }}>FC depreciates</text>
+            <text className="ts" x="210" y="282" textAnchor="middle" style={{ fill: '#0F6E56' }}>Dollar up</text>
+            <g className="c-teal"><rect x="162" y="294" width="96" height="24" rx="12" strokeWidth="0.5"/><text className="th" x="210" y="306" textAnchor="middle" dominantBaseline="central">AP Gain</text></g>
+            <rect x="360" y="358" width="240" height="122" fill="#FAECE7" opacity="0.4"/>
+            <line x1="360" y1="378" x2="560" y2="448" stroke="#D85A30" strokeWidth="2.5"/>
+            <circle cx="360" cy="378" r="5" fill="#D85A30"/>
+            <circle cx="560" cy="448" r="5" fill="#D85A30"/>
+            <text className="ts" x="480" y="268" textAnchor="middle" style={{ fill: '#993C1D' }}>FC appreciates</text>
+            <text className="ts" x="480" y="282" textAnchor="middle" style={{ fill: '#993C1D' }}>Dollar down</text>
+            <g className="c-coral"><rect x="432" y="454" width="96" height="24" rx="12" strokeWidth="0.5"/><text className="th" x="480" y="466" textAnchor="middle" dominantBaseline="central">AP Loss</text></g>
+            <g className="c-amber"><rect x="20" y="510" width="640" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="526" textAnchor="middle" dominantBaseline="central">Speed — AP</text><text className="ts" x="340" y="544" textAnchor="middle" dominantBaseline="central">FC up (graph up) = pay more = Loss / FC down (graph down) = pay less = Gain</text></g>
+            <g className="c-gray"><rect x="20" y="564" width="640" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="580" textAnchor="middle" dominantBaseline="central">AR vs AP — opposite direction</text><text className="ts" x="340" y="598" textAnchor="middle" dominantBaseline="central">Same FC move → AR and AP always produce opposite gain/loss</text></g>
+          </svg>
+        </div>
       </Section>
 
       <Section title="4. 환율 방향 해석">

@@ -9375,6 +9375,28 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "LIFO 재고는 US GAAP에서 구(舊) LCM 규칙 적용. Market의 핵심은 RC가 Ceiling(NRV)와 Floor(NRV−GP) 사이에 있어야 한다는 것 — 이를 직관적으로 표현하면 세 값의 Median.\n\n[왜 Floor가 존재하는가]\nRC가 지나치게 낮을 때 Market을 Floor로 제한하는 이유: 재고를 너무 낮게 평가하면 미래 판매 시 이익이 과대 계상됨. Floor = 정상 이익을 남길 수 있는 최소 평가액.\n\n[FIFO vs LIFO 비교]\nFIFO/Average → LCNRV: NRV = SP − processing costs만 사용. RC·GP margin 무시.\nLIFO → LCM: RC/NRV/Floor 세 값 모두 사용. Median = Market.",
   },
 
+  // [INV_018] Inventory Physical Count — FOB, Consignment, Bill and Hold, Freight
+  // RULE    : 실사 = 창고 기준 → FOB 조건·Consignment 방향·Bill and Hold 조건으로 소유권 판단 후 조정
+  // TRIGGER : "in transit" → FOB 조건 확인 / "consignment" → to/by/for 방향 확인 / "bill and hold" → 조건 충족 여부
+  // TRAP    : "purchased by customer" FOB s.p. = Widget 재고 아님 / Consignment IN = 타사 소유 / Bill and Hold 조건 미충족 = 포함
+  {
+    topic_id: "INV_018",
+    book_id: 'IA',
+    chapter_id: 'IA_CH3',
+    topic_group: 'IA_CH3_INV',
+    sub_category_id: "U3_INVENTORY",
+    card_type: 'conditional',
+    card_name: "Inventory physical count adjustments — FOB, consignment direction, bill and hold, freight",
+    rule: "【FOB 조건 — 소유권 이전 시점】\nFOB Shipping Point → 선적 시 소유권 이전 → 매입자 부담\n  매입 운송 중 → 매입자 재고 ✅\n  판매 후 운송 중 → 고객 재고 ❌\n\nFOB Destination → 도착 시 소유권 이전 → 판매자 부담\n  매입 운송 중 → 판매자 재고 ❌\n  판매 후 운송 중 → 판매자 재고 유지 ✅\n\n【문장 해석】\n'purchased by Widget' + FOB s.p. → Widget이 산 것 → Widget 재고\n'purchased by a customer' + FOB s.p. → 고객이 산 것 → 고객 재고 (Widget 제외)\n\n【Consignment 방향】\nConsignment TO another company (OUT)\n→ Widget이 타사에 맡긴 것 → Widget 소유 ✅ 포함\n\nConsignment BY / FOR another company (IN)\n→ 타사가 Widget에 맡긴 것 → 타사 소유 ❌ 제외\n\n기억: TO = 내가 보낸 것 → 내 것 / BY·FOR = 남이 보낸 것 → 남의 것\n\n【Bill and Hold】\n조건 충족 시 (구매자 요청·별도 보관·즉시 인도 가능·일정 확정)\n→ 소유권 이전 완료 → 판매자 재고 ❌ 제외\n조건 미충족 시\n→ 소유권 미이전 → 판매자 재고 ✅ 포함\n\n【Freight In vs Out】\nFreight In (매입 운임) → 재고 원가 포함 (capitalize)\n  Dr. Inventory / Cr. Cash\nFreight Out (판매 운임) → 판매비용 즉시 처리\n  Dr. Delivery Expense / Cr. Cash\n\n【기타 항목】\nPledged inventory (담보 재고) → 소유권 있음 ✅ 포함\nPublic warehouse (외부 창고) → 소유권 있음 ✅ 포함\nPurchase commitment (미수취 주문) → 재고 아님 ❌",
+    trigger: "'in transit' → FOB 조건 즉시 확인\n'FOB shipping point' + 매입 운송 중 → ✅ 포함\n'FOB shipping point' + 판매 운송 중 → ❌ 제외\n'consignment TO' → OUT → 포함\n'consignment BY / FOR' → IN → 제외\n'held on consignment by another company' → OUT → ✅ 포함\n'bill and hold' → 조건 4가지 충족 여부 확인",
+    trap: "'purchased by a customer' + FOB s.p. → 고객 소유 → Widget 재고 아님 (가장 빈번한 트랩)\n'held on consignment by another company' → Widget이 맡긴 것(OUT) → 포함 (타사 보관이라도 Widget 소유)\nFreight In → 비용 처리 오류 → 반드시 재고 원가 포함\nBill and Hold 조건 미확인 → 조건 미충족이면 판매자 재고 유지",
+    one_sentence: "Physical count 조정: FOB 조건으로 소유권 판단 / Consignment OUT=포함·IN=제외 / Bill and Hold 조건 확인 / Freight In=재고원가.",
+    key_formula: "조정 후 재고 = 실사 금액 + FOB s.p. 매입 운송 중 + Consignment OUT ± 기타",
+    example: "실사 $435,875\n+$55,000: FOB s.p. 매입 운송 중 → Widget 소유 ✅\n+$0: FOB s.p. 판매 운송 중 $35,000 → 고객 소유 ❌\n+$27,000: Consignment OUT → Widget 소유 ✅\n= $517,875",
+    speed: "FOB s.p. 매입 중 → + / FOB s.p. 판매 중 → 0\nConsignment TO(OUT) → + / BY·FOR(IN) → −\nFreight In → 원가 포함 / Freight Out → 비용",
+    context_background: "[재고 실사(Physical Count)가 누락하는 항목]\n창고 기준 실사 → 운송 중·외부 위탁·외부 판매 재고 누락 가능\n→ 소유권 기준으로 재조정 필수\n\n[FOB 직관]\nFOB Shipping Point: '출발하면 네 거'\nFOB Destination: '도착해야 네 거'\n\n[Consignment 방향 기억법]\nTO = 내가 상대방에게 보낸 것 → 내 소유\nBY = 상대방이 나에게 보낸 것 → 상대방 소유\nFOR = 상대방을 위해 내가 보관 → 상대방 소유\n\n[전체 조정 요약]\nFOB s.p. 매입 운송 중 → ✅ 포함\nFOB s.p. 판매 운송 중 → ❌ 제외\nFOB dest 매입 운송 중 → ❌ 제외\nFOB dest 판매 운송 중 → ✅ 포함\nConsignment OUT → ✅ 포함\nConsignment IN → ❌ 제외\nBill and Hold (조건 충족) → ❌ 제외\nBill and Hold (조건 미충족) → ✅ 포함\nPledged inventory → ✅ 포함\nPublic warehouse → ✅ 포함\nPurchase commitment → ❌ 재고 아님\nFreight In → ✅ 원가 포함\nFreight Out → ❌ 판매비용",
+  },
+
   // ── CASH (Cash & Cash Equivalents) ─────────────────────────────────────────
   // [CASH_001] Cash and Cash Equivalents — Balance Sheet Classification
   // RULE    : Petty cash + Checking + Depository + Savings + MMF + 만기 3개월 이내 T-bills/CD만 포함
@@ -9860,6 +9882,29 @@ Series B+ 감사 시 핵심 검토 항목`,
     ],
     key_formula: "Current = 재융자 전 선납분 / Long-term = 재융자 후 잔액 (FS발행 전 완료 시)",
   },
+
+  // [LTL_003] Note Payable — Effective Interest Amortization: 3-Step Calculation
+  // RULE    : ① Interest = Beg. × rate × m/12 → ② Principal = Payment − Interest (plug-in) → ③ Ending = Beg. − Principal
+  // TRIGGER : "monthly payment" + "interest rate" → 3단계 계산 / "after N payments" → N번 반복
+  // TRAP    : Payment를 이자비용으로 직접 사용 / 연이율을 월할 변환 안 함 / Principal을 먼저 계산
+  {
+    topic_id: "LTL_003",
+    book_id: 'IA',
+    chapter_id: 'IA_CH12',
+    topic_group: 'IA_CH12_LTL',
+    sub_category_id: "U4_LONG_TERM_LIABILITIES",
+    card_type: 'calculation',
+    card_name: "Note payable — effective interest amortization: interest first, principal is plug-in",
+    rule: "【3-step calculation — always this order】\n① Interest = Beginning balance × monthly rate\n   Annual rate ÷ 12 = monthly rate (12% ÷ 12 = 1%)\n② Principal = Payment − Interest  ← plug-in\n③ Ending balance = Beginning balance − Principal\n\n【Payment 구조】\nPayment = Interest + Principal (항상 고정)\n→ Payment가 고정이면 이자 감소할수록 원금 상환↑\n→ Payment가 주어지지 않으면 이자비용만 계산\n\n【분개 (monthly)】\nDr. Interest Expense    $5,000\nDr. Notes Payable       $6,122\n    Cr. Cash                     $11,122\n\n【시험 질문 유형】\n① 'Interest expense' → Beg. balance × rate × m/12\n② 'Note payable on B/S' → Ending balance\n③ 'Principal reduction' → Payment − interest (plug-in)\n④ 'Cash paid' → Fixed payment (given — never calculate)\n⑤ 'After N payments' → repeat 3 steps N times",
+    trigger: "'monthly payment of $X' + interest rate → 3단계 계산\n'after two payments' → 2번 반복 → ending balance\n'12% annual interest' → ÷12 = 1% monthly\n'note payable balance on B/S' → ending balance\n'interest expense for the period' → Beg. × rate × m/12",
+    trap: "Payment $11,122를 interest expense로 직접 사용 → 오답\n연이율 12% 그대로 적용 → 반드시 ÷12 = 1% 월이율 변환\nPrincipal 먼저 계산 시도 → Interest 항상 먼저\n'after two payments' → 2회 모두 계산, 1회만 하면 오답",
+    one_sentence: "Interest 먼저(Beg.×rate) → Principal = plug-in(Payment−Interest) → Ending = Beg.−Principal.",
+    key_formula: "Interest = Beg. balance × (annual rate ÷ 12)\nPrincipal = Payment − Interest\nEnding balance = Beg. balance − Principal",
+    example: "Month 1: $500,000 × 1% = $5,000 interest / $11,122 − $5,000 = $6,122 principal / $500,000 − $6,122 = $493,878\nMonth 2: $493,878 × 1% = $4,939 interest / $11,122 − $4,939 = $6,183 principal / $493,878 − $6,183 = $487,695",
+    speed: "① Beg. × 1% = interest ② Payment − interest = principal ③ Beg. − principal = ending\n'after N payments' → repeat N times",
+    context_background: "[왜 interest를 먼저 계산하는가]\nNote payable은 부채의 실질 잔액(carrying value)에 실효이자율을 곱해 이자비용을 계산하는 유효이자법 적용.\n이자는 경제적으로 '잔액에 대한 시간 비용' → 잔액 먼저 확인, 이자 계산, 나머지가 원금 상환.\n\n[Payment = Interest + Principal 구조]\nFixed payment에서 이자가 줄어들면 원금 상환분이 늘어남:\nMonth 1: $5,000 interest + $6,122 principal = $11,122\nMonth 2: $4,939 interest + $6,183 principal = $11,122\n→ 합계 항상 $11,122 고정\n\n[연이율 → 월이율 변환 필수]\n12% annual = 1% monthly\n연이율을 그대로 쓰면 이자비용 12배 과대 계상 → 가장 흔한 오류",
+  },
+
   {
     topic_id: "REV_015",
     book_id: "IA",

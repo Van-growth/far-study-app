@@ -85,6 +85,50 @@
 .bond-diagram svg g.c-teal rect   { fill: #e6f5f1; stroke: #085041; }
 .bond-diagram svg g.c-teal text   { fill: #085041; }
 
+/* ── Inventory diagram SVG styles ──────────────────────── */
+.inv-diagram svg text.th { font-size: 12px; font-weight: 700; fill: #1a1a1a; }
+.inv-diagram svg text.ts { font-size: 11px; fill: #444; }
+.inv-diagram svg g.c-gray rect   { fill: #f8f9fa; stroke: #d0d0d0; }
+.inv-diagram svg g.c-gray text   { fill: #333; }
+.inv-diagram svg g.c-purple rect { fill: #f0eeff; stroke: #534AB7; }
+.inv-diagram svg g.c-purple text { fill: #534AB7; }
+.inv-diagram svg g.c-teal rect   { fill: #e6f5f1; stroke: #085041; }
+.inv-diagram svg g.c-teal text   { fill: #085041; }
+.inv-diagram svg g.c-amber rect  { fill: #FEF3C7; stroke: #D97706; }
+.inv-diagram svg g.c-amber text  { fill: #92400E; }
+
+/* ── FX diagram SVG styles ──────────────────────────────── */
+.fx-diagram svg text.th { font-size: 12px; font-weight: 700; fill: #1a1a1a; }
+.fx-diagram svg text.ts { font-size: 11px; fill: #444; }
+.fx-diagram svg g.c-gray rect   { fill: #f8f9fa; stroke: #d0d0d0; }
+.fx-diagram svg g.c-gray text   { fill: #333; }
+.fx-diagram svg g.c-purple rect { fill: #f0eeff; stroke: #534AB7; }
+.fx-diagram svg g.c-purple text { fill: #534AB7; }
+.fx-diagram svg g.c-teal rect   { fill: #e6f5f1; stroke: #085041; }
+.fx-diagram svg g.c-teal text   { fill: #085041; }
+.fx-diagram svg g.c-coral rect  { fill: #fff0ec; stroke: #993C1D; }
+.fx-diagram svg g.c-coral text  { fill: #993C1D; }
+.fx-diagram svg g.c-amber rect  { fill: #FEF3C7; stroke: #D97706; }
+.fx-diagram svg g.c-amber text  { fill: #92400E; }
+.fx-diagram svg g.c-blue rect   { fill: #EFF6FF; stroke: #1D4ED8; }
+.fx-diagram svg g.c-blue text   { fill: #1E3A8A; }
+
+/* ── Note Payable diagram SVG styles ───────────────────── */
+.note-diagram svg text.th { font-size: 12px; font-weight: 700; fill: #1a1a1a; }
+.note-diagram svg text.ts { font-size: 11px; fill: #444; }
+.note-diagram svg g.c-gray rect   { fill: #f8f9fa; stroke: #d0d0d0; }
+.note-diagram svg g.c-gray text   { fill: #333; }
+.note-diagram svg g.c-purple rect { fill: #f0eeff; stroke: #534AB7; }
+.note-diagram svg g.c-purple text { fill: #534AB7; }
+.note-diagram svg g.c-teal rect   { fill: #e6f5f1; stroke: #085041; }
+.note-diagram svg g.c-teal text   { fill: #085041; }
+.note-diagram svg g.c-blue rect   { fill: #EFF6FF; stroke: #1D4ED8; }
+.note-diagram svg g.c-blue text   { fill: #1E3A8A; }
+.note-diagram svg g.c-coral rect  { fill: #fff0ec; stroke: #993C1D; }
+.note-diagram svg g.c-coral text  { fill: #993C1D; }
+.note-diagram svg g.c-amber rect  { fill: #FEF3C7; stroke: #D97706; }
+.note-diagram svg g.c-amber text  { fill: #92400E; }
+
 @layer base {
   * {
     box-sizing: border-box;
