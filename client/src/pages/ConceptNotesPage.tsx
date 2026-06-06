@@ -1762,6 +1762,73 @@ Constraint: high probability (significant reversal 없는 경우에만 포함)`}
 그 외 → modification
   - Remaining goods/services distinct → prospective (catch-up 없음)
   - 나머지 → cumulative catch-up adjustment`}</CodeBlock>
+        <svg width="100%" viewBox="0 0 680 540" role="img" style={{ marginTop: 16 }}>
+          <title>Contract modification — simplified exam version</title>
+          <desc>시험 실전용 Contract Modification 단순화 흐름도</desc>
+          <defs>
+            <marker id="arrow-cm" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </marker>
+          </defs>
+
+          <g className="c-gray">
+            <rect x="210" y="20" width="260" height="40" rx="20" strokeWidth="0.5"/>
+            <text className="th" x="340" y="40" textAnchor="middle" dominantBaseline="central">Contract modification 발생</text>
+          </g>
+          <line x1="340" y1="60" x2="340" y2="100" stroke="var(--color-text-secondary)" strokeWidth="1.5" markerEnd="url(#arrow-cm)"/>
+
+          <g className="c-gray">
+            <rect x="110" y="100" width="460" height="60" rx="8" strokeWidth="0.5"/>
+            <text className="th" x="340" y="122" textAnchor="middle" dominantBaseline="central">Distinct 재화/용역 추가 AND standalone price 충족?</text>
+            <text className="ts" x="340" y="146" textAnchor="middle" dominantBaseline="central">둘 다 Yes여야 함 — 하나라도 No → Modification</text>
+          </g>
+
+          <path d="M110 130 L50 130 L50 290" fill="none" stroke="#1D9E75" strokeWidth="1.5" markerEnd="url(#arrow-cm)"/>
+          <text className="ts" x="56" y="118">Yes</text>
+
+          <path d="M570 130 L630 130 L630 270" fill="none" stroke="#D85A30" strokeWidth="1.5" markerEnd="url(#arrow-cm)"/>
+          <text className="ts" x="576" y="118">No</text>
+
+          <g className="c-teal">
+            <rect x="20" y="290" width="190" height="80" rx="8" strokeWidth="0.5"/>
+            <text className="th" x="115" y="312" textAnchor="middle" dominantBaseline="central">Separate contract</text>
+            <text className="ts" x="115" y="330" textAnchor="middle">기존 계약 건드리지 않음</text>
+            <text className="ts" x="115" y="346" textAnchor="middle">완전히 독립적 처리</text>
+            <text className="ts" x="115" y="362" textAnchor="middle">새 PO 별도 인식</text>
+          </g>
+
+          <g className="c-gray">
+            <rect x="450" y="270" width="210" height="56" rx="8" strokeWidth="0.5"/>
+            <text className="th" x="555" y="290" textAnchor="middle" dominantBaseline="central">잔여 미이행분이 distinct?</text>
+            <text className="ts" x="555" y="312" textAnchor="middle" dominantBaseline="central">remaining POs 구별 가능</text>
+          </g>
+
+          <line x1="450" y1="298" x2="380" y2="298" stroke="var(--color-text-secondary)" strokeWidth="1" strokeDasharray="3 3"/>
+          <line x1="380" y1="298" x2="380" y2="390" stroke="#185FA5" strokeWidth="1.5" markerEnd="url(#arrow-cm)"/>
+          <text className="ts" x="384" y="290">Yes</text>
+
+          <line x1="555" y1="326" x2="555" y2="390" stroke="#993C1D" strokeWidth="1.5" markerEnd="url(#arrow-cm)"/>
+          <text className="ts" x="560" y="362">No</text>
+
+          <g className="c-blue">
+            <rect x="300" y="390" width="150" height="76" rx="8" strokeWidth="0.5"/>
+            <text className="th" x="375" y="412" textAnchor="middle" dominantBaseline="central">Prospective</text>
+            <text className="ts" x="375" y="430" textAnchor="middle">전진 적용</text>
+            <text className="ts" x="375" y="446" textAnchor="middle">잔여분 새 단가 재계산</text>
+            <text className="ts" x="375" y="462" textAnchor="middle">catch-up 없음</text>
+          </g>
+
+          <g className="c-coral">
+            <rect x="470" y="390" width="180" height="76" rx="8" strokeWidth="0.5"/>
+            <text className="th" x="560" y="412" textAnchor="middle" dominantBaseline="central">Cumulative catch-up</text>
+            <text className="ts" x="560" y="430" textAnchor="middle">기존 계약 일부로 처리</text>
+            <text className="ts" x="560" y="446" textAnchor="middle">변경 시점 소급 조정</text>
+            <text className="ts" x="560" y="462" textAnchor="middle">누적 효과 반영</text>
+          </g>
+
+          <line x1="40" y1="488" x2="640" y2="488" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="4 4"/>
+          <text className="th" x="340" y="512" textAnchor="middle" style={{ fontSize: 11 }}>Speed: distinct + standalone price 둘 다 Yes → Separate / 하나라도 No → Modification</text>
+        </svg>
       </Section>
 
       <TrapBox items={[
