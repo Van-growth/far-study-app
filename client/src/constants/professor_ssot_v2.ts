@@ -3599,6 +3599,47 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[Contributed Services 인식 원칙]\nNFP는 봉사 서비스를 받아도 무조건 수익으로 인식하지 않는다. 두 조건 동시 충족 시에만 인식.\n\n[왜 역할 기준인가]\n수익 인식의 핵심은 'NFP가 그 서비스에 경제적 가치를 지불했어야 하는가'. 간호사가 접수 업무를 하면 NFP는 전문 간호 서비스가 아닌 일반 접수 업무를 받은 것 → 전문 간호사를 고용할 필요가 없었던 역할 → otherwise 구매 조건 미충족 가능성.\n\n[Otherwise 구매 조건]\n봉사자가 없었다면 NFP가 그 서비스를 돈 주고 샀어야 하는가?\n수의사 진료 → Yes (보호소는 수의사 고용 필요)\nCPA 감사 장부 → Yes (외부 회계사 고용 필요)\nReceptionist 역할 → 기존 인력으로 커버 가능 → No일 수 있음\nDog walking → No (volunteer 없어도 직원이 할 수 있는 업무)\n\n[측정]\nFair value = normal billing rate (제공자의 정상 청구 요율)",
   },
 
+  // [NFP_024] NFP SCF — Contribution Classification: Operating vs Financing
+  // RULE    : 일반·단기 목적 → Operating / Endowment·long-lived assets → Financing
+  // TRIGGER : "restricted for endowment" / "restricted for long-lived assets" → Financing
+  // TRAP    : "Endowment activity" 선지 → SCF에 존재하지 않는 분류 / Operating 과잉 적용
+  {
+    topic_id: "NFP_024",
+    book_id: 'GN',
+    chapter_id: 'GN_CH2',
+    topic_group: 'GN_CH2_NFP',
+    sub_category_id: "U6_NFP_FINANCIAL_REPORTING",
+    card_type: 'conditional',
+    card_name: "NFP SCF — contribution classified as financing when restricted for endowment or long-lived assets",
+    rule: "NFP SCF 기부금 분류:\n\nOperating:\n- Unrestricted contributions\n- 단기 프로그램 목적 제한 기부금\n\nFinancing:\n- Endowment fund 설립/증가 목적\n- Long-lived assets 취득 목적\n→ 장기 자본 = 기업 자본 조달과 동일 성격\n\nSCF 3섹션만 존재: Operating / Investing / Financing\n→ 'Endowment activity' 섹션 없음",
+    trigger: "'restricted for establishing an endowment fund' → Financing\n'restricted for long-lived assets' → Financing\n'contributions without donor restrictions' → Operating\n'donor-restricted' → 목적 확인: 장기 목적 → Financing / 단기 → Operating",
+    trap: "A(Endowment activity): SCF에 존재하지 않는 분류 → 즉시 소거\nB(Operating): 일반 기부금은 Operating이지만 endowment 제한이면 Financing\nD(Investing): 기부금 자체는 Investing 아님\n'restricted = Financing' 과잉 적용: 단기 프로그램 제한은 Operating 유지",
+    one_sentence: "일반 기부금 → Operating / endowment·장기자산 목적 제한 → Financing / Endowment activity 선지 → 즉시 소거.",
+    speed: "'restricted for endowment' or 'long-lived assets' → Financing / 그 외 → Operating",
+    example: "기부금 $100,000 (제한 없음) → Operating\n기부금 $50,000 (endowment 설립) → Financing\n기부금 $30,000 (특정 프로그램 운영) → Operating\n기부금 $80,000 (건물 취득 목적) → Financing",
+    context_background: "[Endowment 기부금이 Financing인 이유]\nEndowment = 원금 영구 보존 장기 자본 → 기업 주식 발행·차입과 동일 성격 → Financing\n\n[NFP SCF = 영리기업 동일 기준]\n3섹션: Operating / Investing / Financing\n'Endowment activity' 섹션 존재하지 않음 → 시험 트랩",
+  },
+
+  // [NFP_025] NFP Overview — Revenue, Condition vs Restriction, Functional Expense, Reclassification
+  // RULE    : Revenue 5가지 / Condition=인식여부 / Restriction=인식후분류 / Reclass=total 불변
+  // TRIGGER : NFP 전반적 구조 문제 / Statement of Activities 구성 문제
+  // TRAP    : Condition과 Restriction 혼동 / Reclassification이 total net assets 변화시킨다고 착각
+  {
+    topic_id: "NFP_025",
+    book_id: 'GN',
+    chapter_id: 'GN_CH2',
+    topic_group: 'GN_CH2_NFP',
+    sub_category_id: "U6_NFP_FINANCIAL_REPORTING",
+    card_type: 'concept',
+    card_name: "NFP overview — revenue types, condition vs restriction, functional expense, reclassification",
+    rule: "【Revenue — 5가지 종류】\n① Contributions — 일방적 기부 (ASC 958)\n② Exchange transactions — 대가 있는 거래 (ASC 606)\n③ Investment income — 배당·이자·자본이득\n④ Program service revenue — 수강료, 입장료\n⑤ Special events — 갈라 디너, 경매\n\nSupport = 반대급부 없는 것 (Contributions, Grants)\nRevenue = 서비스 대가 (Exchange, Program, Special events)\n\n【Condition vs Restriction — 핵심 구분】\nCondition = Revenue Recognition 판단 (인식 여부)\n→ 조건 충족 전: no revenue / 충족 후: 인식 가능\n\nRestriction = 인식 후 Net Asset 분류\n→ With donor restriction: 목적·기간 제한\n→ Without donor restriction: 자유 사용\n\n【Functional vs Nature Expense】\nNature (성격): Salaries / Rent / Depreciation\nFunctional (기능): Program services / M&G / Fundraising\n→ ASC 958: 두 방식 모두 공시 필수 (Matrix 표)\n\n【Reclassification — 제한 해제】\nWith DR↓ + Without DR↑ → Total net assets 불변\nDr. Net assets with DR\nCr. Net assets without DR\n→ Statement of Activities 두 컬럼에 반대 부호 표시",
+    trigger: "'net assets released from restriction' → Reclassification → total 불변\n'statement of activities' 구성 → Revenue·Support·Expense·Reclassification 구조\n'functional expense' → 3가지 분류 + Nature 교차 공시\n'conditional' contribution → 조건 충족 전 인식 금지",
+    trap: "Condition과 Restriction 혼동:\n→ Condition = 인식 여부 / Restriction = 인식 후 분류\n→ Conditional contribution은 조건 충족 전 어느 Net Asset에도 없음\n\nReclassification = total net assets 변화:\n→ With DR↓ = Without DR↑ → Total 불변\n→ 두 컬럼 합계 항상 $0\n\nExpense = With DR 컬럼에도 표시:\n→ Expense는 Without DR 컬럼에만 표시\n\nSpecial events = revenue만 인식:\n→ Revenue + Expense 동시 인식 (Gross 또는 Net 표시)",
+    one_sentence: "Condition=인식여부 / Restriction=인식후분류 / Reclass=total불변 / Expense=Without DR만 / Special events=Revenue+Expense 동시.",
+    speed: "Reclassification → total net assets 불변 확인\nConditional → 충족 전 어느 컬럼에도 없음\nExpense → Without DR 컬럼만",
+    context_background: "[Statement of Activities 구조]\nWithout DR | With DR | Total\n─────────────────────────────\nRevenue & Support\n  Contributions    500  200  700\n  Exchange trans   150   —   150\n  Program svc rev   80   —    80\n  Investment inc    30   —    30\n  Special events    40   —    40\n  Released from restriction +50 (50)   —  ← Reclass\n─────────────────────────────\nTotal revenue     850  150 1,000\nExpenses\n  Program svc    (600)  —  (600)\n  M&G            (150)  —  (150)\n  Fundraising     (50)  —   (50)\n─────────────────────────────\nChange in NA       50  150   200\n\n[Exchange transaction = With DR 없음]\nDonor restriction은 contribution 개념\nExchange transaction은 대가 받고 서비스 제공 → DR 없음\n\n[Special events 동시 인식]\nGala dinner 티켓 $100 (원가 $30)\n→ Revenue $100 + Expense $30 동시 인식\nGross 또는 Net 표시 모두 허용",
+  },
+
   // [NFP_015] NFP hospital — net patient service revenue
   // RULE    : Net = Gross − charity care − contractual adj / Provision for credit losses → expense (차감 아님)
   // TRIGGER : 'net patient service revenue' → Gross − charity care − contractual adj

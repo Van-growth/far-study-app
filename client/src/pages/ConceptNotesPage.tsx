@@ -2088,6 +2088,29 @@ function NfpContent() {
         />
         <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Endowment 원금 = 절대 사용 불가. 투자 수익만 지출 가능.</p>
       </Section>
+
+      <Section title="0. Revenue — 5가지 종류">
+        <Table
+          headers={['종류', '설명', '예시']}
+          rows={[
+            ['① Contributions', '일방적 기부, 반대급부 없음', 'Donated cash, property'],
+            ['② Exchange transactions', '서비스 대가 (ASC 606 적용)', '수강료, 컨설팅 대가'],
+            ['③ Investment income', '배당·이자·자본이득', 'Endowment 투자수익'],
+            ['④ Program service revenue', '사업 수행 대가', '입장료, 멤버십, 수강료'],
+            ['⑤ Special events', '특별 행사 수익', '갈라 디너, 경매'],
+          ]}
+        />
+        <p style={{ marginTop: 12, fontWeight: 600 }}>Support vs Revenue:</p>
+        <Table
+          headers={['구분', '해당 항목', '특징']}
+          rows={[
+            ['Support', 'Contributions, Grants', '반대급부 없음 (ASC 958)'],
+            ['Revenue', 'Exchange, Program, Special events', '서비스·재화 대가'],
+          ]}
+        />
+        <p style={{ color: '#555', marginTop: 8, fontSize: 13 }}>Special events: Revenue + Expense 동시 인식 (Gross 또는 Net 표시 모두 허용)</p>
+      </Section>
+
       <Section title="1. Net Assets 분류">
         <Table
           headers={['분류', '설명', '예시']}
@@ -2099,15 +2122,47 @@ function NfpContent() {
         />
       </Section>
 
-      <Section title="2. Contribution 인식">
-        <CodeBlock>{`Unconditional → 즉시 인식 (조건 없음)
+      <Section title="2. Contribution 인식 — Condition vs Restriction">
+        <svg width="100%" viewBox="0 0 680 500" role="img" style={{ marginBottom: 16 }}>
+          <title>NFP Condition vs Restriction</title>
+          <desc>Condition과 Restriction 계층 구조</desc>
+          <defs>
+            <marker id="arrow-nfp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </marker>
+            <marker id="arrow-dash-nfp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="#888780" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </marker>
+          </defs>
+          <g className="c-amber"><rect x="20" y="20" width="290" height="36" rx="8" strokeWidth="0.5"/><text className="th" x="165" y="38" textAnchor="middle" dominantBaseline="central">Step 1 — Condition (인식 여부)</text></g>
+          <line x1="165" y1="56" x2="165" y2="86" stroke="#BA7517" strokeWidth="1.5" markerEnd="url(#arrow-nfp)"/>
+          <g className="c-amber"><rect x="20" y="86" width="128" height="72" rx="8" strokeWidth="0.5"/><text className="th" x="84" y="108" textAnchor="middle" dominantBaseline="central">Conditional</text><text className="ts" x="84" y="126" textAnchor="middle">조건 있음</text><text className="ts" x="84" y="142" textAnchor="middle">→ 충족 전 인식 금지</text></g>
+          <g className="c-teal"><rect x="182" y="86" width="128" height="72" rx="8" strokeWidth="0.5"/><text className="th" x="246" y="108" textAnchor="middle" dominantBaseline="central">Unconditional</text><text className="ts" x="246" y="126" textAnchor="middle">조건 없음</text><text className="ts" x="246" y="142" textAnchor="middle">→ 즉시 인식 가능</text></g>
+          <line x1="84" y1="158" x2="84" y2="190" stroke="#BA7517" strokeWidth="1.5" markerEnd="url(#arrow-nfp)"/>
+          <g className="c-gray"><rect x="20" y="190" width="128" height="52" rx="8" strokeWidth="0.5"/><text className="th" x="84" y="208" textAnchor="middle" dominantBaseline="central">조건 충족 후</text><text className="ts" x="84" y="228" textAnchor="middle">→ Step 2로 이동</text></g>
+          <line x1="246" y1="158" x2="246" y2="190" stroke="#1D9E75" strokeWidth="1.5" markerEnd="url(#arrow-nfp)"/>
+          <g className="c-teal"><rect x="182" y="190" width="128" height="52" rx="8" strokeWidth="0.5"/><text className="th" x="246" y="208" textAnchor="middle" dominantBaseline="central">즉시 Step 2</text><text className="ts" x="246" y="228" textAnchor="middle">→ 바로 분류</text></g>
+          <path d="M148 216 L340 216 L340 38" fill="none" stroke="#888780" strokeWidth="1" strokeDasharray="5 4" markerEnd="url(#arrow-dash-nfp)"/>
+          <g className="c-gray"><rect x="20" y="264" width="290" height="80" rx="8" strokeWidth="0.5"/><text className="th" x="165" y="284" textAnchor="middle" dominantBaseline="central">예시</text><text className="ts" x="165" y="302" textAnchor="middle">Conditional: &quot;건물 완공 시 $100K 지급&quot;</text><text className="ts" x="165" y="318" textAnchor="middle">→ 완공 전: no revenue</text><text className="ts" x="165" y="334" textAnchor="middle">→ 완공 후: 인식 + Step 2 분류</text></g>
+          <line x1="328" y1="20" x2="328" y2="468" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="4 4"/>
+          <g className="c-teal"><rect x="342" y="20" width="318" height="36" rx="8" strokeWidth="0.5"/><text className="th" x="501" y="38" textAnchor="middle" dominantBaseline="central">Step 2 — Restriction (인식 후 분류)</text></g>
+          <line x1="501" y1="56" x2="501" y2="86" stroke="#0F6E56" strokeWidth="1.5" markerEnd="url(#arrow-nfp)"/>
+          <g className="c-purple"><rect x="342" y="86" width="148" height="118" rx="8" strokeWidth="0.5"/><text className="th" x="416" y="108" textAnchor="middle" dominantBaseline="central">With donor restriction</text><text className="ts" x="416" y="126" textAnchor="middle">목적·기간 제한 있음</text><text className="ts" x="416" y="142" textAnchor="middle">예: 장학금 기부</text><text className="ts" x="416" y="158" textAnchor="middle">예: endowment</text><text className="ts" x="416" y="176" textAnchor="middle">→ 해제 시 reclassify</text><text className="ts" x="416" y="196" textAnchor="middle">→ SCF: Financing</text></g>
+          <g className="c-teal"><rect x="512" y="86" width="148" height="118" rx="8" strokeWidth="0.5"/><text className="th" x="586" y="108" textAnchor="middle" dominantBaseline="central">Without donor restriction</text><text className="ts" x="586" y="126" textAnchor="middle">제한 없음</text><text className="ts" x="586" y="142" textAnchor="middle">자유 사용 가능</text><text className="ts" x="586" y="158" textAnchor="middle">예: 일반 기부금</text><text className="ts" x="586" y="176" textAnchor="middle">→ 즉시 사용</text><text className="ts" x="586" y="196" textAnchor="middle">→ SCF: Operating</text></g>
+          <g className="c-gray"><rect x="342" y="224" width="318" height="76" rx="8" strokeWidth="0.5"/><text className="th" x="501" y="244" textAnchor="middle" dominantBaseline="central">Reclassification — 제한 해제</text><text className="ts" x="501" y="262" textAnchor="middle">With DR↓ + Without DR↑ → Total net assets 불변</text><text className="ts" x="501" y="278" textAnchor="middle">Dr. Net assets with DR / Cr. Net assets without DR</text><text className="ts" x="501" y="294" textAnchor="middle">Statement of Activities 두 컬럼 반대 부호 표시</text></g>
+          <g className="c-gray"><rect x="342" y="318" width="318" height="62" rx="8" strokeWidth="0.5"/><text className="th" x="501" y="338" textAnchor="middle" dominantBaseline="central">SCF — Contribution 분류</text><text className="ts" x="501" y="356" textAnchor="middle">일반·단기 목적 제한 → Operating</text><text className="ts" x="501" y="372" textAnchor="middle">Endowment·long-lived assets → Financing</text></g>
+          <rect x="20" y="400" width="640" height="28" rx="6" stroke="var(--color-border-tertiary)" strokeWidth="0.5" fill="var(--color-background-secondary)"/><text className="ts" x="340" y="418" textAnchor="middle">Trap: Condition = 인식 여부 / Restriction = 인식 후 분류 — 완전히 다른 개념 / Reclassification = total net assets 불변</text>
+          <rect x="20" y="436" width="640" height="24" rx="6" stroke="var(--color-border-tertiary)" strokeWidth="0.5" fill="var(--color-background-secondary)"/><text className="ts" x="340" y="452" textAnchor="middle">SCF Trap: &quot;Endowment activity&quot; 선지 → SCF에 존재하지 않는 분류 → 즉시 소거</text>
+        </svg>
+        <CodeBlock>{`Unconditional → 즉시 인식
   Dr. Receivable / Cr. Contribution Revenue (without restriction)
 
 Conditional → 조건 충족 시 인식
-  조건 충족 전: no recognition
+  조건 충족 전: no recognition (어느 컬럼에도 없음)
 
-Restriction 해제:
-  Dr. Net Assets with DR / Cr. Net Assets without DR`}</CodeBlock>
+Restriction 해제 (Reclassification):
+  Dr. Net Assets with DR / Cr. Net Assets without DR
+  → Total net assets 불변`}</CodeBlock>
       </Section>
 
       <Section title="3. Endowment">
@@ -2116,11 +2171,145 @@ Restriction 해제:
 Investment income → without restriction (별도 지정 없는 경우)`}</CodeBlock>
       </Section>
 
-      <Section title="4. Functional Expense 분류">
-        <CodeBlock>{`Program services (프로그램 비용)
-Management & General (관리 운영)
-Fundraising (모금 활동)
-→ 3개 열로 분류 공시 필수`}</CodeBlock>
+      <Section title="3-1. Statement of Activities — 구조">
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 520 }}>
+            <thead>
+              <tr style={{ background: 'var(--color-background-secondary)', borderBottom: '1.5px solid var(--color-border-secondary)' }}>
+                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}></th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600 }}>Without DR</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600 }}>With DR</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600 }}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colSpan={4} style={{ padding: '6px 12px', fontWeight: 600, color: '#444', borderBottom: '1px solid var(--color-border-tertiary)' }}>Revenue &amp; Support</td></tr>
+              {[
+                ['Contributions', '500,000', '200,000', '700,000'],
+                ['Exchange transactions', '150,000', '—', '150,000'],
+                ['Program service revenue', '80,000', '—', '80,000'],
+                ['Investment income', '30,000', '—', '30,000'],
+                ['Special events', '40,000', '—', '40,000'],
+              ].map(([label, a, b, c]) => (
+                <tr key={label} style={{ borderBottom: '1px solid var(--color-border-tertiary)' }}>
+                  <td style={{ padding: '5px 12px', paddingLeft: 24 }}>{label}</td>
+                  <td style={{ padding: '5px 12px', textAlign: 'right' }}>{a}</td>
+                  <td style={{ padding: '5px 12px', textAlign: 'right' }}>{b}</td>
+                  <td style={{ padding: '5px 12px', textAlign: 'right' }}>{c}</td>
+                </tr>
+              ))}
+              <tr style={{ borderBottom: '1px solid var(--color-border-tertiary)', color: '#185FA5' }}>
+                <td style={{ padding: '5px 12px', paddingLeft: 24 }}>Net assets released from restriction</td>
+                <td style={{ padding: '5px 12px', textAlign: 'right' }}>+50,000</td>
+                <td style={{ padding: '5px 12px', textAlign: 'right' }}>(50,000)</td>
+                <td style={{ padding: '5px 12px', textAlign: 'right', fontWeight: 600 }}>—</td>
+              </tr>
+              <tr style={{ borderBottom: '2px solid var(--color-border-secondary)', fontWeight: 600, background: 'var(--color-background-secondary)' }}>
+                <td style={{ padding: '6px 12px' }}>Total revenue</td>
+                <td style={{ padding: '6px 12px', textAlign: 'right' }}>850,000</td>
+                <td style={{ padding: '6px 12px', textAlign: 'right' }}>150,000</td>
+                <td style={{ padding: '6px 12px', textAlign: 'right' }}>1,000,000</td>
+              </tr>
+              <tr><td colSpan={4} style={{ padding: '6px 12px', fontWeight: 600, color: '#444', borderBottom: '1px solid var(--color-border-tertiary)' }}>Expenses (Without DR 컬럼만)</td></tr>
+              {[
+                ['Program services', '(600,000)', '—', '(600,000)'],
+                ['Management & General', '(150,000)', '—', '(150,000)'],
+                ['Fundraising', '(50,000)', '—', '(50,000)'],
+              ].map(([label, a, b, c]) => (
+                <tr key={label} style={{ borderBottom: '1px solid var(--color-border-tertiary)' }}>
+                  <td style={{ padding: '5px 12px', paddingLeft: 24 }}>{label}</td>
+                  <td style={{ padding: '5px 12px', textAlign: 'right' }}>{a}</td>
+                  <td style={{ padding: '5px 12px', textAlign: 'right' }}>{b}</td>
+                  <td style={{ padding: '5px 12px', textAlign: 'right' }}>{c}</td>
+                </tr>
+              ))}
+              <tr style={{ borderBottom: '2px solid var(--color-border-secondary)', fontWeight: 600, background: 'var(--color-background-secondary)' }}>
+                <td style={{ padding: '6px 12px' }}>Change in net assets</td>
+                <td style={{ padding: '6px 12px', textAlign: 'right' }}>50,000</td>
+                <td style={{ padding: '6px 12px', textAlign: 'right' }}>150,000</td>
+                <td style={{ padding: '6px 12px', textAlign: 'right' }}>200,000</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid var(--color-border-tertiary)' }}>
+                <td style={{ padding: '5px 12px' }}>Net assets, beginning</td>
+                <td style={{ padding: '5px 12px', textAlign: 'right' }}>400,000</td>
+                <td style={{ padding: '5px 12px', textAlign: 'right' }}>100,000</td>
+                <td style={{ padding: '5px 12px', textAlign: 'right' }}>500,000</td>
+              </tr>
+              <tr style={{ fontWeight: 700, background: 'var(--color-background-secondary)' }}>
+                <td style={{ padding: '6px 12px' }}>Net assets, ending</td>
+                <td style={{ padding: '6px 12px', textAlign: 'right' }}>450,000</td>
+                <td style={{ padding: '6px 12px', textAlign: 'right' }}>250,000</td>
+                <td style={{ padding: '6px 12px', textAlign: 'right' }}>700,000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {[
+            'Reclassification Total = $0 → total net assets 불변',
+            'Expense = Without DR 컬럼에만 표시',
+            'Exchange transaction = With DR 없음',
+            'Special events = Revenue + Expense 동시 인식',
+          ].map((pt, i) => (
+            <p key={i} style={{ fontSize: 13, color: '#555', paddingLeft: 12, borderLeft: '3px solid #c8c8c0' }}>{pt}</p>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="4. Functional Expense 분류 — Nature × Function Matrix">
+        <p style={{ marginBottom: 8 }}><strong>Functional (기능별):</strong> Program services / Management &amp; General / Fundraising</p>
+        <p style={{ marginBottom: 12 }}><strong>Nature (성격별):</strong> Salaries / Rent / Depreciation / Supplies</p>
+        <p style={{ marginBottom: 8, color: '#555', fontSize: 13 }}>ASC 958: Functional + Nature 두 방식 모두 공시 필수 (Matrix 표)</p>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 480 }}>
+            <thead>
+              <tr style={{ background: 'var(--color-background-secondary)', borderBottom: '1.5px solid var(--color-border-secondary)' }}>
+                <th style={{ padding: '7px 12px', textAlign: 'left', fontWeight: 600 }}>Nature \\ Function</th>
+                <th style={{ padding: '7px 12px', textAlign: 'right', fontWeight: 600 }}>Program</th>
+                <th style={{ padding: '7px 12px', textAlign: 'right', fontWeight: 600 }}>M&amp;G</th>
+                <th style={{ padding: '7px 12px', textAlign: 'right', fontWeight: 600 }}>Fundraising</th>
+                <th style={{ padding: '7px 12px', textAlign: 'right', fontWeight: 600 }}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ['Salaries', '350,000', '100,000', '50,000', '500,000'],
+                ['Rent', '60,000', '20,000', '10,000', '90,000'],
+                ['Depreciation', '40,000', '15,000', '5,000', '60,000'],
+              ].map(([label, a, b, c, d]) => (
+                <tr key={label} style={{ borderBottom: '1px solid var(--color-border-tertiary)' }}>
+                  <td style={{ padding: '5px 12px' }}>{label}</td>
+                  <td style={{ padding: '5px 12px', textAlign: 'right' }}>{a}</td>
+                  <td style={{ padding: '5px 12px', textAlign: 'right' }}>{b}</td>
+                  <td style={{ padding: '5px 12px', textAlign: 'right' }}>{c}</td>
+                  <td style={{ padding: '5px 12px', textAlign: 'right', fontWeight: 600 }}>{d}</td>
+                </tr>
+              ))}
+              <tr style={{ fontWeight: 700, background: 'var(--color-background-secondary)', borderTop: '1.5px solid var(--color-border-secondary)' }}>
+                <td style={{ padding: '6px 12px' }}>Total</td>
+                <td style={{ padding: '6px 12px', textAlign: 'right' }}>450,000</td>
+                <td style={{ padding: '6px 12px', textAlign: 'right' }}>135,000</td>
+                <td style={{ padding: '6px 12px', textAlign: 'right' }}>65,000</td>
+                <td style={{ padding: '6px 12px', textAlign: 'right' }}>650,000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </Section>
+
+      <Section title="5. Statement of Cash Flows — Contribution 분류">
+        <Table
+          headers={['분류', '해당 기부금', '이유']}
+          rows={[
+            ['Operating', '제한 없는 기부금 / 단기 프로그램 목적', '단기 운영 관련'],
+            ['Financing', 'Endowment 설립·증가 목적 / Long-lived assets 취득 목적', '장기 자본 조달 성격'],
+          ]}
+        />
+        <p style={{ marginTop: 12, color: '#555', fontSize: 13 }}>SCF 3섹션: Operating / Investing / Financing — "Endowment activity" 섹션 없음.</p>
+        <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', marginTop: 12 }}>
+          <p style={{ fontWeight: 700, color: '#dc2626', marginBottom: 4 }}>Trap</p>
+          <p style={{ fontSize: 13, color: '#555' }}>"Endowment activity" 선지 → SCF에 존재하지 않는 분류 → 즉시 소거</p>
+        </div>
       </Section>
 
       <DefaultBox items={[
@@ -2128,9 +2317,12 @@ Fundraising (모금 활동)
         { default: 'Conditional contribution: 인식 안 함', changed: '조건 충족 시 인식' },
       ]} />
       <TrapBox items={[
-        'Conditional contribution → 조건 충족 전 인식 금지',
+        'Conditional contribution → 조건 충족 전 어느 컬럼에도 없음',
         'Endowment 원금 지출 = 절대 불가',
         'Exchange transaction → ASC 606 적용 (contribution 아님)',
+        'Reclassification → total net assets 불변 (With DR↓ = Without DR↑)',
+        'Expense → Without DR 컬럼에만 표시',
+        '"Endowment activity" SCF 선지 → 즉시 소거',
       ]} />
     </div>
   )
