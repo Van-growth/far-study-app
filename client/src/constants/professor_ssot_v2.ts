@@ -1137,6 +1137,87 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[할인 채권 투자 BV 변동 원리]\n할인 취득 = face보다 싸게 삼\n→ 만기까지 보유하면 face 전액 회수\n→ 그 차액(discount)을 보유 기간에 걸쳐 이자수익으로 인식 (amortization)\n→ 상각할수록 BV가 face 방향으로 올라감\n\n[매각 시 gain 구조]\n프리미엄으로 팔면: face보다 비싸게 팔았으니 premium만큼 이익\n아직 상각 안 된 discount만큼도 추가 이익 (싸게 산 것의 잔여 효과)\n→ Gain = Premium + Unamortized discount\n\n[상각이 Gain에 미치는 영향]\n상각 많이 할수록 BV 증가 → Unamortized discount 감소 → Gain 감소\n직관: 이미 이자수익으로 인식한 만큼은 처분이익에서 제외",
   },
 
+  // ── INVEST_009 ~ INVEST_012 ────────────────────────────────────────────────
+  {
+    topic_id: "INVEST_009",
+    book_id: 'AA',
+    chapter_id: 'AA_CH5',
+    topic_group: 'AA_CH5_INVEST',
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
+    card_type: 'concept',
+    card_name: "Marketable Securities — Debt vs Equity 전체 구조",
+    rule: "Debt Securities → 보유 의도에 따라 3분류 (HTM / AFS / Trading)\n  HTM: Amortized cost / No G/L\n  AFS: Fair value / Unrealized → OCI\n  Trading: Fair value / Unrealized → Net Income\n\nEquity Securities → 분류 없음\n  항상 Fair value 측정\n  Unrealized → 항상 Net Income\n  재분류 개념 없음\n\n이자수익 → G/L 아님 / 모든 분류에서 Net Income (operating income 아님)",
+    trigger: "marketable securities | debt securities | equity securities | HTM | AFS | trading | classification",
+    trap: "Equity도 AFS 분류 가능 → 불가 / 이자수익을 G/L로 분류 → Revenue임 / Equity unrealized → OCI → 항상 NI",
+    speed: "Debt → 분류 3개 (보유 의도 기준) / Equity → 분류 없음, 항상 FV+NI",
+    context_background: "채권(Debt)은 만기와 이자가 있어서 '얼마나 오래 들고 있을 거냐'에 따라 HTM/AFS/Trading 3가지로 나뉨. 주식(Equity)은 만기가 없고 시장 가격이 전부 — 분류 없이 항상 FV. 이자수익은 자산 가치 변동이 아니라 자금 대여에 대한 대가(Revenue)이므로 G/L이 아님 → operating income 아닌 net income에만 영향.",
+    one_sentence: "Debt = 보유 의도로 3분류 / Equity = 항상 FV+NI / 이자수익 = Revenue(G/L 아님)",
+    svg_visualization: `<svg width="100%" viewBox="0 0 680 340" role="img">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+  <g class="c-gray"><rect x="240" y="20" width="200" height="44" rx="8" stroke-width="0.5"/><text class="th" x="340" y="46" text-anchor="middle" dominant-baseline="central">Marketable Securities</text></g>
+  <line x1="290" y1="64" x2="180" y2="108" class="arr" marker-end="url(#arr)" stroke="#7F77DD"/>
+  <line x1="390" y1="64" x2="500" y2="108" class="arr" marker-end="url(#arr)" stroke="#1D9E75"/>
+  <g class="c-purple"><rect x="80" y="108" width="200" height="44" rx="8" stroke-width="0.5"/><text class="th" x="180" y="134" text-anchor="middle" dominant-baseline="central">Debt Securities</text></g>
+  <g class="c-teal"><rect x="400" y="108" width="200" height="44" rx="8" stroke-width="0.5"/><text class="th" x="500" y="134" text-anchor="middle" dominant-baseline="central">Equity Securities</text></g>
+  <text class="ts" x="500" y="172" text-anchor="middle">항상 Fair Value</text>
+  <text class="ts" x="500" y="188" text-anchor="middle">Unrealized → Net Income</text>
+  <text class="ts" x="500" y="204" text-anchor="middle">재분류 없음</text>
+  <line x1="130" y1="152" x2="80" y2="196" class="arr" marker-end="url(#arr)" stroke="#534AB7"/>
+  <line x1="180" y1="152" x2="180" y2="196" class="arr" marker-end="url(#arr)" stroke="#534AB7"/>
+  <line x1="230" y1="152" x2="280" y2="196" class="arr" marker-end="url(#arr)" stroke="#534AB7"/>
+  <g class="c-purple"><rect x="20" y="196" width="120" height="52" rx="8" stroke-width="0.5"/><text class="th" x="80" y="216" text-anchor="middle">HTM</text><text class="ts" x="80" y="232" text-anchor="middle">Amortized cost</text><text class="ts" x="80" y="246" text-anchor="middle">No G/L</text></g>
+  <g class="c-purple"><rect x="120" y="196" width="120" height="52" rx="8" stroke-width="0.5"/><text class="th" x="180" y="216" text-anchor="middle">AFS</text><text class="ts" x="180" y="232" text-anchor="middle">Fair value</text><text class="ts" x="180" y="246" text-anchor="middle">Unrealized → OCI</text></g>
+  <g class="c-purple"><rect x="220" y="196" width="120" height="52" rx="8" stroke-width="0.5"/><text class="th" x="280" y="216" text-anchor="middle">Trading</text><text class="ts" x="280" y="232" text-anchor="middle">Fair value</text><text class="ts" x="280" y="246" text-anchor="middle">Unrealized → NI</text></g>
+  <line x1="180" y1="248" x2="180" y2="280" class="arr" marker-end="url(#arr)" stroke="#534AB7"/>
+  <g class="c-coral"><rect x="80" y="280" width="200" height="36" rx="8" stroke-width="0.5"/><text class="th" x="180" y="301" text-anchor="middle" dominant-baseline="central">Reclassification</text></g>
+</svg>`,
+  },
+  {
+    topic_id: "INVEST_010",
+    book_id: 'AA',
+    chapter_id: 'AA_CH5',
+    topic_group: 'AA_CH5_INVEST',
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
+    card_type: 'concept',
+    card_name: "Debt securities — HTM / AFS / Trading 측정기준과 G/L 처리",
+    rule: "HTM  → Amortized cost  / No G/L in comprehensive income\nAFS  → Fair value      / Unrealized → OCI (realized → NI when sold)\nTrading → Fair value   / Unrealized → Net Income (즉시)\n\n이자수익: 모든 분류에서 Net Income (G/L 아님, Revenue)",
+    trigger: "HTM | AFS | trading | amortized cost | fair value | OCI | unrealized | debt securities | classification",
+    trap: "AFS unrealized → NI 아님 → OCI\nTrading unrealized → OCI 아님 → NI 즉시\nHTM fair value 상승 → 무시, 장부 안 바꿈\n이자수익 = Revenue (G/L 아님) → operating income 아님",
+    speed: "HTM=AC·No G/L / AFS=FV·OCI / Trading=FV·NI",
+    context_background: "HTM: '만기까지 들고 갈 거야' 선언 → FV 조정 의미 없음 → amortized cost 고정\nAFS: '언젠가 팔 수 있어' → FV 조정은 하되 NI 왜곡 방지 → OCI에 파킹\nTrading: '단기 시세차익 목적' → FV 변동이 곧 성과 → 즉시 NI\n이자수익은 자산 가치 변동(G/L)이 아닌 자금 대여 대가(Revenue) → non-operating revenue로 NI에 포함",
+    one_sentence: "HTM=AC·No G/L / AFS=FV·OCI / Trading=FV·NI / 이자수익=Revenue",
+  },
+  {
+    topic_id: "INVEST_011",
+    book_id: 'AA',
+    chapter_id: 'AA_CH5',
+    topic_group: 'AA_CH5_INVEST',
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
+    card_type: 'concept',
+    card_name: "Equity securities — always FV, always net income",
+    rule: "Equity securities → 분류 없음\n① 항상 Fair value 측정\n② Unrealized G/L → 항상 Net Income\n③ 재분류 개념 없음\n④ Current vs Non-current = 매각 의도 기준\n   - 1년 내 매각 예정 → Current\n   - 무기한 보유 or 장기 보유 → Non-current",
+    trigger: "equity securities | stock | unrealized | net income | fair value | current non-current | equity investment",
+    trap: "Equity도 AFS 분류 가능 → 불가, equity는 분류 없음\nEquity unrealized → OCI → 항상 NI\n매각 시 realized G/L도 Net income\nCurrent/Non-current = 만기 아님, 매각 의도 기준",
+    speed: "Equity → 분류 없음 / 항상 FV+NI / Current = 1년 내 매각 예정",
+    context_background: "주식(Equity)은 만기가 없고 배당이 불확실해서 '얼마나 들고 있을 거냐'로 측정 방법을 나누는 게 의미 없음. 그래서 분류 없이 항상 FV 측정 + unrealized → NI. Current/Non-current 구분은 만기가 없으니 매각 의도로만 결정.",
+    one_sentence: "Equity = 항상 FV / Unrealized → 항상 NI / 재분류 없음",
+  },
+  {
+    topic_id: "INVEST_012",
+    book_id: 'AA',
+    chapter_id: 'AA_CH5',
+    topic_group: 'AA_CH5_INVEST',
+    sub_category_id: "U5_FINANCIAL_INSTRUMENTS",
+    card_type: 'conditional',
+    card_name: "Reclassification of debt securities — 방향별 OCI 처리",
+    rule: "HTM → Trading : FV 전환 / OCI 잔액 → 즉시 Net Income\nHTM → AFS    : FV 전환 / OCI 잔액 → 즉시 OCI 인식\nAFS → Trading : FV 유지 / OCI 잔액 → 즉시 Net Income\nAFS → HTM  ★★: AC 전환 / OCI 잔액 → 잔여기간 이자수익 통해 분할 상각\nTrading → 다른 분류: 극히 드묾\n\n[AFS → HTM이 특별한 이유]\nHTM = amortized cost 측정 → FV 조정 안 함\nOCI 잔액 즉시 제거 시 HTM 논리와 모순\n→ 해결: 이자수익 조정 형태로 만기까지 분할 상각 (premium/discount 상각과 동일 논리)",
+    trigger: "reclassification | HTM to trading | AFS to HTM | AFS to trading | OCI | reclassify | transfer",
+    trap: "AFS → HTM: OCI 즉시 NI → 오답 (분할 상각)\nAFS → HTM: OCI 즉시 제거 → 오답 (잔여기간 상각)\nAFS → Trading: OCI 분할 상각 → 오답 (즉시 NI)\nHTM → AFS: OCI 인식 없음 → 오답 (재분류 시점 FV-AC 차이 OCI 인식 필요)",
+    speed: "AFS→HTM = OCI 즉시 X → 이자수익 통해 만기까지 분할 상각 / 나머지는 즉시 처리",
+    context_background: "재분류의 핵심 질문 2가지:\n①측정기준이 바뀌는가? (FV ↔ Amortized cost)\n②기존 OCI 잔액을 어떻게 처리하는가?\n\nAFS → HTM이 가장 까다로운 이유: HTM은 amortized cost인데 OCI에 잔액이 남아있음. 즉시 제거하면 HTM 원칙(FV 무시)과 모순 → 이자수익 조정으로 서서히 상각하는 방식으로 해결. Premium/discount 상각과 동일한 논리.",
+    one_sentence: "AFS→HTM = OCI 분할 상각 (★유일한 예외) / 나머지 재분류 = OCI 즉시 처리",
+  },
+
   // [INVEST_007] Trading Security Bond — Interest Income with Discount Amortization (SL)
   // RULE    : 이자수익 = Face × Coupon% + Discount SL 상각. FV 변동 → 별도 NI. Trading/AFS/HTM 계산 동일.
   // TRIGGER : "trading" + "discount" + "straight-line" → 이자수익 = Coupon + 상각 / FV 정보 → 별도 항목

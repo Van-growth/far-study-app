@@ -34,6 +34,7 @@ const CATEGORIES = [
   { id: 'tax',         label: 'Deferred Tax',                 groups: ['IA_CH10_TAX'] },
   { id: 'eps',         label: 'EPS',                          groups: ['IA_CH9_EPS'] },
   { id: 'scf',         label: 'SCF',                          groups: ['IA_CH7_SCF'] },
+  { id: 'finassets',   label: '금융자산 & 투자',               groups: ['AA_CH5_INVEST'] },
   { id: 'investments', label: 'Investments & Equity Method',  groups: ['IA_CH6_INVEST'] },
   { id: 'equity',        label: "Stockholders' Equity",         groups: ['IA_CH9_EQUITY'] },
   { id: 'partnerships',  label: 'Partnerships',                  groups: ['AA_CH9_PART'] },
