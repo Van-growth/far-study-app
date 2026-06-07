@@ -4348,9 +4348,9 @@ export default function ConceptNotesPage() {
   }, [isSuper]) // eslint-disable-line
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#fafaf8' }}>
+    <div style={{ position: 'relative', display: 'flex', height: '100vh', overflow: 'hidden', background: '#fafaf8' }}>
 
-      {/* Sidebar */}
+      {/* Desktop sidebar */}
       <aside
         className="hidden md:flex"
         style={{
@@ -4372,20 +4372,26 @@ export default function ConceptNotesPage() {
         />
       </aside>
 
-      {/* Mobile sidebar — push layout (same canvas, no overlay) */}
+      {/* Mobile sidebar — absolute, slides in from left, same canvas (no backdrop) */}
       <aside
-        className="flex md:hidden"
         style={{
-          width: mobileSidebarOpen ? 240 : 0,
-          flexShrink: 0,
-          overflow: 'hidden',
-          transition: 'width 0.22s ease',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          bottom: 0,
+          width: 240,
+          transform: mobileSidebarOpen ? 'translateX(0)' : 'translateX(-240px)',
+          transition: 'transform 0.22s ease',
           background: '#fff',
           borderRight: '1px solid #e0e0e0',
-          flexDirection: 'column',
+          zIndex: 10,
+          overflow: 'hidden',
         }}
+        className="md:hidden"
       >
-        <div style={{ width: 240, height: '100%', overflowY: 'auto', flexShrink: 0 }}>
+        <div style={{ height: '100%', overflowY: 'auto' }}>
           <SidebarContent
             activeId={activeId}
             onSelect={id => { setActiveId(id); setActiveTab('content'); setMobileSidebarOpen(false) }}
@@ -4396,8 +4402,15 @@ export default function ConceptNotesPage() {
         </div>
       </aside>
 
-      {/* Main */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Main — slides right on mobile when sidebar opens */}
+      <main style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        transition: 'transform 0.22s ease',
+        transform: mobileSidebarOpen ? 'translateX(240px)' : undefined,
+      }}>
 
         {/* Mobile top bar */}
         <div
