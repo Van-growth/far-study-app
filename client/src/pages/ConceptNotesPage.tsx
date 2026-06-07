@@ -79,7 +79,7 @@ const SUPER_CATEGORIES = [
   {
     id: 'equity-capital' as SuperCategoryId,
     label: '지분 & 자본',
-    children: ['equity', 'eps', 'investments', 'consol', 'partnerships'] as CategoryId[],
+    children: ['equity', 'eps', 'finassets', 'investments', 'consol', 'partnerships'] as CategoryId[],
   },
   {
     id: 'tax-adjustment' as SuperCategoryId,
