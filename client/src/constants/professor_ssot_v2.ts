@@ -70,6 +70,13 @@ export interface TopicCard {
   speed?: string;               // SPEED 한 줄 풀이
   journal_entry?: string;       // 분개 예시 (있는 경우만)
   key_formula?: string;         // 공식/계산 요약
+  svg_visualization?: string;   // SVG 다이어그램
+  bs_visualization?: string;    // 재무상태표 시각화
+  key_terms?: Array<{
+    term: string;
+    also_known_as: string;
+    note: string;
+  }>;
 }
 
 export const EXPLANATION_TEMPLATE = `CONTEXT:
