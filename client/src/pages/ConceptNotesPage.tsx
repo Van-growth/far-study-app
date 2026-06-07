@@ -4372,35 +4372,29 @@ export default function ConceptNotesPage() {
         />
       </aside>
 
-      {/* Mobile sidebar overlay */}
-      {mobileSidebarOpen && (
-        <div
-          className="md:hidden"
-          style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex' }}
-        >
-          {/* Backdrop */}
-          <div
-            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }}
-            onClick={() => setMobileSidebarOpen(false)}
+      {/* Mobile sidebar — push layout (same canvas, no overlay) */}
+      <aside
+        className="flex md:hidden"
+        style={{
+          width: mobileSidebarOpen ? 240 : 0,
+          flexShrink: 0,
+          overflow: 'hidden',
+          transition: 'width 0.22s ease',
+          background: '#fff',
+          borderRight: '1px solid #e0e0e0',
+          flexDirection: 'column',
+        }}
+      >
+        <div style={{ width: 240, height: '100%', overflowY: 'auto', flexShrink: 0 }}>
+          <SidebarContent
+            activeId={activeId}
+            onSelect={id => { setActiveId(id); setActiveTab('content'); setMobileSidebarOpen(false) }}
+            getCardCount={getCardCountForCat}
+            getWrongCount={getWrongCountForCat}
+            getSuperWrongCount={getSuperWrongCount}
           />
-          {/* Sidebar panel */}
-          <aside
-            style={{
-              position: 'relative', zIndex: 51, width: 260, height: '100%',
-              background: '#fff', borderRight: '1px solid #e0e0e0',
-              display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            }}
-          >
-            <SidebarContent
-              activeId={activeId}
-              onSelect={id => { setActiveId(id); setActiveTab('content'); setMobileSidebarOpen(false) }}
-              getCardCount={getCardCountForCat}
-              getWrongCount={getWrongCountForCat}
-              getSuperWrongCount={getSuperWrongCount}
-            />
-          </aside>
         </div>
-      )}
+      </aside>
 
       {/* Main */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

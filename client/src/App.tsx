@@ -2,7 +2,6 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { onAuthChange, signOut } from './lib/auth';
 import Header from './components/layout/Header';
-import Sidebar from './components/layout/Sidebar';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import ClaudePanel from './components/claude/ClaudePanel';
 import QuizPage from './pages/QuizPage';
@@ -105,7 +104,6 @@ function AppLayout({ email }: { email: string }) {
   const isPanelOpen = useClaudeStore((s) => s.isOpen);
   const panelWidth = useClaudeStore((s) => s.panelWidth);
   const setPanelWidth = useClaudeStore((s) => s.setPanelWidth);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
 
   const isDragging = useRef(false);
@@ -142,27 +140,9 @@ function AppLayout({ email }: { email: string }) {
           await signOut();
           window.location.href = '/';
         }}
-        onMenuToggle={() => setSidebarOpen((v) => !v)}
-        menuOpen={sidebarOpen}
       />
 
       <div className="flex flex-1 min-h-0 overflow-hidden" style={{ paddingTop: 54 }}>
-
-        {/* Push sidebar — no overlay, content shifts right */}
-        <div
-          style={{
-            width: sidebarOpen ? 250 : 0,
-            flexShrink: 0,
-            overflow: 'hidden',
-            transition: 'width 0.22s ease',
-            borderRight: sidebarOpen ? '1px solid #e2e8f0' : 'none',
-            background: 'white',
-          }}
-        >
-          <div style={{ width: 250, height: '100%', overflowY: 'auto' }}>
-            <Sidebar onItemClick={() => setSidebarOpen(false)} />
-          </div>
-        </div>
 
         {/* Main content — extra bottom padding on mobile for tab bar */}
         <main
