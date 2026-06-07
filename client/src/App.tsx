@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import { onAuthChange, signOut } from './lib/auth';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
+import ScrollToTopButton from './components/ScrollToTopButton';
 import ClaudePanel from './components/claude/ClaudePanel';
 import QuizPage from './pages/QuizPage';
 import WrongPage from './pages/WrongPage';
@@ -27,7 +28,6 @@ import BondMasterPage from './pages/BondMasterPage';
 import WrongAnswerPreviewPage from './pages/WrongAnswerPreviewPage';
 import WrongAnswerPage from './pages/WrongAnswerPage';
 import ExamPage from './pages/ExamPage';
-import DailyBriefingModal from './components/DailyBriefingModal';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 import useClaudeStore from './store/claudeStore';
@@ -105,7 +105,8 @@ function AppLayout({ email }: { email: string }) {
   const isPanelOpen = useClaudeStore((s) => s.isOpen);
   const panelWidth = useClaudeStore((s) => s.panelWidth);
   const setPanelWidth = useClaudeStore((s) => s.setPanelWidth);
-  const userId = useStudyStore((s) => s.userId);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
 
   const isDragging = useRef(false);
   const startX = useRef(0);
@@ -135,15 +136,37 @@ function AppLayout({ email }: { email: string }) {
 
   return (
     <div className="flex flex-col h-[100dvh] overflow-hidden bg-bg">
-      <Header email={email} onSignOut={async () => {
-        await signOut();
-        window.location.href = '/';
-      }} />
+      <Header
+        email={email}
+        onSignOut={async () => {
+          await signOut();
+          window.location.href = '/';
+        }}
+        onMenuToggle={() => setSidebarOpen((v) => !v)}
+        menuOpen={sidebarOpen}
+      />
 
       <div className="flex flex-1 min-h-0 overflow-hidden" style={{ paddingTop: 54 }}>
 
+        {/* Push sidebar — no overlay, content shifts right */}
+        <div
+          style={{
+            width: sidebarOpen ? 250 : 0,
+            flexShrink: 0,
+            overflow: 'hidden',
+            transition: 'width 0.22s ease',
+            borderRight: sidebarOpen ? '1px solid #e2e8f0' : 'none',
+            background: 'white',
+          }}
+        >
+          <div style={{ width: 250, height: '100%', overflowY: 'auto' }}>
+            <Sidebar onItemClick={() => setSidebarOpen(false)} />
+          </div>
+        </div>
+
         {/* Main content — extra bottom padding on mobile for tab bar */}
         <main
+          ref={mainRef}
           className="flex-1 overflow-auto min-w-0 pt-[44px] md:pt-0"
           style={{ background: 'var(--bg-primary)' }}
         >
@@ -221,8 +244,8 @@ function AppLayout({ email }: { email: string }) {
       {/* Mobile Claude modal */}
       <ClaudeModal />
 
-      {/* Daily briefing modal — session-once */}
-      <DailyBriefingModal userId={userId} />
+      {/* Scroll to top button */}
+      <ScrollToTopButton scrollRef={mainRef} />
     </div>
   );
 }

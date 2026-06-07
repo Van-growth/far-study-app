@@ -22,12 +22,10 @@ export default function Sidebar({ onItemClick }: SidebarProps = {}) {
     onItemClick?.();
   };
 
-  // When rendered inside the mobile drawer (onItemClick provided), fill parent.
-  const isDrawer = !!onItemClick;
   return (
     <aside
-      className={`bg-white shrink-0 ${isDrawer ? '' : 'overflow-y-auto border-r border-border'}`}
-      style={isDrawer ? { width: '100%', minHeight: 0 } : { width: 250, minHeight: 0 }}
+      className="bg-white"
+      style={{ width: '100%', minHeight: 0 }}
     >
       <div className="p-3">
         <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-0.5 px-1">

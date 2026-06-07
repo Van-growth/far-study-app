@@ -17,9 +17,11 @@ const mainTabs = [
 interface HeaderProps {
   email: string;
   onSignOut: () => void;
+  onMenuToggle?: () => void;
+  menuOpen?: boolean;
 }
 
-export default function Header({ email, onSignOut }: HeaderProps) {
+export default function Header({ email, onSignOut, onMenuToggle, menuOpen }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const todayReviewCount = useStudyStore((s) => s.todayReviewCount);
@@ -49,6 +51,22 @@ export default function Header({ email, onSignOut }: HeaderProps) {
       className="fixed top-0 left-0 right-0 z-50 flex items-center px-3 md:px-5 bg-white border-b border-border"
       style={{ height: 54 }}
     >
+      {/* Hamburger menu toggle */}
+      {onMenuToggle && (
+        <button
+          onClick={onMenuToggle}
+          aria-label="메뉴"
+          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors shrink-0 mr-1"
+          style={{ color: menuOpen ? '#4f6ef7' : '#0f172a' }}
+        >
+          <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+            <rect x="0" y="0" width="18" height="2" rx="1" fill="currentColor" />
+            <rect x="0" y="6" width="18" height="2" rx="1" fill="currentColor" />
+            <rect x="0" y="12" width="18" height="2" rx="1" fill="currentColor" />
+          </svg>
+        </button>
+      )}
+
       {/* Logo */}
       <div
         className="font-semibold text-[15px] text-[#0f172a] mr-4 md:mr-6 cursor-pointer shrink-0"

@@ -4,7 +4,6 @@ import useStudyStore, { QuizLogPayload } from '../store/studyStore';
 import { getAccuracy, SRCard } from '../lib/srs';
 import QuizView, { QuizItemWithContext, QuizResult } from '../components/quiz/QuizView';
 import { saveQuizLog, getTodayQuizStats } from '../lib/db';
-import MobileSectionDrawer from '../components/layout/MobileSectionDrawer';
 import { supabase } from '../lib/supabase';
 
 const SESSION_MAX = 20;
@@ -183,7 +182,6 @@ export default function QuizPage() {
   const [deck, setDeck] = useState<BankQuestion[]>([]);
   const [deckIdx, setDeckIdx] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [todayStats, setTodayStats] = useState<{ count: number; correct: number } | null>(null);
 
   // Load question bank on mount; topicId filter applied at DB query level.
@@ -332,17 +330,7 @@ export default function QuizPage() {
 
     <div className="p-4 sm:p-6">
       <div className="max-w-2xl mx-auto flex flex-col gap-4">
-        {/* Mobile section drawer trigger */}
-        <button
-          onClick={() => setDrawerOpen(true)}
-          className="md:hidden w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
-          style={{ border: '1.5px solid #e2e8f0', background: 'white', color: '#0f172a' }}
-        >
-          <span>📚 FAR F1–F6</span>
-          <span className="text-xs text-muted">탭하여 모듈 선택 ▾</span>
-        </button>
-
-        <div className="flex items-center justify-between gap-2 flex-wrap">
+<div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="min-w-0 flex-1">
             <h1 className="font-bold text-[#0f172a] text-base sm:text-lg truncate">{label}</h1>
             <p className="text-[11px] sm:text-xs text-muted mt-0.5 truncate">
@@ -396,7 +384,6 @@ export default function QuizPage() {
         )}
       </div>
 
-      <MobileSectionDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </div>
     </>
   );
