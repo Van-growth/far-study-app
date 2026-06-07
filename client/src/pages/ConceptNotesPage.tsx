@@ -85,7 +85,7 @@ const SUPER_CATEGORIES = [
   {
     id: 'fin-investments' as SuperCategoryId,
     label: '금융자산 & 투자',
-    children: ['finassets', 'investments', 'consol', 'partnerships'] as CategoryId[],
+    children: ['investments', 'consol', 'partnerships'] as CategoryId[],
   },
   {
     id: 'tax-adjustment' as SuperCategoryId,
