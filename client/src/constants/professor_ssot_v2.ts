@@ -6865,6 +6865,69 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "L1 = identical+active | L2 = observable not L1 | L3 = unobservable/internal → 내부추정 → L3",
   },
 
+  // [VAL_016] Principal market — Volume/Activity 기준으로 판단
+  // RULE    : Principal market = Volume/Activity 최고 시장; 가격 최고 시장 아님
+  // TRIGGER : principal market | volume | activity | stock exchange | daily trading volume | acquisition date
+  // TRAP    : 가격 높은 시장 선택 → 오답 / 취득일 아닌 다른 날짜 가격 사용 → 오답
+  {
+    topic_id: "VAL_016",
+    book_id: 'AA',
+    chapter_id: 'AA_CH5',
+    topic_group: 'AA_CH5_FAIRVAL',
+    sub_category_id: "U2_FAIR_VALUE",
+    card_type: 'concept',
+    card_name: "Principal market — Volume/Activity 기준으로 판단",
+    rule: "Principal market = 거래량(Volume/Activity)이 가장 높은 시장\n→ 가격이 높은 시장 아님\n→ 취득일(acquisition date) 기준 날짜 확인 필수\n\n[판단 순서]\n① 취득일 날짜 특정\n② 해당 날짜의 각 거래소 Daily Volume 비교\n③ Volume 최고 거래소 = Principal market\n④ 그 거래소의 취득일 종가 = FV\n\n[Principal market vs Most Advantageous market]\nPrincipal market 있음 → 반드시 그 시장 사용 (더 높은 가격 시장 있어도 무시)\nPrincipal market 없음 → Most advantageous market 찾기",
+    trigger: "principal market | volume | activity | stock exchange | daily trading volume | acquisition date | which market",
+    trap: "가격 높은 시장 선택 → 오답 (Volume 기준)\n취득일 아닌 다른 날짜 가격 사용 → 오답\nPrincipal market 있는데 More advantageous market 사용 → 오답",
+    speed: "각 거래소 취득일 Volume 비교 → MAX Volume = Principal market → 그 날 종가 = FV",
+    context_background: "GHI 주식 예시:\n취득일 10/03/Y7 기준\nChicago Volume 550,000 → Principal market\nTokyo Volume 250,000\nShanghai Volume 200,000\n→ FV = Chicago 종가 $95 × 10,000주 = $950,000\n\nPrincipal market이 있으면 Tokyo가 더 높은 가격($97)이어도 Chicago 사용",
+    one_sentence: "Principal market = Volume/Activity 최고 시장; 가격 최고 시장 아님.",
+    example: "Chicago Vol 550K / Tokyo Vol 250K / Shanghai Vol 200K → Chicago = Principal market → FV = Chicago 종가",
+  },
+
+  // [VAL_017] Most Advantageous Market — TC vs Transportation cost 구분
+  // RULE    : 판단=TC+Transport 둘 다 차감 / FV=Transportation만 차감, TC 제외
+  // TRIGGER : most advantageous market | no principal market | transaction costs | transportation costs
+  // TRAP    : FV 계산 시 TC도 차감 → 오답 / Net 최고 아닌 quoted price 최고 선택 → 오답
+  {
+    topic_id: "VAL_017",
+    book_id: 'AA',
+    chapter_id: 'AA_CH5',
+    topic_group: 'AA_CH5_FAIRVAL',
+    sub_category_id: "U2_FAIR_VALUE",
+    card_type: 'calculation',
+    card_name: "Most Advantageous Market — TC vs Transportation cost 구분",
+    rule: "[STEP 1] 유리한시장 판단: Transaction cost + Transportation cost 둘 다 차감\n  Net = 총액 - Transaction cost - Transportation cost\n  Net 최고 시장 = Most advantageous market\n\n[STEP 2] FV 계산: Transaction cost 제외, Transportation cost만 차감\n  FV = 해당 시장 quoted price - Transportation cost\n  ★ Transaction cost는 FV에 포함 안 함\n\n[왜 다른가]\n유리한시장 판단 = '어느 시장이 나에게 유리한가' → 실제 수령액(Net) 비교\nFV 계산 = exit price 개념 → TC는 시장 특성 아님, 거래 비용이라 제외",
+    trigger: "most advantageous market | no principal market | transaction costs | transportation costs | vehicle fleet | net proceeds",
+    trap: "유리한시장 판단 시 TC만 차감하고 Transportation 빠뜨림 → 오답\nFV 계산 시 TC도 차감 → 오답\nNet 최고 시장이 아닌 quoted price 최고 시장 선택 → 오답",
+    speed: "판단: Net = 총액 - TC - Transport → MAX Net 시장 / FV = 해당 시장 가격 - Transport만",
+    context_background: "Vehicle fleet 예시 (2250):\nCompany A: $104K - $2K(TC) - $0 = $102K\nCompany B: $120K - $2K(TC) - $15K(transport) = $103K ← 최고\nCompany C: $128K - $5K(TC) - $22K(transport) = $101K\n→ Most advantageous market = Company B\n→ FV = $120K - $15K(transport만) = $105K\n→ TC $2K는 FV에서 빼지 않음",
+    key_formula: "유리한시장 Net = 총액 - TC - Transportation\nFV = 해당 시장 quoted price - Transportation cost (TC 미차감)",
+    example: "Company B Net $103K 최고 → FV = $120K - $15K = $105K (TC $2K 제외)",
+  },
+
+  // [VAL_018] Purchase Accounting — FV measurement at acquisition date
+  // RULE    : 취득일 기준 FV / A/D = 0 / 경영진 의도 무시 / Highest & Best Use = MAX approach
+  // TRIGGER : purchase accounting | business combination | acquisition date | accumulated depreciation | market participant
+  // TRAP    : A/D 그대로 승계 → 오답 / 경영진 의도대로 Current use 가치 사용 → 오답
+  {
+    topic_id: "VAL_018",
+    book_id: 'AA',
+    chapter_id: 'AA_CH5',
+    topic_group: 'AA_CH5_FAIRVAL',
+    sub_category_id: "U2_FAIR_VALUE",
+    card_type: 'concept',
+    card_name: "Purchase Accounting — FV measurement at acquisition date",
+    rule: "[M&A FV 측정 3원칙]\n① 취득일(acquisition date) 기준\n   → 그 날짜의 시장 데이터 사용\n   → 이전/이후 날짜 가격 사용 금지\n\n② A/D (Accumulated Depreciation) 승계 불가\n   → 피취득회사 A/D = 0으로 처리\n   → PPE는 FV 순액으로 단일 계정에 기록\n\n③ 경영진 의도 무시, Market participant 관점\n   → 우리가 계속 사용하려 해도 무관\n   → 시장 참여자가 최고로 활용하는 방법 = Highest & Best Use\n   → 비금융자산: MAX(Approach I, II, III) 선택",
+    trigger: "purchase accounting | business combination | acquisition date | accumulated depreciation | market participant | highest and best use | M&A fair value",
+    trap: "A/D 그대로 승계 → 오답 (반드시 0)\n취득일 아닌 날짜 FV 사용 → 오답\n경영진 의도대로 Current use 가치 사용 → 오답 (Market participant 관점)\nPPE Old BV 그대로 사용 → 오답",
+    speed: "M&A → 취득일 FV / A/D = 0 / 경영진 의도 무시 / MAX approach = Highest & Best Use",
+    context_background: "M&A에서 피취득회사 자산을 연결 B/S에 올릴 때:\n- 장부금액(Old BV) 무시\n- 취득일 기준 FV로 재측정\n- A/D는 승계하지 않고 0으로 (PPE FV 순액으로 기록)\n- 경영진이 계속 공장으로 쓰고 싶어도 Market participant가 더 높은 가치로 쓸 수 있으면 그 기준으로 FV 측정\n→ Charlotte facility: 공장으로 계속 사용하려 하지만 철거 후 residential lot이 더 높은 가치 → $19,540",
+    one_sentence: "M&A FV = 취득일 기준 / A/D = 0 / 경영진 의도 무시 / Highest & Best Use = MAX approach",
+    example: "Charlotte facility: 경영진은 공장 계속 사용 의도 → 무시\nApproach I $16,937 / II $19,540 / III $15,999 → MAX = $19,540 = FV",
+  },
+
   {
     topic_id: "COMP_001",
     book_id: 'AA',
