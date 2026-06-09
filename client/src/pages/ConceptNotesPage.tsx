@@ -2484,6 +2484,8 @@ AFS 매각 시 reclassify (OCI → I/S):
         'Trading → Unrealized G/L → I/S (OCI 아님!)',
         'AFS → Unrealized → OCI / Realized (매각 시) → I/S',
         'Cash flow hedge → OCI / Fair value hedge → I/S',
+        'Stock Rights 발행 시 → JE 없음 (CS/APIC 모두 No) / 행사 시에만 CS↑ APIC↑',
+        '"excess of par value" 문구 보여도 → 발행 시점이면 No entry',
       ]} />
       <Section title="5. Common Stock Issuance — Par Value vs Total Proceeds">
         <p><strong>Rule:</strong> Common stock account = shares × par value (항상, 발행 대가와 무관)</p>
@@ -2504,6 +2506,53 @@ Dr. Legal Expense             $6,000
 Service FMV 전액 → Common stock 아님 (total proceeds)
 Hours × rate → total proceeds이지 common stock 아님`}</CodeBlock>
         <p style={{ marginTop: 4, color: '#555', fontStyle: 'italic', fontSize: 13 }}>Speed: Common stock = shares × par → 끝 / 나머지는 APIC</p>
+      </Section>
+
+      <Section title="6. Stock Rights / Warrants / Options — 발행 vs 행사">
+        <p style={{ color: '#555', marginBottom: 12 }}>세 가지 모두 "나중에 주식을 살 수 있는 권리" — 구조는 동일, 수혜자와 발행 대가만 다름.</p>
+        <Table
+          headers={['구분', 'Rights', 'Warrants', 'Stock Options']}
+          rows={[
+            ['수혜자', '기존 주주', '채권자 / 투자자', '임직원'],
+            ['발행 대가', '무상', '채권 발행 시 묶음', '용역 제공'],
+            ['발행 시 JE', '없음', 'APIC-Warrants 인식', 'Compensation Expense'],
+            ['행사 시 JE', 'CS(par) + APIC', 'CS(par) + APIC', 'CS(par) + APIC'],
+          ]}
+        />
+        <p style={{ marginTop: 12 }}><strong>핵심 판단: 발행 시점 vs 행사 시점</strong></p>
+        <CodeBlock>{`Rights 발행 시 (without consideration):
+  → No entry (받은 것 없음)
+  → CS No / APIC No
+
+Rights 행사 시:
+  Dr. Cash            [행사가 × shares]
+    Cr. Common Stock      [par × shares]
+    Cr. APIC              [초과분]
+  → CS Yes / APIC Yes
+
+Stock Options 발행(부여) 시:
+  Dr. Compensation Expense   [FMV × vested]
+    Cr. APIC-Stock Options       [same]
+  → APIC 증가 (행사 전에 인식)
+
+Stock Options 행사 시:
+  Dr. Cash                   [행사가 × shares]
+  Dr. APIC-Stock Options     [기 인식분]
+    Cr. Common Stock             [par × shares]
+    Cr. APIC                     [잔여 초과분]`}</CodeBlock>
+        <p style={{ color: '#555', fontStyle: 'italic', marginTop: 8 }}>Memory: Rights/Warrants = 발행 시 CS/APIC 변화 없음 / Options만 발행 시 Compensation Expense 인식.</p>
+      </Section>
+
+      <Section title="7. Stock Rights 발행 시점 TRAP">
+        <Table
+          headers={['시점', 'Common Stock', 'APIC', '이유']}
+          rows={[
+            ['발행 시 (issued)', 'No', 'No', '무상 발행 — 받은 것 없음, JE 없음'],
+            ['행사 시 (exercised)', 'Yes (par×sh)', 'Yes (초과분)', '현금 수령 + 실제 주식 발행'],
+            ['만료 시 (expired)', 'No', 'No', '원래 JE도 없었으므로 되돌릴 것 없음'],
+          ]}
+        />
+        <p style={{ color: '#555', marginTop: 8 }}>"excess of par value" 문구가 보여도 → 발행 시점이면 CS/APIC 모두 No. 행사 시점일 때만 APIC 발생.</p>
       </Section>
     </div>
   )
