@@ -3783,52 +3783,52 @@ Upstream (sub → parent): parent + NCI 비례 배분`}</CodeBlock>
               <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </marker>
           </defs>
-          <text className="th" x="340" y="22" textAnchor="middle" fill="#2C2C2A">취득 시 분석 — Investment 흐름 + 차이 분해</text>
-          <text className="ts" x="340" y="38" textAnchor="middle" fill="#444441">예시: Purl이 Scott 100% 취득 ($360K) / Y축 기준 동일</text>
+          <text fill="#2C2C2A" fontSize="14" fontWeight="500" x="340" y="22" textAnchor="middle">취득 시 분석 — Investment 흐름 + 차이 분해</text>
+          <text fill="#444441" fontSize="12" x="340" y="38" textAnchor="middle">예시: Purl이 Scott 100% 취득 ($360K) / Y축 기준 동일</text>
           <line x1="340" y1="48" x2="340" y2="390" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
-          <text className="th" x="170" y="56" textAnchor="middle" fill="#2C2C2A">Investment in Scott 흐름</text>
-          <text className="th" x="510" y="56" textAnchor="middle" fill="#2C2C2A">취득가 vs BV — 차이 분해</text>
+          <text fill="#2C2C2A" fontSize="14" fontWeight="500" x="170" y="56" textAnchor="middle">Investment in Scott 흐름</text>
+          <text fill="#2C2C2A" fontSize="14" fontWeight="500" x="510" y="56" textAnchor="middle">취득가 vs BV — 차이 분해</text>
           <line x1="60" y1="360" x2="310" y2="360" stroke="#888780" strokeWidth="1"/>
           <line x1="60" y1="140" x2="60" y2="365" stroke="#888780" strokeWidth="1"/>
-          <text className="ts" x="52" y="364" textAnchor="end" fill="#888780">$0</text>
-          <text className="ts" x="52" y="236" textAnchor="end" fill="#888780">$250K</text>
-          <text className="ts" x="52" y="181" textAnchor="end" fill="#888780">$360K</text>
-          <text className="ts" x="52" y="161" textAnchor="end" fill="#888780">$400K</text>
+          <text fill="#888780" fontSize="12" x="52" y="364" textAnchor="end">$0</text>
+          <text fill="#888780" fontSize="12" x="52" y="236" textAnchor="end">$250K</text>
+          <text fill="#888780" fontSize="12" x="52" y="181" textAnchor="end">$360K</text>
+          <text fill="#888780" fontSize="12" x="52" y="161" textAnchor="end">$400K</text>
           <line x1="56" y1="235" x2="64" y2="235" stroke="#888780" strokeWidth="0.5"/>
           <line x1="56" y1="180" x2="64" y2="180" stroke="#888780" strokeWidth="0.5"/>
           <line x1="56" y1="160" x2="64" y2="160" stroke="#888780" strokeWidth="0.5"/>
           <line x1="60" y1="180" x2="310" y2="180" stroke="#B4B2A9" strokeWidth="0.3" strokeDasharray="3 4"/>
           <line x1="60" y1="160" x2="310" y2="160" stroke="#B4B2A9" strokeWidth="0.3" strokeDasharray="3 4"/>
-          <g className="c-teal"><rect x="80" y="180" width="70" height="180" rx="4" strokeWidth="0.5"/><text className="ts" x="115" y="270" textAnchor="middle" dominantBaseline="central">$360K</text><text className="ts" x="115" y="376" textAnchor="middle">취득가</text><text className="ts" x="115" y="389" textAnchor="middle">(Jan 1)</text></g>
-          <g className="c-teal"><rect x="175" y="180" width="70" height="180" rx="4" strokeWidth="0.5"/><text className="ts" x="210" y="270" textAnchor="middle" dominantBaseline="central">$360K</text></g>
-          <g className="c-green"><rect x="175" y="160" width="70" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="210" y="170" textAnchor="middle" dominantBaseline="central">+$40K</text></g>
-          <text className="ts" x="210" y="376" textAnchor="middle" fill="#444441">+$70K</text>
-          <text className="ts" x="210" y="389" textAnchor="middle" fill="#444441">−$30K</text>
-          <g className="c-teal"><rect x="255" y="160" width="70" height="200" rx="4" strokeWidth="0.5"/><text className="th" x="290" y="260" textAnchor="middle" dominantBaseline="central">$400K</text><text className="ts" x="290" y="376" textAnchor="middle">기말</text><text className="ts" x="290" y="389" textAnchor="middle">Investment</text></g>
+          <g><rect x="80" y="180" width="70" height="180" rx="4" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="0.5"/><text fill="#444441" fontSize="12" x="115" y="270" textAnchor="middle" dominantBaseline="central">$360K</text><text fill="#444441" fontSize="12" x="115" y="376" textAnchor="middle">취득가</text><text fill="#444441" fontSize="12" x="115" y="389" textAnchor="middle">(Jan 1)</text></g>
+          <g><rect x="175" y="180" width="70" height="180" rx="4" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="0.5"/><text fill="#444441" fontSize="12" x="210" y="270" textAnchor="middle" dominantBaseline="central">$360K</text></g>
+          <g><rect x="175" y="160" width="70" height="20" rx="4" fill="#C0DD97" stroke="#3B6D11" strokeWidth="0.5"/><text fill="#444441" fontSize="12" x="210" y="170" textAnchor="middle" dominantBaseline="central">+$40K</text></g>
+          <text fill="#444441" fontSize="12" x="210" y="376" textAnchor="middle">+$70K</text>
+          <text fill="#444441" fontSize="12" x="210" y="389" textAnchor="middle">−$30K</text>
+          <g><rect x="255" y="160" width="70" height="200" rx="4" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="0.5"/><text fill="#2C2C2A" fontSize="14" fontWeight="500" x="290" y="260" textAnchor="middle" dominantBaseline="central">$400K</text><text fill="#444441" fontSize="12" x="290" y="376" textAnchor="middle">기말</text><text fill="#444441" fontSize="12" x="290" y="389" textAnchor="middle">Investment</text></g>
           <line x1="80" y1="180" x2="630" y2="180" stroke="#0F6E56" strokeWidth="0.8" strokeDasharray="5 3"/>
           <line x1="370" y1="360" x2="630" y2="360" stroke="#888780" strokeWidth="1"/>
           <line x1="370" y1="140" x2="370" y2="365" stroke="#888780" strokeWidth="1"/>
-          <text className="ts" x="362" y="364" textAnchor="end" fill="#888780">$0</text>
-          <text className="ts" x="362" y="236" textAnchor="end" fill="#888780">$250K</text>
-          <text className="ts" x="362" y="181" textAnchor="end" fill="#888780">$360K</text>
+          <text fill="#888780" fontSize="12" x="362" y="364" textAnchor="end">$0</text>
+          <text fill="#888780" fontSize="12" x="362" y="236" textAnchor="end">$250K</text>
+          <text fill="#888780" fontSize="12" x="362" y="181" textAnchor="end">$360K</text>
           <line x1="366" y1="235" x2="374" y2="235" stroke="#888780" strokeWidth="0.5"/>
           <line x1="366" y1="180" x2="374" y2="180" stroke="#888780" strokeWidth="0.5"/>
           <line x1="370" y1="235" x2="630" y2="235" stroke="#B4B2A9" strokeWidth="0.3" strokeDasharray="3 4"/>
-          <g className="c-gray"><rect x="390" y="235" width="80" height="125" rx="4" strokeWidth="0.5"/><text className="th" x="430" y="298" textAnchor="middle" dominantBaseline="central">BV $250K</text><text className="ts" x="430" y="376" textAnchor="middle">Scott 순자산</text><text className="ts" x="430" y="389" textAnchor="middle">장부가</text></g>
-          <g className="c-gray"><rect x="510" y="235" width="80" height="125" rx="4" strokeWidth="0.5"/><text className="ts" x="550" y="298" textAnchor="middle" dominantBaseline="central">BV $250K</text></g>
-          <g className="c-coral"><rect x="510" y="230" width="80" height="5" rx="2" strokeWidth="0.5"/></g>
-          <text className="ts" x="598" y="234" textAnchor="start" fill="#993C1D">FV $10K</text>
-          <g className="c-purple"><rect x="510" y="180" width="80" height="50" rx="4" strokeWidth="0.5"/><text className="ts" x="550" y="198" textAnchor="middle" dominantBaseline="central">Goodwill</text><text className="ts" x="550" y="214" textAnchor="middle" dominantBaseline="central">$100K</text></g>
-          <text className="ts" x="550" y="376" textAnchor="middle" fill="#444441">취득가</text>
-          <text className="ts" x="550" y="389" textAnchor="middle" fill="#444441">$360K</text>
+          <g><rect x="390" y="235" width="80" height="125" rx="4" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/><text fill="#2C2C2A" fontSize="14" fontWeight="500" x="430" y="298" textAnchor="middle" dominantBaseline="central">BV $250K</text><text fill="#444441" fontSize="12" x="430" y="376" textAnchor="middle">Scott 순자산</text><text fill="#444441" fontSize="12" x="430" y="389" textAnchor="middle">장부가</text></g>
+          <g><rect x="510" y="235" width="80" height="125" rx="4" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/><text fill="#444441" fontSize="12" x="550" y="298" textAnchor="middle" dominantBaseline="central">BV $250K</text></g>
+          <g><rect x="510" y="230" width="80" height="5" rx="2" fill="#F5C4B3" stroke="#993C1D" strokeWidth="0.5"/></g>
+          <text fill="#993C1D" fontSize="12" x="598" y="234" textAnchor="start">FV $10K</text>
+          <g><rect x="510" y="180" width="80" height="50" rx="4" fill="#EEEDFE" stroke="#534AB7" strokeWidth="0.5"/><text fill="#444441" fontSize="12" x="550" y="198" textAnchor="middle" dominantBaseline="central">Goodwill</text><text fill="#444441" fontSize="12" x="550" y="214" textAnchor="middle" dominantBaseline="central">$100K</text></g>
+          <text fill="#444441" fontSize="12" x="550" y="376" textAnchor="middle">취득가</text>
+          <text fill="#444441" fontSize="12" x="550" y="389" textAnchor="middle">$360K</text>
           <line x1="592" y1="180" x2="622" y2="180" stroke="#993C1D" strokeWidth="0.5"/>
           <line x1="592" y1="235" x2="622" y2="235" stroke="#993C1D" strokeWidth="0.5"/>
           <line x1="622" y1="180" x2="622" y2="235" stroke="#993C1D" strokeWidth="1"/>
-          <text className="ts" x="634" y="203" textAnchor="start" fill="#993C1D">$110K</text>
-          <text className="ts" x="634" y="217" textAnchor="start" fill="#993C1D">(GW+FV)</text>
+          <text fill="#993C1D" fontSize="12" x="634" y="203" textAnchor="start">$110K</text>
+          <text fill="#993C1D" fontSize="12" x="634" y="217" textAnchor="start">(GW+FV)</text>
           <line x1="60" y1="406" x2="640" y2="406" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
-          <text className="ts" x="340" y="424" textAnchor="middle" fill="#444441">BV $250K + FV $10K + Goodwill $100K = 취득가 $360K ✓</text>
-          <text className="ts" x="340" y="442" textAnchor="middle" fill="#444441">Scott 자본 CS $50K + APIC $10K + RE $230K = $290K → 연결 시 전액 제거</text>
+          <text fill="#444441" fontSize="12" x="340" y="424" textAnchor="middle">BV $250K + FV $10K + Goodwill $100K = 취득가 $360K ✓</text>
+          <text fill="#444441" fontSize="12" x="340" y="442" textAnchor="middle">Scott 자본 CS $50K + APIC $10K + RE $230K = $290K → 연결 시 전액 제거</text>
         </svg>
 
         <Table
@@ -3850,38 +3850,38 @@ Upstream (sub → parent): parent + NCI 비례 배분`}</CodeBlock>
               <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </marker>
           </defs>
-          <text className="th" x="340" y="22" textAnchor="middle" fill="#2C2C2A">Consolidated RE = Parent RE only</text>
-          <text className="ts" x="340" y="38" textAnchor="middle" fill="#444441">100% 취득 + Equity Method → Sub RE는 연결에서 $0</text>
+          <text fill="#2C2C2A" fontSize="14" fontWeight="500" x="340" y="22" textAnchor="middle">Consolidated RE = Parent RE only</text>
+          <text fill="#444441" fontSize="12" x="340" y="38" textAnchor="middle">100% 취득 + Equity Method → Sub RE는 연결에서 $0</text>
           <rect x="40" y="52" width="600" height="310" rx="20" fill="none" stroke="#1D9E75" strokeWidth="1.5" strokeDasharray="8 4"/>
-          <text className="ts" x="340" y="70" textAnchor="middle" fill="#0F6E56">Consolidated — 단일 경제적 실체 (하나의 회사처럼)</text>
-          <g className="c-teal"><rect x="68" y="84" width="240" height="250" rx="12" strokeWidth="0.5"/><text className="th" x="188" y="106" textAnchor="middle" dominantBaseline="central">Parent (Purl)</text></g>
-          <g className="c-gray"><rect x="84" y="120" width="208" height="88" rx="8" strokeWidth="0.5"/>
-            <text className="ts" x="188" y="140" textAnchor="middle" dominantBaseline="central">RE $765,000 (기말)</text>
-            <text className="ts" x="188" y="158" textAnchor="middle" dominantBaseline="central">= NI $210K</text>
-            <text className="ts" x="188" y="174" textAnchor="middle" dominantBaseline="central">+ Equity in earnings $70K ✓</text>
-            <text className="ts" x="188" y="190" textAnchor="middle" dominantBaseline="central">− 배당 $100K (이미 차감)</text>
+          <text fill="#0F6E56" fontSize="12" x="340" y="70" textAnchor="middle">Consolidated — 단일 경제적 실체 (하나의 회사처럼)</text>
+          <g><rect x="68" y="84" width="240" height="250" rx="12" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="0.5"/><text fill="#2C2C2A" fontSize="14" fontWeight="500" x="188" y="106" textAnchor="middle" dominantBaseline="central">Parent (Purl)</text></g>
+          <g><rect x="84" y="120" width="208" height="88" rx="8" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/>
+            <text fill="#444441" fontSize="12" x="188" y="140" textAnchor="middle" dominantBaseline="central">RE $765,000 (기말)</text>
+            <text fill="#444441" fontSize="12" x="188" y="158" textAnchor="middle" dominantBaseline="central">= NI $210K</text>
+            <text fill="#444441" fontSize="12" x="188" y="174" textAnchor="middle" dominantBaseline="central">+ Equity in earnings $70K ✓</text>
+            <text fill="#444441" fontSize="12" x="188" y="190" textAnchor="middle" dominantBaseline="central">− 배당 $100K (이미 차감)</text>
           </g>
-          <g className="c-gray"><rect x="84" y="220" width="208" height="40" rx="8" strokeWidth="0.5"/><text className="ts" x="188" y="240" textAnchor="middle" dominantBaseline="central">Investment in Scott $400K</text></g>
-          <g className="c-gray"><rect x="84" y="272" width="208" height="36" rx="8" strokeWidth="0.5"/><text className="ts" x="188" y="290" textAnchor="middle" dominantBaseline="central">→ 연결 시 Sub 자본과 상계</text></g>
-          <g className="c-purple"><rect x="372" y="84" width="240" height="250" rx="12" strokeWidth="0.5"/><text className="th" x="492" y="106" textAnchor="middle" dominantBaseline="central">Sub (Scott)</text></g>
-          <g className="c-coral"><rect x="388" y="120" width="208" height="88" rx="8" strokeWidth="0.5"/>
-            <text className="ts" x="492" y="140" textAnchor="middle" dominantBaseline="central">RE $230,000</text>
-            <text className="ts" x="492" y="158" textAnchor="middle" dominantBaseline="central">→ 취득 시 전액 제거</text>
-            <text className="ts" x="492" y="174" textAnchor="middle" dominantBaseline="central">CS $50K + APIC $10K도</text>
-            <text className="ts" x="492" y="190" textAnchor="middle" dominantBaseline="central">전액 제거 (Investment 상계)</text>
+          <g><rect x="84" y="220" width="208" height="40" rx="8" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/><text fill="#444441" fontSize="12" x="188" y="240" textAnchor="middle" dominantBaseline="central">Investment in Scott $400K</text></g>
+          <g><rect x="84" y="272" width="208" height="36" rx="8" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/><text fill="#444441" fontSize="12" x="188" y="290" textAnchor="middle" dominantBaseline="central">→ 연결 시 Sub 자본과 상계</text></g>
+          <g><rect x="372" y="84" width="240" height="250" rx="12" fill="#EEEDFE" stroke="#534AB7" strokeWidth="0.5"/><text fill="#2C2C2A" fontSize="14" fontWeight="500" x="492" y="106" textAnchor="middle" dominantBaseline="central">Sub (Scott)</text></g>
+          <g><rect x="388" y="120" width="208" height="88" rx="8" fill="#F5C4B3" stroke="#993C1D" strokeWidth="0.5"/>
+            <text fill="#444441" fontSize="12" x="492" y="140" textAnchor="middle" dominantBaseline="central">RE $230,000</text>
+            <text fill="#444441" fontSize="12" x="492" y="158" textAnchor="middle" dominantBaseline="central">→ 취득 시 전액 제거</text>
+            <text fill="#444441" fontSize="12" x="492" y="174" textAnchor="middle" dominantBaseline="central">CS $50K + APIC $10K도</text>
+            <text fill="#444441" fontSize="12" x="492" y="190" textAnchor="middle" dominantBaseline="central">전액 제거 (Investment 상계)</text>
           </g>
-          <g className="c-gray"><rect x="388" y="220" width="208" height="40" rx="8" strokeWidth="0.5"/><text className="ts" x="492" y="240" textAnchor="middle" dominantBaseline="central">NI $70K → Parent에 이미 반영</text></g>
-          <g className="c-gray"><rect x="388" y="272" width="208" height="36" rx="8" strokeWidth="0.5"/><text className="ts" x="492" y="290" textAnchor="middle" dominantBaseline="central">배당 $30K → Investment 차감</text></g>
+          <g><rect x="388" y="220" width="208" height="40" rx="8" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/><text fill="#444441" fontSize="12" x="492" y="240" textAnchor="middle" dominantBaseline="central">NI $70K → Parent에 이미 반영</text></g>
+          <g><rect x="388" y="272" width="208" height="36" rx="8" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/><text fill="#444441" fontSize="12" x="492" y="290" textAnchor="middle" dominantBaseline="central">배당 $30K → Investment 차감</text></g>
           <path d="M292 240 L372 240" fill="none" stroke="#888780" strokeWidth="1" strokeDasharray="4 3" markerEnd="url(#arrow-con)"/>
-          <text className="ts" x="332" y="230" textAnchor="middle" fill="#5F5E5A">상계</text>
-          <text className="ts" x="332" y="244" textAnchor="middle" fill="#5F5E5A">제거</text>
+          <text fill="#5F5E5A" fontSize="12" x="332" y="230" textAnchor="middle">상계</text>
+          <text fill="#5F5E5A" fontSize="12" x="332" y="244" textAnchor="middle">제거</text>
           <line x1="60" y1="384" x2="620" y2="384" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
-          <text className="ts" x="340" y="402" textAnchor="middle" fill="#444441">왜 Consolidated RE = Parent RE인가?</text>
-          <g className="c-teal"><rect x="60" y="414" width="560" height="52" rx="8" strokeWidth="0.5"/>
-            <text className="ts" x="340" y="432" textAnchor="middle" dominantBaseline="central">Equity Method = Sub 이익 $70K를 이미 Parent RE에 반영 완료</text>
-            <text className="ts" x="340" y="452" textAnchor="middle" dominantBaseline="central">연결 시: Equity in earnings 제거 + Sub NI 추가 → 상쇄 → 숫자 그대로</text>
+          <text fill="#444441" fontSize="12" x="340" y="402" textAnchor="middle">왜 Consolidated RE = Parent RE인가?</text>
+          <g><rect x="60" y="414" width="560" height="52" rx="8" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="0.5"/>
+            <text fill="#444441" fontSize="12" x="340" y="432" textAnchor="middle" dominantBaseline="central">Equity Method = Sub 이익 $70K를 이미 Parent RE에 반영 완료</text>
+            <text fill="#444441" fontSize="12" x="340" y="452" textAnchor="middle" dominantBaseline="central">연결 시: Equity in earnings 제거 + Sub NI 추가 → 상쇄 → 숫자 그대로</text>
           </g>
-          <text className="th" x="340" y="476" textAnchor="middle" fill="#0F6E56">∴ Consolidated RE = $765,000</text>
+          <text fill="#0F6E56" fontSize="14" fontWeight="500" x="340" y="476" textAnchor="middle">∴ Consolidated RE = $765,000</text>
         </svg>
 
         <p style={{ color: '#555', fontStyle: 'italic', marginTop: 8 }}>Memory: wholly-owned + Equity Method → Consolidated RE = Parent RE 즉시. Sub RE는 취득 시 전액 제거되고 이후 이익은 Equity in earnings로 Parent에 이미 반영됨.</p>
@@ -4071,116 +4071,116 @@ function ReceivablesContent() {
           </defs>
 
           {/* Root */}
-          <g className="c-gray">
-            <rect x="240" y="16" width="200" height="48" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="340" y="36" textAnchor="middle" dominantBaseline="central">AR 자금조달</text>
-            <text className="ts" x="340" y="53" textAnchor="middle" dominantBaseline="central">AR financing</text>
+          <g>
+            <rect x="240" y="16" width="200" height="48" rx="8" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/>
+            <text fill="#2C2C2A" fontSize="14" fontWeight="500" x="340" y="36" textAnchor="middle" dominantBaseline="central">AR 자금조달</text>
+            <text fill="#444441" fontSize="12" x="340" y="53" textAnchor="middle" dominantBaseline="central">AR financing</text>
           </g>
 
           {/* Root → SALE / LOAN */}
           <path d="M300 64 L160 128" fill="none" stroke="#888780" strokeWidth="1" markerEnd="url(#arr2)"/>
           <path d="M380 64 L520 128" fill="none" stroke="#888780" strokeWidth="1" markerEnd="url(#arr2)"/>
-          <text className="ts" x="195" y="100" textAnchor="middle">통제권 이전 O</text>
-          <text className="ts" x="490" y="100" textAnchor="middle">통제권 이전 X</text>
+          <text fill="#444441" fontSize="12" x="195" y="100" textAnchor="middle">통제권 이전 O</text>
+          <text fill="#444441" fontSize="12" x="490" y="100" textAnchor="middle">통제권 이전 X</text>
 
           {/* SALE */}
-          <g className="c-teal">
-            <rect x="80" y="128" width="160" height="48" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="160" y="148" textAnchor="middle" dominantBaseline="central">SALE</text>
-            <text className="ts" x="160" y="165" textAnchor="middle" dominantBaseline="central">AR B/S에서 제거</text>
+          <g>
+            <rect x="80" y="128" width="160" height="48" rx="8" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="0.5"/>
+            <text fill="#2C2C2A" fontSize="14" fontWeight="500" x="160" y="148" textAnchor="middle" dominantBaseline="central">SALE</text>
+            <text fill="#444441" fontSize="12" x="160" y="165" textAnchor="middle" dominantBaseline="central">AR B/S에서 제거</text>
           </g>
 
           {/* LOAN */}
-          <g className="c-purple">
-            <rect x="440" y="128" width="160" height="48" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="520" y="148" textAnchor="middle" dominantBaseline="central">LOAN</text>
-            <text className="ts" x="520" y="165" textAnchor="middle" dominantBaseline="central">AR B/S 유지</text>
+          <g>
+            <rect x="440" y="128" width="160" height="48" rx="8" fill="#EEEDFE" stroke="#534AB7" strokeWidth="0.5"/>
+            <text fill="#2C2C2A" fontSize="14" fontWeight="500" x="520" y="148" textAnchor="middle" dominantBaseline="central">LOAN</text>
+            <text fill="#444441" fontSize="12" x="520" y="165" textAnchor="middle" dominantBaseline="central">AR B/S 유지</text>
           </g>
 
           {/* SALE → Without / With recourse */}
           <path d="M130 176 L100 240" fill="none" stroke="#888780" strokeWidth="1" markerEnd="url(#arr2)"/>
           <path d="M190 176 L230 240" fill="none" stroke="#888780" strokeWidth="1" markerEnd="url(#arr2)"/>
-          <text className="ts" x="88" y="216" textAnchor="middle">risk → Factor</text>
-          <text className="ts" x="242" y="216" textAnchor="middle">risk → Seller</text>
+          <text fill="#444441" fontSize="12" x="88" y="216" textAnchor="middle">risk → Factor</text>
+          <text fill="#444441" fontSize="12" x="242" y="216" textAnchor="middle">risk → Seller</text>
 
           {/* Without recourse */}
-          <g className="c-teal">
-            <rect x="24" y="240" width="152" height="72" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="100" y="260" textAnchor="middle" dominantBaseline="central">Without recourse</text>
-            <text className="ts" x="100" y="278" textAnchor="middle" dominantBaseline="central">대손 → Factor 부담</text>
-            <text className="ts" x="100" y="294" textAnchor="middle" dominantBaseline="central">AR 완전 제거</text>
+          <g>
+            <rect x="24" y="240" width="152" height="72" rx="8" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="0.5"/>
+            <text fill="#2C2C2A" fontSize="14" fontWeight="500" x="100" y="260" textAnchor="middle" dominantBaseline="central">Without recourse</text>
+            <text fill="#444441" fontSize="12" x="100" y="278" textAnchor="middle" dominantBaseline="central">대손 → Factor 부담</text>
+            <text fill="#444441" fontSize="12" x="100" y="294" textAnchor="middle" dominantBaseline="central">AR 완전 제거</text>
           </g>
 
           {/* With recourse */}
-          <g className="c-coral">
-            <rect x="188" y="240" width="152" height="72" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="264" y="260" textAnchor="middle" dominantBaseline="central">With recourse</text>
-            <text className="ts" x="264" y="278" textAnchor="middle" dominantBaseline="central">대손 → Seller 부담</text>
-            <text className="ts" x="264" y="294" textAnchor="middle" dominantBaseline="central">+ Recourse liability</text>
+          <g>
+            <rect x="188" y="240" width="152" height="72" rx="8" fill="#F5C4B3" stroke="#993C1D" strokeWidth="0.5"/>
+            <text fill="#2C2C2A" fontSize="14" fontWeight="500" x="264" y="260" textAnchor="middle" dominantBaseline="central">With recourse</text>
+            <text fill="#444441" fontSize="12" x="264" y="278" textAnchor="middle" dominantBaseline="central">대손 → Seller 부담</text>
+            <text fill="#444441" fontSize="12" x="264" y="294" textAnchor="middle" dominantBaseline="central">+ Recourse liability</text>
           </g>
 
           {/* LOAN → Assignment / Pledge */}
           <path d="M490 176 L456 240" fill="none" stroke="#888780" strokeWidth="1" markerEnd="url(#arr2)"/>
           <path d="M550 176 L584 240" fill="none" stroke="#888780" strokeWidth="1" markerEnd="url(#arr2)"/>
-          <text className="ts" x="444" y="216" textAnchor="middle">수금권 이전</text>
-          <text className="ts" x="596" y="216" textAnchor="middle">담보만 제공</text>
+          <text fill="#444441" fontSize="12" x="444" y="216" textAnchor="middle">수금권 이전</text>
+          <text fill="#444441" fontSize="12" x="596" y="216" textAnchor="middle">담보만 제공</text>
 
           {/* Assignment */}
-          <g className="c-purple">
-            <rect x="376" y="240" width="152" height="72" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="452" y="260" textAnchor="middle" dominantBaseline="central">Assignment</text>
-            <text className="ts" x="452" y="278" textAnchor="middle" dominantBaseline="central">AR-Assigned reclassify</text>
-            <text className="ts" x="452" y="294" textAnchor="middle" dominantBaseline="central">Notes Payable 인식</text>
+          <g>
+            <rect x="376" y="240" width="152" height="72" rx="8" fill="#EEEDFE" stroke="#534AB7" strokeWidth="0.5"/>
+            <text fill="#2C2C2A" fontSize="14" fontWeight="500" x="452" y="260" textAnchor="middle" dominantBaseline="central">Assignment</text>
+            <text fill="#444441" fontSize="12" x="452" y="278" textAnchor="middle" dominantBaseline="central">AR-Assigned reclassify</text>
+            <text fill="#444441" fontSize="12" x="452" y="294" textAnchor="middle" dominantBaseline="central">Notes Payable 인식</text>
           </g>
 
           {/* Pledge */}
-          <g className="c-purple">
-            <rect x="540" y="240" width="120" height="72" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="600" y="260" textAnchor="middle" dominantBaseline="central">Pledge</text>
-            <text className="ts" x="600" y="278" textAnchor="middle" dominantBaseline="central">No entry to AR</text>
-            <text className="ts" x="600" y="294" textAnchor="middle" dominantBaseline="central">주석 공시만</text>
+          <g>
+            <rect x="540" y="240" width="120" height="72" rx="8" fill="#EEEDFE" stroke="#534AB7" strokeWidth="0.5"/>
+            <text fill="#2C2C2A" fontSize="14" fontWeight="500" x="600" y="260" textAnchor="middle" dominantBaseline="central">Pledge</text>
+            <text fill="#444441" fontSize="12" x="600" y="278" textAnchor="middle" dominantBaseline="central">No entry to AR</text>
+            <text fill="#444441" fontSize="12" x="600" y="294" textAnchor="middle" dominantBaseline="central">주석 공시만</text>
           </g>
 
           {/* Divider */}
           <line x1="24" y1="348" x2="656" y2="348" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
-          <text className="ts" x="340" y="366" textAnchor="middle">분개 요약</text>
+          <text fill="#444441" fontSize="12" x="340" y="366" textAnchor="middle">분개 요약</text>
 
           {/* JE: Without recourse */}
-          <g className="c-gray">
-            <rect x="24" y="378" width="148" height="96" rx="6" strokeWidth="0.5"/>
-            <text className="ts" x="98" y="394" textAnchor="middle" dominantBaseline="central">Without recourse</text>
-            <text className="ts" x="36" y="414" dominantBaseline="central">Dr. Cash</text>
-            <text className="ts" x="36" y="430" dominantBaseline="central">Dr. Loss on sale</text>
-            <text className="ts" x="48" y="446" dominantBaseline="central">Cr. AR ← 제거</text>
+          <g>
+            <rect x="24" y="378" width="148" height="96" rx="6" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/>
+            <text fill="#444441" fontSize="12" x="98" y="394" textAnchor="middle" dominantBaseline="central">Without recourse</text>
+            <text fill="#444441" fontSize="12" x="36" y="414" dominantBaseline="central">Dr. Cash</text>
+            <text fill="#444441" fontSize="12" x="36" y="430" dominantBaseline="central">Dr. Loss on sale</text>
+            <text fill="#444441" fontSize="12" x="48" y="446" dominantBaseline="central">Cr. AR ← 제거</text>
           </g>
 
           {/* JE: With recourse */}
-          <g className="c-gray">
-            <rect x="184" y="378" width="160" height="96" rx="6" strokeWidth="0.5"/>
-            <text className="ts" x="264" y="394" textAnchor="middle" dominantBaseline="central">With recourse</text>
-            <text className="ts" x="196" y="414" dominantBaseline="central">Dr. Cash</text>
-            <text className="ts" x="196" y="430" dominantBaseline="central">Dr. Loss on sale</text>
-            <text className="ts" x="208" y="446" dominantBaseline="central">Cr. AR</text>
-            <text className="ts" x="208" y="462" dominantBaseline="central">Cr. Recourse liab.</text>
+          <g>
+            <rect x="184" y="378" width="160" height="96" rx="6" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/>
+            <text fill="#444441" fontSize="12" x="264" y="394" textAnchor="middle" dominantBaseline="central">With recourse</text>
+            <text fill="#444441" fontSize="12" x="196" y="414" dominantBaseline="central">Dr. Cash</text>
+            <text fill="#444441" fontSize="12" x="196" y="430" dominantBaseline="central">Dr. Loss on sale</text>
+            <text fill="#444441" fontSize="12" x="208" y="446" dominantBaseline="central">Cr. AR</text>
+            <text fill="#444441" fontSize="12" x="208" y="462" dominantBaseline="central">Cr. Recourse liab.</text>
           </g>
 
           {/* JE: Assignment */}
-          <g className="c-gray">
-            <rect x="356" y="378" width="152" height="96" rx="6" strokeWidth="0.5"/>
-            <text className="ts" x="432" y="394" textAnchor="middle" dominantBaseline="central">Assignment</text>
-            <text className="ts" x="368" y="414" dominantBaseline="central">Dr. AR-Assigned</text>
-            <text className="ts" x="380" y="430" dominantBaseline="central">Cr. AR</text>
-            <text className="ts" x="368" y="448" dominantBaseline="central">Dr. Cash</text>
-            <text className="ts" x="380" y="464" dominantBaseline="central">Cr. Notes Pay.</text>
+          <g>
+            <rect x="356" y="378" width="152" height="96" rx="6" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/>
+            <text fill="#444441" fontSize="12" x="432" y="394" textAnchor="middle" dominantBaseline="central">Assignment</text>
+            <text fill="#444441" fontSize="12" x="368" y="414" dominantBaseline="central">Dr. AR-Assigned</text>
+            <text fill="#444441" fontSize="12" x="380" y="430" dominantBaseline="central">Cr. AR</text>
+            <text fill="#444441" fontSize="12" x="368" y="448" dominantBaseline="central">Dr. Cash</text>
+            <text fill="#444441" fontSize="12" x="380" y="464" dominantBaseline="central">Cr. Notes Pay.</text>
           </g>
 
           {/* JE: Pledge */}
-          <g className="c-gray">
-            <rect x="520" y="378" width="136" height="96" rx="6" strokeWidth="0.5"/>
-            <text className="ts" x="588" y="394" textAnchor="middle" dominantBaseline="central">Pledge</text>
-            <text className="ts" x="532" y="418" dominantBaseline="central">Dr. Cash</text>
-            <text className="ts" x="544" y="434" dominantBaseline="central">Cr. Notes Pay.</text>
-            <text className="ts" x="532" y="454" dominantBaseline="central">(AR: no entry)</text>
+          <g>
+            <rect x="520" y="378" width="136" height="96" rx="6" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/>
+            <text fill="#444441" fontSize="12" x="588" y="394" textAnchor="middle" dominantBaseline="central">Pledge</text>
+            <text fill="#444441" fontSize="12" x="532" y="418" dominantBaseline="central">Dr. Cash</text>
+            <text fill="#444441" fontSize="12" x="544" y="434" dominantBaseline="central">Cr. Notes Pay.</text>
+            <text fill="#444441" fontSize="12" x="532" y="454" dominantBaseline="central">(AR: no entry)</text>
           </g>
         </svg>
       </Section>
