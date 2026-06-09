@@ -1678,13 +1678,38 @@ function InventoryContent() {
         <p>FIFO / LIFO / Weighted Average / Periodic vs Perpetual / LCM(NRV) / Dollar-Value LIFO</p>
       </Section>
 
-      <Section title="2. 가격 방향 비교 (가격 상승 시)">
+      <Section title="2. 가격 방향 비교 — 방법별 순위">
+        <p style={{ marginBottom: 12 }}><strong>가격 상승 시 (Inflation)</strong></p>
         <Table
-          headers={['Method', 'Ending Inventory', 'COGS', 'Net Income', 'Tax']}
+          headers={['항목', '높음 →→→ 낮음']}
           rows={[
-            ['FIFO', '↑ 높음', '↓ 낮음', '↑ 높음', '↑ 높음'],
-            ['LIFO', '↓ 낮음', '↑ 높음', '↓ 낮음', '↓ 낮음'],
-            ['AVCO', '중간', '중간', '중간', '중간'],
+            ['EI (높은 순)', 'FIFO > Moving Avg > Weighted Avg > LIFO'],
+            ['COGS (높은 순)', 'LIFO > Weighted Avg > Moving Avg > FIFO'],
+            ['NI (높은 순)', 'FIFO > Moving Avg > Weighted Avg > LIFO'],
+            ['Tax (높은 순)', 'FIFO > Moving Avg > Weighted Avg > LIFO'],
+          ]}
+        />
+
+        <p style={{ marginTop: 16, marginBottom: 12 }}><strong>가격 하락 시 (Deflation) — 전부 반대</strong></p>
+        <Table
+          headers={['항목', '높음 →→→ 낮음']}
+          rows={[
+            ['EI (높은 순)', 'LIFO > Weighted Avg > Moving Avg > FIFO'],
+            ['COGS (높은 순)', 'FIFO > Moving Avg > Weighted Avg > LIFO'],
+            ['NI (높은 순)', 'LIFO > Weighted Avg > Moving Avg > FIFO'],
+            ['Tax (높은 순)', 'LIFO > Weighted Avg > Moving Avg > FIFO'],
+          ]}
+        />
+        <p style={{ color: '#555', fontStyle: 'italic', marginTop: 8 }}>Memory: Deflation = Inflation 순위 완전 반전. Moving Avg(perpetual) &gt; Weighted Avg(periodic) — perpetual이 최신 원가 더 빨리 반영.</p>
+
+        <p style={{ marginTop: 16 }}><strong>문제 유형별 SPEED</strong></p>
+        <Table
+          headers={['질문 키워드', '즉각 답']}
+          rows={[
+            ['"maximize profits" + rising prices', '→ FIFO'],
+            ['"minimize taxes" + rising prices', '→ LIFO'],
+            ['"maximize profits" + falling prices', '→ LIFO'],
+            ['"minimize taxes" + falling prices', '→ FIFO'],
           ]}
         />
       </Section>
@@ -2431,14 +2456,29 @@ function ScfContent() {
       </Section>
       <Section title="1. 활동 분류">
         <Table
-          headers={['활동', '항목 예시']}
+          headers={['Section', 'Items']}
           rows={[
-            ['Operating', '매출채권/재고/매입채무/이자지급(US)/세금지급'],
-            ['Investing', '장기자산 취득·처분, 대출금 실행·회수'],
-            ['Financing', '부채 차입·상환, 주식 발행·자사주, 배당지급'],
-            ['Non-cash', '자산 취득 + Liability 직접 인수 (별도 공시)'],
+            ['Operating', '· AR increase/decrease\n· Inventory increase/decrease\n· Prepaid expense increase/decrease\n· AP increase/decrease\n· Accrued liabilities increase/decrease\n· Trading securities purchased/sold\n· Interest paid\n· Dividends received\n· Income taxes paid\n· Depreciation/Amortization (add-back)\n· Gain/Loss on sale (remove, opposite sign)'],
+            ['Investing', '· PPE purchased / sold\n· AFS / HTM securities purchased / sold\n· Equity method investment purchased / sold\n· Notes receivable issued / collected\n· Intangible assets purchased\n· Business acquisition (cash paid)'],
+            ['Financing', '· Bonds payable issued / repaid\n· Notes payable issued / repaid\n· Mortgage issued / repaid\n· Common / Preferred stock issued\n· Treasury stock purchased\n· Dividends paid\n· Finance lease principal payment'],
+            ['Non-cash\n(별도 공시만)', '· Equipment purchased by assuming liability\n· Stock dividend issued\n· Conversion of bonds to equity\n· ROU asset + lease liability recognized\n⚠️ SCF 본문 제외 — footnote 공시만'],
           ]}
         />
+        <p style={{ marginTop: 12 }}><strong>헷갈리는 항목</strong></p>
+        <Table
+          headers={['Item', 'Section', 'Why']}
+          rows={[
+            ['Trading securities', 'Operating ✅', 'Short-term trading purpose = operating activity'],
+            ['AFS / HTM securities', 'Investing ✅', 'Investment purpose'],
+            ['Bonds payable', 'Financing ✅', 'Debt financing — do NOT confuse with AP'],
+            ['Notes receivable collected', 'Investing ✅', 'Loan to others — do NOT confuse with AR'],
+            ['AR (Accounts receivable)', 'Operating ✅', 'From sales — different from Notes receivable'],
+            ['Interest paid', 'Operating ✅', 'Fixed under US GAAP'],
+            ['Dividends received', 'Operating ✅', 'Fixed under US GAAP'],
+            ['Dividends paid', 'Financing ✅', 'Fixed under US GAAP'],
+          ]}
+        />
+        <p style={{ color: '#555', fontStyle: 'italic', marginTop: 8 }}>Speed: AR/AP/Inventory/Prepaid/Accrued → Operating / Buy or sell assets → Investing / Borrow, repay, issue stock, dividends → Financing</p>
       </Section>
 
       <Section title="2. Indirect Method 조정 순서">
@@ -2462,16 +2502,17 @@ function ScfContent() {
       </Section>
 
       <DefaultBox items={[
-        { default: 'Interest paid → Operating (US GAAP 고정)', changed: '선택 없음 (변경 불가)' },
-        { default: 'Interest received → Operating (US GAAP 고정)', changed: '선택 없음 (변경 불가)' },
-        { default: 'Dividends paid → Financing (US GAAP 고정)', changed: '선택 없음 (변경 불가)' },
-        { default: 'Dividends received → Operating (US GAAP 고정)', changed: '선택 없음 (변경 불가)' },
+        { default: 'Interest paid → Operating', changed: 'N/A' },
+        { default: 'Interest received → Operating', changed: 'N/A' },
+        { default: 'Dividends paid → Financing', changed: 'N/A' },
+        { default: 'Dividends received → Operating', changed: 'N/A' },
       ]} />
       <TrapBox items={[
-        'Notes receivable 회수 = Investing (AR과 혼동 금지)',
-        '배당지급 = Financing / 배당수령 = Operating (US GAAP)',
-        '이자비용 = Operating (US GAAP)',
-        'Non-cash → SCF 본문 제외, 별도 공시만',
+        'Notes receivable collected → Investing (≠ AR which is Operating)',
+        'Dividends paid → Financing / Dividends received → Operating',
+        'Interest paid → Operating',
+        'Trading securities → Operating (≠ AFS/HTM which is Investing)',
+        'Non-cash transactions → footnote only, NOT in SCF body',
       ]} />
       <Section title="Key Terms — SCF">
         <Table
@@ -2487,11 +2528,13 @@ function ScfContent() {
   부채↑ → Cash+   부채↓ → Cash−
 
 Key classification traps:
-  Notes receivable collected → Investing (AR과 혼동 금지)
-  Interest paid             → Operating (US GAAP)
-  Finance lease principal   → Financing
-  Dividends paid            → Financing
-  Dividends received        → Operating (US GAAP)`}</CodeBlock>
+  Notes receivable collected → Investing  (≠ AR → Operating)
+  Interest paid              → Operating
+  Finance lease principal    → Financing
+  Dividends paid             → Financing
+  Dividends received         → Operating
+  Trading securities         → Operating  (≠ AFS/HTM → Investing)
+  Non-cash transactions      → footnote only, NOT in SCF`}</CodeBlock>
       </Section>
     </div>
   )
@@ -3728,12 +3771,129 @@ Upstream (sub → parent): parent + NCI 비례 배분`}</CodeBlock>
         { default: '>50% 지분 → Consolidation', changed: '"significant influence only" 명시 → Equity method (20~50%)' },
         { default: 'VIE: 지분율 무관', changed: 'Primary beneficiary → 무조건 연결' },
       ]} />
+
+      <Section title="5. Consolidated RE — 취득 분석 + 구조">
+        <p style={{ marginBottom: 12 }}>100% 취득 + Equity Method → Consolidated RE = Parent RE only. 아래 두 그래프로 숫자 흐름을 확인.</p>
+
+        <svg width="100%" viewBox="0 0 680 460" role="img">
+          <title>취득 분석 막대 그래프</title>
+          <desc>왼쪽: Investment 누적 막대 / 오른쪽: BV+FV+GW=취득가</desc>
+          <defs>
+            <marker id="arrow-acq" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </marker>
+          </defs>
+          <text className="th" x="340" y="22" textAnchor="middle" fill="#2C2C2A">취득 시 분석 — Investment 흐름 + 차이 분해</text>
+          <text className="ts" x="340" y="38" textAnchor="middle" fill="#444441">예시: Purl이 Scott 100% 취득 ($360K) / Y축 기준 동일</text>
+          <line x1="340" y1="48" x2="340" y2="390" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
+          <text className="th" x="170" y="56" textAnchor="middle" fill="#2C2C2A">Investment in Scott 흐름</text>
+          <text className="th" x="510" y="56" textAnchor="middle" fill="#2C2C2A">취득가 vs BV — 차이 분해</text>
+          <line x1="60" y1="360" x2="310" y2="360" stroke="#888780" strokeWidth="1"/>
+          <line x1="60" y1="140" x2="60" y2="365" stroke="#888780" strokeWidth="1"/>
+          <text className="ts" x="52" y="364" textAnchor="end" fill="#888780">$0</text>
+          <text className="ts" x="52" y="236" textAnchor="end" fill="#888780">$250K</text>
+          <text className="ts" x="52" y="181" textAnchor="end" fill="#888780">$360K</text>
+          <text className="ts" x="52" y="161" textAnchor="end" fill="#888780">$400K</text>
+          <line x1="56" y1="235" x2="64" y2="235" stroke="#888780" strokeWidth="0.5"/>
+          <line x1="56" y1="180" x2="64" y2="180" stroke="#888780" strokeWidth="0.5"/>
+          <line x1="56" y1="160" x2="64" y2="160" stroke="#888780" strokeWidth="0.5"/>
+          <line x1="60" y1="180" x2="310" y2="180" stroke="#B4B2A9" strokeWidth="0.3" strokeDasharray="3 4"/>
+          <line x1="60" y1="160" x2="310" y2="160" stroke="#B4B2A9" strokeWidth="0.3" strokeDasharray="3 4"/>
+          <g className="c-teal"><rect x="80" y="180" width="70" height="180" rx="4" strokeWidth="0.5"/><text className="ts" x="115" y="270" textAnchor="middle" dominantBaseline="central">$360K</text><text className="ts" x="115" y="376" textAnchor="middle">취득가</text><text className="ts" x="115" y="389" textAnchor="middle">(Jan 1)</text></g>
+          <g className="c-teal"><rect x="175" y="180" width="70" height="180" rx="4" strokeWidth="0.5"/><text className="ts" x="210" y="270" textAnchor="middle" dominantBaseline="central">$360K</text></g>
+          <g className="c-green"><rect x="175" y="160" width="70" height="20" rx="4" strokeWidth="0.5"/><text className="ts" x="210" y="170" textAnchor="middle" dominantBaseline="central">+$40K</text></g>
+          <text className="ts" x="210" y="376" textAnchor="middle" fill="#444441">+$70K</text>
+          <text className="ts" x="210" y="389" textAnchor="middle" fill="#444441">−$30K</text>
+          <g className="c-teal"><rect x="255" y="160" width="70" height="200" rx="4" strokeWidth="0.5"/><text className="th" x="290" y="260" textAnchor="middle" dominantBaseline="central">$400K</text><text className="ts" x="290" y="376" textAnchor="middle">기말</text><text className="ts" x="290" y="389" textAnchor="middle">Investment</text></g>
+          <line x1="80" y1="180" x2="630" y2="180" stroke="#0F6E56" strokeWidth="0.8" strokeDasharray="5 3"/>
+          <line x1="370" y1="360" x2="630" y2="360" stroke="#888780" strokeWidth="1"/>
+          <line x1="370" y1="140" x2="370" y2="365" stroke="#888780" strokeWidth="1"/>
+          <text className="ts" x="362" y="364" textAnchor="end" fill="#888780">$0</text>
+          <text className="ts" x="362" y="236" textAnchor="end" fill="#888780">$250K</text>
+          <text className="ts" x="362" y="181" textAnchor="end" fill="#888780">$360K</text>
+          <line x1="366" y1="235" x2="374" y2="235" stroke="#888780" strokeWidth="0.5"/>
+          <line x1="366" y1="180" x2="374" y2="180" stroke="#888780" strokeWidth="0.5"/>
+          <line x1="370" y1="235" x2="630" y2="235" stroke="#B4B2A9" strokeWidth="0.3" strokeDasharray="3 4"/>
+          <g className="c-gray"><rect x="390" y="235" width="80" height="125" rx="4" strokeWidth="0.5"/><text className="th" x="430" y="298" textAnchor="middle" dominantBaseline="central">BV $250K</text><text className="ts" x="430" y="376" textAnchor="middle">Scott 순자산</text><text className="ts" x="430" y="389" textAnchor="middle">장부가</text></g>
+          <g className="c-gray"><rect x="510" y="235" width="80" height="125" rx="4" strokeWidth="0.5"/><text className="ts" x="550" y="298" textAnchor="middle" dominantBaseline="central">BV $250K</text></g>
+          <g className="c-coral"><rect x="510" y="230" width="80" height="5" rx="2" strokeWidth="0.5"/></g>
+          <text className="ts" x="598" y="234" textAnchor="start" fill="#993C1D">FV $10K</text>
+          <g className="c-purple"><rect x="510" y="180" width="80" height="50" rx="4" strokeWidth="0.5"/><text className="ts" x="550" y="198" textAnchor="middle" dominantBaseline="central">Goodwill</text><text className="ts" x="550" y="214" textAnchor="middle" dominantBaseline="central">$100K</text></g>
+          <text className="ts" x="550" y="376" textAnchor="middle" fill="#444441">취득가</text>
+          <text className="ts" x="550" y="389" textAnchor="middle" fill="#444441">$360K</text>
+          <line x1="592" y1="180" x2="622" y2="180" stroke="#993C1D" strokeWidth="0.5"/>
+          <line x1="592" y1="235" x2="622" y2="235" stroke="#993C1D" strokeWidth="0.5"/>
+          <line x1="622" y1="180" x2="622" y2="235" stroke="#993C1D" strokeWidth="1"/>
+          <text className="ts" x="634" y="203" textAnchor="start" fill="#993C1D">$110K</text>
+          <text className="ts" x="634" y="217" textAnchor="start" fill="#993C1D">(GW+FV)</text>
+          <line x1="60" y1="406" x2="640" y2="406" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
+          <text className="ts" x="340" y="424" textAnchor="middle" fill="#444441">BV $250K + FV $10K + Goodwill $100K = 취득가 $360K ✓</text>
+          <text className="ts" x="340" y="442" textAnchor="middle" fill="#444441">Scott 자본 CS $50K + APIC $10K + RE $230K = $290K → 연결 시 전액 제거</text>
+        </svg>
+
+        <Table
+          headers={['항목', '금액', '출처']}
+          rows={[
+            ['+$70K (Equity in earnings)', '+$70,000', 'Scott NI $70,000 × 100% → Equity Method으로 Purl RE에 반영'],
+            ['−$30K (배당 수취)', '−$30,000', 'Scott이 Purl에게 배당 지급 → Investment 계정 차감 (RE 영향 없음)'],
+            ['순증가', '+$40,000', '$70K − $30K = $40K → Investment $360K → $400K'],
+            ['FV excess $10K', '+$10,000', 'Scott Inventory FV가 BV보다 $10K 높음 → 취득 시 차이'],
+            ['Goodwill $100K', '+$100,000', '취득가 $360K − (BV $250K + FV $10K) = $100K'],
+          ]}
+        />
+
+        <svg width="100%" viewBox="0 0 680 480" role="img" style={{ marginTop: 24 }}>
+          <title>Consolidated RE 구조도</title>
+          <desc>P와 S를 감싸는 Consolidated 구조, RE는 Parent만 남음</desc>
+          <defs>
+            <marker id="arrow-con" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </marker>
+          </defs>
+          <text className="th" x="340" y="22" textAnchor="middle" fill="#2C2C2A">Consolidated RE = Parent RE only</text>
+          <text className="ts" x="340" y="38" textAnchor="middle" fill="#444441">100% 취득 + Equity Method → Sub RE는 연결에서 $0</text>
+          <rect x="40" y="52" width="600" height="310" rx="20" fill="none" stroke="#1D9E75" strokeWidth="1.5" strokeDasharray="8 4"/>
+          <text className="ts" x="340" y="70" textAnchor="middle" fill="#0F6E56">Consolidated — 단일 경제적 실체 (하나의 회사처럼)</text>
+          <g className="c-teal"><rect x="68" y="84" width="240" height="250" rx="12" strokeWidth="0.5"/><text className="th" x="188" y="106" textAnchor="middle" dominantBaseline="central">Parent (Purl)</text></g>
+          <g className="c-gray"><rect x="84" y="120" width="208" height="88" rx="8" strokeWidth="0.5"/>
+            <text className="ts" x="188" y="140" textAnchor="middle" dominantBaseline="central">RE $765,000 (기말)</text>
+            <text className="ts" x="188" y="158" textAnchor="middle" dominantBaseline="central">= NI $210K</text>
+            <text className="ts" x="188" y="174" textAnchor="middle" dominantBaseline="central">+ Equity in earnings $70K ✓</text>
+            <text className="ts" x="188" y="190" textAnchor="middle" dominantBaseline="central">− 배당 $100K (이미 차감)</text>
+          </g>
+          <g className="c-gray"><rect x="84" y="220" width="208" height="40" rx="8" strokeWidth="0.5"/><text className="ts" x="188" y="240" textAnchor="middle" dominantBaseline="central">Investment in Scott $400K</text></g>
+          <g className="c-gray"><rect x="84" y="272" width="208" height="36" rx="8" strokeWidth="0.5"/><text className="ts" x="188" y="290" textAnchor="middle" dominantBaseline="central">→ 연결 시 Sub 자본과 상계</text></g>
+          <g className="c-purple"><rect x="372" y="84" width="240" height="250" rx="12" strokeWidth="0.5"/><text className="th" x="492" y="106" textAnchor="middle" dominantBaseline="central">Sub (Scott)</text></g>
+          <g className="c-coral"><rect x="388" y="120" width="208" height="88" rx="8" strokeWidth="0.5"/>
+            <text className="ts" x="492" y="140" textAnchor="middle" dominantBaseline="central">RE $230,000</text>
+            <text className="ts" x="492" y="158" textAnchor="middle" dominantBaseline="central">→ 취득 시 전액 제거</text>
+            <text className="ts" x="492" y="174" textAnchor="middle" dominantBaseline="central">CS $50K + APIC $10K도</text>
+            <text className="ts" x="492" y="190" textAnchor="middle" dominantBaseline="central">전액 제거 (Investment 상계)</text>
+          </g>
+          <g className="c-gray"><rect x="388" y="220" width="208" height="40" rx="8" strokeWidth="0.5"/><text className="ts" x="492" y="240" textAnchor="middle" dominantBaseline="central">NI $70K → Parent에 이미 반영</text></g>
+          <g className="c-gray"><rect x="388" y="272" width="208" height="36" rx="8" strokeWidth="0.5"/><text className="ts" x="492" y="290" textAnchor="middle" dominantBaseline="central">배당 $30K → Investment 차감</text></g>
+          <path d="M292 240 L372 240" fill="none" stroke="#888780" strokeWidth="1" strokeDasharray="4 3" markerEnd="url(#arrow-con)"/>
+          <text className="ts" x="332" y="230" textAnchor="middle" fill="#5F5E5A">상계</text>
+          <text className="ts" x="332" y="244" textAnchor="middle" fill="#5F5E5A">제거</text>
+          <line x1="60" y1="384" x2="620" y2="384" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
+          <text className="ts" x="340" y="402" textAnchor="middle" fill="#444441">왜 Consolidated RE = Parent RE인가?</text>
+          <g className="c-teal"><rect x="60" y="414" width="560" height="52" rx="8" strokeWidth="0.5"/>
+            <text className="ts" x="340" y="432" textAnchor="middle" dominantBaseline="central">Equity Method = Sub 이익 $70K를 이미 Parent RE에 반영 완료</text>
+            <text className="ts" x="340" y="452" textAnchor="middle" dominantBaseline="central">연결 시: Equity in earnings 제거 + Sub NI 추가 → 상쇄 → 숫자 그대로</text>
+          </g>
+          <text className="th" x="340" y="476" textAnchor="middle" fill="#0F6E56">∴ Consolidated RE = $765,000</text>
+        </svg>
+
+        <p style={{ color: '#555', fontStyle: 'italic', marginTop: 8 }}>Memory: wholly-owned + Equity Method → Consolidated RE = Parent RE 즉시. Sub RE는 취득 시 전액 제거되고 이후 이익은 Equity in earnings로 Parent에 이미 반영됨.</p>
+      </Section>
+
       <TrapBox items={[
         'Goodwill = 취득가 − FV of net assets (BV 아님!)',
         'Consolidated dividend = Parent 배당만 (Sub 배당은 제거)',
         'Downstream: Parent가 판매 → Parent NI에서 전액 제거',
         'Upstream: Sub가 판매 → NCI에도 미실현이익 배분',
         'Intercompany receivable/payable → 연결 B/S에서 상계 제거',
+        'Consolidated RE = Parent RE only (wholly-owned + Equity Method → Sub RE 취득 시 전액 제거 + Equity in earnings로 이미 반영 → 즉시 Parent RE = 정답)',
       ]} />
       <Section title="Key Terms — Consolidation">
         <Table
