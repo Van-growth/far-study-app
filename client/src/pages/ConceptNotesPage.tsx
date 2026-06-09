@@ -651,6 +651,106 @@ Discount:
         />
       </Section>
 
+      <Section title="SL vs EI — Discount 채권 CV 비교 (오류 유형)">
+        <p style={{ color: '#555', marginBottom: 8 }}>SL을 EI 대신 잘못 사용했을 때 CV가 어떻게 달라지는지 — 시험 단골 오류 유형.</p>
+        <CodeBlock>{`예시 조건: Face $1,000,000 / 발행가 $850,000 / Coupon 8% / Market 12% / 6년
+Discount = $150,000
+
+[SL 상각 — 잘못된 방법]
+연간 상각 = $150,000 ÷ 6 = $25,000 (매년 균등)
+Year 1 말 CV = $850,000 + $25,000 = $875,000
+
+[EI 상각 — 올바른 방법]
+Year 1 이자비용 = $850,000 × 12% = $102,000
+Cash paid  = $1,000,000 × 8%  =  $80,000
+Year 1 상각 = $102,000 − $80,000 = $22,000
+Year 1 말 CV = $850,000 + $22,000 = $872,000
+
+→ SL CV($875,000) > EI CV($872,000) → Overstated
+
+[만기일]
+SL 총 상각 = $25,000 × 6 = $150,000 → CV = $1,000,000
+EI 총 상각 =              $150,000 → CV = $1,000,000
+→ 상각 방법 무관 face value 수렴 → No effect`}</CodeBlock>
+        <svg width="100%" viewBox="0 0 680 430" role="img">
+          <title>SL vs EI 상각 패턴 개념도</title>
+          <desc>SL 균등 vs EI 우상향, 총합 동일 구조</desc>
+          <defs>
+            <marker id="arrow-slei" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </marker>
+          </defs>
+          <text className="ts" x="340" y="18" textAnchor="middle" fill="#888780">예시: Discount 채권 / 발행가 $850K / 시장금리 12% / 6년</text>
+          <text className="th" x="340" y="34" textAnchor="middle" fill="#2C2C2A">SL vs EI — 연간 상각액 패턴 비교</text>
+          <line x1="80" y1="290" x2="600" y2="290" stroke="#888780" strokeWidth="1" markerEnd="url(#arrow-slei)"/>
+          <line x1="80" y1="290" x2="80" y2="55" stroke="#888780" strokeWidth="1" markerEnd="url(#arrow-slei)"/>
+          <text className="ts" x="608" y="294" fill="#444441">Year</text>
+          <text className="ts" x="55" y="60" textAnchor="middle" fill="#444441">상각액</text>
+          <text className="ts" x="160" y="306" textAnchor="middle" fill="#444441">1</text>
+          <text className="ts" x="240" y="306" textAnchor="middle" fill="#444441">2</text>
+          <text className="ts" x="320" y="306" textAnchor="middle" fill="#444441">3</text>
+          <text className="ts" x="400" y="306" textAnchor="middle" fill="#444441">4</text>
+          <text className="ts" x="480" y="306" textAnchor="middle" fill="#444441">5</text>
+          <text className="ts" x="560" y="306" textAnchor="middle" fill="#444441">6</text>
+          <line x1="76" y1="200" x2="84" y2="200" stroke="#888780" strokeWidth="0.5"/>
+          <text className="ts" x="72" y="204" textAnchor="end" fill="#888780">$25K</text>
+          <line x1="76" y1="240" x2="84" y2="240" stroke="#888780" strokeWidth="0.5"/>
+          <text className="ts" x="72" y="244" textAnchor="end" fill="#0F6E56">$22K</text>
+          <line x1="80" y1="200" x2="580" y2="200" stroke="#B4B2A9" strokeWidth="0.3" strokeDasharray="3 4"/>
+          <line x1="80" y1="240" x2="580" y2="240" stroke="#B4B2A9" strokeWidth="0.3" strokeDasharray="3 4"/>
+          <line x1="160" y1="200" x2="560" y2="200" stroke="#888780" strokeWidth="2.5"/>
+          <circle cx="160" cy="200" r="4" fill="#888780"/>
+          <circle cx="240" cy="200" r="4" fill="#888780"/>
+          <circle cx="320" cy="200" r="4" fill="#888780"/>
+          <circle cx="400" cy="200" r="4" fill="#888780"/>
+          <circle cx="480" cy="200" r="4" fill="#888780"/>
+          <circle cx="560" cy="200" r="4" fill="#888780"/>
+          <text className="ts" x="572" y="192" fill="#444441">SL</text>
+          <text className="ts" x="572" y="204" fill="#888780">균등</text>
+          <path d="M160 240 C200 238 230 228 240 224 C270 214 295 200 320 190 C350 178 375 162 400 150 C430 136 455 116 480 102 C510 86 535 76 560 70" fill="none" stroke="#0F6E56" strokeWidth="2.5"/>
+          <circle cx="160" cy="240" r="4" fill="#0F6E56"/>
+          <circle cx="240" cy="224" r="4" fill="#0F6E56"/>
+          <circle cx="320" cy="190" r="4" fill="#0F6E56"/>
+          <circle cx="400" cy="150" r="4" fill="#0F6E56"/>
+          <circle cx="480" cy="102" r="4" fill="#0F6E56"/>
+          <circle cx="560" cy="70" r="4" fill="#0F6E56"/>
+          <text className="ts" x="572" y="66" fill="#0F6E56">EI</text>
+          <text className="ts" x="572" y="78" fill="#085041">우상향</text>
+          <line x1="160" y1="196" x2="160" y2="244" stroke="#993C1D" strokeWidth="1" strokeDasharray="3 3"/>
+          <rect x="86" y="206" width="70" height="28" rx="4" fill="#FAECE7" stroke="#993C1D" strokeWidth="0.5"/>
+          <text className="th" x="121" y="216" textAnchor="middle" dominantBaseline="central" fill="#712B13">Year 1</text>
+          <text className="ts" x="121" y="228" textAnchor="middle" dominantBaseline="central" fill="#993C1D">SL &gt; EI</text>
+          <rect x="86" y="80" width="120" height="36" rx="4" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/>
+          <text className="th" x="146" y="92" textAnchor="middle" dominantBaseline="central" fill="#04342C">초기: EI &lt; SL</text>
+          <text className="ts" x="146" y="108" textAnchor="middle" dominantBaseline="central" fill="#085041">후기: EI &gt; SL</text>
+          <rect x="430" y="76" width="126" height="36" rx="4" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/>
+          <text className="th" x="493" y="88" textAnchor="middle" dominantBaseline="central" fill="#2C2C2A">총합 동일</text>
+          <text className="ts" x="493" y="104" textAnchor="middle" dominantBaseline="central" fill="#444441">둘 다 $150,000</text>
+          <line x1="80" y1="316" x2="600" y2="316" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
+          <rect x="80" y="328" width="520" height="24" rx="4" fill="#D3D1C7" stroke="#888780" strokeWidth="0.5"/>
+          <text className="th" x="130" y="340" textAnchor="middle" dominantBaseline="central" fill="#2C2C2A">Year</text>
+          <text className="th" x="260" y="340" textAnchor="middle" dominantBaseline="central" fill="#444441">SL 상각</text>
+          <text className="th" x="390" y="340" textAnchor="middle" dominantBaseline="central" fill="#0F6E56">EI 상각</text>
+          <text className="th" x="520" y="340" textAnchor="middle" dominantBaseline="central" fill="#993C1D">CV(SL) vs CV(EI)</text>
+          <rect x="80" y="352" width="520" height="22" fill="#F1EFE8" stroke="#B4B2A9" strokeWidth="0.3"/>
+          <text className="ts" x="130" y="363" textAnchor="middle" dominantBaseline="central" fill="#444441">1</text>
+          <text className="ts" x="260" y="363" textAnchor="middle" dominantBaseline="central" fill="#444441">$25,000</text>
+          <text className="ts" x="390" y="363" textAnchor="middle" dominantBaseline="central" fill="#085041">$22,000</text>
+          <text className="ts" x="520" y="363" textAnchor="middle" dominantBaseline="central" fill="#712B13">$875K &gt; $872K → Overstated</text>
+          <rect x="80" y="374" width="520" height="22" fill="#fff" stroke="#B4B2A9" strokeWidth="0.3"/>
+          <text className="ts" x="130" y="385" textAnchor="middle" dominantBaseline="central" fill="#444441">2</text>
+          <text className="ts" x="260" y="385" textAnchor="middle" dominantBaseline="central" fill="#444441">$25,000</text>
+          <text className="ts" x="390" y="385" textAnchor="middle" dominantBaseline="central" fill="#085041">$24,640</text>
+          <text className="ts" x="520" y="385" textAnchor="middle" dominantBaseline="central" fill="#712B13">계속 Overstated</text>
+          <rect x="80" y="396" width="520" height="22" fill="#F1EFE8" stroke="#B4B2A9" strokeWidth="0.3"/>
+          <text className="ts" x="130" y="407" textAnchor="middle" dominantBaseline="central" fill="#444441">만기</text>
+          <text className="ts" x="260" y="407" textAnchor="middle" dominantBaseline="central" fill="#444441">합계 $150,000</text>
+          <text className="ts" x="390" y="407" textAnchor="middle" dominantBaseline="central" fill="#085041">합계 $150,000</text>
+          <text className="ts" x="520" y="407" textAnchor="middle" dominantBaseline="central" fill="#444441">$1,000K = $1,000K → No effect</text>
+        </svg>
+        <p style={{ color: '#555', fontStyle: 'italic', marginTop: 8 }}>Memory: EI = BV × rate 구조 → BV 낮은 초기엔 상각 작음, BV 올라갈수록 상각 커짐. 총합은 동일. 만기엔 방법 무관 face value 수렴.</p>
+      </Section>
+
       <Section title="7. Early Retirement">
         <CodeBlock>{`Net Carrying Value = Face ± Unamortized Premium/Discount
 Gain/Loss = Net CV − Reacquisition Price
