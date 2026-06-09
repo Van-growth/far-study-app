@@ -8927,6 +8927,26 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[왜 이 3개가 primary user인가]\n\n① Citizens: 세금을 내는 주체로서 정부가 자원을 효율적으로 사용했는지 알 권리가 있다. 선거권자이기도 하므로 정부 책임성(accountability) 평가의 핵심 주체.\n\n② Legislative/oversight bodies: 예산 편성·승인 권한을 가진 입법부와 감독 기관은 재무정보를 바탕으로 정책 결정과 감독을 수행한다.\n\n③ Investors/creditors: 지방채(municipal bonds)를 매입하거나 대출을 제공하는 투자자·채권자는 정부의 채무 상환 능력을 평가하기 위해 재무보고서를 사용한다.\n\n[제외 대상 논리]\n이웃 주 시민: 해당 정부의 세금을 내지 않고 서비스를 받지도 않으므로 직접적 이해관계 없음\n보고서 작성자: 정보를 생산하는 주체이지 소비하는 주체가 아님\n내부 관리자: 예산 집행·운영 정보를 별도로 접근 가능한 내부 주체 → external report의 타겟이 아님",
   },
 
+  // [GOV_024] Governmental Fund — Four Trust/Revenue Fund Types Comparison
+  // RULE    : principal perpetuity+income only+public → Permanent / external pool other govts → Investment trust / specific individuals → Private-purpose / expendable principal → Special revenue
+  // TRIGGER : 'principal in perpetuity' + 'income only' + public → Permanent fund
+  // TRAP    : Public benefit → Permanent vs 특정 개인 수혜 → Private-purpose trust 혼동 빈출
+  {
+    topic_id: "GOV_024",
+    book_id: 'GN',
+    chapter_id: 'GN_CH3',
+    topic_group: 'GN_CH3_GOVFUND',
+    sub_category_id: "U6_GOVERNMENTAL_FUND",
+    card_type: 'concept',
+    card_name: "Governmental Fund — Four Trust/Revenue Fund Types Comparison",
+    rule: "Permanent fund: principal 영구 보존 + income only + public benefit. Investment trust fund: 외부 정부기관들의 external investment pool. Private-purpose trust fund: 수혜자가 특정 개인/민간단체. Special revenue fund: 특정 목적 제한 + principal expendable.",
+    trigger: "'principal in perpetuity' + 'income only' + public → Permanent fund\n'external pool' + 'other governments' → Investment trust fund\n'specific individuals' / 'private organizations' / 'named beneficiary' → Private-purpose trust fund\n'restricted/committed to specific purpose' + principal expendable → Special revenue fund",
+    trap: "Public library/park → Permanent (public benefit) vs 특정 개인 수혜 → Private-purpose trust 혼동 가장 빈출\nInvestment trust fund = 개인 투자가 아닌 타 정부기관 pooling\nSpecial revenue fund는 원금도 지출 가능 — perpetuity 조건과 정면 충돌",
+    one_sentence: "principal in perpetuity + income only + public → Permanent; 나머지 3개는 이름이 곧 트리거.",
+    speed: "'perpetuity' + 'income' 두 단어 보이면 → Permanent fund 즉시 확정, 선지 분석 불필요",
+    context_background: "[Governmental Fund 내 4가지 fund 유형 구분]\n\n① Permanent Fund\n- 원금(principal): 법적으로 영구 보존 의무\n- 수익(income/earnings)만 공공 목적 지출 가능\n- 수혜자: 일반 공중 (도서관, 공원, 묘지 관리 등)\n- 핵심 문구: 'principal invested in perpetuity' + 'income to be used for [공공시설]'\n\n② Investment Trust Fund (Fiduciary)\n- 여러 정부기관이 자금을 모아 함께 운용하는 external investment pool\n- 수혜자: 참여 정부기관들\n- 핵심 문구: 'external investment pool' / 'other governments'\n\n③ Private-Purpose Trust Fund (Fiduciary)\n- 원금·수익 모두 특정 개인이나 민간단체를 위해 사용\n- 수혜자: specific individuals / private organizations\n- Permanent fund와 형태 유사하나 수혜자가 결정적 차이\n\n④ Special Revenue Fund (Governmental)\n- 특정 목적으로 제한된 재원, 원금+수익 전액 지출 가능\n- 소진 후 종료 가능\n- 핵심 문구: 'restricted/committed to specific purpose' (perpetuity 조건 없음)",
+  },
+
   // [GOV_022] Government Fund Types — Real-World Examples by Fund
   // RULE    : 11개 기금 유형 각각 실제 사업 예시 1~2개로 기억
   // TRIGGER : "which fund" + 사업 설명 → 기금 유형 매칭
