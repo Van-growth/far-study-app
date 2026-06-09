@@ -5443,6 +5443,7 @@ Series B+ 감사 시 핵심 검토 항목`,
     trap: "Must be both measurable AND available — not just one of them.",
     one_sentence: "Modified accrual revenue: must be measurable AND available (collectible within ~60 days of year-end).",
     example: "Property tax levy $1,000,000 / $900,000 collectible within 60 days → recognize $900,000; defer $100,000",
+    context_background: "[Modified Accrual 수익 인식 — 왜 Earned가 아닌 Measurable인가]\n\n[Earned vs Measurable]\nEarned = Performance Obligation 이행 완료 시 수익 인식 (ASC 606, 민간 Full accrual)\n→ 내가 서비스/재화를 제공했을 때 인식\n\nMeasurable = 금액을 숫자로 측정 가능\n→ 세금은 납세자에게 특정 서비스를 제공한 대가가 아님\n→ PO 개념 자체가 없음 → 'earned' 기준 적용 불가\n→ 대신 부과액이 확정됐는지(measurable) + 곧 받을 수 있는지(available)로 판단\n\n[왜 Modified accrual이 현금주의처럼 느껴지는가]\n'available = 60일 이내 수령 가능' 조건 때문\n아직 현금을 받지 않았어도 곧 받을 수 있어야 인식 → 현금주의 냄새\n실제로는 현금주의와 Full accrual의 중간:\n현금주의: 받아야 인식\nModified accrual: 받을 수 있어야 인식\nFull accrual: 벌었으면 인식 (수령 여부 무관)\n\n[Property tax 예시]\n부과(levy) 시점: measurable 충족 (금액 확정)\n60일 이내 수령 가능분: available 충족 → 인식\n60일 초과 예상분: available 미충족 → 이연",
   },
   {
     topic_id: "GOV_008",

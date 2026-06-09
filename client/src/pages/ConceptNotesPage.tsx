@@ -3127,12 +3127,40 @@ function GovContent() {
       </Section>
 
       <Section title="2. Modified Accrual 인식 기준">
-        <CodeBlock>{`Revenue: available (60일 이내 수령) AND measurable
-Expenditure: when liability incurred
-
-Property tax:
-  Measurable → levied 시점
-  Available → 60일 이내 수령 가능한 금액만`}</CodeBlock>
+        <p style={{ marginBottom: 8 }}><strong>Revenue 인식 2조건 — 동시 충족 필요</strong></p>
+        <Table
+          headers={['조건', '의미', '배경']}
+          rows={[
+            ['Measurable', '금액을 숫자로 측정 가능', '세금 부과액 확정 시 충족 / Performance Obligation과 무관'],
+            ['Available', '60일 이내 수령 가능', '현금주의와 full accrual의 중간 — 곧 받을 수 있어야 인식'],
+          ]}
+        />
+        <CodeBlock>{`Property tax 예시:
+  Measurable → 부과(levy) 시점에 금액 확정
+  Available  → 60일 이내 수령 가능한 금액만 인식
+  → 60일 초과 예상분 → 인식 불가 (이연)`}</CodeBlock>
+        <p style={{ marginTop: 12 }}><strong>왜 "Earned"가 아닌 "Measurable"인가</strong></p>
+        <Table
+          headers={['기준', '적용 대상', '핵심 개념']}
+          rows={[
+            ['Earned', '민간기업 (Full accrual / ASC 606)', 'Performance Obligation 이행 완료 시 수익 인식'],
+            ['Measurable', '정부 (Modified accrual)', '세금은 PO 개념 없음 → "벌었다"는 개념 부적용'],
+          ]}
+        />
+        <p style={{ color: '#555', marginTop: 8 }}>세금은 납세자에게 특정 서비스를 제공한 대가가 아님 → PO 자체가 없음 → "이행 완료(earned)" 기준 적용 불가 → "금액 확정(measurable)" + "곧 수령(available)"으로 대체.</p>
+        <p style={{ marginTop: 12 }}><strong>Modified accrual이 현금주의처럼 느껴지는 이유</strong></p>
+        <Table
+          headers={['방식', '수익 인식 시점', '특징']}
+          rows={[
+            ['현금주의', '현금 수령 시', '받아야 인식'],
+            ['Modified accrual', 'Measurable + Available (60일)', '받을 수 있어야 인식 — 중간 지점'],
+            ['Full accrual', 'Earned (PO 이행)', '벌었으면 인식 — 수령 여부 무관'],
+          ]}
+        />
+        <p style={{ color: '#555', fontStyle: 'italic', marginTop: 8 }}>Memory: Modified = 현금주의 + 약간의 발생주의. "60일 이내 받을 수 있으면 인식" — 현금주의보다 조금 앞당긴 것.</p>
+        <p style={{ marginTop: 12 }}><strong>Expenditure 인식</strong></p>
+        <CodeBlock>{`Expenditure: when current fund liability is incurred
+(부채 발생 시 — full accrual expenditure와 동일)`}</CodeBlock>
       </Section>
 
       <Section title="3. Encumbrance 분개">
