@@ -2020,72 +2020,141 @@ Constraint: high probability (significant reversal 없는 경우에만 포함)`}
               <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </marker>
           </defs>
-
-          <g className="c-gray">
-            <rect x="210" y="20" width="260" height="40" rx="20" strokeWidth="0.5"/>
-            <text className="th" x="340" y="40" textAnchor="middle" dominantBaseline="central">Contract modification 발생</text>
-          </g>
-          <line x1="340" y1="60" x2="340" y2="100" stroke="var(--color-text-secondary)" strokeWidth="1.5" markerEnd="url(#arrow-cm)"/>
-
-          <g className="c-gray">
-            <rect x="110" y="100" width="460" height="60" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="340" y="122" textAnchor="middle" dominantBaseline="central">Distinct 재화/용역 추가 AND standalone price 충족?</text>
-            <text className="ts" x="340" y="146" textAnchor="middle" dominantBaseline="central">둘 다 Yes여야 함 — 하나라도 No → Modification</text>
-          </g>
-
+          <rect x="210" y="20" width="260" height="40" rx="20" fill="#D3D1C7" stroke="#888780" strokeWidth="0.5"/>
+          <text className="th" x="340" y="40" textAnchor="middle" dominantBaseline="central" fill="#2C2C2A">Contract modification 발생</text>
+          <line x1="340" y1="60" x2="340" y2="100" stroke="#888780" strokeWidth="1.5" markerEnd="url(#arrow-cm)"/>
+          <rect x="110" y="100" width="460" height="60" rx="8" fill="#D3D1C7" stroke="#888780" strokeWidth="0.5"/>
+          <text className="th" x="340" y="122" textAnchor="middle" dominantBaseline="central" fill="#2C2C2A">Distinct 재화/용역 추가 AND standalone price 충족?</text>
+          <text className="ts" x="340" y="146" textAnchor="middle" dominantBaseline="central" fill="#444441">둘 다 Yes여야 함 — 하나라도 No → Modification</text>
           <path d="M110 130 L50 130 L50 290" fill="none" stroke="#1D9E75" strokeWidth="1.5" markerEnd="url(#arrow-cm)"/>
-          <text className="ts" x="56" y="118">Yes</text>
-
+          <text className="ts" x="56" y="118" fill="#1D9E75">Yes</text>
           <path d="M570 130 L630 130 L630 270" fill="none" stroke="#D85A30" strokeWidth="1.5" markerEnd="url(#arrow-cm)"/>
-          <text className="ts" x="576" y="118">No</text>
-
-          <g className="c-teal">
-            <rect x="20" y="290" width="190" height="80" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="115" y="312" textAnchor="middle" dominantBaseline="central">Separate contract</text>
-            <text className="ts" x="115" y="330" textAnchor="middle">기존 계약 건드리지 않음</text>
-            <text className="ts" x="115" y="346" textAnchor="middle">완전히 독립적 처리</text>
-            <text className="ts" x="115" y="362" textAnchor="middle">새 PO 별도 인식</text>
-          </g>
-
-          <g className="c-gray">
-            <rect x="450" y="270" width="210" height="56" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="555" y="290" textAnchor="middle" dominantBaseline="central">잔여 미이행분이 distinct?</text>
-            <text className="ts" x="555" y="312" textAnchor="middle" dominantBaseline="central">remaining POs 구별 가능</text>
-          </g>
-
-          <line x1="450" y1="298" x2="380" y2="298" stroke="var(--color-text-secondary)" strokeWidth="1" strokeDasharray="3 3"/>
+          <text className="ts" x="576" y="118" fill="#D85A30">No</text>
+          <rect x="20" y="290" width="190" height="80" rx="8" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="0.5"/>
+          <text className="th" x="115" y="312" textAnchor="middle" dominantBaseline="central" fill="#04342C">Separate contract</text>
+          <text className="ts" x="115" y="330" textAnchor="middle" fill="#085041">기존 계약 건드리지 않음</text>
+          <text className="ts" x="115" y="346" textAnchor="middle" fill="#085041">완전히 독립적 처리</text>
+          <text className="ts" x="115" y="362" textAnchor="middle" fill="#085041">새 PO 별도 인식</text>
+          <rect x="450" y="270" width="210" height="56" rx="8" fill="#D3D1C7" stroke="#888780" strokeWidth="0.5"/>
+          <text className="th" x="555" y="290" textAnchor="middle" dominantBaseline="central" fill="#2C2C2A">잔여 미이행분이 distinct?</text>
+          <text className="ts" x="555" y="312" textAnchor="middle" dominantBaseline="central" fill="#444441">remaining POs 구별 가능</text>
+          <line x1="450" y1="298" x2="380" y2="298" stroke="#888780" strokeWidth="1" strokeDasharray="3 3"/>
           <line x1="380" y1="298" x2="380" y2="390" stroke="#185FA5" strokeWidth="1.5" markerEnd="url(#arrow-cm)"/>
-          <text className="ts" x="384" y="290">Yes</text>
-
+          <text className="ts" x="384" y="290" fill="#185FA5">Yes</text>
           <line x1="555" y1="326" x2="555" y2="390" stroke="#993C1D" strokeWidth="1.5" markerEnd="url(#arrow-cm)"/>
-          <text className="ts" x="560" y="362">No</text>
-
-          <g className="c-blue">
-            <rect x="300" y="390" width="150" height="76" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="375" y="412" textAnchor="middle" dominantBaseline="central">Prospective</text>
-            <text className="ts" x="375" y="430" textAnchor="middle">전진 적용</text>
-            <text className="ts" x="375" y="446" textAnchor="middle">잔여분 새 단가 재계산</text>
-            <text className="ts" x="375" y="462" textAnchor="middle">catch-up 없음</text>
-          </g>
-
-          <g className="c-coral">
-            <rect x="470" y="390" width="180" height="76" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="560" y="412" textAnchor="middle" dominantBaseline="central">Cumulative catch-up</text>
-            <text className="ts" x="560" y="430" textAnchor="middle">기존 계약 일부로 처리</text>
-            <text className="ts" x="560" y="446" textAnchor="middle">변경 시점 소급 조정</text>
-            <text className="ts" x="560" y="462" textAnchor="middle">누적 효과 반영</text>
-          </g>
-
-          <line x1="40" y1="488" x2="640" y2="488" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="4 4"/>
-          <text className="th" x="340" y="512" textAnchor="middle" style={{ fontSize: 11 }}>Speed: distinct + standalone price 둘 다 Yes → Separate / 하나라도 No → Modification</text>
+          <text className="ts" x="560" y="362" fill="#993C1D">No</text>
+          <rect x="300" y="390" width="150" height="76" rx="8" fill="#B5D4F4" stroke="#185FA5" strokeWidth="0.5"/>
+          <text className="th" x="375" y="412" textAnchor="middle" dominantBaseline="central" fill="#042C53">Prospective</text>
+          <text className="ts" x="375" y="430" textAnchor="middle" fill="#0C447C">전진 적용</text>
+          <text className="ts" x="375" y="446" textAnchor="middle" fill="#0C447C">잔여분 새 단가 재계산</text>
+          <text className="ts" x="375" y="462" textAnchor="middle" fill="#0C447C">catch-up 없음</text>
+          <rect x="470" y="390" width="180" height="76" rx="8" fill="#F5C4B3" stroke="#993C1D" strokeWidth="0.5"/>
+          <text className="th" x="560" y="412" textAnchor="middle" dominantBaseline="central" fill="#4A1B0C">Cumulative catch-up</text>
+          <text className="ts" x="560" y="430" textAnchor="middle" fill="#712B13">기존 계약 일부로 처리</text>
+          <text className="ts" x="560" y="446" textAnchor="middle" fill="#712B13">변경 시점 소급 조정</text>
+          <text className="ts" x="560" y="462" textAnchor="middle" fill="#712B13">누적 효과 반영</text>
+          <line x1="40" y1="488" x2="640" y2="488" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
+          <text className="th" x="340" y="512" textAnchor="middle" style={{ fontSize: 11 }} fill="#444441">Speed: distinct + standalone price 둘 다 Yes → Separate / 하나라도 No → Modification</text>
         </svg>
+      </Section>
+
+      <Section title="5. Principal / Agent vs Consignor / Consignee">
+        <p style={{ color: '#555', marginBottom: 8 }}>같은 3자 구조, 표현만 다름 — 경제적 실질 동일. 물건 위탁이냐 서비스 위탁이냐의 차이.</p>
+
+        <svg width="100%" viewBox="0 0 680 430" role="img" style={{ marginBottom: 16 }}>
+          <title>Consignment vs Principal/Agent 3자 구조 비교</title>
+          <desc>Consignor/Consignee와 Principal/Agent 구조를 나란히 비교</desc>
+          <defs>
+            <marker id="arrow-pa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </marker>
+          </defs>
+          <text className="th" x="170" y="18" textAnchor="middle" fill="#2C2C2A">Consignment</text>
+          <text className="th" x="510" y="18" textAnchor="middle" fill="#2C2C2A">Principal / Agent</text>
+          <line x1="340" y1="10" x2="340" y2="410" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
+          <rect x="44" y="26" width="252" height="26" rx="6" fill="#F1EFE8" stroke="#B4B2A9" strokeWidth="0.5"/>
+          <text className="ts" x="170" y="39" textAnchor="middle" dominantBaseline="central" fill="#444441">예시: 러그 제조사가 부티크에 위탁 판매</text>
+          <rect x="384" y="26" width="252" height="26" rx="6" fill="#F1EFE8" stroke="#B4B2A9" strokeWidth="0.5"/>
+          <text className="ts" x="510" y="39" textAnchor="middle" dominantBaseline="central" fill="#444441">예시: 항공사가 여행사에 티켓 판매 위탁</text>
+          <rect x="44" y="64" width="252" height="56" rx="8" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="0.5"/>
+          <text className="th" x="170" y="84" textAnchor="middle" dominantBaseline="central" fill="#04342C">Oriental Rug (Consignor)</text>
+          <text className="ts" x="170" y="100" textAnchor="middle" dominantBaseline="central" fill="#085041">러그 소유 · title 보유</text>
+          <text className="ts" x="170" y="114" textAnchor="middle" dominantBaseline="central" fill="#085041">판매 전까지 내 재고 · 판매액 전액 수익</text>
+          <rect x="384" y="64" width="252" height="56" rx="8" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="0.5"/>
+          <text className="th" x="510" y="84" textAnchor="middle" dominantBaseline="central" fill="#04342C">항공사 (Principal)</text>
+          <text className="ts" x="510" y="100" textAnchor="middle" dominantBaseline="central" fill="#085041">비행 서비스 직접 제공</text>
+          <text className="ts" x="510" y="114" textAnchor="middle" dominantBaseline="central" fill="#085041">고객 탑승 의무 → 판매액 전액 수익</text>
+          <line x1="170" y1="120" x2="170" y2="172" stroke="#0F6E56" strokeWidth="1.5" markerEnd="url(#arrow-pa)"/>
+          <text className="ts" x="186" y="150" dominantBaseline="central" fill="#444441">물건 위탁 발송</text>
+          <line x1="510" y1="120" x2="510" y2="172" stroke="#0F6E56" strokeWidth="1.5" markerEnd="url(#arrow-pa)"/>
+          <text className="ts" x="526" y="150" dominantBaseline="central" fill="#444441">티켓 판매 위탁</text>
+          <rect x="44" y="172" width="252" height="56" rx="8" fill="#F5C4B3" stroke="#993C1D" strokeWidth="0.5"/>
+          <text className="th" x="170" y="192" textAnchor="middle" dominantBaseline="central" fill="#4A1B0C">Consign Design (Consignee)</text>
+          <text className="ts" x="170" y="208" textAnchor="middle" dominantBaseline="central" fill="#712B13">title 없음 → inventory $0</text>
+          <text className="ts" x="170" y="222" textAnchor="middle" dominantBaseline="central" fill="#712B13">판매 대행만 → commission만 수익</text>
+          <rect x="384" y="172" width="252" height="56" rx="8" fill="#F5C4B3" stroke="#993C1D" strokeWidth="0.5"/>
+          <text className="th" x="510" y="192" textAnchor="middle" dominantBaseline="central" fill="#4A1B0C">여행사 (Agent)</text>
+          <text className="ts" x="510" y="208" textAnchor="middle" dominantBaseline="central" fill="#712B13">비행 서비스 미제공 → control 없음</text>
+          <text className="ts" x="510" y="222" textAnchor="middle" dominantBaseline="central" fill="#712B13">예약 연결만 → commission만 수익</text>
+          <line x1="170" y1="228" x2="170" y2="280" stroke="#993C1D" strokeWidth="1.5" markerEnd="url(#arrow-pa)"/>
+          <text className="ts" x="186" y="258" dominantBaseline="central" fill="#444441">러그 판매</text>
+          <line x1="510" y1="228" x2="510" y2="280" stroke="#993C1D" strokeWidth="1.5" markerEnd="url(#arrow-pa)"/>
+          <text className="ts" x="526" y="258" dominantBaseline="central" fill="#444441">티켓 판매</text>
+          <rect x="44" y="280" width="252" height="44" rx="8" fill="#D3D1C7" stroke="#888780" strokeWidth="0.5"/>
+          <text className="th" x="170" y="302" textAnchor="middle" dominantBaseline="central" fill="#2C2C2A">고객</text>
+          <rect x="384" y="280" width="252" height="44" rx="8" fill="#D3D1C7" stroke="#888780" strokeWidth="0.5"/>
+          <text className="th" x="510" y="302" textAnchor="middle" dominantBaseline="central" fill="#2C2C2A">고객</text>
+          <line x1="40" y1="348" x2="640" y2="348" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
+          <rect x="44" y="358" width="252" height="42" rx="6" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/>
+          <text className="ts" x="170" y="373" textAnchor="middle" dominantBaseline="central" fill="#085041">판단 기준: title(법적 소유권) 이전 여부</text>
+          <text className="ts" x="170" y="389" textAnchor="middle" dominantBaseline="central" fill="#085041">title 없음 → inventory $0 · commission only</text>
+          <rect x="384" y="358" width="252" height="42" rx="6" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/>
+          <text className="ts" x="510" y="373" textAnchor="middle" dominantBaseline="central" fill="#085041">판단 기준: 고객에게 직접 제공 의무 여부</text>
+          <text className="ts" x="510" y="389" textAnchor="middle" dominantBaseline="central" fill="#085041">control 없음 → gross 불가 · net only</text>
+        </svg>
+
+        <svg width="100%" viewBox="0 0 680 320" role="img" style={{ marginBottom: 8 }}>
+          <title>Consignment 수익 분배 흐름</title>
+          <desc>Oriental Rug / Consign Design 예시로 판매액 분배와 재고 귀속 흐름</desc>
+          <defs>
+            <marker id="arrow-rs" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </marker>
+          </defs>
+          <rect x="40" y="12" width="600" height="28" rx="6" fill="#F1EFE8" stroke="#B4B2A9" strokeWidth="0.5"/>
+          <text className="ts" x="340" y="26" textAnchor="middle" dominantBaseline="central" fill="#444441">예시: 러그 6개 위탁 ($5,000/개) · 4개 판매 $38,000 · commission 10% · 미판매 2개</text>
+          <rect x="220" y="56" width="240" height="52" rx="8" fill="#D3D1C7" stroke="#888780" strokeWidth="0.5"/>
+          <text className="th" x="340" y="76" textAnchor="middle" dominantBaseline="central" fill="#2C2C2A">고객 지급 $38,000</text>
+          <text className="ts" x="340" y="94" textAnchor="middle" dominantBaseline="central" fill="#444441">Consignee가 수령</text>
+          <path d="M280 108 L160 172" fill="none" stroke="#0F6E56" strokeWidth="1.5" markerEnd="url(#arrow-rs)"/>
+          <text className="ts" x="174" y="142" textAnchor="middle" fill="#444441">90% 송금</text>
+          <path d="M400 108 L520 172" fill="none" stroke="#993C1D" strokeWidth="1.5" markerEnd="url(#arrow-rs)"/>
+          <text className="ts" x="508" y="142" textAnchor="middle" fill="#444441">10% 보유</text>
+          <rect x="40" y="172" width="240" height="80" rx="8" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="0.5"/>
+          <text className="th" x="160" y="194" textAnchor="middle" dominantBaseline="central" fill="#04342C">Oriental Rug (Consignor)</text>
+          <text className="ts" x="160" y="212" textAnchor="middle" dominantBaseline="central" fill="#085041">Revenue $34,200</text>
+          <text className="ts" x="160" y="228" textAnchor="middle" dominantBaseline="central" fill="#085041">Inventory: 2개 × $5,000 = $10,000</text>
+          <text className="ts" x="160" y="244" textAnchor="middle" dominantBaseline="central" fill="#085041">(미판매분 · title 유지)</text>
+          <rect x="400" y="172" width="240" height="80" rx="8" fill="#F5C4B3" stroke="#993C1D" strokeWidth="0.5"/>
+          <text className="th" x="520" y="194" textAnchor="middle" dominantBaseline="central" fill="#4A1B0C">Consign Design (Consignee)</text>
+          <text className="ts" x="520" y="212" textAnchor="middle" dominantBaseline="central" fill="#712B13">Revenue $3,800</text>
+          <text className="ts" x="520" y="228" textAnchor="middle" dominantBaseline="central" fill="#712B13">Inventory $0</text>
+          <text className="ts" x="520" y="244" textAnchor="middle" dominantBaseline="central" fill="#712B13">(title 없음 → 재고 인식 불가)</text>
+          <line x1="40" y1="274" x2="640" y2="274" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
+          <text className="ts" x="160" y="294" textAnchor="middle" fill="#085041">Consignor = gross 수익 + inventory 보유</text>
+          <text className="ts" x="520" y="294" textAnchor="middle" fill="#712B13">Consignee = commission only + inventory $0</text>
+        </svg>
+
+        <p style={{ color: '#555', fontStyle: 'italic', marginTop: 4 }}>Memory: 창고에 물리적으로 있어도 title 없으면 재고 아님. Consignee 창고 = Consignor 재고.</p>
       </Section>
 
       <TrapBox items={[
         '"In addition" → 별도 PO 여부 주의',
         'Gain contingency = 인식 금지',
         'Significant financing component (>1yr) → PV 할인',
-        'Principal vs Agent: control 이전 여부 판단',
+        'Principal vs Agent: control 이전 여부 판단 (gross vs net)',
+        'Consignee = inventory $0 / revenue = commission only (title 없음)',
+        '회사명에 Consign / Agency 포함 → Consignee 신호',
       ]} />
     </div>
   )

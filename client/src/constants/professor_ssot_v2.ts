@@ -10179,6 +10179,28 @@ Series B+ 감사 시 핵심 검토 항목`,
     rule_items: ["Incremental = 계약 없었으면 발생 안 했을 비용만", "Recoverable = 계약 수익이 비용보다 커야 자산화 가능", "커미션 → capitalize", "급여(고정비) → expense", "광고비(일반영업) → expense", "자산화 후 계약 기간 상각 → 수익 매칭"],
     key_formula: "Contract Cost Asset → 계약 기간 상각 = Amortization Expense",
   },
+
+  // [REV_019] Consignment — Consignee reports $0 inventory and commission-only revenue
+  // RULE    : Consignee = inventory $0 (no title) / revenue = commission only
+  // TRIGGER : "on consignment to" → 그 회사 = Consignee → inventory $0
+  // TRAP    : 미판매 재고를 Consignee 재고로 계상 → title 없음 → $0
+  {
+    topic_id: "REV_019",
+    book_id: 'IA',
+    chapter_id: 'IA_CH2',
+    topic_group: 'IA_CH2_REV',
+    sub_category_id: "U2_REVENUE_RECOGNITION",
+    card_type: 'concept',
+    card_name: "Consignment — Consignee reports $0 inventory and commission-only revenue",
+    rule: "Consignee(수탁자) 보고 기준:\n① Inventory = $0 (title 없음 → 재고 인식 불가)\n② Revenue = 판매액 × commission% (Agent 구조)\n③ 미판매분 = Consignor 재고로 남음\n\nConsignor(위탁자) 보고 기준:\n① Inventory = 미판매분 원가 + Consignor 부담 운송비\n② Revenue = 판매액 전액 (판매 확정 시점)\n\n[Consignment = Principal/Agent 물리적 버전]\nConsignor = Principal (title 보유, gross 수익)\nConsignee = Agent (title 없음, net 수익)",
+    trigger: '"on consignment to [회사명]" → 그 회사 = Consignee → inventory $0\n"commission of X%" → Consignee revenue = 판매액 × X%\n문제 주어가 Consignee → inventory / revenue 모두 재확인\n회사명에 Consign / Agency 포함 → Consignee 신호',
+    trap: "미판매 재고 원가를 Consignee 재고로 계상 → title 없음 → $0\n판매 전액 revenue 인식 → Agent 구조 → commission만\nConsignor 부담 운송비를 Consignee 비용으로 처리 → Consignor 재고 원가",
+    one_sentence: "Consignee = inventory $0 / revenue = commission only; Consignor = 미판매분 재고 + revenue 전액.",
+    speed: "Consignee 문제 → inventory $0 즉시 / revenue = 판매액 × commission% → 계산 끝",
+    example: "Oriental Rug → Consignor / Consign Design → Consignee\n4개 판매 $38,000 / commission 10%\nConsignee: inventory $0 / revenue $3,800\nConsignor: inventory 미판매 2개 $10,000 + freight / revenue $34,200",
+    context_background: "[Consignment = Principal/Agent의 물리적 재고 버전]\n\nConsignor = Principal\n→ 실질 소유자, title 보유, 재고 위험 부담\n→ 판매 전까지 자신의 재고\n→ 수익 = 판매가 전액\n\nConsignee = Agent\n→ 중간자, title 없음, 재고 위험 없음\n→ 보관·판매 역할만\n→ 수익 = commission만\n\n[두 구조 완전 동일]\nPrincipal/Agent: 고객에게 직접 서비스/재화 제공하는가 (control)\nConsignor/Consignee: 판매 전까지 title을 누가 갖는가\n→ 경제적 실질 동일, 표현 방식만 다름\n\n[항공사/여행사 예시]\n항공사(Principal): 비행 서비스 직접 제공 → 고객 탑승 의무 → gross 수익\n여행사(Agent): 티켓 예약 연결만 → 비행 서비스 미제공 → commission만",
+  },
+
   {
     topic_id: "REV_016",
     book_id: "IA",
