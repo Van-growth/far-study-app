@@ -3255,8 +3255,8 @@ function RatioContent() {
           rows={[
             ['Liquidity', 'Current ratio', 'CA ÷ CL'],
             ['Liquidity', 'Quick ratio', '(Cash+ST inv+AR) ÷ CL'],
-            ['Profitability', 'ROA', 'NI ÷ Avg total assets'],
-            ['Profitability', 'ROE', 'NI ÷ Avg SE'],
+            ['Profitability', 'ROA', 'NI (after tax) ÷ Avg total assets'],
+            ['Profitability', 'ROE', 'NI (after tax) ÷ Avg SE'],
             ['Efficiency', 'Asset turnover', 'Net sales ÷ Avg total assets'],
             ['Efficiency', 'DSO', '365 ÷ AR turnover'],
             ['Market', 'P/E', 'Market price ÷ Basic EPS'],
@@ -3264,6 +3264,21 @@ function RatioContent() {
         />
         <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Quick ratio = 지금 당장 현금화 가능한 것만. 재고는 팔아야 현금 — 즉시 현금화 불가.</p>
       </Section>
+
+      <Section title="Key Terms">
+        <Table
+          headers={['약어', '풀네임', '직관적 의미']}
+          rows={[
+            ['ROA', 'Return on Assets', '자산 $1로 세후 얼마 버는가'],
+            ['ROE', 'Return on Equity', '주주 자본 $1로 세후 얼마 버는가'],
+            ['DSO', 'Days Sales Outstanding', 'AR 회수에 평균 며칠 걸리는가 — 낮을수록 좋음'],
+            ['AR Turnover', 'Accounts Receivable Turnover', '1년에 AR을 몇 번 회수하는가 — 높을수록 좋음'],
+            ['P/E', 'Price-to-Earnings Ratio', '주가가 EPS의 몇 배인가 — 시장 기대치'],
+          ]}
+        />
+        <p style={{ color: '#555', fontStyle: 'italic', marginTop: 8 }}>Memory: DSO↑ = 돈 회수 느림 = 나쁨 / AR Turnover↑ = 회수 빠름 = 좋음 — 반비례 관계.</p>
+      </Section>
+
       <Section title="1. Liquidity Ratios">
         <Table
           headers={['지표', '공식', '예시']}
@@ -3279,9 +3294,9 @@ function RatioContent() {
           headers={['지표', '공식', '주의']}
           rows={[
             ['Gross Margin %', '(Sales − COGS) ÷ Sales', ''],
-            ['Net Profit Margin', 'NI ÷ Net Sales', ''],
-            ['ROA', 'NI ÷ Avg Total Assets', 'Avg (기초+기말÷2) 필수'],
-            ['ROE', 'NI ÷ Avg Stockholders\' Equity', 'Avg 필수'],
+            ['Net Profit Margin', 'NI (after tax) ÷ Net Sales', ''],
+            ['ROA', 'NI (after tax) ÷ Avg Total Assets', 'Avg (기초+기말÷2) 필수'],
+            ['ROE', 'NI (after tax) ÷ Avg Stockholders\' Equity', 'Avg 필수'],
           ]}
         />
       </Section>
@@ -3296,14 +3311,26 @@ function RatioContent() {
             ['P/E Ratio', 'Market Price per Share ÷ Basic EPS', '$45 ÷ $3.00 = 15×'],
           ]}
         />
+        <CodeBlock>{`DSO 계산 2단계:
+① AR Turnover = Net Sales ÷ Avg AR
+   (1년에 AR을 몇 번 회수했는가)
+
+② DSO = 365 ÷ AR Turnover
+   (한 번 회수에 며칠 걸리는가)
+
+풀어쓰면: DSO = 365 × Avg AR ÷ Net Sales
+
+예시: Sales $1,200K / Avg AR $100K
+  → AR Turnover = $1,200K ÷ $100K = 12회
+  → DSO = 365 ÷ 12 = 30.4일`}</CodeBlock>
       </Section>
 
       <TrapBox items={[
-        'Asset Turnover → Ending 단독 사용 금지 → 반드시 평균(Avg) 사용',
-        'Quick Ratio → Inventory AND Prepaid 둘 다 제외',
+        'ROA/ROE/Net Profit Margin 분자 → NI after tax (before tax 사용 시 오답)',
         'ROA/ROE 분모 → 반드시 Average (Ending만 사용 시 오답)',
+        'Quick Ratio → Inventory AND Prepaid 둘 다 제외',
+        'DSO 분모 = AR Turnover (Net Sales 직접 나누기 금지 — 2단계 거쳐야 함)',
         'P/E 분모 = Basic EPS (Diluted EPS 사용 주의)',
-        'DSO 공식: 365 ÷ AR Turnover (AR Turnover = Net Sales ÷ Avg AR)',
       ]} />
     </div>
   )
