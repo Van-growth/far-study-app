@@ -1845,6 +1845,103 @@ function PpeContent() {
         />
       </Section>
 
+      <Section title="감가상각 패턴 — 한눈에">
+        <p style={{ color: '#555', marginBottom: 12 }}>같은 자산도 방법에 따라 비용 패턴이 완전히 다름. <strong>DDB가 Year 1 시작이 SYD보다 높고 더 가파르게 떨어짐.</strong> SYD는 직선적으로 하강.</p>
+        <svg width="100%" viewBox="0 0 680 560" role="img">
+          <title>감가상각비 패턴 비교 SL SYD DDB</title>
+          <desc>3가지 감가상각 방법의 비용 패턴 그래프와 연도별 숫자 비교표</desc>
+          <defs>
+            <marker id="arrow-dep" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </marker>
+          </defs>
+          <text className="th" x="340" y="22" textAnchor="middle" fill="#2C2C2A">감가상각비 패턴 비교 (Cost $15,000 / Salvage $0 / 5yr)</text>
+          <line x1="80" y1="310" x2="600" y2="310" stroke="#888780" strokeWidth="1" markerEnd="url(#arrow-dep)"/>
+          <line x1="80" y1="310" x2="80" y2="50" stroke="#888780" strokeWidth="1" markerEnd="url(#arrow-dep)"/>
+          <text className="ts" x="610" y="314" fill="#444441">Year</text>
+          <text className="ts" x="55" y="46" textAnchor="middle" fill="#444441">Dep.</text>
+          <text className="ts" x="55" y="58" textAnchor="middle" fill="#444441">Exp.</text>
+          <text className="ts" x="180" y="324" textAnchor="middle" fill="#444441">1</text>
+          <text className="ts" x="280" y="324" textAnchor="middle" fill="#444441">2</text>
+          <text className="ts" x="380" y="324" textAnchor="middle" fill="#444441">3</text>
+          <text className="ts" x="480" y="324" textAnchor="middle" fill="#444441">4</text>
+          <text className="ts" x="580" y="324" textAnchor="middle" fill="#444441">5</text>
+          <line x1="76" y1="220" x2="84" y2="220" stroke="#888780" strokeWidth="0.5"/>
+          <text className="ts" x="72" y="224" textAnchor="end" fill="#888780">$3,000</text>
+          <line x1="76" y1="130" x2="84" y2="130" stroke="#888780" strokeWidth="0.5"/>
+          <text className="ts" x="72" y="134" textAnchor="end" fill="#0F6E56">$5,000</text>
+          <line x1="76" y1="90" x2="84" y2="90" stroke="#888780" strokeWidth="0.5"/>
+          <text className="ts" x="72" y="94" textAnchor="end" fill="#993C1D">$6,000</text>
+          <line x1="80" y1="220" x2="600" y2="220" stroke="#B4B2A9" strokeWidth="0.3" strokeDasharray="3 4"/>
+          <line x1="80" y1="130" x2="600" y2="130" stroke="#B4B2A9" strokeWidth="0.3" strokeDasharray="3 4"/>
+          <line x1="80" y1="90" x2="600" y2="90" stroke="#B4B2A9" strokeWidth="0.3" strokeDasharray="3 4"/>
+          <line x1="180" y1="220" x2="580" y2="220" stroke="#888780" strokeWidth="2.5"/>
+          <circle cx="180" cy="220" r="4" fill="#888780"/>
+          <circle cx="280" cy="220" r="4" fill="#888780"/>
+          <circle cx="380" cy="220" r="4" fill="#888780"/>
+          <circle cx="480" cy="220" r="4" fill="#888780"/>
+          <circle cx="580" cy="220" r="4" fill="#888780"/>
+          <text className="ts" x="615" y="215" fill="#444441">I. SL</text>
+          <text className="ts" x="615" y="228" fill="#888780">균등</text>
+          <line x1="180" y1="130" x2="280" y2="166" stroke="#0F6E56" strokeWidth="2.5"/>
+          <line x1="280" y1="166" x2="380" y2="202" stroke="#0F6E56" strokeWidth="2.5"/>
+          <line x1="380" y1="202" x2="480" y2="238" stroke="#0F6E56" strokeWidth="2.5"/>
+          <line x1="480" y1="238" x2="580" y2="274" stroke="#0F6E56" strokeWidth="2.5"/>
+          <circle cx="180" cy="130" r="4" fill="#0F6E56"/>
+          <circle cx="280" cy="166" r="4" fill="#0F6E56"/>
+          <circle cx="380" cy="202" r="4" fill="#0F6E56"/>
+          <circle cx="480" cy="238" r="4" fill="#0F6E56"/>
+          <circle cx="580" cy="274" r="4" fill="#0F6E56"/>
+          <text className="ts" x="615" y="136" fill="#0F6E56">II. SYD</text>
+          <text className="ts" x="615" y="149" fill="#0F6E56">직선 하강</text>
+          <path d="M180 90 C220 105 250 150 280 180 C320 218 360 250 420 272 C460 284 510 295 580 308" fill="none" stroke="#993C1D" strokeWidth="2.5"/>
+          <circle cx="180" cy="90" r="4" fill="#993C1D"/>
+          <text className="ts" x="615" y="96" fill="#993C1D">III. DDB</text>
+          <text className="ts" x="615" y="109" fill="#993C1D">가파른 곡선</text>
+          <line x1="180" y1="90" x2="180" y2="130" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="3 3"/>
+          <rect x="190" y="94" width="88" height="30" rx="4" fill="#FAECE7" stroke="#993C1D" strokeWidth="0.5"/>
+          <text className="th" x="234" y="104" textAnchor="middle" dominantBaseline="central" fill="#712B13">DDB &gt; SYD</text>
+          <text className="ts" x="234" y="118" textAnchor="middle" dominantBaseline="central" fill="#993C1D">Year 1 시작점</text>
+          <line x1="80" y1="340" x2="640" y2="340" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
+          <rect x="80" y="356" width="560" height="28" rx="4" fill="#D3D1C7" stroke="#888780" strokeWidth="0.5"/>
+          <text className="th" x="150" y="370" textAnchor="middle" dominantBaseline="central" fill="#2C2C2A">Year</text>
+          <text className="th" x="290" y="370" textAnchor="middle" dominantBaseline="central" fill="#444441">I. SL</text>
+          <text className="th" x="430" y="370" textAnchor="middle" dominantBaseline="central" fill="#0F6E56">II. SYD</text>
+          <text className="th" x="570" y="370" textAnchor="middle" dominantBaseline="central" fill="#993C1D">III. DDB</text>
+          <rect x="80" y="384" width="560" height="26" fill="#F1EFE8" stroke="#B4B2A9" strokeWidth="0.3"/>
+          <text className="ts" x="150" y="397" textAnchor="middle" dominantBaseline="central" fill="#444441">1</text>
+          <text className="ts" x="290" y="397" textAnchor="middle" dominantBaseline="central" fill="#444441">$3,000</text>
+          <text className="ts" x="430" y="397" textAnchor="middle" dominantBaseline="central" fill="#085041">$5,000</text>
+          <text className="ts" x="570" y="397" textAnchor="middle" dominantBaseline="central" fill="#712B13">$6,000</text>
+          <rect x="80" y="410" width="560" height="26" fill="#fff" stroke="#B4B2A9" strokeWidth="0.3"/>
+          <text className="ts" x="150" y="423" textAnchor="middle" dominantBaseline="central" fill="#444441">2</text>
+          <text className="ts" x="290" y="423" textAnchor="middle" dominantBaseline="central" fill="#444441">$3,000</text>
+          <text className="ts" x="430" y="423" textAnchor="middle" dominantBaseline="central" fill="#085041">$4,000</text>
+          <text className="ts" x="570" y="423" textAnchor="middle" dominantBaseline="central" fill="#712B13">$3,600</text>
+          <rect x="80" y="436" width="560" height="26" fill="#F1EFE8" stroke="#B4B2A9" strokeWidth="0.3"/>
+          <text className="ts" x="150" y="449" textAnchor="middle" dominantBaseline="central" fill="#444441">3</text>
+          <text className="ts" x="290" y="449" textAnchor="middle" dominantBaseline="central" fill="#444441">$3,000</text>
+          <text className="ts" x="430" y="449" textAnchor="middle" dominantBaseline="central" fill="#085041">$3,000</text>
+          <text className="ts" x="570" y="449" textAnchor="middle" dominantBaseline="central" fill="#712B13">$2,160</text>
+          <rect x="80" y="462" width="560" height="26" fill="#fff" stroke="#B4B2A9" strokeWidth="0.3"/>
+          <text className="ts" x="150" y="475" textAnchor="middle" dominantBaseline="central" fill="#444441">4</text>
+          <text className="ts" x="290" y="475" textAnchor="middle" dominantBaseline="central" fill="#444441">$3,000</text>
+          <text className="ts" x="430" y="475" textAnchor="middle" dominantBaseline="central" fill="#085041">$2,000</text>
+          <text className="ts" x="570" y="475" textAnchor="middle" dominantBaseline="central" fill="#712B13">$1,296</text>
+          <rect x="80" y="488" width="560" height="26" fill="#F1EFE8" stroke="#B4B2A9" strokeWidth="0.3"/>
+          <text className="ts" x="150" y="501" textAnchor="middle" dominantBaseline="central" fill="#444441">5</text>
+          <text className="ts" x="290" y="501" textAnchor="middle" dominantBaseline="central" fill="#444441">$3,000</text>
+          <text className="ts" x="430" y="501" textAnchor="middle" dominantBaseline="central" fill="#085041">$1,000</text>
+          <text className="ts" x="570" y="501" textAnchor="middle" dominantBaseline="central" fill="#712B13">$778*</text>
+          <rect x="80" y="514" width="560" height="26" rx="0" fill="#D3D1C7" stroke="#888780" strokeWidth="0.3"/>
+          <text className="ts" x="150" y="527" textAnchor="middle" dominantBaseline="central" fill="#444441">합계</text>
+          <text className="ts" x="290" y="527" textAnchor="middle" dominantBaseline="central" fill="#444441">$15,000</text>
+          <text className="ts" x="430" y="527" textAnchor="middle" dominantBaseline="central" fill="#085041">$15,000</text>
+          <text className="ts" x="570" y="527" textAnchor="middle" dominantBaseline="central" fill="#712B13">$13,834*</text>
+        </svg>
+        <p style={{ color: '#888', fontSize: 12, marginTop: 4 }}>* DDB Year 5: 잔여 BV $778 전액 상각 (Salvage $0 기준). Salvage 있으면 BV = Salvage에서 중단.</p>
+      </Section>
+
       <Section title="3. Interest Capitalization">
         <CodeBlock>{`- 건설 중 자산에만 해당 (Qualifying asset)
 - Avoidable interest = 자산 지출 × weighted average rate
@@ -1872,6 +1969,7 @@ Step2 Measurement:
       <TrapBox items={[
         'Land = 감가상각 없음',
         'DDB: Salvage 무시하지만 BV < Salvage 되면 감가상각 중단',
+        'SYD vs DDB 혼동: DDB Year 1 시작이 더 높음 ($6,000 > $5,000) + 더 가파른 곡선 / SYD는 직선적 하강',
         'Step1 = Undiscounted CF (PV 아님!)',
         'US GAAP: impairment write-up 불가 (IFRS는 가능)',
         'Interest capitalization: 12/31 지출 = $0 (0/12 가중치)',
