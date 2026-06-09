@@ -7421,6 +7421,27 @@ Series B+ 감사 시 핵심 검토 항목`,
     one_sentence: "새 정보로 추정치 업데이트 = Prospective / 회계원칙 변경 = Retrospective / 과거 잘못 = Restatement.",
     example: "Warranty $150→$165 per unit (new experience) → Change in Estimate → Year 2 continuing operations, no restatement",
   },
+
+  // [CHANGE_008] Estimate vs Principle — 구분 불가 시 Estimate로 처리
+  // RULE    : 구분 불가 → Change in Estimate → Prospective
+  // TRIGGER : "impossible to determine whether estimate or principle" → Estimate
+  // TRAP    : 불확실할 때 소급이 더 안전하다는 착각 → 오히려 더 나쁜 왜곡
+  {
+    topic_id: "CHANGE_008",
+    book_id: 'AA',
+    chapter_id: 'AA_CH8',
+    topic_group: 'AA_CH8_ACCCHG',
+    sub_category_id: "U2_ACCOUNTING_CHANGES",
+    card_type: 'concept',
+    card_name: "Estimate vs Principle — 구분 불가 시 Estimate로 처리",
+    rule: "Estimate와 Principle을 구분할 수 없을 때 → Change in Estimate로 처리 → Prospective\n\n이유: 불확실한 상태에서 Retrospective(소급) 적용하면 부정확한 숫자로 과거 재무제표를 수정하는 결과 → 더 나쁜 왜곡\n→ '모르면 건드리지 마라' = Prospective\n\n대표 사례: 감가상각 방법 변경\n→ Principle 변경처럼 보이지만 동시에 자산 경제적 효익 소비 패턴에 대한 추정 변경\n→ US GAAP: Change in Estimate → Prospective",
+    trigger: '"impossible to determine whether estimate or principle" → Estimate → Prospective\n"cannot be distinguished from a change in principle" → Estimate 처리\n감가상각 방법 변경 → 구분 불가의 대표 사례 → Estimate',
+    trap: "Principle로 처리해야 한다는 착각 — 보수주의 때문에 더 강한 처리(소급)를 선택하고 싶지만, 불확실할 때 소급이 오히려 더 많은 왜곡을 만듦\nEstimate = Retrospective 착각 — Estimate는 항상 Prospective\n구분 불가 → Principle이 더 안전하다는 착각 → 반대",
+    one_sentence: "Estimate vs Principle 구분 불가 → Estimate(Prospective); 불확실할 때 소급은 오히려 더 나쁜 왜곡.",
+    speed: '"impossible to determine estimate or principle" → Estimate → Prospective → C',
+    context_background: "[왜 Estimate가 기본값인가]\n\n불확실한 상황에서 Retrospective(소급) 적용:\n→ 부정확한 근거로 과거 재무제표 전체를 수정\n→ 오히려 더 많은 판단 개입 + 더 큰 왜곡\n\n불확실한 상황에서 Prospective(전진) 적용:\n→ 과거는 그대로 두고 지금부터 새 정보 반영\n→ 최소 개입 = 덜 왜곡\n\n[보수주의 적용 방향]\n보수주의 = 이익·자산 과대계상 방지\n'더 강한 처리(소급)' ≠ 보수주의\n'덜 개입하는 처리(전진)' = 불확실할 때 더 정확한 재무제표\n\n[감가상각 방법 변경 — 구분 불가 대표 사례]\nSYD → SL 변경:\n→ 방법을 바꾸는 것 = Principle처럼 보임\n→ 자산 효익 소비 패턴 추정 변경 = Estimate이기도 함\n→ 둘 다 해당 → US GAAP: Change in Estimate → Prospective",
+  },
+
   {
     topic_id: "ACE_002",
     book_id: 'AA',

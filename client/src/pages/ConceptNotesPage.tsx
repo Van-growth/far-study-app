@@ -3223,7 +3223,8 @@ function ChangesContent() {
             ['Error Correction', 'Restatement', '잘못된 방법 사용'],
           ]}
         />
-        <p style={{ marginTop: 8 }}><strong>Critical trap:</strong> 감가상각 방법 변경 = Change in <em>Estimate</em> (Prospective!) — 가장 자주 출제되는 함정.</p>
+        <p style={{ marginTop: 8 }}><strong>Critical trap 1:</strong> 감가상각 방법 변경 = Change in <em>Estimate</em> (Prospective!) — Principle처럼 보이지만 Estimate.</p>
+        <p style={{ marginTop: 4 }}><strong>Critical trap 2:</strong> Estimate vs Principle 구분 불가 → <em>Estimate</em>로 처리 (Prospective). 불확실할 때 소급 적용하면 부정확한 숫자로 과거를 수정하게 되어 오히려 더 나쁜 왜곡이 생김.</p>
         <p style={{ color: '#555', fontStyle: 'italic' }}>Memory: Estimate 변경 = 새로운 정보 반영. Principle 변경 = 다른 회계 방법 선택.</p>
       </Section>
       <Section title="1. 4가지 유형 비교">
