@@ -1817,6 +1817,56 @@ DV LIFO = Σ (each layer × its year index)`}</CodeBlock>
       <DefaultBox items={[
         { default: 'Cost flow: 문제 명시 방법 사용 (FIFO/LIFO/WA 모두 허용)', changed: '방법 변경 시 → Retrospective (Change in Accounting Principle)' },
       ]} />
+      <Section title="Markup 변환 — Sales → COGS">
+        <p style={{ color: '#555', marginBottom: 12 }}>같은 25%여도 기준이 다르면 COGS가 달라진다. Periodic 공식 전에 반드시 변환 먼저.</p>
+        <svg width="100%" viewBox="0 0 680 420" role="img">
+          <title>Markup on cost vs Markup on sales 직관 비교</title>
+          <desc>왼쪽: COGS 위에 GP 얹기 / 오른쪽: Sales 막대를 옆에서 쪼개기</desc>
+          <defs>
+            <marker id="arr-mk" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </marker>
+          </defs>
+          <text className="th" x="340" y="22" textAnchor="middle" fill="#2C2C2A">Markup 25% — 구조가 다르다</text>
+          <text className="ts" x="340" y="36" textAnchor="middle" fill="#444441">Sales $600,000 기준</text>
+          <line x1="340" y1="46" x2="340" y2="390" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
+          <text className="th" x="155" y="58" textAnchor="middle" fill="#2C2C2A">Markup on Cost 25%</text>
+          <text className="ts" x="155" y="72" textAnchor="middle" fill="#085041">COGS에 GP를 얹어서 → Sales</text>
+          <rect x="60" y="88" width="190" height="48" rx="6" fill="#F5C4B3" stroke="#993C1D" strokeWidth="1.5"/>
+          <text className="th" x="155" y="106" textAnchor="middle" dominantBaseline="central" fill="#712B13">GP + $120,000</text>
+          <text className="ts" x="155" y="122" textAnchor="middle" dominantBaseline="central" fill="#993C1D">= COGS × 25%</text>
+          <rect x="60" y="136" width="190" height="160" rx="6" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="1.5"/>
+          <text className="th" x="155" y="203" textAnchor="middle" dominantBaseline="central" fill="#04342C">COGS $480,000</text>
+          <text className="ts" x="155" y="223" textAnchor="middle" dominantBaseline="central" fill="#085041">= Sales ÷ 1.25</text>
+          <line x1="45" y1="88" x2="58" y2="88" stroke="#888780" strokeWidth="1"/>
+          <line x1="45" y1="296" x2="58" y2="296" stroke="#888780" strokeWidth="1"/>
+          <line x1="45" y1="88" x2="45" y2="296" stroke="#888780" strokeWidth="1"/>
+          <text className="ts" x="30" y="185" textAnchor="middle" fill="#444441">Sales</text>
+          <text className="ts" x="30" y="197" textAnchor="middle" fill="#444441">$600K</text>
+          <rect x="60" y="318" width="190" height="36" rx="6" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/>
+          <text className="th" x="155" y="336" textAnchor="middle" dominantBaseline="central" fill="#2C2C2A">COGS = Sales ÷ 1.25</text>
+          <text className="th" x="510" y="58" textAnchor="middle" fill="#2C2C2A">Markup on Sales 25%</text>
+          <text className="ts" x="510" y="72" textAnchor="middle" fill="#085041">Sales 막대를 GP / COGS로 쪼갬</text>
+          <rect x="360" y="88" width="120" height="208" rx="6" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="1.5"/>
+          <text className="th" x="420" y="185" textAnchor="middle" dominantBaseline="central" fill="#04342C">Sales</text>
+          <text className="th" x="420" y="205" textAnchor="middle" dominantBaseline="central" fill="#04342C">$600K</text>
+          <path d="M480 88 L520 88" fill="none" stroke="#993C1D" strokeWidth="1.5" markerEnd="url(#arr-mk)"/>
+          <path d="M480 140 L520 140" fill="none" stroke="#0F6E56" strokeWidth="1.5" markerEnd="url(#arr-mk)"/>
+          <path d="M480 296 L520 296" fill="none" stroke="#0F6E56" strokeWidth="1.5" markerEnd="url(#arr-mk)"/>
+          <line x1="480" y1="88" x2="480" y2="296" stroke="#B4B2A9" strokeWidth="0.5"/>
+          <rect x="520" y="88" width="140" height="52" rx="6" fill="#F5C4B3" stroke="#993C1D" strokeWidth="1.5"/>
+          <text className="th" x="590" y="106" textAnchor="middle" dominantBaseline="central" fill="#712B13">GP $150,000</text>
+          <text className="ts" x="590" y="122" textAnchor="middle" dominantBaseline="central" fill="#993C1D">= Sales × 25%</text>
+          <rect x="520" y="140" width="140" height="156" rx="6" fill="#9FE1CB" stroke="#0F6E56" strokeWidth="1.5"/>
+          <text className="th" x="590" y="205" textAnchor="middle" dominantBaseline="central" fill="#04342C">COGS $450,000</text>
+          <text className="ts" x="590" y="225" textAnchor="middle" dominantBaseline="central" fill="#085041">= Sales × 75%</text>
+          <line x1="360" y1="140" x2="520" y2="140" stroke="#993C1D" strokeWidth="1.5" strokeDasharray="5 3"/>
+          <rect x="360" y="318" width="300" height="36" rx="6" fill="#F1EFE8" stroke="#888780" strokeWidth="0.5"/>
+          <text className="th" x="510" y="336" textAnchor="middle" dominantBaseline="central" fill="#2C2C2A">COGS = Sales × 0.75</text>
+        </svg>
+        <p style={{ color: '#555', fontStyle: 'italic', marginTop: 8 }}>Memory: "on cost" → COGS 위에 얹기 → ÷1.25 / "on sales" → Sales 쪼개기 → ×0.75</p>
+      </Section>
+
       <TrapBox items={[
         'LIFO reserve = FIFO EI − LIFO EI',
         'Dollar-Value LIFO: index 방향 실수 주의 (나누기 vs 곱하기)',
