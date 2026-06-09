@@ -47,6 +47,7 @@ const CATEGORIES = [
   { id: 'consol',      label: 'Consolidation',                groups: ['IA_CH12_CONSOL'] },
   { id: 'subsequent',  label: 'Subsequent Events',            groups: [] },
   { id: 'bankrec',     label: 'Bank Reconciliation',          groups: [] },
+  { id: 'receivables', label: 'Trade Receivables',            groups: ['IA_CH3_REC', 'IA_CH5_REC'] },
   { id: 'other',       label: 'Other',                        groups: [] },
 ] as const
 
@@ -62,6 +63,7 @@ type SuperCategoryId =
   | 'tax-adjustment'
   | 'revenue-recognition'
   | 'financial-analysis'
+  | 'receivables-liab'
   | 'public-nonprofit'
 
 type ActiveId = CategoryId | SuperCategoryId
@@ -101,6 +103,11 @@ const SUPER_CATEGORIES = [
     id: 'financial-analysis' as SuperCategoryId,
     label: '재무제표 & 분석',
     children: ['scf', 'ratio', 'fv', 'bankrec'] as CategoryId[],
+  },
+  {
+    id: 'receivables-liab' as SuperCategoryId,
+    label: '채권 & 부채관리',
+    children: ['receivables'] as CategoryId[],
   },
   {
     id: 'public-nonprofit' as SuperCategoryId,
@@ -3460,6 +3467,202 @@ Bank service charges:
   )
 }
 
+function ReceivablesContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+      <Section title="Concept & Context">
+        <p><strong>What is AR Financing?</strong> A company holds accounts receivable (future cash) but needs cash now — it can monetize AR through three structures: Factoring, Assignment, or Pledge.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>매출채권(AR)은 미래의 현금. 지금 당장 현금이 필요할 때 AR을 활용해 자금을 조달하는 3가지 방법.</p>
+        <p style={{ marginTop: 12 }}><strong>The core question: Did control transfer?</strong></p>
+        <p style={{ color: '#555' }}>ASC 860 기준 — AR에 대한 통제권이 넘어갔는지 여부가 Sale vs Loan을 결정한다. Label(팩토링이냐 질권이냐)이 아니라 경제적 실질로 판단.</p>
+      </Section>
+
+      <Section title="AR 자금조달 구조 — 한눈에">
+        <svg width="100%" viewBox="0 0 680 560" role="img">
+          <title>AR Financing — Sale vs Loan structure</title>
+          <desc>Decision tree: AR financing splits into Sale vs Loan based on control transfer, with journal entries</desc>
+          <defs>
+            <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </marker>
+          </defs>
+
+          {/* Root */}
+          <g className="c-gray">
+            <rect x="240" y="16" width="200" height="48" rx="8" strokeWidth="0.5"/>
+            <text className="th" x="340" y="36" textAnchor="middle" dominantBaseline="central">AR 자금조달</text>
+            <text className="ts" x="340" y="53" textAnchor="middle" dominantBaseline="central">AR financing</text>
+          </g>
+
+          {/* Root → SALE / LOAN */}
+          <path d="M300 64 L160 128" fill="none" stroke="#888780" strokeWidth="1" markerEnd="url(#arr2)"/>
+          <path d="M380 64 L520 128" fill="none" stroke="#888780" strokeWidth="1" markerEnd="url(#arr2)"/>
+          <text className="ts" x="195" y="100" textAnchor="middle">통제권 이전 O</text>
+          <text className="ts" x="490" y="100" textAnchor="middle">통제권 이전 X</text>
+
+          {/* SALE */}
+          <g className="c-teal">
+            <rect x="80" y="128" width="160" height="48" rx="8" strokeWidth="0.5"/>
+            <text className="th" x="160" y="148" textAnchor="middle" dominantBaseline="central">SALE</text>
+            <text className="ts" x="160" y="165" textAnchor="middle" dominantBaseline="central">AR B/S에서 제거</text>
+          </g>
+
+          {/* LOAN */}
+          <g className="c-purple">
+            <rect x="440" y="128" width="160" height="48" rx="8" strokeWidth="0.5"/>
+            <text className="th" x="520" y="148" textAnchor="middle" dominantBaseline="central">LOAN</text>
+            <text className="ts" x="520" y="165" textAnchor="middle" dominantBaseline="central">AR B/S 유지</text>
+          </g>
+
+          {/* SALE → Without / With recourse */}
+          <path d="M130 176 L100 240" fill="none" stroke="#888780" strokeWidth="1" markerEnd="url(#arr2)"/>
+          <path d="M190 176 L230 240" fill="none" stroke="#888780" strokeWidth="1" markerEnd="url(#arr2)"/>
+          <text className="ts" x="88" y="216" textAnchor="middle">risk → Factor</text>
+          <text className="ts" x="242" y="216" textAnchor="middle">risk → Seller</text>
+
+          {/* Without recourse */}
+          <g className="c-teal">
+            <rect x="24" y="240" width="152" height="72" rx="8" strokeWidth="0.5"/>
+            <text className="th" x="100" y="260" textAnchor="middle" dominantBaseline="central">Without recourse</text>
+            <text className="ts" x="100" y="278" textAnchor="middle" dominantBaseline="central">대손 → Factor 부담</text>
+            <text className="ts" x="100" y="294" textAnchor="middle" dominantBaseline="central">AR 완전 제거</text>
+          </g>
+
+          {/* With recourse */}
+          <g className="c-coral">
+            <rect x="188" y="240" width="152" height="72" rx="8" strokeWidth="0.5"/>
+            <text className="th" x="264" y="260" textAnchor="middle" dominantBaseline="central">With recourse</text>
+            <text className="ts" x="264" y="278" textAnchor="middle" dominantBaseline="central">대손 → Seller 부담</text>
+            <text className="ts" x="264" y="294" textAnchor="middle" dominantBaseline="central">+ Recourse liability</text>
+          </g>
+
+          {/* LOAN → Assignment / Pledge */}
+          <path d="M490 176 L456 240" fill="none" stroke="#888780" strokeWidth="1" markerEnd="url(#arr2)"/>
+          <path d="M550 176 L584 240" fill="none" stroke="#888780" strokeWidth="1" markerEnd="url(#arr2)"/>
+          <text className="ts" x="444" y="216" textAnchor="middle">수금권 이전</text>
+          <text className="ts" x="596" y="216" textAnchor="middle">담보만 제공</text>
+
+          {/* Assignment */}
+          <g className="c-purple">
+            <rect x="376" y="240" width="152" height="72" rx="8" strokeWidth="0.5"/>
+            <text className="th" x="452" y="260" textAnchor="middle" dominantBaseline="central">Assignment</text>
+            <text className="ts" x="452" y="278" textAnchor="middle" dominantBaseline="central">AR-Assigned reclassify</text>
+            <text className="ts" x="452" y="294" textAnchor="middle" dominantBaseline="central">Notes Payable 인식</text>
+          </g>
+
+          {/* Pledge */}
+          <g className="c-purple">
+            <rect x="540" y="240" width="120" height="72" rx="8" strokeWidth="0.5"/>
+            <text className="th" x="600" y="260" textAnchor="middle" dominantBaseline="central">Pledge</text>
+            <text className="ts" x="600" y="278" textAnchor="middle" dominantBaseline="central">No entry to AR</text>
+            <text className="ts" x="600" y="294" textAnchor="middle" dominantBaseline="central">주석 공시만</text>
+          </g>
+
+          {/* Divider */}
+          <line x1="24" y1="348" x2="656" y2="348" stroke="#B4B2A9" strokeWidth="0.5" strokeDasharray="4 4"/>
+          <text className="ts" x="340" y="366" textAnchor="middle">분개 요약</text>
+
+          {/* JE: Without recourse */}
+          <g className="c-gray">
+            <rect x="24" y="378" width="148" height="96" rx="6" strokeWidth="0.5"/>
+            <text className="ts" x="98" y="394" textAnchor="middle" dominantBaseline="central">Without recourse</text>
+            <text className="ts" x="36" y="414" dominantBaseline="central">Dr. Cash</text>
+            <text className="ts" x="36" y="430" dominantBaseline="central">Dr. Loss on sale</text>
+            <text className="ts" x="48" y="446" dominantBaseline="central">Cr. AR ← 제거</text>
+          </g>
+
+          {/* JE: With recourse */}
+          <g className="c-gray">
+            <rect x="184" y="378" width="160" height="96" rx="6" strokeWidth="0.5"/>
+            <text className="ts" x="264" y="394" textAnchor="middle" dominantBaseline="central">With recourse</text>
+            <text className="ts" x="196" y="414" dominantBaseline="central">Dr. Cash</text>
+            <text className="ts" x="196" y="430" dominantBaseline="central">Dr. Loss on sale</text>
+            <text className="ts" x="208" y="446" dominantBaseline="central">Cr. AR</text>
+            <text className="ts" x="208" y="462" dominantBaseline="central">Cr. Recourse liab.</text>
+          </g>
+
+          {/* JE: Assignment */}
+          <g className="c-gray">
+            <rect x="356" y="378" width="152" height="96" rx="6" strokeWidth="0.5"/>
+            <text className="ts" x="432" y="394" textAnchor="middle" dominantBaseline="central">Assignment</text>
+            <text className="ts" x="368" y="414" dominantBaseline="central">Dr. AR-Assigned</text>
+            <text className="ts" x="380" y="430" dominantBaseline="central">Cr. AR</text>
+            <text className="ts" x="368" y="448" dominantBaseline="central">Dr. Cash</text>
+            <text className="ts" x="380" y="464" dominantBaseline="central">Cr. Notes Pay.</text>
+          </g>
+
+          {/* JE: Pledge */}
+          <g className="c-gray">
+            <rect x="520" y="378" width="136" height="96" rx="6" strokeWidth="0.5"/>
+            <text className="ts" x="588" y="394" textAnchor="middle" dominantBaseline="central">Pledge</text>
+            <text className="ts" x="532" y="418" dominantBaseline="central">Dr. Cash</text>
+            <text className="ts" x="544" y="434" dominantBaseline="central">Cr. Notes Pay.</text>
+            <text className="ts" x="532" y="454" dominantBaseline="central">(AR: no entry)</text>
+          </g>
+        </svg>
+      </Section>
+
+      <Section title="Key Terms — AR Financing">
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid #e0e0e0' }}>
+              <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 500 }}>Term</th>
+              <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 500 }}>성격</th>
+              <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 500 }}>AR 처리</th>
+              <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 500 }}>핵심 트리거</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ['Factoring w/o recourse', 'SALE', 'B/S 제거', '"factored without recourse"'],
+              ['Factoring w/ recourse',  'SALE + Recourse liab.', 'B/S 제거', '"factored with recourse"'],
+              ['Assignment',             'LOAN (수금권 이전)', 'AR-Assigned reclassify', '"assigned" / "lender collects"'],
+              ['Pledge',                 'LOAN (담보만)', 'No entry', '"pledged as collateral"'],
+            ].map(([term, nature, ar, trigger], i) => (
+              <tr key={i} style={{ borderBottom: '1px solid #f0f0f0', background: i % 2 === 0 ? '#fafafa' : '#fff' }}>
+                <td style={{ padding: '8px 12px', fontWeight: 500 }}>{term}</td>
+                <td style={{ padding: '8px 12px', color: '#555' }}>{nature}</td>
+                <td style={{ padding: '8px 12px', color: '#555' }}>{ar}</td>
+                <td style={{ padding: '8px 12px', color: '#555', fontStyle: 'italic' }}>{trigger}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Section>
+
+      <Section title="Question Type → Speed Guide">
+        <p style={{ color: '#555', marginBottom: 12 }}>AR financing 문제는 첫 줄에서 유형이 결정된다. 키워드 하나로 분개 구조 즉시 확정.</p>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid #e0e0e0' }}>
+              <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 500 }}>질문 키워드</th>
+              <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 500 }}>즉각 풀이 로직</th>
+              <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 500 }}>주의</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ['"factored without recourse"', 'Sale → Dr.Cash / Dr.Loss / Cr.AR', 'Recourse liability 없음'],
+              ['"factored with recourse"', 'Sale → Dr.Cash / Dr.Loss / Cr.AR + Cr.Recourse liab.', 'AR 제거는 동일'],
+              ['"best described as"', '통제권 이전 여부 → Sale or Loan 분류', 'Label 아닌 실질로 판단'],
+              ['"assigned receivables"', 'Loan → Dr.AR-Assigned / Cr.AR + Dr.Cash / Cr.NP', 'AR 소유권 유지'],
+              ['"pledged as collateral"', 'Loan → Dr.Cash / Cr.NP only (AR no entry)', '주석 공시만'],
+            ].map(([kw, logic, note], i) => (
+              <tr key={i} style={{ borderBottom: '1px solid #f0f0f0', background: i % 2 === 0 ? '#fafafa' : '#fff' }}>
+                <td style={{ padding: '8px 12px', fontStyle: 'italic', color: '#444' }}>{kw}</td>
+                <td style={{ padding: '8px 12px', color: '#555' }}>{logic}</td>
+                <td style={{ padding: '8px 12px', color: '#888' }}>{note}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Section>
+
+    </div>
+  )
+}
+
 // ── Content Tab Dispatcher ─────────────────────────────────────────────────────
 function ContentTab({ catId, catLabel }: { catId: CategoryId; catLabel: string }) {
   switch (catId) {
@@ -3487,6 +3690,7 @@ function ContentTab({ catId, catLabel }: { catId: CategoryId; catLabel: string }
     case 'consol':      return <ConsolContent />
     case 'subsequent':  return <SubsequentContent />
     case 'bankrec':     return <BankRecContent />
+    case 'receivables': return <ReceivablesContent />
     default:            return <ComingSoon label={catLabel} />
   }
 }
@@ -4270,6 +4474,7 @@ function SuperContentTab({ superId }: { superId: SuperCategoryId }) {
     case 'tax-adjustment':     return <TaxAdjustmentContent />
     case 'revenue-recognition': return <RevenueRecContent />
     case 'financial-analysis': return <FinancialAnalysisContent />
+    case 'receivables-liab':   return <ComingSoon label="채권 & 부채관리" />
     case 'public-nonprofit':   return <PublicNonprofitContent />
   }
 }
