@@ -390,3 +390,11 @@
 .animate-confetti {
   animation: confettiFall 1.4s ease-in forwards;
 }
+
+/* ── Concept Notes SVG 전역 크기 제한 ─────────────────────── */
+.concept-content svg {
+  max-width: 680px;
+  width: 100%;
+  height: auto;
+  display: block;
+}

@@ -147,7 +147,7 @@ Discount example (Face $100,000 / Coupon 6% / Market 8% / 5yr):
       <Section title="Bond CV 흐름 — 한눈에">
         <div className="bond-diagram" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* SVG 1 — Bond 구조도 */}
-          <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 520" role="img">
+          <svg viewBox="0 0 680 520" role="img">
             <title>Bond — Premium vs Discount structure</title>
             <desc>Bond 발행부터 만기까지 CV 흐름, 이자 계산 구조 시각화</desc>
             <defs>
@@ -224,7 +224,7 @@ Discount example (Face $100,000 / Coupon 6% / Market 8% / 5yr):
           </svg>
 
           {/* SVG 2 — CV 수렴 그래프 */}
-          <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 400" role="img">
+          <svg viewBox="0 0 680 400" role="img">
             <title>Bond CV convergence to face value over 5 years</title>
             <desc>Premium bond CV decreases, Discount bond CV increases, both converge to face value at maturity</desc>
             <line x1="80" y1="30" x2="80" y2="320" stroke="var(--color-text-tertiary)" strokeWidth="0.5" fill="none"/>
@@ -292,7 +292,7 @@ Discount example (Face $100,000 / Coupon 6% / Market 8% / 5yr):
           {/* SVG 1 — Issuer Payment 타임라인 */}
           <div>
             <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: '#993C1D' }}>Issuer 관점 — 발행 &amp; 상환</p>
-            <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 420" role="img">
+            <svg viewBox="0 0 680 420" role="img">
               <title>Bond payment timeline — Premium vs Discount</title>
               <desc>매년 coupon payment와 만기 원금 상환을 타임라인으로 비교</desc>
               <defs>
@@ -366,7 +366,7 @@ Discount example (Face $100,000 / Coupon 6% / Market 8% / 5yr):
           {/* SVG 2 — Issuer Early Retirement */}
           <div>
             <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: '#993C1D' }}>Issuer 관점 — Early Retirement</p>
-            <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 310" role="img">
+            <svg viewBox="0 0 680 310" role="img">
               <title>Discount Bond — Early Retirement at Y3</title>
               <desc>Discount bond 조기 상환 타임라인 Y3 103으로 매입 소각</desc>
               <defs>
@@ -414,7 +414,7 @@ Discount example (Face $100,000 / Coupon 6% / Market 8% / 5yr):
           {/* SVG 3 — Investor 초기 매입 */}
           <div>
             <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: '#0F6E56' }}>Investor 관점 — 초기 매입</p>
-            <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 440" role="img">
+            <svg viewBox="0 0 680 440" role="img">
               <title>Bond — Investor perspective Premium vs Discount purchase</title>
               <desc>투자자 입장에서 Premium Discount 채권 매입 후 이자 수령 타임라인</desc>
               <defs>
@@ -492,7 +492,7 @@ Discount example (Face $100,000 / Coupon 6% / Market 8% / 5yr):
           {/* SVG 4 — Investor Between-date Purchase */}
           <div>
             <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: '#0F6E56' }}>Investor 관점 — Between-date Purchase</p>
-            <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 360" role="img">
+            <svg viewBox="0 0 680 360" role="img">
               <title>Discount Bond — Between-date Purchase Investor perspective</title>
               <desc>투자자가 Y2와 Y3 사이 10/31에 채권을 매입하는 타임라인</desc>
               <defs>
@@ -672,7 +672,7 @@ Year 1 말 CV = $850,000 + $22,000 = $872,000
 SL 총 상각 = $25,000 × 6 = $150,000 → CV = $1,000,000
 EI 총 상각 =              $150,000 → CV = $1,000,000
 → 상각 방법 무관 face value 수렴 → No effect`}</CodeBlock>
-        <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 430" role="img">
+        <svg viewBox="0 0 680 430" role="img">
           <title>SL vs EI 상각 패턴 개념도</title>
           <desc>SL 균등 vs EI 우상향, 총합 동일 구조</desc>
           <defs>
@@ -1250,7 +1250,7 @@ Example: Borrowed $1,000,000 on Sep 30 @ 9%
       </Section>
       <Section title="3-Step Amortization — Visualization">
         <div className="note-diagram" style={{ marginTop: 8 }}>
-          <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 580" role="img">
+          <svg viewBox="0 0 680 580" role="img">
             <title>Note payable amortization — 3-step calculation and chart</title>
             <desc>3단계 계산 흐름, 분개, 시험 질문 유형, 미니 차트</desc>
             <defs>
@@ -1721,7 +1721,7 @@ function InventoryContent() {
 Each added layer × its own year index
 DV LIFO = Σ (each layer × its year index)`}</CodeBlock>
         <div className="inv-diagram" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 12 }}>
-          <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 320" role="img">
+          <svg viewBox="0 0 680 320" role="img">
             <title>Dollar-value LIFO layer calculation table</title>
             <desc>DV LIFO 각 layer의 base-year cost, index, DV LIFO cost 계산 테이블</desc>
             <defs>
@@ -1750,7 +1750,7 @@ DV LIFO = Σ (each layer × its year index)`}</CodeBlock>
             <line x1="456" y1="268" x2="660" y2="268" stroke="#888" strokeWidth="1"/>
             <g className="c-amber"><rect x="456" y="276" width="204" height="36" rx="6" strokeWidth="0.5"/><text className="th" x="558" y="290" textAnchor="middle" dominantBaseline="central">$857,500</text><text className="ts" x="558" y="306" textAnchor="middle" dominantBaseline="central">Y2 DV LIFO</text></g>
           </svg>
-          <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 440" role="img">
+          <svg viewBox="0 0 680 440" role="img">
             <title>DV LIFO without vs with index comparison</title>
             <desc>Index 미적용과 DV LIFO 적용 비교 — 초기부터 누적 막대 그래프</desc>
             <defs>
@@ -1844,7 +1844,7 @@ DV LIFO = Σ (each layer × its year index)`}</CodeBlock>
       ]} />
       <Section title="Markup 변환 — Sales → COGS">
         <p style={{ color: '#555', marginBottom: 12 }}>같은 25%여도 기준이 다르면 COGS가 달라진다. Periodic 공식 전에 반드시 변환 먼저.</p>
-        <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 420" role="img">
+        <svg viewBox="0 0 680 420" role="img">
           <title>Markup on cost vs Markup on sales 직관 비교</title>
           <desc>왼쪽: COGS 위에 GP 얹기 / 오른쪽: Sales 막대를 옆에서 쪼개기</desc>
           <defs>
@@ -1921,7 +1921,7 @@ Step 3: New layer at LIFO cost
       <Section title="5. Physical Count — FOB & Consignment 조정">
         <p>재고 실사(physical count) = 창고 기준 → 운송 중·외부 위탁 재고 누락 가능<br/>→ FOB 조건 + Consignment 방향으로 실질 소유권 판단 후 조정</p>
         <div className="inv-diagram" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 12 }}>
-          <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 340" role="img">
+          <svg viewBox="0 0 680 340" role="img">
             <title>FOB shipping point vs destination</title>
             <desc>FOB 조건별 소유권 경계 간소화 버전</desc>
             <defs>
@@ -1953,7 +1953,7 @@ Step 3: New layer at LIFO cost
             <text className="ts" x="600" y="246" textAnchor="middle" style={{ fill: '#888780', fontSize: '11px' }}>도착 후</text>
             <g className="c-amber"><rect x="30" y="268" width="620" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="284" textAnchor="middle" dominantBaseline="central">문장 해석</text><text className="ts" x="340" y="302" textAnchor="middle" dominantBaseline="central">"purchased by Widget" + FOB s.p. → ✅ | "purchased by a customer" + FOB s.p. → ❌</text></g>
           </svg>
-          <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 380" role="img">
+          <svg viewBox="0 0 680 380" role="img">
             <title>Consignment direction — Widget fixed left</title>
             <desc>Widget 왼쪽 고정, 화살표 방향으로 OUT/IN 구분</desc>
             <defs>
@@ -2022,7 +2022,7 @@ function PpeContent() {
 
       <Section title="감가상각 패턴 — 한눈에">
         <p style={{ color: '#555', marginBottom: 12 }}>같은 자산도 방법에 따라 비용 패턴이 완전히 다름. <strong>DDB가 Year 1 시작이 SYD보다 높고 더 가파르게 떨어짐.</strong> SYD는 직선적으로 하강.</p>
-        <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 560" role="img">
+        <svg viewBox="0 0 680 560" role="img">
           <title>감가상각비 패턴 비교 SL SYD DDB</title>
           <desc>3가지 감가상각 방법의 비용 패턴 그래프와 연도별 숫자 비교표</desc>
           <defs>
@@ -2285,7 +2285,7 @@ Constraint: high probability (significant reversal 없는 경우에만 포함)`}
 그 외 → modification
   - Remaining goods/services distinct → prospective (catch-up 없음)
   - 나머지 → cumulative catch-up adjustment`}</CodeBlock>
-        <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block", marginTop: 16 }} viewBox="0 0 680 540" role="img">
+        <svg style={{ marginTop: 16 }} viewBox="0 0 680 540" role="img">
           <title>Contract modification — simplified exam version</title>
           <desc>시험 실전용 Contract Modification 단순화 흐름도</desc>
           <defs>
@@ -2334,7 +2334,7 @@ Constraint: high probability (significant reversal 없는 경우에만 포함)`}
       <Section title="5. Principal / Agent vs Consignor / Consignee">
         <p style={{ color: '#555', marginBottom: 8 }}>같은 3자 구조, 표현만 다름 — 경제적 실질 동일. 물건 위탁이냐 서비스 위탁이냐의 차이.</p>
 
-        <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block", marginBottom: 16 }} viewBox="0 0 680 430" role="img">
+        <svg style={{ marginBottom: 16 }} viewBox="0 0 680 430" role="img">
           <title>Consignment vs Principal/Agent 3자 구조 비교</title>
           <desc>Consignor/Consignee와 Principal/Agent 구조를 나란히 비교</desc>
           <defs>
@@ -2386,7 +2386,7 @@ Constraint: high probability (significant reversal 없는 경우에만 포함)`}
           <text className="ts" x="510" y="389" textAnchor="middle" dominantBaseline="central" fill="#085041">control 없음 → gross 불가 · net only</text>
         </svg>
 
-        <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block", marginBottom: 8 }} viewBox="0 0 680 320" role="img">
+        <svg style={{ marginBottom: 8 }} viewBox="0 0 680 320" role="img">
           <title>Consignment 수익 분배 흐름</title>
           <desc>Oriental Rug / Consign Design 예시로 판매액 분배와 재고 귀속 흐름</desc>
           <defs>
@@ -2802,7 +2802,7 @@ function NfpContent() {
       </Section>
 
       <Section title="2. Contribution 인식 — Condition vs Restriction">
-        <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block", marginBottom: 16 }} viewBox="0 0 680 500" role="img">
+        <svg style={{ marginBottom: 16 }} viewBox="0 0 680 500" role="img">
           <title>NFP Condition vs Restriction</title>
           <desc>Condition과 Restriction 계층 구조</desc>
           <defs>
@@ -3476,7 +3476,7 @@ function FxContent() {
 
       <Section title="4. AR & AP — FX Gain/Loss Visualization">
         <div className="fx-diagram" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 660" role="img">
+          <svg viewBox="0 0 680 660" role="img">
             <title>FX AR visualization</title>
             <desc>AR 거래 숫자 설명과 간접법 그래프</desc>
             <defs>
@@ -3531,7 +3531,7 @@ function FxContent() {
             <g className="c-amber"><rect x="20" y="510" width="640" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="526" textAnchor="middle" dominantBaseline="central">Speed — AR</text><text className="ts" x="340" y="544" textAnchor="middle" dominantBaseline="central">FC up (graph up) = receive more = Gain / FC down (graph down) = receive less = Loss</text></g>
             <g className="c-gray"><rect x="20" y="564" width="640" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="580" textAnchor="middle" dominantBaseline="central">Direct quote trap</text><text className="ts" x="340" y="598" textAnchor="middle" dominantBaseline="central">"units of FC per $" up = FC weakens (opposite of graph) — denominator is FC</text></g>
           </svg>
-          <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 660" role="img">
+          <svg viewBox="0 0 680 660" role="img">
             <title>FX AP visualization</title>
             <desc>AP 거래 숫자 설명과 간접법 그래프</desc>
             <defs>
@@ -3775,7 +3775,7 @@ Upstream (sub → parent): parent + NCI 비례 배분`}</CodeBlock>
       <Section title="5. Consolidated RE — 취득 분석 + 구조">
         <p style={{ marginBottom: 12 }}>100% 취득 + Equity Method → Consolidated RE = Parent RE only. 아래 두 그래프로 숫자 흐름을 확인.</p>
 
-        <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 460" role="img">
+        <svg viewBox="0 0 680 460" role="img">
           <title>취득 분석 막대 그래프</title>
           <desc>왼쪽: Investment 누적 막대 / 오른쪽: BV+FV+GW=취득가</desc>
           <defs>
@@ -3842,7 +3842,7 @@ Upstream (sub → parent): parent + NCI 비례 배분`}</CodeBlock>
           ]}
         />
 
-        <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block", marginTop: 24 }} viewBox="0 0 680 480" role="img">
+        <svg style={{ marginTop: 24 }} viewBox="0 0 680 480" role="img">
           <title>Consolidated RE 구조도</title>
           <desc>P와 S를 감싸는 Consolidated 구조, RE는 Parent만 남음</desc>
           <defs>
@@ -4061,7 +4061,7 @@ function ReceivablesContent() {
       </Section>
 
       <Section title="AR 자금조달 구조 — 한눈에">
-        <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 560" role="img">
+        <svg viewBox="0 0 680 560" role="img">
           <title>AR Financing — Sale vs Loan structure</title>
           <desc>Decision tree: AR financing splits into Sale vs Loan based on control transfer, with journal entries</desc>
           <defs>
@@ -4817,7 +4817,7 @@ function Interest4Content() {
       </Section>
       <Section title="Bond / Note / Lease 연결도">
         <div className="int-diagram" style={{ marginTop: 8 }}>
-          <svg style={{ maxWidth: 680, width: "100%", height: "auto", display: "block" }} viewBox="0 0 680 740" role="img">
+          <svg viewBox="0 0 680 740" role="img">
             <title>Bond Note Finance Lease connection map</title>
             <desc>Bond, Note, Finance Lease 세 개념의 공통 구조와 연결점</desc>
             <defs>
@@ -5205,7 +5205,7 @@ export default function ConceptNotesPage() {
           <HarryTab key={`harry-${activeId}`} catLabel={displayLabel} />
         </div>
       ) : (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '28px 40px' }}>
+        <div className="concept-content" style={{ flex: 1, overflowY: 'auto', padding: '28px 40px' }}>
           {activeTab === 'content' && (
             <ContentTab catId={activeCat.id as CategoryId} catLabel={activeCat.label} />
           )}
