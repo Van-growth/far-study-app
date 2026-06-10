@@ -7056,6 +7056,27 @@ Series B+ 감사 시 핵심 검토 항목`,
     speed: "Fundamental → R + FR (없으면 유용하지 않음)\nEnhancing   → C V T U (있으면 더 좋아짐)\nConstraint  → Cost-benefit\n\nMemory: CVTU = Come Visit The University",
   },
 
+  // [CONSERV_001] Conservatism — Asset Revaluation Framework (Cross-Topic)
+  // RULE    : Carrying value > 회수 가능액 → 차이를 당기 손실 인식 (보수주의)
+  // TRIGGER : "decreases substantially" / "net realizable value" / "held for sale" / "impairment" / "valuation allowance"
+  // TRAP    : 손실 발생 기간 vs 현금 수취 기간 혼동 / 전액 write-off vs NRV까지만 감액
+  {
+    topic_id: "CONSERV_001",
+    book_id: 'AA',
+    chapter_id: 'AA_CH1',
+    topic_group: 'AA_CH1_BASIC',
+    sub_category_id: "U1_BALANCE_SHEET",
+    card_type: 'concept',
+    card_name: "Conservatism — Asset Revaluation Framework",
+    one_sentence: "팔기 위해 보유하는 자산은 Historical cost vs 회수 가능액(NRV/FV) 중 낮은 쪽으로 평가 — 초과분은 당기 손실.",
+    rule: "보수주의 Asset 재평가 원칙:\n핵심 질문: '이 자산, 지금 장부금액만큼 진짜 회수 가능한가?'\nNO → 차이만큼 당기 손실 인식\n\n[메커니즘 3가지]\n① 직접 감액 (Direct write-down)\n   재고 LCM/LCNRV / PPE held for sale / Goodwill impairment\n② 간접 감액 (Contra account)\n   AR → Allowance for Credit Loss (CECL)\n   DTA → Valuation Allowance\n③ FV 조정 (Mark to market)\n   FVTNI / AFS Investment\n   PPE held for use → Impairment\n\n[자산별 비교 기준]\n재고: Historical cost vs NRV (= 판매가 - 판매비용)\nPPE held for sale: CV vs FV - costs to sell\nAR: Face value vs 회수 가능액\nDTA: 세금 혜택 vs 실현 가능액\nInvestment: Cost vs Fair Value",
+    trigger: '"decreases substantially" + "on hand at year-end" → 재고 LCM\n"held for sale" → FV - costs to sell\n"valuation allowance" → DTA 실현 가능성\n"allowance for credit loss" → AR 회수 가능액\n"impairment" → CV > Recoverable amount',
+    trap: "전액 write-off 오답: LCM은 NRV까지만 감액, $0 아님\n손실 인식 시점 오답: 현금 수취가 나중이어도 가치 하락 발생 시점에 인식\n재고 NRV 계산 오답: NRV = 판매가 - 판매비용 (판매가 그대로 아님)\nHistorical cost 고집: 회수 가능액 < CV이면 반드시 조정",
+    context_background: "재고·held for sale 자산은 '팔기 위해 보유'하는 자산이므로 가치 측정 기준은 판매 시 회수 가능한 금액(NRV). Historical cost가 NRV를 초과하면 이미 경제적 가치가 사라진 것 → 보수주의 원칙에 따라 당기에 손실 인식, 주주에게 정확한 자산 가치 제공.\n\n[왜 NRV와 비교하는가]\n재고의 본질 = '팔아서 현금으로 바꾸려고 보유'. 따라서 진짜 가치 = 팔았을 때 손에 쥐는 돈(NRV).\nHistorical cost = 과거에 얼마 줬냐 / NRV = 앞으로 얼마 받을 수 있냐\n→ NRV < Cost이면 그 차이는 이미 사라진 경제적 가치 = 손실\n\n[FAR 전체 연결]\n이 원칙은 토픽별로 다른 이름으로 반복:\n재고 → LCM/LCNRV\nPPE → Impairment\nGoodwill → Goodwill Impairment\nAR → Allowance for Credit Loss\nDTA → Valuation Allowance\nInvestment → FV Adjustment",
+    context_trigger: '"carrying value" + "recoverable" / "realizable" → 보수주의 재평가 프레임 발동',
+    speed: "① CV > 회수 가능액? → YES → 차이 = 당기 손실\n② 재고: NRV = 판매가 - 판매비용\n③ 손실 인식 = 가치 하락 발생 시점 (현금 수취 시점 아님)",
+  },
+
   // ── Migration 030 ──────────────────────────────────────────────────────────
   // ── CASH ───────────────────────────────────────────────────────────────────
   {

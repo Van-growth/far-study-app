@@ -49,6 +49,7 @@ const CATEGORIES = [
   { id: 'bankrec',     label: 'Bank Reconciliation',          groups: [] },
   { id: 'receivables', label: 'Trade Receivables',            groups: ['IA_CH3_REC', 'IA_CH5_REC'] },
   { id: 'other',       label: 'Other',                        groups: [] },
+  { id: 'principles',  label: '개념 원칙',                    groups: ['AA_CH1_BASIC'] },
 ] as const
 
 type CategoryId = typeof CATEGORIES[number]['id']
@@ -65,6 +66,7 @@ type SuperCategoryId =
   | 'financial-analysis'
   | 'receivables-liab'
   | 'public-nonprofit'
+  | 'principles-framework'
 
 type ActiveId = CategoryId | SuperCategoryId
 
@@ -113,6 +115,11 @@ const SUPER_CATEGORIES = [
     id: 'public-nonprofit' as SuperCategoryId,
     label: '공공 & 비영리',
     children: ['nfp', 'gov'] as CategoryId[],
+  },
+  {
+    id: 'principles-framework' as SuperCategoryId,
+    label: '원칙 & 프레임워크',
+    children: ['principles'] as CategoryId[],
   },
 ] as const
 
