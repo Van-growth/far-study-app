@@ -5065,18 +5065,12 @@ function SuperContentTab({ superId }: { superId: SuperCategoryId }) {
 export default function ConceptNotesPage() {
   const userId = useStudyStore((s) => s.userId)
   const [searchParams] = useSearchParams()
-  const initId = (searchParams.get('cat') ?? 'interest4') as ActiveId
+  const initId = (searchParams.get('cat') ?? 'bond') as ActiveId
   const [activeId, setActiveId] = useState<ActiveId>(
-    CATEGORIES.some(c => c.id === initId) || SUPER_CATEGORIES.some(s => s.id === initId)
-      ? initId : 'interest4'
+    CATEGORIES.some(c => c.id === initId) ? initId : 'bond'
   )
   const [activeTab, setActiveTab] = useState<TabKey>('content')
   const [wrongCounts, setWrongCounts] = useState<Record<string, number>>({})
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) return true
-    try { return localStorage.getItem('sidebar-collapsed') === 'true' } catch { return false }
-  })
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const prevIdRef = useRef<ActiveId>(activeId)
 
   useEffect(() => {
@@ -5102,14 +5096,11 @@ export default function ConceptNotesPage() {
     }
   }, [activeId])
 
-  useEffect(() => {
-    try { localStorage.setItem('sidebar-collapsed', String(sidebarCollapsed)) } catch { /* ignore */ }
-  }, [sidebarCollapsed])
-
-  const isSuper = SUPER_CATEGORIES.some(s => s.id === activeId)
-  const activeSuperCat = isSuper ? SUPER_CATEGORIES.find(s => s.id === activeId) : null
-  const activeCat = !isSuper ? (CATEGORIES.find(c => c.id === activeId) ?? CATEGORIES[0]) : null
-  const displayLabel = isSuper ? (activeSuperCat?.label ?? '') : (activeCat?.label ?? '')
+  const activeSuperCat =
+    SUPER_CATEGORIES.find(sc => sc.children.includes(activeId as CategoryId)) ??
+    SUPER_CATEGORIES[0]
+  const activeCat = CATEGORIES.find(c => c.id === activeId) ?? CATEGORIES[0]
+  const displayLabel = activeCat.label
 
   function getWrongCountForCat(cat: typeof CATEGORIES[number]): number {
     const cards = getCardsForCategory(cat)
@@ -5119,153 +5110,111 @@ export default function ConceptNotesPage() {
       .reduce((sum, [, cnt]) => sum + cnt, 0)
   }
 
-  function getCardCountForCat(cat: typeof CATEGORIES[number]): number {
-    return getCardsForCategory(cat).length
-  }
-
-  function getSuperWrongCount(superCat: typeof SUPER_CATEGORIES[number]): number {
-    return superCat.children.reduce((sum, childId) => {
-      const childCat = CATEGORIES.find(c => c.id === childId)
-      return sum + (childCat ? getWrongCountForCat(childCat) : 0)
-    }, 0)
-  }
-
   const TABS: { key: TabKey; label: string }[] = [
     { key: 'content', label: '핵심 정리' },
     { key: 'cards',   label: '개념 카드' },
-    ...(!isSuper ? [{ key: 'harry' as TabKey, label: 'Harry Practice' }] : []),
+    { key: 'harry',   label: 'Harry Practice' },
   ]
 
-  useEffect(() => {
-    if (isSuper && activeTab === 'harry') setActiveTab('content')
-  }, [isSuper]) // eslint-disable-line
-
   return (
-    <div style={{ position: 'relative', display: 'flex', height: '100vh', overflow: 'hidden', background: '#fafaf8' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: '#fafaf8' }}>
 
-      {/* Desktop sidebar */}
-      <aside
-        className="hidden md:flex"
-        style={{
-          width: sidebarCollapsed ? 0 : 240,
-          flexShrink: 0,
-          background: '#fff',
-          borderRight: '1px solid #e0e0e0',
-          overflow: 'hidden',
-          transition: 'width 0.2s ease',
-          flexDirection: 'column',
-        }}
-      >
-        <SidebarContent
-          activeId={activeId}
-          onSelect={id => { setActiveId(id); setActiveTab('content') }}
-          getCardCount={getCardCountForCat}
-          getWrongCount={getWrongCountForCat}
-          getSuperWrongCount={getSuperWrongCount}
-        />
-      </aside>
+      {/* ── 상단 네비게이션 ── */}
+      <nav style={{ flexShrink: 0, background: '#fff', borderBottom: '1px solid #e0e0e0' }}>
 
-      {/* Mobile sidebar — absolute, slides in from left, same canvas (no backdrop) */}
-      <aside
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          bottom: 0,
-          width: 240,
-          transform: mobileSidebarOpen ? 'translateX(0)' : 'translateX(-240px)',
-          transition: 'transform 0.22s ease',
-          background: '#fff',
-          borderRight: '1px solid #e0e0e0',
-          zIndex: 10,
-          overflow: 'hidden',
-        }}
-        className="md:hidden"
-      >
-        <div style={{ height: '100%', overflowY: 'auto' }}>
-          <SidebarContent
-            activeId={activeId}
-            onSelect={id => { setActiveId(id); setActiveTab('content'); setMobileSidebarOpen(false) }}
-            getCardCount={getCardCountForCat}
-            getWrongCount={getWrongCountForCat}
-            getSuperWrongCount={getSuperWrongCount}
-          />
-        </div>
-      </aside>
-
-      {/* Main — slides right on mobile when sidebar opens */}
-      <main style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        transition: 'transform 0.22s ease',
-        transform: mobileSidebarOpen ? 'translateX(240px)' : undefined,
-      }}>
-
-        {/* Mobile top bar */}
-        <div
-          className="flex md:hidden"
-          style={{
-            padding: '10px 16px', background: '#fff', borderBottom: '1px solid #e0e0e0',
-            display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, zIndex: 30,
-          }}
-        >
-          <button
-            onClick={() => setMobileSidebarOpen(v => !v)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, zIndex: 31 }}
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <rect x="2" y="4" width="16" height="2" rx="1" fill={NAVY} />
-              <rect x="2" y="9" width="16" height="2" rx="1" fill={NAVY} />
-              <rect x="2" y="14" width="16" height="2" rx="1" fill={NAVY} />
-            </svg>
-          </button>
-          <span style={{ fontWeight: 700, fontSize: 15, color: NAVY }}>{displayLabel}</span>
-        </div>
-
-        {/* Tabs */}
-        <div style={{ flexShrink: 0, padding: '0 28px', paddingTop: 12 }}>
-          <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e0e0e0' }}>
-            {TABS.map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                style={{
-                  padding: '9px 20px', fontSize: 13.5, fontWeight: 600,
-                  border: 'none', background: 'none', cursor: 'pointer',
-                  color: activeTab === tab.key ? NAVY : '#888',
-                  borderBottom: activeTab === tab.key ? `2px solid ${NAVY}` : '2px solid transparent',
-                  marginBottom: -1,
-                }}
-              >
-                {tab.label}
+        {/* 1행: 슈퍼카테고리 */}
+        <div style={{
+          display: 'flex', overflowX: 'auto', padding: '0 24px',
+          borderBottom: '1px solid #f0f0f0', gap: 0,
+          scrollbarWidth: 'none',
+        }}>
+          {SUPER_CATEGORIES.map(sc => {
+            const isActive = activeSuperCat?.id === sc.id
+            return (
+              <button key={sc.id} onClick={() => {
+                const firstChild = CATEGORIES.find(c => c.id === sc.children[0])
+                if (firstChild) { setActiveId(firstChild.id); setActiveTab('content') }
+              }} style={{
+                padding: '10px 18px', border: 'none', background: 'none', cursor: 'pointer',
+                fontSize: 13, fontWeight: isActive ? 700 : 500,
+                color: isActive ? NAVY : '#666',
+                borderBottom: isActive ? `2px solid ${NAVY}` : '2px solid transparent',
+                marginBottom: -1, whiteSpace: 'nowrap', flexShrink: 0,
+              }}>
+                {sc.label}
               </button>
-            ))}
-          </div>
+            )
+          })}
         </div>
 
-        {/* Tab content */}
-        {activeTab === 'harry' ? (
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <HarryTab key={`harry-${activeId}`} catLabel={displayLabel} />
-          </div>
-        ) : (
-          <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', maxWidth: 860 }}>
-            {activeTab === 'content' && isSuper && activeSuperCat && (
-              <SuperContentTab superId={activeSuperCat.id} />
-            )}
-            {activeTab === 'content' && !isSuper && activeCat && (
-              <ContentTab catId={activeCat.id as CategoryId} catLabel={activeCat.label} />
-            )}
-            {activeTab === 'cards' && (
-              <CardsTab activeId={activeId} />
-            )}
-          </div>
-        )}
-      </main>
+        {/* 2행: 하위 토픽 탭 */}
+        <div style={{
+          display: 'flex', overflowX: 'auto', padding: '0 24px', gap: 0,
+          scrollbarWidth: 'none',
+        }}>
+          {activeSuperCat.children.map(childId => {
+            const cat = CATEGORIES.find(c => c.id === childId)
+            if (!cat) return null
+            const isActive = activeId === cat.id
+            const wrongCount = getWrongCountForCat(cat)
+            return (
+              <button key={cat.id} onClick={() => { setActiveId(cat.id); setActiveTab('content') }} style={{
+                padding: '8px 16px', border: 'none', background: 'none', cursor: 'pointer',
+                fontSize: 12.5, fontWeight: isActive ? 700 : 400,
+                color: isActive ? NAVY : '#888',
+                borderBottom: isActive ? `2px solid ${NAVY}` : '2px solid transparent',
+                marginBottom: -1, whiteSpace: 'nowrap', flexShrink: 0,
+                display: 'flex', alignItems: 'center', gap: 5,
+              }}>
+                {cat.label}
+                {wrongCount > 0 && (
+                  <span style={{
+                    fontSize: 10, color: '#fff', background: '#dc2626',
+                    borderRadius: 10, padding: '1px 5px', fontWeight: 700,
+                  }}>
+                    {wrongCount}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+      </nav>
+
+      {/* ── 핵심정리/개념카드/Harry 탭 ── */}
+      <div style={{ flexShrink: 0, padding: '0 28px', paddingTop: 10, background: '#fff', borderBottom: '1px solid #e0e0e0' }}>
+        <div style={{ display: 'flex', gap: 0 }}>
+          {TABS.map(tab => (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
+              padding: '8px 18px', fontSize: 13, fontWeight: 600,
+              border: 'none', background: 'none', cursor: 'pointer',
+              color: activeTab === tab.key ? NAVY : '#888',
+              borderBottom: activeTab === tab.key ? `2px solid ${NAVY}` : '2px solid transparent',
+              marginBottom: -1,
+            }}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 콘텐츠 풀스크린 ── */}
+      {activeTab === 'harry' ? (
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <HarryTab key={`harry-${activeId}`} catLabel={displayLabel} />
+        </div>
+      ) : (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '28px 40px' }}>
+          {activeTab === 'content' && (
+            <ContentTab catId={activeCat.id as CategoryId} catLabel={activeCat.label} />
+          )}
+          {activeTab === 'cards' && (
+            <CardsTab activeId={activeId} />
+          )}
+        </div>
+      )}
+
     </div>
   )
 }
