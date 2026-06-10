@@ -133,6 +133,154 @@ function getCardsForCategory(cat: typeof CATEGORIES[number]): TopicCard[] {
 
 // ── Structured Content Sections ────────────────────────────────────────────────
 
+function PrinciplesContent() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+      {/* Concept & Context */}
+      <Section title="Concept & Context">
+        <p><strong>What is Conservatism?</strong> GAAP의 근본 원칙 중 하나. 불확실한 상황에서 자산·이익은 낙관적으로, 부채·손실은 비관적으로 처리하지 않는다는 원칙.</p>
+        <p style={{ color: '#555', marginTop: 6 }}>
+          회계는 <em>"좋은 소식은 천천히, 나쁜 소식은 빠르게"</em> 인식한다. 주주에게 과대평가된 정보를 주지 않기 위함.
+        </p>
+        <p style={{ marginTop: 12, fontWeight: 600 }}>4가지 적용 축:</p>
+        <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+          {[
+            { title: '① 자산 과대계상 방지', body: 'CV > 회수 가능액이면 즉시 감액\n→ Asset Revaluation Framework', highlight: true },
+            { title: '② 손실 즉시 인식', body: '가능성 생기는 순간 인식\nLoss contingency, Warranty, ARO', highlight: false },
+            { title: '③ 이익은 실현 시만', body: '받을 가능성만으로 수익 인식 불가\nGain contingency 금지', highlight: false },
+            { title: '④ 부채 과소계상 방지', body: '가능성 있는 의무는 부채 인식\nContingent liability accrual', highlight: false },
+          ].map((item, i) => (
+            <div key={i} style={{
+              flex: '1 1 140px',
+              border: item.highlight ? '1px solid #534AB7' : '0.5px solid #e2e8f0',
+              borderRadius: 8,
+              padding: '10px 12px',
+              background: item.highlight ? '#EEEDFE' : '#f8f8f6',
+            }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: item.highlight ? '#3C3489' : '#1a2744', marginBottom: 4 }}>{item.title}</p>
+              <p style={{ fontSize: 11, color: item.highlight ? '#534AB7' : '#555', lineHeight: 1.5, whiteSpace: 'pre-line' }}>{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* Asset Revaluation Framework */}
+      <Section title="Asset Revaluation Framework — 자산 과대계상 방지">
+        <p style={{ color: '#555' }}>
+          <strong>핵심 질문:</strong> "이 자산, 지금 장부금액(CV)만큼 진짜 회수 가능해?"<br/>
+          NO → 차이만큼 당기 손실 인식. <strong>Historical cost</strong> vs <strong>회수 가능액</strong> → min 선택.
+        </p>
+
+        <div style={{ marginTop: 16, marginBottom: 8 }}>
+          <svg width="100%" viewBox="0 0 680 300" role="img">
+            <title>Asset Revaluation Framework 개념 트리</title>
+            <desc>좌→우 방향 분기</desc>
+            <defs>
+              <marker id="arx" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </marker>
+            </defs>
+            <g>
+              <rect x="20" y="110" width="180" height="56" rx="8" fill="#EEEDFE" stroke="#AFA9EC" strokeWidth="0.5"/>
+              <text fontSize="14" fontWeight="500" fill="#3C3489" x="110" y="130" textAnchor="middle" dominantBaseline="central">CV &gt; 회수 가능액?</text>
+              <text fontSize="12" fill="#534AB7" x="110" y="150" textAnchor="middle" dominantBaseline="central">Historical cost vs 회수 금액</text>
+            </g>
+            <line x1="110" y1="110" x2="110" y2="62" stroke="#888780" strokeWidth="0.5" markerEnd="url(#arx)"/>
+            <text fontSize="12" fill="#888780" x="118" y="90" dominantBaseline="central">NO</text>
+            <g>
+              <rect x="20" y="20" width="180" height="36" rx="8" fill="#E1F5EE" stroke="#5DCAA5" strokeWidth="0.5"/>
+              <text fontSize="14" fontWeight="500" fill="#085041" x="110" y="38" textAnchor="middle" dominantBaseline="central">현재 장부금액 유지</text>
+            </g>
+            <line x1="200" y1="138" x2="238" y2="138" stroke="#888780" strokeWidth="0.5" markerEnd="url(#arx)"/>
+            <text fontSize="12" fill="#888780" x="218" y="128" textAnchor="middle" dominantBaseline="central">YES</text>
+            <g>
+              <rect x="240" y="110" width="150" height="56" rx="8" fill="#FAECE7" stroke="#F0997B" strokeWidth="0.5"/>
+              <text fontSize="14" fontWeight="500" fill="#712B13" x="315" y="130" textAnchor="middle" dominantBaseline="central">차이 = 당기 손실</text>
+              <text fontSize="12" fill="#993C1D" x="315" y="150" textAnchor="middle" dominantBaseline="central">발생 기간에 즉시 인식</text>
+            </g>
+            <line x1="390" y1="120" x2="428" y2="58" stroke="#888780" strokeWidth="0.5" markerEnd="url(#arx)"/>
+            <line x1="390" y1="138" x2="428" y2="138" stroke="#888780" strokeWidth="0.5" markerEnd="url(#arx)"/>
+            <line x1="390" y1="156" x2="428" y2="218" stroke="#888780" strokeWidth="0.5" markerEnd="url(#arx)"/>
+            <g>
+              <rect x="430" y="28" width="230" height="52" rx="8" fill="#FAEEDA" stroke="#EF9F27" strokeWidth="0.5"/>
+              <text fontSize="14" fontWeight="500" fill="#633806" x="545" y="46" textAnchor="middle" dominantBaseline="central">① Direct write-down</text>
+              <text fontSize="12" fill="#854F0B" x="545" y="64" textAnchor="middle" dominantBaseline="central">Inventory / PPE / Goodwill / Intangibles / HTM</text>
+            </g>
+            <g>
+              <rect x="430" y="112" width="230" height="52" rx="8" fill="#E6F1FB" stroke="#85B7EB" strokeWidth="0.5"/>
+              <text fontSize="14" fontWeight="500" fill="#0C447C" x="545" y="130" textAnchor="middle" dominantBaseline="central">② Contra account</text>
+              <text fontSize="12" fill="#185FA5" x="545" y="148" textAnchor="middle" dominantBaseline="central">AR → Allowance / DTA → VA</text>
+            </g>
+            <g>
+              <rect x="430" y="192" width="230" height="52" rx="8" fill="#E1F5EE" stroke="#5DCAA5" strokeWidth="0.5"/>
+              <text fontSize="14" fontWeight="500" fill="#085041" x="545" y="210" textAnchor="middle" dominantBaseline="central">③ FV adjustment</text>
+              <text fontSize="12" fill="#0F6E56" x="545" y="228" textAnchor="middle" dominantBaseline="central">AFS → OCI / FVTNI → I/S</text>
+            </g>
+            <rect x="20" y="262" width="640" height="28" rx="6" fill="#EEEDFE" stroke="#AFA9EC" strokeWidth="0.5"/>
+            <text fontSize="12" fill="#3C3489" x="340" y="276" textAnchor="middle" dominantBaseline="central">★ 손실 인식 시점 = CV &gt; 회수 가능액이 된 그 기간 (현금 수취 시점 아님)</text>
+          </svg>
+        </div>
+
+        <Table
+          headers={['자산', 'Historical cost', '회수 가능액', '처리 방법', '메커니즘']}
+          rows={[
+            ['Inventory (FIFO/Avg)', '원가 (매입가)', 'NRV = 판매가 − 추가가공비', 'LCNRV', '① Direct'],
+            ['Inventory (LIFO)', '원가 (매입가)', 'Market = Median(RC, NRV, NRV−GP)\nCeiling=NRV / Floor=NRV−GP', 'LCM', '① Direct'],
+            ['PPE held for sale', 'Carrying value', 'FV − costs to sell', 'LCM → write-down', '① Direct'],
+            ['PPE held for use', 'Carrying value', '① Undiscounted FCF (Step1)\n② FV (Step2)', '2-step impairment', '① Direct'],
+            ['Intangibles (finite)', 'Carrying value', 'PPE held for use 동일', '2-step impairment', '① Direct'],
+            ['Intangibles (indefinite)', 'Carrying value', 'Fair Value', '매년 impairment test', '① Direct'],
+            ['Goodwill', 'Carrying value', 'Fair Value (reporting unit)', 'Goodwill impairment', '① Direct'],
+            ['HTM Investment', 'Amortized cost', '예상 회수 가능액', 'CECL → I/S (직접 차감)', '① Direct'],
+            ['AR (매출채권)', 'Face value', '예상 회수 가능액', 'Allowance (CECL)', '② Contra'],
+            ['DTA', '세금 혜택 (NOL/credit carryforward)', '실현 가능액 (more likely than not)', 'Valuation allowance', '② Contra'],
+            ['AFS Investment', 'Cost', 'Fair Value', 'FV → OCI / Credit loss → I/S', '③ FV adjust'],
+            ['FVTNI Investment', 'Cost', 'Fair Value', 'FV → I/S', '③ FV adjust'],
+          ]}
+        />
+      </Section>
+
+      {/* Speed */}
+      <Section title="★ Speed — 시험장 트리거">
+        <Table
+          headers={['문제에서 보이는 신호', '발동 프레임']}
+          rows={[
+            ['"decreases substantially" + "on hand at year-end"', '재고 LCM → NRV = 판매가 − 판매비'],
+            ['"FIFO" + "lower of cost and NRV"', 'LCNRV → NRV = SP − processing costs. RC/GP margin 무시'],
+            ['"LIFO" + "lower of cost or market" + RC', 'LCM → Market = Median(RC, NRV, NRV−GP)'],
+            ['"held for sale"', 'LCM → FV − costs to sell'],
+            ['"impairment" + PPE / Intangibles', 'Step1: CV vs Undiscounted FCF → Step2: CV vs FV'],
+            ['"valuation allowance" / "more likely than not"', 'DTA → NOL/credit carryforward 실현 가능성 체크'],
+            ['"allowance for credit loss" / CECL', 'AR → Allowance(contra) / HTM → 직접 차감'],
+            ['AFS + credit loss', 'Unrealized → OCI / Credit loss → I/S (구분 필수)'],
+          ]}
+        />
+      </Section>
+
+      {/* Key Terms */}
+      <Section title="Key Terms — Conservatism">
+        <Table
+          headers={['용어', 'also known as', '설명']}
+          rows={[
+            ['CV', 'Carrying value / Book value', '현재 장부금액 = 취득원가 − 감가상각누계 ± 조정'],
+            ['NRV', 'Net Realizable Value', '판매가 − 판매 완료까지 드는 비용'],
+            ['LCM', 'Lower of Cost or Market', 'LIFO 재고. Market = Median(RC, NRV, Floor)'],
+            ['LCNRV', 'Lower of Cost or NRV', 'FIFO/Avg 재고. NRV = SP − processing costs'],
+            ['Impairment', '손상차손', 'CV > 회수 가능액 → 차이를 당기 손실 인식'],
+            ['Valuation Allowance', '평가충당금 (VA)', 'DTA 중 실현 불가능한 부분 차감. Contra-asset'],
+            ['CECL', 'Current Expected Credit Loss', 'ASC 326. 예상 손실을 발생 전 전기간 인식'],
+            ['NOL Carryforward', 'Net Operating Loss', '당기 세무상 손실 → 미래 과세소득 상계 → DTA'],
+            ['More likely than not', '50% 초과 가능성', 'DTA 실현 가능성 판단 기준. 미달 시 VA 설정'],
+            ['Contra account', '차감 계정', '자산에서 간접 차감. AR→Allowance / DTA→VA'],
+          ]}
+        />
+      </Section>
+
+    </div>
+  )
+}
+
 function BondContent() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -4255,6 +4403,7 @@ function ReceivablesContent() {
 // ── Content Tab Dispatcher ─────────────────────────────────────────────────────
 function ContentTab({ catId, catLabel }: { catId: CategoryId; catLabel: string }) {
   switch (catId) {
+    case 'principles':  return <PrinciplesContent />
     case 'bond':        return <BondContent />
     case 'tdr':         return <TdrContent />
     case 'lease':       return <LeaseContent />
