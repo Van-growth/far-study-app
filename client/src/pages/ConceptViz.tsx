@@ -2,7 +2,7 @@
 
 export function InterestFamilyViz() {
   return (
-    <svg viewBox="0 0 680 480" style={{ width: '100%', height: 'auto', display: 'block' }}>
+    <svg viewBox="0 0 680 480" style={{ maxWidth: 680, width: '100%', height: 'auto', display: 'block' }}>
       {/* 중앙 공통 공식 박스 */}
       <rect x={240} y={195} width={200} height={70} rx={8} fill="#1a2744" />
       <text x={340} y={222} textAnchor="middle" fill="white" fontSize={13} fontWeight="bold">
@@ -68,7 +68,7 @@ export function InterestFamilyViz() {
 
 export function InventoryCostViz() {
   return (
-    <svg viewBox="0 0 680 380" style={{ width: '100%', height: 'auto', display: 'block' }}>
+    <svg viewBox="0 0 680 380" style={{ maxWidth: 680, width: '100%', height: 'auto', display: 'block' }}>
       {/* Inventory 박스 */}
       <rect x={40} y={40} width={180} height={120} rx={8} fill="white" stroke="#1a2744" strokeWidth={1.5} />
       <text x={130} y={70} textAnchor="middle" fill="#1a2744" fontSize={14} fontWeight="bold">Inventory</text>
@@ -124,7 +124,7 @@ export function InventoryCostViz() {
 
 export function EquityCapitalViz() {
   return (
-    <svg viewBox="0 0 680 420" style={{ width: '100%', height: 'auto', display: 'block' }}>
+    <svg viewBox="0 0 680 420" style={{ maxWidth: 680, width: '100%', height: 'auto', display: 'block' }}>
       {/* SE 박스 */}
       <rect x={40} y={155} width={160} height={120} rx={8} fill="white" stroke="#1a2744" strokeWidth={1.5} />
       <text x={120} y={182} textAnchor="middle" fill="#1a2744" fontSize={13} fontWeight="bold">Stockholders' Equity</text>
@@ -173,7 +173,7 @@ export function EquityCapitalViz() {
 
 export function TaxAdjustmentViz() {
   return (
-    <svg viewBox="0 0 680 340" style={{ width: '100%', height: 'auto', display: 'block' }}>
+    <svg viewBox="0 0 680 340" style={{ maxWidth: 680, width: '100%', height: 'auto', display: 'block' }}>
       {/* Deferred Tax 박스 */}
       <rect x={40} y={60} width={250} height={170} rx={8} fill="white" stroke="#1a2744" strokeWidth={1.5} />
       <text x={165} y={88} textAnchor="middle" fill="#1a2744" fontSize={14} fontWeight="bold">Deferred Tax</text>
@@ -210,7 +210,7 @@ export function TaxAdjustmentViz() {
 
 export function RevenueRecognitionViz() {
   return (
-    <svg viewBox="0 0 680 360" style={{ width: '100%', height: 'auto', display: 'block' }}>
+    <svg viewBox="0 0 680 360" style={{ maxWidth: 680, width: '100%', height: 'auto', display: 'block' }}>
       {/* Revenue 박스 */}
       <rect x={240} y={40} width={200} height={100} rx={8} fill="white" stroke="#1a2744" strokeWidth={1.5} />
       <text x={340} y={68} textAnchor="middle" fill="#1a2744" fontSize={13} fontWeight="bold">Revenue Recognition</text>
@@ -243,7 +243,7 @@ export function RevenueRecognitionViz() {
 
 export function FinancialAnalysisViz() {
   return (
-    <svg viewBox="0 0 680 340" style={{ width: '100%', height: 'auto', display: 'block' }}>
+    <svg viewBox="0 0 680 340" style={{ maxWidth: 680, width: '100%', height: 'auto', display: 'block' }}>
       {/* SCF 박스 */}
       <rect x={40} y={60} width={180} height={170} rx={8} fill="white" stroke="#1a2744" strokeWidth={1.5} />
       <text x={130} y={88} textAnchor="middle" fill="#1a2744" fontSize={14} fontWeight="bold">SCF</text>
@@ -287,7 +287,7 @@ export function FinancialAnalysisViz() {
 
 export function PublicNonprofitViz() {
   return (
-    <svg viewBox="0 0 680 340" style={{ width: '100%', height: 'auto', display: 'block' }}>
+    <svg viewBox="0 0 680 340" style={{ maxWidth: 680, width: '100%', height: 'auto', display: 'block' }}>
       {/* NFP 박스 */}
       <rect x={40} y={60} width={260} height={170} rx={8} fill="white" stroke="#1a2744" strokeWidth={1.5} />
       <text x={170} y={88} textAnchor="middle" fill="#1a2744" fontSize={14} fontWeight="bold">NFP Accounting</text>
