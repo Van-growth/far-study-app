@@ -515,6 +515,43 @@ function HistoryTab({ userId }: { userId: string | null }) {
         >
           미해결만
         </button>
+        <button
+          onClick={() => {
+            const date = new Date();
+            const yyyymmdd = `${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}`;
+            const headers = ['문제번호','문제내용','내답','정답','풀이','토픽','오류패턴','날짜','해결여부'];
+            const escape = (v: string | null | undefined) => `"${(v ?? '').replace(/"/g, '""')}"`;
+            const rows = filtered.map(item => [
+              escape(`Q${item.question_number ?? ''}`),
+              escape(item.question_text),
+              escape(item.my_answer),
+              escape(item.correct_answer),
+              escape(item.explanation),
+              escape(item.topic_tag),
+              escape(item.error_pattern),
+              escape(item.created_at ? item.created_at.slice(0, 10) : ''),
+              escape(item.is_resolved ? '해결' : '미해결'),
+            ].join(','));
+            const csv = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `wrong_answers_${yyyymmdd}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+          style={{
+            fontSize: 12, padding: '5px 10px', borderRadius: 5,
+            border: BORDER,
+            background: '#fff',
+            color: TEXT,
+            cursor: 'pointer',
+            marginLeft: 'auto',
+          }}
+        >
+          CSV 다운로드
+        </button>
       </div>
 
       {items.length === 0 && (
