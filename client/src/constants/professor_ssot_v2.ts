@@ -2819,7 +2819,12 @@ Series B+ 감사 시 핵심 검토 항목`,
     one_sentence: "간접법 조정 = NI(발생주의)와 실제 현금의 차이를 메우는 작업 — 차이가 없으면 조정도 없다",
     context_background: "발생주의 NI는 현금 없이도 수익/비용을 인식하기 때문에 실제 현금흐름과 다를 수 있다. 간접법은 NI에서 시작해서 이 차이를 조정해 Cash from Operations를 도출한다. 조정이 필요한 경우는 ① 비현금 비용(D&A) ② Gain/Loss 이중계산 제거 ③ Receivable 변동 ④ Payable 변동 — 이 4가지뿐이다.",
     rule_title: "4가지 조정 유형",
-    rule_items: "① 비현금 비용 D&A → +add back (현금 지출 없는 비용)\n② Gain on sale → 제거 / Loss on sale → +add back (현금은 CFI에서 인식, 이중계산 방지)\n③ Receivable↑ → (−) / Receivable↓ → (+) (수익 인식 ≠ 현금 수취)\n④ Payable↑ → (+) / Payable↓ → (−) (비용 인식 ≠ 현금 지급)",
+    rule_items: [
+      "① 비현금 비용 D&A → +add back (현금 지출 없는 비용)",
+      "② Gain on sale → 제거 / Loss on sale → +add back (현금은 CFI에서 인식, 이중계산 방지)",
+      "③ Receivable↑ → (−) / Receivable↓ → (+) (수익 인식 ≠ 현금 수취)",
+      "④ Payable↑ → (+) / Payable↓ → (−) (비용 인식 ≠ 현금 지급)",
+    ],
     svg: `<svg width="100%" viewBox="0 0 680 860" role="img">
   <title>간접법 조정 — 차액 발생 여부 기준 구조</title>
   <desc>차액 없음 vs 차액 있음 두 갈래로 나눈 간접법 조정 전체 구조</desc>
