@@ -392,7 +392,7 @@ function InputTab({ userId }: { userId: string | null }) {
                 {/* Explanation */}
                 <div style={{ padding: '10px 12px' }}>
                   <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, marginBottom: 4 }}>풀이</div>
-                  <div style={{ fontSize: 13 }}>{card.explanation || '—'}</div>
+                  <div style={{ fontSize: 13, whiteSpace: 'pre-line' }}>{card.explanation || '—'}</div>
                 </div>
               </div>
             ))}
@@ -625,7 +625,7 @@ function HistoryTab({ userId }: { userId: string | null }) {
             {modal.explanation && (
               <div style={{ padding: '10px 12px', border: BORDER, borderRadius: 6 }}>
                 <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, marginBottom: 4 }}>풀이</div>
-                <div style={{ fontSize: 13 }}>{modal.explanation}</div>
+                <div style={{ fontSize: 13, whiteSpace: 'pre-line' }}>{modal.explanation}</div>
               </div>
             )}
 
