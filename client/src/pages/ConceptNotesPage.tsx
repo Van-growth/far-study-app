@@ -2623,14 +2623,16 @@ function ScfContent() {
         <Table
           headers={['Item', 'Section', 'Why']}
           rows={[
-            ['Trading securities', 'Operating ✅', 'Short-term trading purpose = operating activity'],
-            ['AFS / HTM securities', 'Investing ✅', 'Investment purpose'],
-            ['Bonds payable', 'Financing ✅', 'Debt financing — do NOT confuse with AP'],
-            ['Notes receivable collected', 'Investing ✅', 'Loan to others — do NOT confuse with AR'],
-            ['AR (Accounts receivable)', 'Operating ✅', 'From sales — different from Notes receivable'],
-            ['Interest paid', 'Operating ✅', 'Fixed under US GAAP'],
-            ['Dividends received', 'Operating ✅', 'Fixed under US GAAP'],
-            ['Dividends paid', 'Financing ✅', 'Fixed under US GAAP'],
+            ['Trading securities', 'Operating', 'Short-term trading purpose = operating activity'],
+            ['AFS / HTM securities', 'Investing', 'Investment purpose'],
+            ['Bonds payable', 'Financing', 'Debt financing — do NOT confuse with AP'],
+            ['Notes receivable — 별도 대출', 'Investing', '내가 남에게 빌려준 돈 회수 — 영업과 무관'],
+            ['Notes receivable — 매출에서 발생한 단기 note', 'Operating', '매출 대금으로 받은 note → AR과 동일 처리 (예: 95일 만기 note)'],
+            ['AR (Accounts receivable)', 'Operating', 'From sales — different from Notes receivable'],
+            ['Interest paid', 'Operating', 'Fixed under US GAAP'],
+            ['Dividends received', 'Operating', 'Fixed under US GAAP'],
+            ['Dividends paid', 'Financing', 'Fixed under US GAAP'],
+            ['Line of credit / Revolving credit', 'Financing', '실제 차입액만 반영 / 한도 계약 자체는 SCF 영향 없음'],
           ]}
         />
         <p style={{ color: '#555', fontStyle: 'italic', marginTop: 8 }}>Speed: AR/AP/Inventory/Prepaid/Accrued → Operating / Buy or sell assets → Investing / Borrow, repay, issue stock, dividends → Financing</p>
