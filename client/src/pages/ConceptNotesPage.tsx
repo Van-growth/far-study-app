@@ -2833,8 +2833,49 @@ function ScfContent() {
       </Section>
 
       <Section title="4. Non-cash Disclosures">
-        <CodeBlock>{`SCF 본문 제외 → FS 말미에 별도 공시
-예: 토지 취득 + Mortgage 직접 인수 ($500,000)`}</CodeBlock>
+        <CodeBlock>{`비현금 투자·재무 거래 → SCF 본문 제외 → FS 말미에 별도 공시
+중요한(material) 비현금 거래만 공시 대상
+공시 금액은 양수 그대로 — 부호(+/−) 개념 없음`}</CodeBlock>
+
+        <Table
+          headers={['비현금 거래 예시', '설명']}
+          rows={[
+            ['토지 취득 + Mortgage 직접 인수', '현금 없이 부채 인수로 자산 취득'],
+            ['주식 발행으로 자산 취득', '현금 없이 주식으로 대가 지급 (예: 6,000주 × $5 = $30,000)'],
+            ['Equipment purchased by assuming liability', '부채 인수로 장비 취득'],
+            ['Conversion of bonds to equity', '채권을 주식으로 전환'],
+            ['Stock dividend issued', '주식 배당 발행'],
+            ['ROU asset + lease liability recognized', 'Finance/Operating lease 개시 시'],
+          ]}
+        />
+
+        <p style={{ marginTop: 16, marginBottom: 8, fontWeight: 500 }}>간접법 필수 공시 (Supplemental Disclosures)</p>
+        <CodeBlock>{`Interest paid      → 간접법에서 별도 공시 필수 (Operating 조정과 별개)
+Income taxes paid  → 간접법에서 별도 공시 필수 (Operating 조정과 별개)
+
+※ I/S 숫자 ≠ 실지급액 → 반드시 Additional Information 확인
+   Interest Expense vs Interest paid → 다를 수 있음
+   Provision for income taxes vs Cash paid for income taxes → 다를 수 있음
+
+※ 공시 금액은 양수 그대로 — 부호(+/−) 개념 없음
+   예: Interest paid $250,000 → $250,000 (−$250,000 아님)`}</CodeBlock>
+
+        <p style={{ marginTop: 16, marginBottom: 8, fontWeight: 500, color: '#EF9F27' }}>⚡ Default vs 명시 시 변경 (US GAAP)</p>
+        <Table
+          headers={['항목', 'Default 분류', '비고']}
+          rows={[
+            ['Interest paid', 'Operating', 'US GAAP 고정'],
+            ['Interest received', 'Operating', 'US GAAP 고정'],
+            ['Dividends paid', 'Financing', 'US GAAP 고정'],
+            ['Dividends received', 'Operating', 'US GAAP 고정'],
+          ]}
+        />
+
+        <p style={{ color: '#555', marginTop: 12, fontSize: 13, fontStyle: 'italic' }}>
+          TRAP ① 비현금 거래는 SCF 본문에 절대 포함 안 됨 — footnote/Supplemental 공시만
+          {'\n'}TRAP ② Supplemental 금액은 양수 — Operating 조정의 부호 개념과 혼동 금지
+          {'\n'}TRAP ③ "Endowment activity" 같은 존재하지 않는 섹션 선지 → 즉시 소거
+        </p>
       </Section>
 
       <DefaultBox items={[
