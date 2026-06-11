@@ -2724,6 +2724,91 @@ function ScfContent() {
         </svg>
       </Section>
 
+      <Section title="2-2. 항목별 출처 &amp; 계산식">
+        <svg width="100%" viewBox="0 0 680 800">
+          <defs>
+            <marker id="arrowscf2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </marker>
+          </defs>
+          <g><rect x="40" y="14" width="600" height="28" rx="8" fill="#EEEDFE" stroke="#534AB7" strokeWidth="0.5"/><text className="th" x="340" y="28" textAnchor="middle" dominantBaseline="central" fill="#3C3489">SCF 간접법 — 항목별 출처 &amp; 계산식</text></g>
+          <line x1="40" y1="54" x2="640" y2="54" stroke="var(--color-border-tertiary)" strokeWidth="0.5"/>
+          <text className="ts" x="110" y="64" textAnchor="middle" dominantBaseline="central" fill="var(--color-text-secondary)">항목</text>
+          <text className="ts" x="226" y="64" textAnchor="middle" dominantBaseline="central" fill="var(--color-text-secondary)">출처</text>
+          <text className="ts" x="460" y="64" textAnchor="middle" dominantBaseline="central" fill="var(--color-text-secondary)">계산식</text>
+          <line x1="40" y1="74" x2="640" y2="74" stroke="var(--color-border-tertiary)" strokeWidth="0.5"/>
+          <line x1="180" y1="74" x2="180" y2="756" stroke="var(--color-border-tertiary)" strokeWidth="0.5"/>
+          <line x1="290" y1="74" x2="290" y2="756" stroke="var(--color-border-tertiary)" strokeWidth="0.5"/>
+          <g><rect x="40" y="80" width="600" height="22" rx="4" fill="#F1EFE8" stroke="#5F5E5A" strokeWidth="0.5"/><text className="th" x="340" y="91" textAnchor="middle" dominantBaseline="central" fill="#444441">Operating</text></g>
+          <text className="th" x="48" y="114" dominantBaseline="central" fill="var(--color-text-primary)">Net income</text>
+          <g><rect x="196" y="104" width="64" height="20" rx="10" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/><text className="ts" x="228" y="114" textAnchor="middle" dominantBaseline="central" fill="#085041">I/S</text></g>
+          <text className="ts" x="302" y="114" dominantBaseline="central" fill="var(--color-text-secondary)">그대로 읽기</text>
+          <line x1="40" y1="128" x2="640" y2="128" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
+          <text className="th" x="48" y="148" dominantBaseline="central" fill="var(--color-text-primary)">Depreciation ★</text>
+          <g><rect x="190" y="138" width="80" height="20" rx="10" fill="#FEF3C7" stroke="#D97706" strokeWidth="0.5"/><text className="ts" x="230" y="148" textAnchor="middle" dominantBaseline="central" fill="#92400E">B/S + Addl</text></g>
+          <text className="ts" x="302" y="148" dominantBaseline="central" fill="var(--color-text-secondary)">AccDep(Y2−Y1) + 처분 AccDep  /  ★ Addl Info 확인</text>
+          <line x1="40" y1="164" x2="640" y2="164" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
+          <text className="th" x="48" y="184" dominantBaseline="central" fill="var(--color-text-primary)">Amortization</text>
+          <g><rect x="196" y="174" width="64" height="20" rx="10" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/><text className="ts" x="228" y="184" textAnchor="middle" dominantBaseline="central" fill="#085041">B/S</text></g>
+          <text className="ts" x="302" y="184" dominantBaseline="central" fill="var(--color-text-secondary)">Intangibles(Y1−Y2)  /  감소분 = 당기 상각</text>
+          <line x1="40" y1="200" x2="640" y2="200" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
+          <text className="th" x="48" y="220" dominantBaseline="central" fill="var(--color-text-primary)">AR</text>
+          <g><rect x="196" y="210" width="64" height="20" rx="10" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/><text className="ts" x="228" y="220" textAnchor="middle" dominantBaseline="central" fill="#085041">B/S</text></g>
+          <text className="ts" x="302" y="220" dominantBaseline="central" fill="var(--color-text-secondary)">AR(Y2−Y1)  /  자산↑ = (−)  /  자산↓ = (+)</text>
+          <line x1="40" y1="236" x2="640" y2="236" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
+          <text className="th" x="48" y="256" dominantBaseline="central" fill="var(--color-text-primary)">Inventory</text>
+          <g><rect x="196" y="246" width="64" height="20" rx="10" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/><text className="ts" x="228" y="256" textAnchor="middle" dominantBaseline="central" fill="#085041">B/S</text></g>
+          <text className="ts" x="302" y="256" dominantBaseline="central" fill="var(--color-text-secondary)">Inv(Y2−Y1)  /  자산↑ = (−)  /  자산↓ = (+)</text>
+          <line x1="40" y1="272" x2="640" y2="272" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
+          <text className="th" x="48" y="292" dominantBaseline="central" fill="var(--color-text-primary)">Prepaid</text>
+          <g><rect x="196" y="282" width="64" height="20" rx="10" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/><text className="ts" x="228" y="292" textAnchor="middle" dominantBaseline="central" fill="#085041">B/S</text></g>
+          <text className="ts" x="302" y="292" dominantBaseline="central" fill="var(--color-text-secondary)">Prepaid(Y2−Y1)  /  자산↑ = (−)  /  자산↓ = (+)</text>
+          <line x1="40" y1="308" x2="640" y2="308" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
+          <text className="th" x="48" y="328" dominantBaseline="central" fill="var(--color-text-primary)">AP &amp; accrued</text>
+          <g><rect x="196" y="318" width="64" height="20" rx="10" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/><text className="ts" x="228" y="328" textAnchor="middle" dominantBaseline="central" fill="#085041">B/S</text></g>
+          <text className="ts" x="302" y="328" dominantBaseline="central" fill="var(--color-text-secondary)">AP(Y2−Y1)  /  부채↑ = (+)  /  부채↓ = (−)</text>
+          <line x1="40" y1="344" x2="640" y2="344" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
+          <text className="th" x="48" y="364" dominantBaseline="central" fill="var(--color-text-primary)">Gain / Loss</text>
+          <g><rect x="196" y="354" width="64" height="20" rx="10" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/><text className="ts" x="228" y="364" textAnchor="middle" dominantBaseline="central" fill="#085041">I/S</text></g>
+          <text className="ts" x="302" y="364" dominantBaseline="central" fill="var(--color-text-secondary)">반대 부호 제거  /  Gain = (−)  /  Loss = (+)</text>
+          <line x1="40" y1="380" x2="640" y2="380" stroke="var(--color-border-tertiary)" strokeWidth="0.5"/>
+          <g><rect x="40" y="396" width="600" height="22" rx="4" fill="#F1EFE8" stroke="#5F5E5A" strokeWidth="0.5"/><text className="th" x="340" y="407" textAnchor="middle" dominantBaseline="central" fill="#444441">Investing</text></g>
+          <text className="th" x="48" y="432" dominantBaseline="central" fill="var(--color-text-primary)">PP&amp;E 취득 ★</text>
+          <g><rect x="190" y="422" width="80" height="20" rx="10" fill="#FEF3C7" stroke="#D97706" strokeWidth="0.5"/><text className="ts" x="230" y="432" textAnchor="middle" dominantBaseline="central" fill="#92400E">B/S + Addl</text></g>
+          <text className="ts" x="302" y="432" dominantBaseline="central" fill="var(--color-text-secondary)">PP&amp;E(Y2−Y1) + 처분 원가  /  ★ Addl Info 확인</text>
+          <line x1="40" y1="448" x2="640" y2="448" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
+          <text className="th" x="48" y="468" dominantBaseline="central" fill="var(--color-text-primary)">처분 proceeds</text>
+          <g><rect x="196" y="458" width="64" height="20" rx="10" fill="#FEF3C7" stroke="#D97706" strokeWidth="0.5"/><text className="ts" x="228" y="468" textAnchor="middle" dominantBaseline="central" fill="#92400E">Addl</text></g>
+          <text className="ts" x="302" y="468" dominantBaseline="central" fill="var(--color-text-secondary)">B/S에 없음  /  ★ Addl Info에서만 확인</text>
+          <line x1="40" y1="484" x2="640" y2="484" stroke="var(--color-border-tertiary)" strokeWidth="0.5"/>
+          <g><rect x="40" y="500" width="600" height="22" rx="4" fill="#F1EFE8" stroke="#5F5E5A" strokeWidth="0.5"/><text className="th" x="340" y="511" textAnchor="middle" dominantBaseline="central" fill="#444441">Financing</text></g>
+          <text className="th" x="48" y="546" dominantBaseline="central" fill="var(--color-text-primary)">Line of credit</text>
+          <g><rect x="196" y="536" width="64" height="20" rx="10" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/><text className="ts" x="228" y="546" textAnchor="middle" dominantBaseline="central" fill="#085041">B/S</text></g>
+          <text className="ts" x="302" y="546" dominantBaseline="central" fill="var(--color-text-secondary)">LOC(Y2−Y1)  /  부채↑ = (+)  /  부채↓ = (−)</text>
+          <line x1="40" y1="562" x2="640" y2="562" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
+          <text className="th" x="48" y="582" dominantBaseline="central" fill="var(--color-text-primary)">LT debt ★</text>
+          <g><rect x="190" y="572" width="80" height="20" rx="10" fill="#FEF3C7" stroke="#D97706" strokeWidth="0.5"/><text className="ts" x="230" y="582" textAnchor="middle" dominantBaseline="central" fill="#92400E">B/S 두 줄</text></g>
+          <text className="ts" x="302" y="582" dominantBaseline="central" fill="var(--color-text-secondary)">(LT debt + Current portion)(Y2−Y1)  /  ★ 두 줄 합산</text>
+          <line x1="40" y1="598" x2="640" y2="598" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
+          <text className="th" x="48" y="618" dominantBaseline="central" fill="var(--color-text-primary)">Dividends paid</text>
+          <g><rect x="196" y="608" width="64" height="20" rx="10" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/><text className="ts" x="228" y="618" textAnchor="middle" dominantBaseline="central" fill="#085041">I/S</text></g>
+          <text className="ts" x="302" y="618" dominantBaseline="central" fill="var(--color-text-secondary)">RE statement 하단에서 직접 읽기</text>
+          <line x1="40" y1="634" x2="640" y2="634" stroke="var(--color-border-tertiary)" strokeWidth="0.5"/>
+          <g><rect x="40" y="650" width="600" height="22" rx="4" fill="#F1EFE8" stroke="#5F5E5A" strokeWidth="0.5"/><text className="th" x="340" y="661" textAnchor="middle" dominantBaseline="central" fill="#444441">Supplemental Disclosures</text></g>
+          <text className="th" x="48" y="686" dominantBaseline="central" fill="var(--color-text-primary)">Interest paid ★</text>
+          <g><rect x="196" y="676" width="64" height="20" rx="10" fill="#FEF3C7" stroke="#D97706" strokeWidth="0.5"/><text className="ts" x="228" y="686" textAnchor="middle" dominantBaseline="central" fill="#92400E">Addl</text></g>
+          <text className="ts" x="302" y="686" dominantBaseline="central" fill="var(--color-text-secondary)">I/S Interest Expense ≠ 실지급액  /  ★ Addl Info 확인</text>
+          <line x1="40" y1="700" x2="640" y2="700" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
+          <text className="th" x="48" y="720" dominantBaseline="central" fill="var(--color-text-primary)">Tax paid ★</text>
+          <g><rect x="196" y="710" width="64" height="20" rx="10" fill="#FEF3C7" stroke="#D97706" strokeWidth="0.5"/><text className="ts" x="228" y="720" textAnchor="middle" dominantBaseline="central" fill="#92400E">Addl</text></g>
+          <text className="ts" x="302" y="720" dominantBaseline="central" fill="var(--color-text-secondary)">I/S Provision ≠ 실지급액  /  ★ Addl Info 확인</text>
+          <rect x="40" y="750" width="12" height="12" rx="6" fill="#1D9E75" opacity="0.85"/>
+          <text className="ts" x="58" y="756" dominantBaseline="central" fill="var(--color-text-secondary)">B/S 또는 I/S 직접 계산</text>
+          <rect x="280" y="750" width="12" height="12" rx="6" fill="#EF9F27" opacity="0.9"/>
+          <text className="ts" x="298" y="756" dominantBaseline="central" fill="var(--color-text-secondary)">★ Addl Info 또는 추가 계산 필요</text>
+        </svg>
+      </Section>
+
       <Section title="3. Finance Lease SCF 처리">
         <CodeBlock>{`원금 상환 → Financing Activities
 이자 지급 → Operating Activities`}</CodeBlock>
