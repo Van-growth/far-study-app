@@ -47,23 +47,29 @@ router.post('/chat', async (req: Request, res: Response) => {
     });
 
     stream.on('text', (text: string) => {
-      res.write(`data: ${JSON.stringify({ text })}\n\n`);
+      if (!res.writableEnded) res.write(`data: ${JSON.stringify({ text })}\n\n`);
     });
 
     stream.on('error', (err: Error) => {
-      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
-      res.write('data: [DONE]\n\n');
-      res.end();
+      if (!res.writableEnded) {
+        res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+      }
     });
 
     await stream.finalMessage();
-    res.write('data: [DONE]\n\n');
-    res.end();
+    if (!res.writableEnded) {
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
-    res.write(`data: ${JSON.stringify({ error: msg })}\n\n`);
-    res.write('data: [DONE]\n\n');
-    res.end();
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ error: msg })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
   }
 });
 
