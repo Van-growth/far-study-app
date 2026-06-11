@@ -2809,6 +2809,24 @@ function ScfContent() {
         </svg>
       </Section>
 
+      <Section title="2-3. Worksheet vs 완성된 SCF">
+        <Table
+          headers={['', 'Worksheet', '완성된 SCF']}
+          rows={[
+            ['목적', '거래별 현금 영향 추적', 'NI에서 시작해서 완성된 표'],
+            ['시작점', '개별 거래 하나씩', 'Net Income'],
+            ['사고방식', '이 거래에서 현금이 얼마나 움직였나', 'NI와 실제 현금의 차이를 조정'],
+            ['결과물', '섹션별 합산 재료', '공식 재무제표'],
+            ['시험 형태', 'Cash flow statement worksheet', 'Statement of Cash Flows'],
+            ['실무 비유', '시산표 (B/S 만들기 전 사전 작업)', '완성된 B/S / I/S'],
+            ['Consolidation 비유', '매 기말 elimination worksheet', '완성된 연결 재무제표'],
+          ]}
+        />
+        <p style={{ color: '#555', marginTop: 12, fontSize: 13 }}>
+          두 형태 모두 시험에 출제됨 — Worksheet는 거래별 현금 직접 추적 / SCF는 NI 조정 방식. 결과는 동일.
+        </p>
+      </Section>
+
       <Section title="3. Finance Lease SCF 처리">
         <CodeBlock>{`원금 상환 → Financing Activities
 이자 지급 → Operating Activities`}</CodeBlock>
