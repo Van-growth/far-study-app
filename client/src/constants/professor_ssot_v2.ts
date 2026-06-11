@@ -2825,7 +2825,7 @@ Series B+ 감사 시 핵심 검토 항목`,
       "③ Receivable↑ → (−) / Receivable↓ → (+) (수익 인식 ≠ 현금 수취)",
       "④ Payable↑ → (+) / Payable↓ → (−) (비용 인식 ≠ 현금 지급)",
     ],
-    svg: `<svg width="100%" viewBox="0 0 680 860" role="img">
+    svg_visualization: `<svg width="100%" viewBox="0 0 680 860" role="img">
   <title>간접법 조정 — 차액 발생 여부 기준 구조</title>
   <desc>차액 없음 vs 차액 있음 두 갈래로 나눈 간접법 조정 전체 구조</desc>
   <defs>
