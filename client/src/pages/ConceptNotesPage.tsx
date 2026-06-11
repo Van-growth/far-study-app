@@ -2653,30 +2653,30 @@ function ScfContent() {
               <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </marker>
           </defs>
-          <g className="c-purple">
-            <rect x="40" y="20" width="600" height="44" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="340" y="36" textAnchor="middle" dominantBaseline="central">간접법 조정 원리</text>
-            <text className="ts" x="340" y="54" textAnchor="middle" dominantBaseline="central">NI(발생주의) → Cash from Operations(현금주의) 변환</text>
+          <g>
+            <rect x="40" y="20" width="600" height="44" rx="8" fill="#EEEDFE" stroke="#534AB7" strokeWidth="0.5"/>
+            <text className="th" x="340" y="36" textAnchor="middle" dominantBaseline="central" fill="#3C3489">간접법 조정 원리</text>
+            <text className="ts" x="340" y="54" textAnchor="middle" dominantBaseline="central" fill="#3C3489">NI(발생주의) → Cash from Operations(현금주의) 변환</text>
           </g>
-          <g className="c-gray">
-            <rect x="200" y="82" width="280" height="36" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="340" y="100" textAnchor="middle" dominantBaseline="central">NI 인식액 = 실제 현금?</text>
+          <g>
+            <rect x="200" y="82" width="280" height="36" rx="8" fill="#F1EFE8" stroke="#5F5E5A" strokeWidth="0.5"/>
+            <text className="th" x="340" y="100" textAnchor="middle" dominantBaseline="central" fill="#444441">NI 인식액 = 실제 현금?</text>
           </g>
-          <line x1="260" y1="118" x2="160" y2="158" className="arr" stroke="#0F6E56" markerEnd="url(#arrv2)"/>
+          <line x1="260" y1="118" x2="160" y2="158" stroke="#0F6E56" markerEnd="url(#arrv2)"/>
           <text className="ts" x="185" y="142" textAnchor="middle" fill="#0F6E56">YES</text>
-          <line x1="420" y1="118" x2="520" y2="158" className="arr" stroke="#993C1D" markerEnd="url(#arrv2)"/>
+          <line x1="420" y1="118" x2="520" y2="158" stroke="#993C1D" markerEnd="url(#arrv2)"/>
           <text className="ts" x="495" y="142" textAnchor="middle" fill="#993C1D">NO</text>
-          <g className="c-teal">
-            <rect x="60" y="158" width="200" height="52" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="160" y="176" textAnchor="middle" dominantBaseline="central">조정 $0</text>
-            <text className="ts" x="160" y="196" textAnchor="middle" dominantBaseline="central">예: Interest paid at par</text>
+          <g>
+            <rect x="60" y="158" width="200" height="52" rx="8" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/>
+            <text className="th" x="160" y="176" textAnchor="middle" dominantBaseline="central" fill="#085041">조정 $0</text>
+            <text className="ts" x="160" y="196" textAnchor="middle" dominantBaseline="central" fill="#085041">예: Interest paid at par</text>
           </g>
           <text className="ts" x="60" y="226" fill="var(--color-text-secondary)">Expense $85k = Cash $85k</text>
           <text className="ts" x="60" y="242" fill="var(--color-text-secondary)">Payable 변동 없음 → 차액 없음</text>
-          <g className="c-coral">
-            <rect x="420" y="158" width="200" height="52" rx="8" strokeWidth="0.5"/>
-            <text className="th" x="520" y="176" textAnchor="middle" dominantBaseline="central">조정 필요</text>
-            <text className="ts" x="520" y="196" textAnchor="middle" dominantBaseline="central">4가지 유형으로 분류</text>
+          <g>
+            <rect x="420" y="158" width="200" height="52" rx="8" fill="#FAECE7" stroke="#993C1D" strokeWidth="0.5"/>
+            <text className="th" x="520" y="176" textAnchor="middle" dominantBaseline="central" fill="#712B13">조정 필요</text>
+            <text className="ts" x="520" y="196" textAnchor="middle" dominantBaseline="central" fill="#712B13">4가지 유형으로 분류</text>
           </g>
           <line x1="40" y1="262" x2="640" y2="262" stroke="var(--color-border-tertiary)" strokeWidth="0.5"/>
           <text className="ts" x="48" y="278" fill="var(--color-text-secondary)">유형</text>
@@ -2685,42 +2685,42 @@ function ScfContent() {
           <text className="ts" x="400" y="278" textAnchor="middle" fill="var(--color-text-secondary)">조정</text>
           <text className="ts" x="560" y="278" textAnchor="middle" fill="var(--color-text-secondary)">차액 발생 이유</text>
           <line x1="40" y1="286" x2="640" y2="286" stroke="var(--color-border-tertiary)" strokeWidth="0.5"/>
-          <g className="c-gray"><rect x="40" y="294" width="100" height="44" rx="6" strokeWidth="0.5"/><text className="th" x="90" y="310" textAnchor="middle" dominantBaseline="central">비현금</text><text className="th" x="90" y="328" textAnchor="middle" dominantBaseline="central">비용 D&amp;A</text></g>
+          <g><rect x="40" y="294" width="100" height="44" rx="6" fill="#F1EFE8" stroke="#5F5E5A" strokeWidth="0.5"/><text className="th" x="90" y="310" textAnchor="middle" dominantBaseline="central" fill="#444441">비현금</text><text className="th" x="90" y="328" textAnchor="middle" dominantBaseline="central" fill="#444441">비용 D&amp;A</text></g>
           <rect x="140" y="300" width="96" height="30" rx="4" fill="#1D9E75" opacity="0.85"/><text className="ts" x="188" y="315" textAnchor="middle" dominantBaseline="central" fill="#085041">Expense $50k</text>
-          <text className="th" x="248" y="315" textAnchor="middle" dominantBaseline="central">≠</text>
+          <text className="th" x="248" y="315" textAnchor="middle" dominantBaseline="central" fill="#444441">≠</text>
           <rect x="254" y="300" width="96" height="30" rx="4" fill="none" stroke="var(--color-border-secondary)" strokeWidth="0.5" strokeDasharray="3 3"/><text className="ts" x="302" y="315" textAnchor="middle" dominantBaseline="central" fill="var(--color-text-secondary)">현금 $0</text>
-          <g className="c-teal"><rect x="360" y="300" width="80" height="30" rx="6" strokeWidth="0.5"/><text className="th" x="400" y="315" textAnchor="middle" dominantBaseline="central">+ $50,000</text></g>
+          <g><rect x="360" y="300" width="80" height="30" rx="6" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/><text className="th" x="400" y="315" textAnchor="middle" dominantBaseline="central" fill="#085041">+ $50,000</text></g>
           <text className="ts" x="454" y="308" fill="var(--color-text-secondary)">현금 지출 없는 회계상</text><text className="ts" x="454" y="324" fill="var(--color-text-secondary)">비용 — 취득 시 이미 지출</text>
           <line x1="40" y1="352" x2="640" y2="352" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
-          <g className="c-gray"><rect x="40" y="360" width="100" height="56" rx="6" strokeWidth="0.5"/><text className="th" x="90" y="376" textAnchor="middle" dominantBaseline="central">Gain/Loss</text><text className="th" x="90" y="394" textAnchor="middle" dominantBaseline="central">이중계산</text><text className="th" x="90" y="410" textAnchor="middle" dominantBaseline="central">제거</text></g>
+          <g><rect x="40" y="360" width="100" height="56" rx="6" fill="#F1EFE8" stroke="#5F5E5A" strokeWidth="0.5"/><text className="th" x="90" y="376" textAnchor="middle" dominantBaseline="central" fill="#444441">Gain/Loss</text><text className="th" x="90" y="394" textAnchor="middle" dominantBaseline="central" fill="#444441">이중계산</text><text className="th" x="90" y="410" textAnchor="middle" dominantBaseline="central" fill="#444441">제거</text></g>
           <rect x="140" y="366" width="96" height="22" rx="4" fill="#1D9E75" opacity="0.85"/><text className="ts" x="188" y="377" textAnchor="middle" dominantBaseline="central" fill="#085041">Gain $8.2k↑</text>
           <rect x="140" y="392" width="96" height="22" rx="4" fill="#1D9E75" opacity="0.5"/><text className="ts" x="188" y="403" textAnchor="middle" dominantBaseline="central" fill="#085041">Loss $Xk↓</text>
-          <text className="th" x="248" y="388" textAnchor="middle" dominantBaseline="central">≠</text>
+          <text className="th" x="248" y="388" textAnchor="middle" dominantBaseline="central" fill="#444441">≠</text>
           <rect x="254" y="366" width="96" height="22" rx="4" fill="none" stroke="var(--color-border-secondary)" strokeWidth="0.5" strokeDasharray="3 3"/><text className="ts" x="302" y="377" textAnchor="middle" dominantBaseline="central" fill="var(--color-text-secondary)">CFO $0</text>
           <rect x="254" y="392" width="96" height="22" rx="4" fill="none" stroke="var(--color-border-secondary)" strokeWidth="0.5" strokeDasharray="3 3"/><text className="ts" x="302" y="403" textAnchor="middle" dominantBaseline="central" fill="var(--color-text-secondary)">CFO $0</text>
-          <g className="c-coral"><rect x="360" y="366" width="80" height="22" rx="4" strokeWidth="0.5"/><text className="th" x="400" y="377" textAnchor="middle" dominantBaseline="central">− $8,200</text></g>
-          <g className="c-teal"><rect x="360" y="392" width="80" height="22" rx="4" strokeWidth="0.5"/><text className="th" x="400" y="403" textAnchor="middle" dominantBaseline="central">+ Loss amt</text></g>
+          <g><rect x="360" y="366" width="80" height="22" rx="4" fill="#FAECE7" stroke="#993C1D" strokeWidth="0.5"/><text className="th" x="400" y="377" textAnchor="middle" dominantBaseline="central" fill="#712B13">− $8,200</text></g>
+          <g><rect x="360" y="392" width="80" height="22" rx="4" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/><text className="th" x="400" y="403" textAnchor="middle" dominantBaseline="central" fill="#085041">+ Loss amt</text></g>
           <text className="ts" x="454" y="374" fill="var(--color-text-secondary)">현금은 CFI에서 전액 인식</text><text className="ts" x="454" y="390" fill="var(--color-text-secondary)">NI Gain/Loss 그대로 두면</text><text className="ts" x="454" y="406" fill="var(--color-text-secondary)">이중계산 → 반대 부호로 제거</text>
           <line x1="40" y1="428" x2="640" y2="428" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
-          <g className="c-gray"><rect x="40" y="436" width="100" height="56" rx="6" strokeWidth="0.5"/><text className="th" x="90" y="452" textAnchor="middle" dominantBaseline="central">Receivable</text><text className="th" x="90" y="470" textAnchor="middle" dominantBaseline="central">변동</text><text className="ts" x="90" y="486" textAnchor="middle" dominantBaseline="central">(AR 등)</text></g>
+          <g><rect x="40" y="436" width="100" height="56" rx="6" fill="#F1EFE8" stroke="#5F5E5A" strokeWidth="0.5"/><text className="th" x="90" y="452" textAnchor="middle" dominantBaseline="central" fill="#444441">Receivable</text><text className="th" x="90" y="470" textAnchor="middle" dominantBaseline="central" fill="#444441">변동</text><text className="ts" x="90" y="486" textAnchor="middle" dominantBaseline="central" fill="#444441">(AR 등)</text></g>
           <rect x="140" y="442" width="96" height="22" rx="4" fill="#1D9E75" opacity="0.85"/><text className="ts" x="188" y="453" textAnchor="middle" dominantBaseline="central" fill="#085041">Revenue $120k</text>
           <rect x="140" y="464" width="96" height="14" rx="3" fill="#EF9F27" opacity="0.9"/><text className="ts" x="188" y="471" textAnchor="middle" dominantBaseline="central" fill="#412402">AR +$10k</text>
-          <text className="th" x="248" y="462" textAnchor="middle" dominantBaseline="central">≠</text>
+          <text className="th" x="248" y="462" textAnchor="middle" dominantBaseline="central" fill="#444441">≠</text>
           <rect x="254" y="442" width="96" height="22" rx="4" fill="#1D9E75" opacity="0.85"/><text className="ts" x="302" y="453" textAnchor="middle" dominantBaseline="central" fill="#085041">Cash $110k</text>
           <rect x="254" y="464" width="96" height="14" rx="3" fill="none" stroke="var(--color-border-secondary)" strokeWidth="0.5" strokeDasharray="3 3"/><text className="ts" x="302" y="471" textAnchor="middle" dominantBaseline="central" fill="var(--color-text-secondary)">미수취</text>
-          <g className="c-coral"><rect x="360" y="442" width="80" height="38" rx="6" strokeWidth="0.5"/><text className="th" x="400" y="455" textAnchor="middle" dominantBaseline="central">↑ → − 조정</text><text className="th" x="400" y="473" textAnchor="middle" dominantBaseline="central">↓ → + 조정</text></g>
+          <g><rect x="360" y="442" width="80" height="38" rx="6" fill="#FAECE7" stroke="#993C1D" strokeWidth="0.5"/><text className="th" x="400" y="455" textAnchor="middle" dominantBaseline="central" fill="#712B13">↑ → − 조정</text><text className="th" x="400" y="473" textAnchor="middle" dominantBaseline="central" fill="#712B13">↓ → + 조정</text></g>
           <text className="ts" x="454" y="450" fill="var(--color-text-secondary)">↑ = 팔았지만 현금 미수취</text><text className="ts" x="454" y="466" fill="var(--color-text-secondary)">↓ = 전기 매출 이번에 회수</text><text className="ts" x="454" y="482" fill="var(--color-text-secondary)">예: AR $620k→$610k → +$10k</text>
           <line x1="40" y1="502" x2="640" y2="502" stroke="var(--color-border-tertiary)" strokeWidth="0.5" strokeDasharray="3 3"/>
-          <g className="c-gray"><rect x="40" y="510" width="100" height="56" rx="6" strokeWidth="0.5"/><text className="th" x="90" y="526" textAnchor="middle" dominantBaseline="central">Payable</text><text className="th" x="90" y="544" textAnchor="middle" dominantBaseline="central">변동</text><text className="ts" x="90" y="560" textAnchor="middle" dominantBaseline="central">(AP 등)</text></g>
+          <g><rect x="40" y="510" width="100" height="56" rx="6" fill="#F1EFE8" stroke="#5F5E5A" strokeWidth="0.5"/><text className="th" x="90" y="526" textAnchor="middle" dominantBaseline="central" fill="#444441">Payable</text><text className="th" x="90" y="544" textAnchor="middle" dominantBaseline="central" fill="#444441">변동</text><text className="ts" x="90" y="560" textAnchor="middle" dominantBaseline="central" fill="#444441">(AP 등)</text></g>
           <rect x="140" y="516" width="96" height="22" rx="4" fill="#1D9E75" opacity="0.85"/><text className="ts" x="188" y="527" textAnchor="middle" dominantBaseline="central" fill="#085041">Expense $100k</text>
-          <text className="th" x="248" y="536" textAnchor="middle" dominantBaseline="central">≠</text>
+          <text className="th" x="248" y="536" textAnchor="middle" dominantBaseline="central" fill="#444441">≠</text>
           <rect x="254" y="516" width="96" height="22" rx="4" fill="#1D9E75" opacity="0.85"/><text className="ts" x="302" y="527" textAnchor="middle" dominantBaseline="central" fill="#085041">Cash $115k</text>
           <rect x="254" y="540" width="96" height="14" rx="3" fill="#F09595" opacity="0.85"/><text className="ts" x="302" y="547" textAnchor="middle" dominantBaseline="central" fill="#501313">AP −$15k 추가</text>
-          <g className="c-teal"><rect x="360" y="516" width="80" height="38" rx="6" strokeWidth="0.5"/><text className="th" x="400" y="529" textAnchor="middle" dominantBaseline="central">↑ → + 조정</text><text className="th" x="400" y="547" textAnchor="middle" dominantBaseline="central">↓ → − 조정</text></g>
+          <g><rect x="360" y="516" width="80" height="38" rx="6" fill="#E1F5EE" stroke="#0F6E56" strokeWidth="0.5"/><text className="th" x="400" y="529" textAnchor="middle" dominantBaseline="central" fill="#085041">↑ → + 조정</text><text className="th" x="400" y="547" textAnchor="middle" dominantBaseline="central" fill="#085041">↓ → − 조정</text></g>
           <text className="ts" x="454" y="524" fill="var(--color-text-secondary)">↑ = 비용 잡았지만 현금 미지급</text><text className="ts" x="454" y="540" fill="var(--color-text-secondary)">↓ = 전기 부채 이번에 현금 지급</text><text className="ts" x="454" y="556" fill="var(--color-text-secondary)">예: AP $400k→$385k → −$15k</text>
           <line x1="40" y1="578" x2="640" y2="578" stroke="var(--color-border-tertiary)" strokeWidth="0.5"/>
-          <g className="c-purple"><rect x="40" y="586" width="600" height="36" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="604" textAnchor="middle" dominantBaseline="central">= Cash from Operations</text></g>
-          <g className="c-gray"><rect x="40" y="636" width="600" height="44" rx="8" strokeWidth="0.5"/><text className="th" x="340" y="652" textAnchor="middle" dominantBaseline="central">자산↑ → (−)   자산↓ → (+)   부채↑ → (+)   부채↓ → (−)</text><text className="ts" x="340" y="670" textAnchor="middle" dominantBaseline="central">Payable / Receivable 변동 없으면 → 항상 $0</text></g>
+          <g><rect x="40" y="586" width="600" height="36" rx="8" fill="#EEEDFE" stroke="#534AB7" strokeWidth="0.5"/><text className="th" x="340" y="604" textAnchor="middle" dominantBaseline="central" fill="#3C3489">= Cash from Operations</text></g>
+          <g><rect x="40" y="636" width="600" height="44" rx="8" fill="#F1EFE8" stroke="#5F5E5A" strokeWidth="0.5"/><text className="th" x="340" y="652" textAnchor="middle" dominantBaseline="central" fill="#444441">자산↑ → (−)   자산↓ → (+)   부채↑ → (+)   부채↓ → (−)</text><text className="ts" x="340" y="670" textAnchor="middle" dominantBaseline="central" fill="#444441">Payable / Receivable 변동 없으면 → 항상 $0</text></g>
         </svg>
       </Section>
 
