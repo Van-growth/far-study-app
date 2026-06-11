@@ -2799,6 +2799,109 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[Cash Equivalents를 SCF에서 제외하는 이유]\nSCF의 목적 = 현금(+현금성자산) 증감 원인 설명.\nCash equivalents는 이미 'Cash and Cash Equivalents' 잔액의 일부.\n→ T-bills 매입 = 현금을 현금성 형태로 바꾸는 것\n→ 전체 잔액 변동 없음\n→ SCF 활동으로 분류할 필요 없음\n\n[AFS를 Investing으로 분류하는 이유]\nAFS는 Cash equivalent가 아님 (만기 3개월 초과 or 시장성 증권)\n→ 현금 투자 = Investing outflow\n→ 매각 시 Investing inflow",
   },
 
+  // [CF_020] Indirect Method — NI 조정 원리 (왜 조정하는가)
+  // RULE    : 판단 기준 또는 공식
+  // TRIGGER : 이 단어 보이면 이 규칙 적용
+  // TRAP    : 함정 포인트 (없으면 생략)
+  // EXAMPLE : 숫자 예시 (있을 때만)
+  {
+    topic_id: "CF_020",
+    book_id: "AA",
+    chapter_id: "AA_CH7",
+    topic_group: "AA_CH7_SCF",
+    sub_category_id: "U5_CASH_FLOWS",
+    card_type: "concept",
+    card_name: "Indirect Method — Why and How NI is Adjusted to CFO",
+    rule: "Adjust NI only when there is a gap between NI recognition and actual cash. No gap (e.g. interest paid at par, no payable change) = $0 adjustment.",
+    trigger: "indirect method | NI adjustment | working capital | D&A add-back | gain removal | AR AP change",
+    trap: "Interest paid at par → $0 adjustment (not ($85,000)). Dividends received → $0 if no receivable change. Always ask: is there a gap between NI and cash?",
+    speed: "Gap 있냐? → 있으면 차이만큼 조정 / 없으면 $0",
+    one_sentence: "간접법 조정 = NI(발생주의)와 실제 현금의 차이를 메우는 작업 — 차이가 없으면 조정도 없다",
+    context_background: "발생주의 NI는 현금 없이도 수익/비용을 인식하기 때문에 실제 현금흐름과 다를 수 있다. 간접법은 NI에서 시작해서 이 차이를 조정해 Cash from Operations를 도출한다. 조정이 필요한 경우는 ① 비현금 비용(D&A) ② Gain/Loss 이중계산 제거 ③ Receivable 변동 ④ Payable 변동 — 이 4가지뿐이다.",
+    rule_title: "4가지 조정 유형",
+    rule_items: "① 비현금 비용 D&A → +add back (현금 지출 없는 비용)\n② Gain on sale → 제거 / Loss on sale → +add back (현금은 CFI에서 인식, 이중계산 방지)\n③ Receivable↑ → (−) / Receivable↓ → (+) (수익 인식 ≠ 현금 수취)\n④ Payable↑ → (+) / Payable↓ → (−) (비용 인식 ≠ 현금 지급)",
+    svg: `<svg width="100%" viewBox="0 0 680 860" role="img">
+  <title>간접법 조정 — 차액 발생 여부 기준 구조</title>
+  <desc>차액 없음 vs 차액 있음 두 갈래로 나눈 간접법 조정 전체 구조</desc>
+  <defs>
+    <marker id="arrv" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <g class="c-purple">
+    <rect x="40" y="20" width="600" height="44" rx="8" stroke-width="0.5"/>
+    <text class="th" x="340" y="36" text-anchor="middle" dominant-baseline="central">간접법 조정 원리</text>
+    <text class="ts" x="340" y="54" text-anchor="middle" dominant-baseline="central">NI(발생주의) → Cash from Operations(현금주의) 변환</text>
+  </g>
+  <g class="c-gray">
+    <rect x="200" y="82" width="280" height="36" rx="8" stroke-width="0.5"/>
+    <text class="th" x="340" y="100" text-anchor="middle" dominant-baseline="central">NI 인식액 = 실제 현금?</text>
+  </g>
+  <line x1="260" y1="118" x2="160" y2="158" class="arr" stroke="#0F6E56" marker-end="url(#arrv)"/>
+  <text class="ts" x="185" y="142" text-anchor="middle" fill="#0F6E56">YES</text>
+  <line x1="420" y1="118" x2="520" y2="158" class="arr" stroke="#993C1D" marker-end="url(#arrv)"/>
+  <text class="ts" x="495" y="142" text-anchor="middle" fill="#993C1D">NO</text>
+  <g class="c-teal">
+    <rect x="60" y="158" width="200" height="52" rx="8" stroke-width="0.5"/>
+    <text class="th" x="160" y="176" text-anchor="middle" dominant-baseline="central">조정 $0</text>
+    <text class="ts" x="160" y="196" text-anchor="middle" dominant-baseline="central">예: Interest paid at par</text>
+  </g>
+  <text class="ts" x="60" y="226" fill="var(--color-text-secondary)">Expense $85k = Cash $85k</text>
+  <text class="ts" x="60" y="242" fill="var(--color-text-secondary)">Payable 변동 없음 → 차액 없음</text>
+  <g class="c-coral">
+    <rect x="420" y="158" width="200" height="52" rx="8" stroke-width="0.5"/>
+    <text class="th" x="520" y="176" text-anchor="middle" dominant-baseline="central">조정 필요</text>
+    <text class="ts" x="520" y="196" text-anchor="middle" dominant-baseline="central">4가지 유형으로 분류</text>
+  </g>
+  <line x1="40" y1="262" x2="640" y2="262" stroke="var(--color-border-tertiary)" stroke-width="0.5"/>
+  <text class="ts" x="48" y="278" fill="var(--color-text-secondary)">유형</text>
+  <text class="ts" x="190" y="278" text-anchor="middle" fill="var(--color-text-secondary)">NI 포함</text>
+  <text class="ts" x="300" y="278" text-anchor="middle" fill="var(--color-text-secondary)">실제 현금</text>
+  <text class="ts" x="400" y="278" text-anchor="middle" fill="var(--color-text-secondary)">조정</text>
+  <text class="ts" x="560" y="278" text-anchor="middle" fill="var(--color-text-secondary)">차액 발생 이유</text>
+  <line x1="40" y1="286" x2="640" y2="286" stroke="var(--color-border-tertiary)" stroke-width="0.5"/>
+  <g class="c-gray"><rect x="40" y="294" width="100" height="44" rx="6" stroke-width="0.5"/><text class="th" x="90" y="310" text-anchor="middle" dominant-baseline="central">비현금</text><text class="th" x="90" y="328" text-anchor="middle" dominant-baseline="central">비용 D&amp;A</text></g>
+  <rect x="140" y="300" width="96" height="30" rx="4" fill="#1D9E75" opacity="0.85"/><text class="ts" x="188" y="315" text-anchor="middle" dominant-baseline="central" fill="#085041">Expense $50k</text>
+  <text class="th" x="248" y="315" text-anchor="middle" dominant-baseline="central">≠</text>
+  <rect x="254" y="300" width="96" height="30" rx="4" fill="none" stroke="var(--color-border-secondary)" stroke-width="0.5" stroke-dasharray="3 3"/><text class="ts" x="302" y="315" text-anchor="middle" dominant-baseline="central" fill="var(--color-text-secondary)">현금 $0</text>
+  <g class="c-teal"><rect x="360" y="300" width="80" height="30" rx="6" stroke-width="0.5"/><text class="th" x="400" y="315" text-anchor="middle" dominant-baseline="central">+ $50,000</text></g>
+  <text class="ts" x="454" y="308" fill="var(--color-text-secondary)">현금 지출 없는 회계상</text><text class="ts" x="454" y="324" fill="var(--color-text-secondary)">비용 — 취득 시 이미 지출</text>
+  <line x1="40" y1="352" x2="640" y2="352" stroke="var(--color-border-tertiary)" stroke-width="0.5" stroke-dasharray="3 3"/>
+  <g class="c-gray"><rect x="40" y="360" width="100" height="56" rx="6" stroke-width="0.5"/><text class="th" x="90" y="376" text-anchor="middle" dominant-baseline="central">Gain/Loss</text><text class="th" x="90" y="394" text-anchor="middle" dominant-baseline="central">이중계산</text><text class="th" x="90" y="410" text-anchor="middle" dominant-baseline="central">제거</text></g>
+  <rect x="140" y="366" width="96" height="22" rx="4" fill="#1D9E75" opacity="0.85"/><text class="ts" x="188" y="377" text-anchor="middle" dominant-baseline="central" fill="#085041">Gain $8.2k↑</text>
+  <rect x="140" y="392" width="96" height="22" rx="4" fill="#1D9E75" opacity="0.5"/><text class="ts" x="188" y="403" text-anchor="middle" dominant-baseline="central" fill="#085041">Loss $Xk↓</text>
+  <text class="th" x="248" y="388" text-anchor="middle" dominant-baseline="central">≠</text>
+  <rect x="254" y="366" width="96" height="22" rx="4" fill="none" stroke="var(--color-border-secondary)" stroke-width="0.5" stroke-dasharray="3 3"/><text class="ts" x="302" y="377" text-anchor="middle" dominant-baseline="central" fill="var(--color-text-secondary)">CFO $0</text>
+  <rect x="254" y="392" width="96" height="22" rx="4" fill="none" stroke="var(--color-border-secondary)" stroke-width="0.5" stroke-dasharray="3 3"/><text class="ts" x="302" y="403" text-anchor="middle" dominant-baseline="central" fill="var(--color-text-secondary)">CFO $0</text>
+  <g class="c-coral"><rect x="360" y="366" width="80" height="22" rx="4" stroke-width="0.5"/><text class="th" x="400" y="377" text-anchor="middle" dominant-baseline="central">− $8,200</text></g>
+  <g class="c-teal"><rect x="360" y="392" width="80" height="22" rx="4" stroke-width="0.5"/><text class="th" x="400" y="403" text-anchor="middle" dominant-baseline="central">+ Loss amt</text></g>
+  <text class="ts" x="454" y="374" fill="var(--color-text-secondary)">현금은 CFI에서 전액 인식</text><text class="ts" x="454" y="390" fill="var(--color-text-secondary)">NI의 Gain/Loss를 그대로 두면</text><text class="ts" x="454" y="406" fill="var(--color-text-secondary)">이중계산 → 반대 부호로 제거</text>
+  <line x1="40" y1="428" x2="640" y2="428" stroke="var(--color-border-tertiary)" stroke-width="0.5" stroke-dasharray="3 3"/>
+  <g class="c-gray"><rect x="40" y="436" width="100" height="56" rx="6" stroke-width="0.5"/><text class="th" x="90" y="452" text-anchor="middle" dominant-baseline="central">Receivable</text><text class="th" x="90" y="470" text-anchor="middle" dominant-baseline="central">변동</text><text class="ts" x="90" y="486" text-anchor="middle" dominant-baseline="central">(AR 등)</text></g>
+  <rect x="140" y="442" width="96" height="22" rx="4" fill="#1D9E75" opacity="0.85"/><text class="ts" x="188" y="453" text-anchor="middle" dominant-baseline="central" fill="#085041">Revenue $120k</text>
+  <rect x="140" y="464" width="96" height="14" rx="3" fill="#EF9F27" opacity="0.9"/><text class="ts" x="188" y="471" text-anchor="middle" dominant-baseline="central" fill="#412402">AR +$10k</text>
+  <text class="th" x="248" y="462" text-anchor="middle" dominant-baseline="central">≠</text>
+  <rect x="254" y="442" width="96" height="22" rx="4" fill="#1D9E75" opacity="0.85"/><text class="ts" x="302" y="453" text-anchor="middle" dominant-baseline="central" fill="#085041">Cash $110k</text>
+  <rect x="254" y="464" width="96" height="14" rx="3" fill="none" stroke="var(--color-border-secondary)" stroke-width="0.5" stroke-dasharray="3 3"/><text class="ts" x="302" y="471" text-anchor="middle" dominant-baseline="central" fill="var(--color-text-secondary)">미수취</text>
+  <g class="c-coral"><rect x="360" y="442" width="80" height="38" rx="6" stroke-width="0.5"/><text class="th" x="400" y="455" text-anchor="middle" dominant-baseline="central">↑ → − 조정</text><text class="th" x="400" y="473" text-anchor="middle" dominant-baseline="central">↓ → + 조정</text></g>
+  <text class="ts" x="454" y="450" fill="var(--color-text-secondary)">↑ = 팔았지만 현금 미수취</text><text class="ts" x="454" y="466" fill="var(--color-text-secondary)">↓ = 전기 매출 이번에 회수</text><text class="ts" x="454" y="482" fill="var(--color-text-secondary)">예: AR $620k→$610k → +$10k</text>
+  <line x1="40" y1="502" x2="640" y2="502" stroke="var(--color-border-tertiary)" stroke-width="0.5" stroke-dasharray="3 3"/>
+  <g class="c-gray"><rect x="40" y="510" width="100" height="56" rx="6" stroke-width="0.5"/><text class="th" x="90" y="526" text-anchor="middle" dominant-baseline="central">Payable</text><text class="th" x="90" y="544" text-anchor="middle" dominant-baseline="central">변동</text><text class="ts" x="90" y="560" text-anchor="middle" dominant-baseline="central">(AP 등)</text></g>
+  <rect x="140" y="516" width="96" height="22" rx="4" fill="#1D9E75" opacity="0.85"/><text class="ts" x="188" y="527" text-anchor="middle" dominant-baseline="central" fill="#085041">Expense $100k</text>
+  <text class="th" x="248" y="536" text-anchor="middle" dominant-baseline="central">≠</text>
+  <rect x="254" y="516" width="96" height="22" rx="4" fill="#1D9E75" opacity="0.85"/><text class="ts" x="302" y="527" text-anchor="middle" dominant-baseline="central" fill="#085041">Cash $115k</text>
+  <rect x="254" y="540" width="96" height="14" rx="3" fill="#F09595" opacity="0.85"/><text class="ts" x="302" y="547" text-anchor="middle" dominant-baseline="central" fill="#501313">AP −$15k 추가</text>
+  <g class="c-teal"><rect x="360" y="516" width="80" height="38" rx="6" stroke-width="0.5"/><text class="th" x="400" y="529" text-anchor="middle" dominant-baseline="central">↑ → + 조정</text><text class="th" x="400" y="547" text-anchor="middle" dominant-baseline="central">↓ → − 조정</text></g>
+  <text class="ts" x="454" y="524" fill="var(--color-text-secondary)">↑ = 비용 잡았지만 현금 미지급</text><text class="ts" x="454" y="540" fill="var(--color-text-secondary)">↓ = 전기 부채 이번에 현금 지급</text><text class="ts" x="454" y="556" fill="var(--color-text-secondary)">예: AP $400k→$385k → −$15k</text>
+  <line x1="40" y1="578" x2="640" y2="578" stroke="var(--color-border-tertiary)" stroke-width="0.5"/>
+  <g class="c-purple"><rect x="40" y="586" width="600" height="36" rx="8" stroke-width="0.5"/><text class="th" x="340" y="604" text-anchor="middle" dominant-baseline="central">= Cash from Operations</text></g>
+  <g class="c-gray"><rect x="40" y="636" width="600" height="44" rx="8" stroke-width="0.5"/><text class="th" x="340" y="652" text-anchor="middle" dominant-baseline="central">자산↑ → (−)   자산↓ → (+)   부채↑ → (+)   부채↓ → (−)</text><text class="ts" x="340" y="670" text-anchor="middle" dominant-baseline="central">Payable / Receivable 변동 없으면 → 항상 $0</text></g>
+  <rect x="40" y="696" width="12" height="12" rx="2" fill="#1D9E75" opacity="0.85"/><text class="ts" x="58" y="702" dominant-baseline="central">현금 구간</text>
+  <rect x="155" y="696" width="12" height="12" rx="2" fill="#EF9F27" opacity="0.9"/><text class="ts" x="173" y="702" dominant-baseline="central">Receivable (미수취)</text>
+  <rect x="340" y="696" width="12" height="12" rx="2" fill="#F09595" opacity="0.85"/><text class="ts" x="358" y="702" dominant-baseline="central">Payable 추가 지출</text>
+</svg>`,
+  },
+
   // ── CHANGE ─────────────────────────────────────────────────────────────────
   {
     topic_id: "CHANGE_001",
