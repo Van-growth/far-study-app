@@ -27,6 +27,7 @@ export interface TxStage {
   label: string
   note: string
   entries?: JournalEntry[]
+  trap?: string
 }
 
 export interface FsImpact {
