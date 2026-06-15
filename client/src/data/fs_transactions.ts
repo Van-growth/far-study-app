@@ -30,9 +30,24 @@ export interface DrillJeRow {
   reason: string
 }
 
+export interface DrillTAccount {
+  name: string
+  dr: string[]
+  cr: string[]
+}
+
+export interface DrillTbRow {
+  acct: string
+  dr: string
+  cr: string
+  highlight?: boolean
+}
+
 export interface DrillContent {
-  title: string
+  title?: string
   je?: DrillJeRow[]
+  taccounts?: DrillTAccount[]
+  tb?: DrillTbRow[]
   custom?: string
   trap?: string
   note?: string
@@ -101,41 +116,89 @@ export const TX_GROUPS: TxGroup[] = [
               { account: 'Salaries Expense', type: 'dr', amount: 10000 },
               { account: 'Salaries Payable', type: 'cr', amount: 10000 },
             ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Salaries Expense', type: 'dr', sign: '+$10,000', signClass: 'sign-positive', reason: '비용 증가 → Debit → 양수' },
+                { acct: 'Salaries Payable',  type: 'cr', sign: '($10,000)', signClass: 'sign-negative', reason: '부채 증가 → Credit → 음수' },
+              ],
+              note: '$10,000 = December salaries earned but not yet paid in cash',
+            },
           },
           {
             step: 'ledger',
             label: 'General Ledger (T-accounts)',
             note: 'Post to individual accounts:\n• Salaries Expense (Dr balance increases)\n• Salaries Payable (Cr balance — new liability created)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Salaries Expense', dr: ['10,000 ★'], cr: [] },
+                { name: 'Salaries Payable', dr: [], cr: ['10,000 ★'] },
+              ],
+            },
           },
           {
             step: 'tb',
             label: 'Adjusted Trial Balance',
             note: 'After AJE posting:\n• Salaries Expense   Dr  $10,000\n• Salaries Payable   Cr  $10,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Salaries Expense', dr: '$10,000', cr: '—', highlight: true },
+                { acct: 'Salaries Payable', dr: '—', cr: '$10,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
           },
           {
             step: 'is',
             label: 'Income Statement',
             note: 'Salaries Expense $10,000 → Operating Expenses\nNet Income decreases by $10,000',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px"><div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid #f3f4f6"><span style="color:#4a5568">Salaries Expense</span><span style="color:#c2410c;font-weight:600">($10,000)</span></div><div style="margin-top:6px;font-size:11px;color:#0f6e56">Debit(Credit) 입력 시: Expense 증가 → 양수 +$10,000</div></div>`,
+            },
           },
           {
             step: 'se',
             label: "Statement of Stockholders' Equity",
             note: 'Net Income ↓ → Retained Earnings ↓ $10,000\nAll other columns (Common Stock, APIC, AOCI, Treasury Stock): no change',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: −$10,000 (Net Income 경유)<br>AOCI, Common Stock, APIC 열: 변동 없음</div>`,
+            },
           },
           {
             step: 'bs',
             label: 'Balance Sheet',
             note: 'Liabilities: Salaries Payable (Current) +$10,000\nStockholders\' Equity: Retained Earnings −$10,000\nAssets: no change → Balance maintained ✓',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Salaries Payable',  dr: '+$10,000', cr: '($10,000)', highlight: true },
+                { acct: 'Retained Earnings', dr: '−$10,000', cr: '($10,000)', highlight: true },
+              ],
+              trap: 'Balance Sheet에서 Salaries Payable을 양수로 적으면 틀림. 부채 증가 = Credit = 음수(괄호).',
+            },
           },
           {
             step: 'scf',
             label: 'Statement of Cash Flows',
             note: 'Indirect Method — Operating Activities:\n• Accrued Liabilities increase +$10,000 (add back — cash not yet paid)\n⚠ When actually paid in January → Operating Activities outflow (Cash paid for salaries)',
+            drill: {
+              title: 'Statement of Cash Flows — Operating Activities',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>당기:</strong> 현금 미지급 → Operating Activities 영향 없음<br><strong>내년 지급 시:</strong> Cash paid for salaries → Operating Activities outflow<br><strong>Supplemental:</strong> Cash paid for salaries 금액 공시 (필수)</div>`,
+              trap: 'Operating Activities outflow는 현금 지급 시점 기준. AJE 시점 아님.',
+            },
           },
           {
             step: 'notes',
             label: 'Notes to Financial Statements',
             note: 'Disclosure: Accrued salaries payable balance, payment schedule.\nFAR TBS: Notes exhibit often shows accrued liability balances → use to verify AJE amounts.',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Accrued salaries payable balance: $10,000<br>② Payment schedule (January next year)<br>③ Accounting policy: accrual basis<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: Notes exhibit에서 accrued liability 잔액 확인 → AJE 금액 검증용</div></div>`,
+            },
           },
         ],
         fsImpact: {

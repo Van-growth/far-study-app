@@ -197,13 +197,14 @@ function DrillPanel({ stage }: { stage: TxStage }) {
 
   return (
     <div style={panelStyle}>
-      <div style={titleStyle}>{drill.title}</div>
+      {drill.title && <div style={titleStyle}>{drill.title}</div>}
 
+      {/* Journal Entry table */}
       {drill.je && (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, marginBottom: 6 }}>
           <thead>
             <tr>
-              {(['Account', 'Debit(Credit)', 'Reason'] as const).map(h => (
+              {(['ACCOUNT', 'DEBIT(CREDIT)', '판단 근거'] as const).map(h => (
                 <th key={h} style={{
                   fontSize: 10,
                   color: C.textTertiary,
@@ -244,6 +245,108 @@ function DrillPanel({ stage }: { stage: TxStage }) {
         </table>
       )}
 
+      {/* T-account boxes */}
+      {drill.taccounts && (
+        <div style={{ display: 'flex', gap: 10, marginBottom: 6 }}>
+          {drill.taccounts.map((ta, i) => (
+            <div key={i} style={{
+              flex: 1,
+              border: `0.5px solid ${C.border}`,
+              borderRadius: 6,
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                background: '#f3f4f6',
+                fontSize: 11,
+                fontWeight: 600,
+                padding: '3px 8px',
+                textAlign: 'center',
+                color: C.textPrimary,
+              }}>
+                {ta.name}
+              </div>
+              <div style={{ display: 'flex' }}>
+                <div style={{
+                  flex: 1,
+                  padding: '6px 8px',
+                  fontFamily: 'monospace',
+                  fontSize: 11,
+                  borderRight: `0.5px solid ${C.border}`,
+                }}>
+                  <div style={{ fontSize: 9, color: C.textTertiary, marginBottom: 2 }}>Dr</div>
+                  {ta.dr.length > 0
+                    ? ta.dr.map((v, j) => (
+                        <div key={j} style={{ fontWeight: v.includes('★') ? 700 : 400 }}>{v}</div>
+                      ))
+                    : <div style={{ color: C.textTertiary }}>—</div>
+                  }
+                </div>
+                <div style={{ flex: 1, padding: '6px 8px', fontFamily: 'monospace', fontSize: 11 }}>
+                  <div style={{ fontSize: 9, color: C.textTertiary, marginBottom: 2 }}>Cr</div>
+                  {ta.cr.length > 0
+                    ? ta.cr.map((v, j) => (
+                        <div key={j} style={{ fontWeight: v.includes('★') ? 700 : 400 }}>{v}</div>
+                      ))
+                    : <div style={{ color: C.textTertiary }}>—</div>
+                  }
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Trial Balance table */}
+      {drill.tb && (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, marginBottom: 6 }}>
+          <thead>
+            <tr>
+              {(['Account', 'Dr', 'Cr'] as const).map(h => (
+                <th key={h} style={{
+                  fontSize: 10,
+                  color: C.textTertiary,
+                  fontWeight: 500,
+                  padding: '3px 6px',
+                  borderBottom: `1px solid ${C.border}`,
+                  textAlign: h === 'Account' ? 'left' : 'right',
+                }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {drill.tb.map((row, i) => (
+              <tr key={i} style={{ background: row.highlight ? '#fffbeb' : 'transparent' }}>
+                <td style={{
+                  padding: '3px 6px',
+                  fontWeight: row.highlight ? 600 : 400,
+                  color: C.textPrimary,
+                }}>
+                  {row.acct}
+                </td>
+                <td style={{
+                  padding: '3px 6px',
+                  textAlign: 'right',
+                  color: '#185FA5',
+                  fontWeight: row.highlight ? 600 : 400,
+                }}>
+                  {row.dr}
+                </td>
+                <td style={{
+                  padding: '3px 6px',
+                  textAlign: 'right',
+                  color: '#c2410c',
+                  fontWeight: row.highlight ? 600 : 400,
+                }}>
+                  {row.cr}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
       {drill.custom && (
         <div dangerouslySetInnerHTML={{ __html: drill.custom }} />
       )}
@@ -254,8 +357,8 @@ function DrillPanel({ stage }: { stage: TxStage }) {
         <div style={{
           fontSize: 11,
           color: C.textSecondary,
-          background: C.grayLight,
-          padding: '6px 10px',
+          background: '#f3f3f0',
+          padding: '5px 8px',
           borderRadius: 4,
           marginTop: 4,
           lineHeight: 1.5,
