@@ -1,25 +1,26 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // FAR Study App — FS Transaction Groups
-// 거래 분류 기준: "무슨 일이 일어났어?" (B/S 섹션 기준 아님)
+// Classification basis: "What happened?" (not B/S section)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface JournalEntry {
   account: string
-  dr?: number
-  cr?: number
+  type: 'dr' | 'cr'
+  amount: number
 }
 
-// step은 9단계 회계 사이클의 어느 단계에 속하는지
+// 10-step accounting cycle
 export type StepId =
-  | 'source'   // 원천 서류 / 거래 발생
-  | 'aje'      // 조정 분개
-  | 'tb'       // 수정후 시산표
-  | 'is'       // 손익계산서 (NI)
-  | 'oci'      // 기타포괄손익
-  | 'bs'       // 재무상태표
-  | 'se'       // 자본변동표
-  | 'scf'      // 현금흐름표
-  | 'notes'    // 주석
+  | 'source'   // Source document / triggering event
+  | 'journal'  // General Journal Entry
+  | 'ledger'   // General Ledger / T-accounts
+  | 'tb'       // Adjusted Trial Balance
+  | 'is'       // Income Statement
+  | 'oci'      // Other Comprehensive Income
+  | 'se'       // Statement of Stockholders' Equity
+  | 'bs'       // Balance Sheet
+  | 'scf'      // Statement of Cash Flows
+  | 'notes'    // Notes to Financial Statements
 
 export interface TxStage {
   step: StepId
@@ -55,88 +56,108 @@ export interface TxGroup {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TX_GROUPS — 7그룹
+// TX_GROUPS — 7 groups
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const TX_GROUPS: TxGroup[] = [
   {
     id: 'aje',
-    label: '① 기말 조정 (AJE)',
+    label: '① Period-End Adjustments (AJE)',
     color: '#1D9E75',
     items: [
       {
         id: 'aje_accrued_expense',
-        label: '미지급비용 (Accrued Expense)',
+        label: 'Accrued Expense',
         topicId: 'INT_001',
         stages: [
           {
             step: 'source',
-            label: 'Source',
-            note: '회계기간 말 — 비용이 발생했으나 아직 현금 미지급 (e.g., 12월 임금을 1월에 지급)',
+            label: 'Source Document',
+            note: 'Year-end review: salaries earned by employees but not yet paid in cash.\n(e.g., December wages paid in January next year)',
           },
           {
-            step: 'aje',
-            label: 'AJE',
-            note: '발생주의: 현금 지급 전이라도 비용 발생 시점에 인식',
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Accrual basis: recognize expense when incurred, regardless of cash payment.',
             entries: [
-              { account: 'Salary Expense', dr: 10000 },
-              { account: '  Salaries Payable', cr: 10000 },
+              { account: 'Salaries Expense', type: 'dr', amount: 10000 },
+              { account: 'Salaries Payable', type: 'cr', amount: 10000 },
             ],
           },
           {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: 'Post to individual accounts:\n• Salaries Expense (Dr balance increases)\n• Salaries Payable (Cr balance — new liability created)',
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: 'After AJE posting:\n• Salaries Expense   Dr  $10,000\n• Salaries Payable   Cr  $10,000\nDebit total = Credit total ✓',
+          },
+          {
             step: 'is',
-            label: 'I/S',
-            note: 'Salary Expense ↑ → Net Income ↓',
+            label: 'Income Statement',
+            note: 'Salaries Expense $10,000 → Operating Expenses\nNet Income decreases by $10,000',
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Net Income ↓ → Retained Earnings ↓ $10,000\nAll other columns (Common Stock, APIC, AOCI, Treasury Stock): no change',
           },
           {
             step: 'bs',
-            label: 'B/S',
-            note: 'Salaries Payable (Current Liabilities) ↑',
+            label: 'Balance Sheet',
+            note: 'Liabilities: Salaries Payable (Current) +$10,000\nStockholders\' Equity: Retained Earnings −$10,000\nAssets: no change → Balance maintained ✓',
           },
           {
             step: 'scf',
-            label: 'SCF',
-            note: '간접법 Operating: Accrued Liabilities 증가 → add back (+).\n실제 현금 지급 시 → Operating outflow (Cash paid for salaries)',
+            label: 'Statement of Cash Flows',
+            note: 'Indirect Method — Operating Activities:\n• Accrued Liabilities increase +$10,000 (add back — cash not yet paid)\n⚠ When actually paid in January → Operating Activities outflow (Cash paid for salaries)',
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Accrued salaries payable balance, payment schedule.\nFAR TBS: Notes exhibit often shows accrued liability balances → use to verify AJE amounts.',
           },
         ],
         fsImpact: {
-          is_ni: 'Accrued Expense ↑ → Net Income ↓',
-          bs: 'Accrued Liabilities (Current) ↑',
-          se: 'Retained Earnings ↓ (Net Income 감소 경유)',
-          cfo: '간접법: Accrued Liabilities 증가 → add back (+). 현금 지급 시 Operating outflow',
+          is_ni: 'Salaries Expense +$10,000 → Net Income ↓',
+          bs: 'Salaries Payable (Current Liabilities) +$10,000',
+          se: 'Retained Earnings ↓ $10,000 (via Net Income)',
+          cfo: 'Indirect method: Accrued Liabilities increase → add back (+). Cash payment → Operating outflow',
         },
       },
       {
         id: 'aje_accrued_revenue',
-        label: '미수수익 (Accrued Revenue)',
+        label: 'Accrued Revenue',
         topicId: 'ADJ_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'aje_prepaid',
-        label: '선급비용 소진 (Prepaid)',
+        label: 'Prepaid Expense Expiration',
         topicId: 'ADJ_002',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'aje_unearned',
-        label: '선수수익 인식 (Unearned)',
+        label: 'Unearned Revenue Recognition',
         topicId: 'ADJ_003',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'aje_depreciation',
-        label: '감가상각 (Depreciation)',
+        label: 'Depreciation',
         topicId: 'PPE_DEP_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'aje_allowance',
-        label: '대손충당금 (Allowance)',
+        label: 'Allowance for Doubtful Accounts',
         topicId: 'REC_001',
         stages: [],
         fsImpact: {},
@@ -145,40 +166,40 @@ export const TX_GROUPS: TxGroup[] = [
   },
   {
     id: 'asset',
-    label: '② 자산 취득·처분·손상',
+    label: '② Asset Acquisition · Disposal · Impairment',
     color: '#185FA5',
     items: [
       {
         id: 'ppe_buy',
-        label: 'PP&E 취득 (현금)',
+        label: 'PP&E Acquisition (Cash)',
         topicId: 'PPE_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'ppe_sell_gain',
-        label: 'PP&E 매각 (이익 발생)',
+        label: 'PP&E Disposal — Gain',
         topicId: 'PPE_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'ppe_sell_loss',
-        label: 'PP&E 매각 (손실 발생)',
+        label: 'PP&E Disposal — Loss',
         topicId: 'PPE_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'impairment',
-        label: '손상차손 (Impairment)',
+        label: 'Impairment Loss',
         topicId: 'IMP_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'cloud_impl',
-        label: 'Cloud/SaaS 구현비용 자본화',
+        label: 'Cloud/SaaS Implementation Costs',
         topicId: 'INTANG_001',
         stages: [],
         fsImpact: {},
@@ -194,47 +215,47 @@ export const TX_GROUPS: TxGroup[] = [
   },
   {
     id: 'debt',
-    label: '③ 금융부채 · 이자',
+    label: '③ Financial Liabilities · Interest',
     color: '#534AB7',
     items: [
       {
         id: 'bond_issue_discount',
-        label: '사채 발행 — 할인 (Discount)',
+        label: 'Bond Issuance — Discount',
         topicId: 'BOND_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'bond_issue_premium',
-        label: '사채 발행 — 할증 (Premium)',
+        label: 'Bond Issuance — Premium',
         topicId: 'BOND_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'bond_interest',
-        label: '사채 이자비용 (유효이자율법)',
+        label: 'Bond Interest Expense (Effective Method)',
         topicId: 'BOND_002',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'bond_retire_early',
-        label: '사채 조기상환 G/L',
+        label: 'Bond Early Retirement G/L',
         topicId: 'BOND_003',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'lease_finance',
-        label: '금융리스 이자비용',
+        label: 'Finance Lease Interest Expense',
         topicId: 'LEASE_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'aro_accretion',
-        label: '자산제거채무 이자 (ARO)',
+        label: 'Asset Retirement Obligation Accretion',
         topicId: 'ARO_001',
         stages: [],
         fsImpact: {},
@@ -243,77 +264,102 @@ export const TX_GROUPS: TxGroup[] = [
   },
   {
     id: 'financial_asset',
-    label: '④ 금융자산 평가',
+    label: '④ Financial Asset Valuation',
     color: '#BA7517',
     items: [
       {
         id: 'afs_unrealized',
-        label: 'AFS 미실현 Gain/Loss',
+        label: 'AFS Unrealized Gain/Loss',
         topicId: 'INVEST_001',
         stages: [
           {
             step: 'source',
-            label: 'Source',
-            note: '기말 공정가치 평가 — AFS (Available-For-Sale) 유가증권 FV 변동 인식',
+            label: 'Source Document',
+            note: 'Year-end fair value measurement — AFS (Available-For-Sale) securities price change observed on market.',
           },
           {
-            step: 'aje',
-            label: 'AJE',
-            note: 'FV 상승 시: Dr FV Adjustment / Cr OCI — Unrealized Gain\nFV 하락 시: Dr OCI — Unrealized Loss / Cr FV Adjustment',
+            step: 'journal',
+            label: 'General Journal',
+            note: 'FV increase: Dr Fair Value Adjustment / Cr OCI — Unrealized Gain\nFV decrease: Dr OCI — Unrealized Loss / Cr Fair Value Adjustment\n⚠ Goes to OCI — NOT Net Income. (Trading securities → Net Income.)',
             entries: [
-              { account: 'Fair Value Adjustment — AFS', dr: 5000 },
-              { account: '  OCI — Unrealized Gain on AFS Securities', cr: 5000 },
+              { account: 'Fair Value Adjustment — AFS', type: 'dr', amount: 5000 },
+              { account: 'OCI — Unrealized Gain on AFS', type: 'cr', amount: 5000 },
             ],
           },
           {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• AFS Securities: cost $100,000 + FV adjustment $5,000 = carrying $105,000\n• OCI — Unrealized Gain: Cr balance $5,000 (not an income account)',
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: 'AFS Securities   Dr  $105,000\nOCI — Unrealized Gain   Cr  $5,000\n⚠ OCI does NOT flow through I/S closing entries → goes directly to AOCI on B/S',
+          },
+          {
+            step: 'is',
+            label: 'Income Statement + Comprehensive Income',
+            note: 'Net Income: NO IMPACT (unrealized, AFS)\nOther Comprehensive Income: +$5,000 Unrealized Gain on AFS\nTotal Comprehensive Income = Net Income + OCI $5,000',
+          },
+          {
             step: 'oci',
-            label: 'OCI',
-            note: 'Net Income 미포함 → OCI (기타포괄손익)에 기록.\nComprehensive Income = NI + OCI에 포함.',
+            label: 'Other Comprehensive Income',
+            note: 'Unrealized Gain/Loss on AFS → OCI section of Comprehensive Income Statement\nTwo presentation methods:\n① One-statement: I/S extended with OCI section\n② Two-statement: separate Comprehensive Income Statement',
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'AOCI column: +$5,000\nRetained Earnings column: NO CHANGE\n⚠ Common mistake: putting OCI into Retained Earnings instead of AOCI column',
           },
           {
             step: 'bs',
-            label: 'B/S',
-            note: 'Investment in AFS Securities → Fair Value로 표시\nAOCI (Accumulated OCI) → Stockholders\' Equity 구성요소 ↑',
+            label: 'Balance Sheet',
+            note: 'Assets: AFS Securities at Fair Value $105,000 (+$5,000)\nStockholders\' Equity: AOCI +$5,000\nBalance check: Assets +5K = SE (AOCI) +5K ✓',
           },
           {
             step: 'scf',
-            label: 'SCF',
-            note: '비현금 평가손익 → 현금 영향 없음.\n간접법에서도 OCI는 NI에 포함되지 않으므로 별도 조정 불필요.\n⚠ AFS 매각 시(실현 시) → Investing Activities inflow',
+            label: 'Statement of Cash Flows',
+            note: 'No cash movement → NO impact on SCF\nIndirect method: OCI not in Net Income → no add-back needed\n⚠ When AFS is SOLD (realized): Proceeds → Investing Activities inflow',
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Cost $100,000 / Fair Value $105,000 / Unrealized Gain $5,000 / AOCI balance\nClassification basis (intent to hold)',
           },
         ],
         fsImpact: {
-          is_ni: 'OCI 항목 — Net Income 영향 없음 (미실현 단계)',
-          is_oci: 'Unrealized Gain/Loss on AFS → OCI (기타포괄손익)',
-          bs: 'Investment in AFS at Fair Value ↑/↓\nAOCI (Stockholders\' Equity 내) ↑/↓',
-          se: 'AOCI 구성요소 변동 — Retained Earnings 미변동',
-          cfo: '비현금 거래 — Operating 조정 없음',
-          cfi: 'AFS 매각(실현) 시 → Investing Activities inflow',
+          is_ni: 'No impact — unrealized AFS gain stays in OCI, not Net Income',
+          is_oci: 'Unrealized Gain/Loss on AFS → OCI (Other Comprehensive Income)',
+          bs: 'AFS Securities at Fair Value ↑/↓ | AOCI (Stockholders\' Equity) ↑/↓',
+          se: 'AOCI column changes — Retained Earnings column: no change',
+          cfo: 'No cash → no Operating Activities adjustment needed',
+          cfi: 'When AFS sold (realized) → Investing Activities inflow (full proceeds)',
         },
       },
       {
         id: 'afs_sold',
-        label: 'AFS 매각 (실현 + reclassify)',
+        label: 'AFS Sale — Realized + Reclassify',
         topicId: 'INVEST_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'trading_fv',
-        label: 'Trading 공정가치 변동',
+        label: 'Trading Securities FV Change',
         topicId: 'INVEST_002',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'crypto_fv_up',
-        label: 'Crypto 공정가치 변동 (ASU 2023-08)',
+        label: 'Crypto FV Change (ASU 2023-08)',
         topicId: 'FS_CRYPTO_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'equity_method',
-        label: '지분법 손익 인식',
+        label: 'Equity Method — Income Recognition',
         topicId: 'EQM_001',
         stages: [],
         fsImpact: {},
@@ -322,47 +368,47 @@ export const TX_GROUPS: TxGroup[] = [
   },
   {
     id: 'equity',
-    label: '⑤ 자본 거래',
+    label: '⑤ Equity Transactions',
     color: '#993C1D',
     items: [
       {
         id: 'stock_issue',
-        label: '주식 발행',
+        label: 'Stock Issuance',
         topicId: 'EQUITY_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'ts_buy',
-        label: '자기주식 매입',
+        label: 'Treasury Stock Purchase',
         topicId: 'EQUITY_002',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'ts_reissue',
-        label: '자기주식 재발행',
+        label: 'Treasury Stock Reissuance',
         topicId: 'EQUITY_002',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'cash_div',
-        label: '현금배당 선언 · 지급',
+        label: 'Cash Dividend — Declaration & Payment',
         topicId: 'RE_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'stock_div',
-        label: '주식배당 선언',
+        label: 'Stock Dividend Declaration',
         topicId: 'RE_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'sbc',
-        label: '주식기준보상 (SBC)',
+        label: 'Stock-Based Compensation (SBC)',
         topicId: 'SBC_001',
         stages: [],
         fsImpact: {},
@@ -371,33 +417,33 @@ export const TX_GROUPS: TxGroup[] = [
   },
   {
     id: 'special',
-    label: '⑥ 세금 · 특수 항목',
+    label: '⑥ Tax · Special Items',
     color: '#3B6D11',
     items: [
       {
         id: 'deferred_tax_create',
-        label: '이연법인세 자산/부채 설정',
+        label: 'Deferred Tax Asset/Liability',
         topicId: 'TAX_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'error_correction',
-        label: '전기오류 수정 (소급)',
+        label: 'Prior Period Error Correction',
         topicId: 'ERR_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'discontinued_ops',
-        label: '중단사업 손익',
+        label: 'Discontinued Operations',
         topicId: 'DISC_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'pension_oci',
-        label: '연금 계리손익 (OCI)',
+        label: 'Pension Actuarial G/L (OCI)',
         topicId: 'PEN_001',
         stages: [],
         fsImpact: {},
@@ -406,33 +452,33 @@ export const TX_GROUPS: TxGroup[] = [
   },
   {
     id: 'scf_pattern',
-    label: '⑦ SCF 조정 패턴',
+    label: '⑦ SCF Adjustment Patterns',
     color: '#5F5E5A',
     items: [
       {
         id: 'scf_noncash_addback',
-        label: '비현금비용 → add back',
+        label: 'Non-cash Expense — Add Back',
         topicId: 'SCF_001',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'scf_working_capital',
-        label: '운전자본 변동',
+        label: 'Working Capital Changes',
         topicId: 'SCF_002',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'scf_proceeds',
-        label: '매각 proceeds 분류',
+        label: 'Disposal Proceeds Classification',
         topicId: 'SCF_003',
         stages: [],
         fsImpact: {},
       },
       {
         id: 'scf_noncash_suppl',
-        label: '비현금 거래 Supplemental 공시',
+        label: 'Non-cash Supplemental Disclosure',
         topicId: 'SCF_004',
         stages: [],
         fsImpact: {},
@@ -441,7 +487,7 @@ export const TX_GROUPS: TxGroup[] = [
   },
 ]
 
-// ── 헬퍼: topicId 프리픽스 → ConceptNotesPage category id 매핑 ──────────────
+// ── Helper: topicId prefix → ConceptNotesPage category id ────────────────────
 export function topicIdToCatId(topicId: string): string {
   if (topicId.startsWith('BOND')) return 'bond'
   if (topicId.startsWith('INT')) return 'note'
@@ -464,5 +510,5 @@ export function topicIdToCatId(topicId: string): string {
   return 'bond'
 }
 
-// ── 전체 아이템 플랫 목록 ────────────────────────────────────────────────────
+// ── Flat item list ────────────────────────────────────────────────────────────
 export const ALL_TX_ITEMS: TxItem[] = TX_GROUPS.flatMap(g => g.items)
