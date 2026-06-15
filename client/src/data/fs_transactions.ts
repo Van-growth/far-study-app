@@ -366,46 +366,100 @@ export const TX_GROUPS: TxGroup[] = [
               { account: 'Fair Value Adjustment — AFS', type: 'dr', amount: 5000 },
               { account: 'OCI — Unrealized Gain on AFS', type: 'cr', amount: 5000 },
             ],
+            drill: {
+              title: 'Journal Entry — AFS Fair Value Adjustment',
+              je: [
+                { acct: 'Fair Value Adjustment — AFS', type: 'dr', sign: '+$5,000', signClass: 'sign-positive', reason: '자산 증가 → Debit → 양수' },
+                { acct: 'OCI — Unrealized Gain on AFS', type: 'cr', sign: '($5,000)', signClass: 'sign-negative', reason: 'OCI 계정 → Credit → 음수 (NI 아님!)' },
+              ],
+              trap: 'Trading이면 같은 미실현이익도 NI 직행. AFS만 OCI.',
+            },
           },
           {
             step: 'ledger',
             label: 'General Ledger (T-accounts)',
             note: '• AFS Securities: cost $100,000 + FV adjustment $5,000 = carrying $105,000\n• OCI — Unrealized Gain: Cr balance $5,000 (not an income account)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'AFS Securities (FV Adj)', dr: ['100,000 (cost)', '5,000 ★'], cr: [] },
+                { name: 'OCI — Unrealized Gain', dr: [], cr: ['5,000 ★'] },
+              ],
+            },
           },
           {
             step: 'tb',
             label: 'Adjusted Trial Balance',
             note: 'AFS Securities   Dr  $105,000\nOCI — Unrealized Gain   Cr  $5,000\n⚠ OCI does NOT flow through I/S closing entries → goes directly to AOCI on B/S',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'AFS Securities',         dr: '$105,000', cr: '—',      highlight: true },
+                { acct: 'OCI — Unrealized Gain',  dr: '—',        cr: '$5,000', highlight: true },
+              ],
+              note: 'OCI does NOT flow through I/S closing entries → goes directly to AOCI on B/S',
+            },
           },
           {
             step: 'is',
             label: 'Income Statement + Comprehensive Income',
             note: 'Net Income: NO IMPACT (unrealized, AFS)\nOther Comprehensive Income: +$5,000 Unrealized Gain on AFS\nTotal Comprehensive Income = Net Income + OCI $5,000',
+            drill: {
+              title: 'Income Statement + Comprehensive Income',
+              custom: `<div style="font-size:11px;line-height:1.7"><div style="padding:4px 8px;background:#f3f4f6;border-radius:4px;margin-bottom:6px"><span style="color:#9aa3b0">Net Income</span> → <strong>No impact</strong> (unrealized AFS — stays in OCI)</div><div style="padding:4px 8px;background:#eeedfe;border-radius:4px;color:#3c3489"><strong>Other Comprehensive Income</strong><br>+ Unrealized Gain on AFS $5,000</div><div style="margin-top:6px;color:#4a5568">Total Comprehensive Income = Net Income + OCI $5,000</div></div>`,
+              trap: '가장 많이 틀림: Trading이면 NI 직행, AFS만 OCI. 이 구분이 핵심.',
+            },
           },
           {
             step: 'oci',
             label: 'Other Comprehensive Income',
             note: 'Unrealized Gain/Loss on AFS → OCI section of Comprehensive Income Statement\nTwo presentation methods:\n① One-statement: I/S extended with OCI section\n② Two-statement: separate Comprehensive Income Statement',
+            drill: {
+              title: 'OCI — two presentation methods',
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.8">① <strong>One-statement:</strong> I/S에 OCI 섹션 추가 (하단 연장)<br>② <strong>Two-statement:</strong> 별도 Comprehensive Income Statement 작성<div style="margin-top:8px;padding:5px 8px;background:#eeedfe;border-radius:4px;color:#3c3489;font-size:10px">AFS Unrealized Gain $5,000 → OCI → AOCI (B/S Stockholders' Equity 섹션)</div></div>`,
+            },
           },
           {
             step: 'se',
             label: "Statement of Stockholders' Equity",
             note: 'AOCI column: +$5,000\nRetained Earnings column: NO CHANGE\n⚠ Common mistake: putting OCI into Retained Earnings instead of AOCI column',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">AOCI 열: <strong>+$5,000</strong><br>Retained Earnings 열: 변동 없음<br>Common Stock / APIC 열: 변동 없음</div>`,
+              trap: 'AOCI와 Retained Earnings를 혼동하면 S/E Worksheet 전체가 틀림.',
+            },
           },
           {
             step: 'bs',
             label: 'Balance Sheet',
             note: 'Assets: AFS Securities at Fair Value $105,000 (+$5,000)\nStockholders\' Equity: AOCI +$5,000\nBalance check: Assets +5K = SE (AOCI) +5K ✓',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'AFS Securities', dr: '+$5,000', cr: '+5,000',   highlight: true },
+                { acct: 'AOCI (SE)',      dr: '+$5,000', cr: '($5,000)', highlight: true },
+              ],
+              note: 'Check: AFS +$5K = AOCI +$5K → Balance Sheet 균형 ✓',
+            },
           },
           {
             step: 'scf',
             label: 'Statement of Cash Flows',
             note: 'No cash movement → NO impact on SCF\nIndirect method: OCI not in Net Income → no add-back needed\n⚠ When AFS is SOLD (realized): Proceeds → Investing Activities inflow',
+            drill: {
+              title: 'Statement of Cash Flows — no impact',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>당기:</strong> 현금 이동 없음 → Operating / Investing / Financing 전부 영향 없음<br><strong>Indirect Method:</strong> OCI는 Net Income에 포함 안 됨 → add-back 조정도 없음</div>`,
+              note: 'AFS 매각 시(realized): Proceeds → Investing Activities inflow',
+            },
           },
           {
             step: 'notes',
             label: 'Notes to Financial Statements',
             note: 'Disclosure: Cost $100,000 / Fair Value $105,000 / Unrealized Gain $5,000 / AOCI balance\nClassification basis (intent to hold)',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Cost $100,000 / Fair Value $105,000 / Unrealized Gain $5,000<br>② AOCI 누적 잔액<br>③ 분류 기준 (AFS 보유 의도 확인)<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: AFS 보유 목적·분류 근거 공시 → INVEST_001 핵심 체크포인트</div></div>`,
+            },
           },
         ],
         fsImpact: {
