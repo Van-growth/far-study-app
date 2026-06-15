@@ -22,12 +22,29 @@ export type StepId =
   | 'scf'      // Statement of Cash Flows
   | 'notes'    // Notes to Financial Statements
 
+export interface DrillJeRow {
+  acct: string
+  type: 'dr' | 'cr'
+  sign: string
+  signClass: 'sign-positive' | 'sign-negative'
+  reason: string
+}
+
+export interface DrillContent {
+  title: string
+  je?: DrillJeRow[]
+  custom?: string
+  trap?: string
+  note?: string
+}
+
 export interface TxStage {
   step: StepId
   label: string
   note: string
   entries?: JournalEntry[]
   trap?: string
+  drill?: DrillContent
 }
 
 export interface FsImpact {
