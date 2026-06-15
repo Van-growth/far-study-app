@@ -27,6 +27,7 @@ import BondMasterPage from './pages/BondMasterPage';
 import WrongAnswerPreviewPage from './pages/WrongAnswerPreviewPage';
 import WrongAnswerPage from './pages/WrongAnswerPage';
 import ExamPage from './pages/ExamPage';
+import FSMapPage from './pages/FSMapPage';
 
 const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 import useClaudeStore from './store/claudeStore';
@@ -171,6 +172,7 @@ function AppLayout({ email }: { email: string }) {
             <Route path="/harry-history" element={<HarryHistoryPage />} />
             <Route path="/core" element={<CorePage />} />
             <Route path="/bond-master" element={<BondMasterPage />} />
+            <Route path="/fsmap" element={<FSMapPage />} />
             <Route path="/wrong-preview" element={<WrongAnswerPreviewPage />} />
             <Route path="/wrong-answers" element={<WrongAnswerPage />} />
             <Route path="/exam" element={<ExamPage />} />

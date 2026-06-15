@@ -77,6 +77,21 @@ export interface TopicCard {
     also_known_as: string;
     note: string;
   }>;
+  fs_impact?: {
+    is_ni?: string;
+    is_oci?: string;
+    bs?: string;
+    se?: string;
+    cfo?: string;
+    cfi?: string;
+    cff?: string;
+    notes?: string;
+  };
+  company_examples?: Array<{
+    company: string;
+    year: number;
+    note: string;
+  }>;
 }
 
 export const EXPLANATION_TEMPLATE = `CONTEXT:
@@ -10368,6 +10383,91 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_trigger: "3년 이상 장기 건설 프로젝트에서 연도별 GP 인식 계산",
     rule_items: ["Contract price 고정 / 총예상원가 매년 재추정", "완성률 = 누적실제원가 ÷ (누적실제 + 잔여예상)", "총예상GP = Contract price − 총예상원가", "누적인식GP = 총예상GP × 완성률", "당기GP = 누적인식GP − 전기인식GP"],
     key_formula: "당기GP = (Contract price − 총예상원가) × 완성률 − 전기인식GP",
+  },
+
+  // ── FS Transaction Cards ──────────────────────────────────────────────────────
+
+  {
+    topic_id: 'FS_AJE_001',
+    book_id: 'AA',
+    chapter_id: 'AA_CH6',
+    topic_group: 'AA_CH6_ADJ',
+    sub_category_id: 'U2_ADJUSTING_ENTRIES',
+    card_type: 'concept',
+    card_name: 'AJE Worksheet — Ten-Column Work Sheet',
+    rule: 'Unadjusted TB → AJE → Adjusted TB → I/S columns → B/S columns. Revenue/Expense → I/S. Asset/Liability/Equity → B/S. Net Income = I/S difference → transferred to B/S Retained Earnings.',
+    trigger: 'adjusting entries | worksheet | trial balance | year-end | ten-column',
+    trap: 'Net Income enters B/S as Retained Earnings increase = Credit = negative in Debit(Credit) format. Accumulated Depreciation (Contra Asset) increase = Credit = negative.',
+    speed: 'I/S columns: Revenue Cr − Expense Dr = NI. NI → B/S Retained Earnings Cr (negative). Dr total = Cr total.',
+    fs_impact: {
+      is_ni: 'AJE expense entries reduce Net Income',
+      bs: 'AJE balance sheet entries update asset/liability balances',
+      se: 'Net Income → Retained Earnings',
+      cfo: 'Cash-based AJEs → Operating Activities',
+    },
+  },
+  {
+    topic_id: 'FS_DCsign_001',
+    book_id: 'AA',
+    chapter_id: 'AA_CH6',
+    topic_group: 'AA_CH6_ADJ',
+    sub_category_id: 'U2_ADJUSTING_ENTRIES',
+    card_type: 'concept',
+    card_name: 'Debit(Credit) Sign Convention — TBS Input Rules',
+    rule: 'Debit = positive. Credit = negative (parentheses). Asset/Expense normal balance = Debit = increase is positive. Liability/Equity/Revenue normal balance = Credit = increase is negative.',
+    trigger: 'debit credit | positive negative | enter amount | adjusting entry | balance sheet input | worksheet',
+    trap: '3 most missed: ① Unearned Revenue (liability) decrease = Debit = positive. ② Accumulated Depreciation increase = Credit = negative. ③ Net Income to Balance Sheet = Retained Earnings increase = Credit = negative.',
+    speed: '① Account type → ② increase/decrease → ③ Debit/Credit direction → ④ Debit=positive, Credit=negative.',
+    fs_impact: {
+      is_ni: 'Expense increase: positive. Revenue increase: negative.',
+      bs: 'Asset increase: positive. Liability/Equity increase: negative.',
+      se: 'Retained Earnings increase: negative. Decrease: positive.',
+      cfo: 'Inflow: positive. Outflow: negative.',
+    },
+  },
+  {
+    topic_id: 'FS_ORDER_001',
+    book_id: 'AA',
+    chapter_id: 'AA_CH6',
+    topic_group: 'AA_CH6_ADJ',
+    sub_category_id: 'U2_ADJUSTING_ENTRIES',
+    card_type: 'concept',
+    card_name: 'Financial Statement Preparation Order',
+    rule: 'Order: I/S + CI → S/E → B/S → SCF → Notes. Net Income from I/S → Retained Earnings in S/E → SE total to B/S → B/S ending cash confirms SCF. Notes written last after all numbers confirmed.',
+    trigger: 'financial statement order | preparation order | retained earnings flow | net income transfer',
+    trap: 'FAR TBS reads in reverse: Notes exhibit first (existing balances/policies) → I/S → B/S. Hidden items like Purchase Commitment Loss buried in Notes exhibit.',
+    speed: 'I/S → S/E → B/S → SCF → Notes. Each statement feeds numbers into the next.',
+    fs_impact: {
+      is_ni: '1st prepared — Net Income determined here',
+      se: '2nd — Net Income → Retained Earnings',
+      bs: '3rd — Ending SE total received from S/E',
+      cfo: '4th — Net Income + Balance Sheet changes used for Operating Activities',
+      notes: '5th — all numbers explained after confirmation',
+    },
+  },
+  {
+    topic_id: 'FS_CRYPTO_001',
+    book_id: 'AA',
+    chapter_id: 'AA_CH5',
+    topic_group: 'AA_CH5_INVEST',
+    sub_category_id: 'U5_FINANCIAL_INSTRUMENTS',
+    card_type: 'concept',
+    card_name: 'Crypto Assets — ASU 2023-08 (Effective FY2025)',
+    rule: 'In-scope (fungible, blockchain-based, cryptographic, not issuer-held — e.g. Bitcoin, Ethereum): Fair Value each reporting period, changes → Net Income. Out-of-scope (NFTs, issuer-held tokens): cost minus impairment. Balance Sheet: separate line from other intangible assets. Cash flows from crypto transactions → Operating Activities.',
+    trigger: 'crypto | bitcoin | ethereum | digital asset | ASU 2023-08 | fungible | fair value | blockchain',
+    trap: 'Old model (pre-FY2025): impairment-only — losses recognized, gains ignored. New model: both gains AND losses → Net Income. Unlike AFS securities: Net Income not OCI. Cash flows → Operating Activities not Investing Activities.',
+    speed: 'In-scope crypto Fair Value change → Net Income (not OCI). Cash flows → Operating Activities. Separate Balance Sheet line required.',
+    fs_impact: {
+      is_ni: 'Fair Value changes (both up and down) → Net Income',
+      is_oci: 'None — unlike AFS, crypto goes to Net Income not OCI',
+      bs: 'Crypto Asset at Fair Value — presented on separate line from other intangibles',
+      se: 'Retained Earnings changes via Net Income',
+      cfo: 'Non-cash Fair Value changes: subtract gains / add back losses in Operating Activities. Cash crypto transactions → Operating Activities',
+    },
+    company_examples: [
+      { company: 'Tesla', year: 2022, note: '' },
+      { company: 'Apple', year: 2024, note: '' },
+    ],
   },
 ];
 

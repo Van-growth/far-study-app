@@ -10,6 +10,7 @@ const ADMIN_EMAIL = 'sg.van.p@gmail.com';
 
 const mainTabs = [
   { label: '개념', path: '/concept-notes' },
+  { label: 'F/S Map', path: '/fsmap' },
   { label: '복습', path: '/wrong-answers' },
   { label: '시험', path: '/exam' },
 ];

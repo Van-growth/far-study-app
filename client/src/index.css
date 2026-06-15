@@ -18,8 +18,9 @@
   --border-strong:  #d0d0c8;
 
   --color-trap:         #dc2626;
-  --color-trap-bg:      #fef2f2;
-  --color-speed-bg:     #1a2744;
+  --color-trap-bg:      #faece7;
+  --color-speed-bg:     #e1f5ee;
+  --color-speed-text:   #085041;
   --color-formula-bg:   #f0f4ff;
   --color-trigger-bg:   #f5f5f0;
   --color-text-tertiary: #888888;
@@ -215,15 +216,15 @@
   }
   .card {
     background: var(--bg-surface);
-    border: 1px solid var(--border-default);
+    border: 0.5px solid rgba(26,39,68,0.12);
     border-radius: 12px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
   .content-card {
     background: var(--bg-surface);
-    border: 1px solid var(--border-default);
+    border: 0.5px solid rgba(26,39,68,0.12);
     border-radius: 12px;
-    padding: 20px 24px;
+    padding: 24px 28px;
     margin-bottom: 16px;
   }
   .content-card.bond     { border-top: 4px solid #7c3aed; }

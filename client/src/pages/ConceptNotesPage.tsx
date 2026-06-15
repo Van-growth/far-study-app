@@ -2835,6 +2835,29 @@ function ScfContent() {
       </Section>
 
       <Section title="4. Non-cash Disclosures">
+        <p style={{ fontWeight: 500, marginBottom: 8 }}>비현금 거래 처리 기준</p>
+        <CodeBlock>{`비현금 거래 발생 시 판단 순서:
+
+STEP 1. NI에 영향을 줬나?
+  YES → Operating 조정
+        예: D&A (NI에서 차감됐지만 현금 안 나감 → +add back)
+            Prepaid expense (비용 인식 시점 차이 → Operating 변동)
+
+  NO  → STEP 2
+
+STEP 2. Investing / Financing 성격인가?
+  YES → Supplemental disclosure (SCF 본문 제외, footnote 공시)
+        예: 주식 발행으로 자산 취득
+            Mortgage 인수로 토지 취득
+            채권의 주식 전환
+            ROU asset + lease liability 인식
+
+  NO  → SCF 영향 없음
+
+핵심: "비현금 = Supplemental" 아님
+      비현금 + NI 영향 있음 → Operating 조정
+      비현금 + NI 영향 없음 + Investing/Financing 성격 → Supplemental`}</CodeBlock>
+
         <CodeBlock>{`비현금 투자·재무 거래 → SCF 본문 제외 → FS 말미에 별도 공시
 중요한(material) 비현금 거래만 공시 대상
 공시 금액은 양수 그대로 — 부호(+/−) 개념 없음`}</CodeBlock>
@@ -4658,8 +4681,10 @@ function ContentTab({ catId, catLabel }: { catId: CategoryId; catLabel: string }
 }
 
 // ── Cards Tab ──────────────────────────────────────────────────────────────────
-function CardsTab({ activeId }: { activeId: ActiveId }) {
-  const [openId, setOpenId] = useState<string | null>(null)
+function CardsTab({ activeId, highlightTopicId }: { activeId: ActiveId; highlightTopicId?: string | null }) {
+  const [openId, setOpenId] = useState<string | null>(highlightTopicId ?? null)
+  const [highlightedId, setHighlightedId] = useState<string | null>(highlightTopicId ?? null)
+  const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
   const superCat = SUPER_CATEGORIES.find(s => s.id === activeId)
   const cat = CATEGORIES.find(c => c.id === activeId)
@@ -4670,6 +4695,17 @@ function CardsTab({ activeId }: { activeId: ActiveId }) {
         return childCat ? getCardsForCategory(childCat) : []
       })
     : cat ? getCardsForCategory(cat) : []
+
+  // 지정된 카드로 스크롤 + 1.5초 후 하이라이트 해제
+  useEffect(() => {
+    if (!highlightTopicId) return
+    const el = cardRefs.current[highlightTopicId]
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    const t = setTimeout(() => setHighlightedId(null), 1500)
+    return () => clearTimeout(t)
+  }, [highlightTopicId, cards.length]) // eslint-disable-line
 
   if (cards.length === 0) {
     return (
@@ -4684,14 +4720,19 @@ function CardsTab({ activeId }: { activeId: ActiveId }) {
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {cards.map(card => (
+        {cards.map(card => {
+          const isHighlighted = highlightedId === card.topic_id
+          return (
           <button
             key={card.topic_id}
+            ref={el => { cardRefs.current[card.topic_id] = el }}
             onClick={() => setOpenId(card.topic_id)}
             style={{
-              width: '100%', textAlign: 'left', background: '#fff', border: '1px solid #e0e0e0',
+              width: '100%', textAlign: 'left', background: isHighlighted ? '#fff8e6' : '#fff',
+              border: isHighlighted ? '1.5px solid #BA7517' : '1px solid #e0e0e0',
               borderRadius: 8, cursor: 'pointer', padding: '12px 16px',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              transition: 'background 0.4s, border-color 0.4s',
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -4721,7 +4762,8 @@ function CardsTab({ activeId }: { activeId: ActiveId }) {
             </div>
             <span style={{ fontSize: 14, color: '#bbb', flexShrink: 0 }}>›</span>
           </button>
-        ))}
+          )
+        })}
       </div>
 
       {openCard && (
@@ -5445,11 +5487,23 @@ function SuperContentTab({ superId }: { superId: SuperCategoryId }) {
 export default function ConceptNotesPage() {
   const userId = useStudyStore((s) => s.userId)
   const [searchParams] = useSearchParams()
-  const initId = (searchParams.get('cat') ?? 'bond') as ActiveId
-  const [activeId, setActiveId] = useState<ActiveId>(
-    CATEGORIES.some(c => c.id === initId) ? initId : 'bond'
-  )
-  const [activeTab, setActiveTab] = useState<TabKey>('content')
+  const initCat = (searchParams.get('cat') ?? 'bond') as ActiveId
+  const initTopicId = searchParams.get('topic') ?? null
+
+  // ?topic= 파라미터가 있으면 해당 카드의 category를 자동 선택
+  const catFromTopic: ActiveId | null = initTopicId
+    ? (() => {
+        const card = PROFESSOR_SSOT_V2.find(c => c.topic_id === initTopicId)
+        if (!card?.topic_group) return null
+        const cat = CATEGORIES.find(c => (c.groups as readonly string[]).includes(card.topic_group!))
+        return (cat?.id ?? null) as ActiveId | null
+      })()
+    : null
+
+  const resolvedInitId = catFromTopic ?? (CATEGORIES.some(c => c.id === initCat) ? initCat : 'bond')
+
+  const [activeId, setActiveId] = useState<ActiveId>(resolvedInitId)
+  const [activeTab, setActiveTab] = useState<TabKey>(initTopicId ? 'cards' : 'content')
   const [wrongCounts, setWrongCounts] = useState<Record<string, number>>({})
   const prevIdRef = useRef<ActiveId>(activeId)
 
@@ -5590,7 +5644,7 @@ export default function ConceptNotesPage() {
             <ContentTab catId={activeCat.id as CategoryId} catLabel={activeCat.label} />
           )}
           {activeTab === 'cards' && (
-            <CardsTab activeId={activeId} />
+            <CardsTab activeId={activeId} highlightTopicId={initTopicId} />
           )}
         </div>
       )}
