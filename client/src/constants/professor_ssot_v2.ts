@@ -9620,6 +9620,32 @@ Series B+ 감사 시 핵심 검토 항목`,
     context_background: "[왜 방향이 반대인가]\nLIFO: Last-In, First-Out → 마지막에 들어온(최근/비싼) 것이 먼저 나감\n→ COGS에 현재 가격 반영 ✓\n→ Ending Inventory에는 오래된(싼) 것만 남음 ✗\n\nFIFO: First-In, First-Out → 먼저 들어온(오래된/싼) 것이 먼저 나감\n→ COGS에 과거 가격 반영 ✗\n→ Ending Inventory에는 최근(비싼) 것이 남음 ✓\n\n[물가 상승기 예시]\n1월 매입 $100 / 2월 매입 $120 / 3월 매입 $150\n\nLIFO COGS: $150(3월분) → current cost ✓\nLIFO EI: $100(1월분) → old cost ✗\n\nFIFO COGS: $100(1월분) → old cost ✗\nFIFO EI: $150(3월분) → current cost ✓\n\n[B/S vs I/S 관점]\nLIFO: I/S(COGS) 현실적 / B/S(EI) 왜곡\nFIFO: B/S(EI) 현실적 / I/S(COGS) 왜곡\n→ 어떤 재무제표를 더 신뢰하느냐에 따라 방법 선택이 달라짐",
   },
 
+  // [INV_024] Purchase Discount (Net vs Gross) & Interest on Inventory Loan
+  // RULE    : Net → discount not taken = Purchase Discounts Lost = interest expense → NO
+  //           Gross → discount not taken = 정가 기록 = 이미 재고 포함 → YES
+  //           Routinely produced → NO / Discrete + substantial period → YES
+  // TRIGGER : "net method" + "discount not taken" → NO
+  //           "gross method" + "discount not taken" → YES
+  //           "routinely produced" → NO / "discrete project" + "substantial period" → YES
+  // TRAP    : net/gross 혼동 / discrete project 단독 표현에서 YES 착각
+  {
+    topic_id: "INV_024",
+    book_id: 'IA',
+    chapter_id: 'IA_CH3',
+    topic_group: 'IA_CH3_INV',
+    sub_category_id: "U3_INVENTORY",
+    card_type: 'concept',
+    card_name: "Purchase Discount (net vs gross) & Interest on Inventory Loan",
+    rule: "【Purchase Discount — Net vs Gross】\n\nNet method\n= 처음부터 할인 후 금액으로 기록\n→ 할인 못 받으면 차액 = Purchase Discounts Lost = Interest expense (financing cost)\n→ Period expense → 재고 원가 불포함 ❌\n\nGross method\n= 정가(할인 전)로 기록\n→ 할인 못 받으면 정가 그대로 = 할인액이 이미 재고 원가 안에 포함\n→ 재고 원가 포함 ✅\n\n【Interest on Inventory Loan】\n\nRoutinely produced inventory\n→ ASC 835-20 명시적 제외 → 항상 period expense ❌\n\nDiscrete project + substantial period of time 명시\n(예: 선박, 항공기, 부동산 개발용 재고)\n→ Qualifying asset → interest capitalize 가능 ✅\n\nDiscrete project 단독 (substantial period 미명시)\n→ Becker 출제 기준: NO ❌",
+    trigger: '"net method" + "discount not taken" → Purchase Discounts Lost → period expense → NO\n"gross method" + "discount not taken" → 정가 기록 → 이미 재고 포함 → YES\n"routinely produced" → 명시적 제외 → NO\n"discrete project" + "substantial period" or 선박/항공기/부동산 명시 → YES\n"discrete project" 단독 → Becker 기준 NO',
+    trap: "Net/Gross 혼동: Gross는 YES, Net은 NO — 반드시 구분\nDiscrete project 단독 표현 → YES로 착각 (substantial period 명시 없으면 Becker 기준 NO)\nRoutinely produced → 이자 capitalize 가능하다는 착각 (명시적 제외 대상)\nInterest expense 키워드에 낚혀 Gross discount도 NO로 처리",
+    one_sentence: "Gross discount not taken → YES(정가=재고포함) / Net → NO(Lost=이자비용) / 재고이자 → routinely=NO, discrete+substantial=YES.",
+    example: "Net method: $1,000 매입(2/10 n/30), 할인 미사용\n→ Inventory $980 기록 / Purchase Discounts Lost $20 → Interest expense\n\nGross method: 동일 조건\n→ Inventory $1,000 기록 / 할인 안 받아도 $1,000 그대로 재고 원가\n\nDiscrete project (선박 건조): 건조 기간 3년\n→ Substantial period 충족 → 이자 capitalize 가능",
+    key_formula: "Net: Inventory = Invoice − Discount / Discount not taken = Purchase Discounts Lost (expense)\nGross: Inventory = Invoice (full price) / Discount not taken = 재고에 포함된 상태",
+    speed: "Gross → YES(정가=이미포함) / Net → NO(못받은차액=이자비용) / Routinely → NO / Discrete+substantial → YES",
+    context_background: "[Net vs Gross 경제적 실질]\nNet method 관점: 할인은 당연히 받는 것 → 못 받으면 그건 자금조달 비용(이자)\nGross method 관점: 정가가 기준 → 할인은 받으면 좋고 못 받으면 그냥 정가\n→ 두 방법은 재고 금액 자체가 다르게 기록됨\n\n[Interest Capitalization 기준]\nASC 835-20: Qualifying asset = 완성까지 substantial period 필요\nRoutinely manufactured inventory → 명시적 제외 (대량 반복 생산 = substantial period 없음)\nDiscrete project inventory → 선박/항공기/부동산 개발처럼 완성까지 수년 필요 → qualifying asset\n→ 교수님 설명: 선박, 비행기, 부동산도 재고로 볼 수 있지만 substantial period 충족 시 이자 capitalize 가능",
+  },
+
   // [INV_011] Purchase Commitment Loss — Remaining Years × Minimum Units × Unit Loss
   // RULE    : 잔여 의무 = 잔여 계약기간 × 최소 구매 (당기 충족분 제외) × (계약가 − 처분가)
   // TRIGGER : "noncancelable contract" + "obsolete/scrap" → commitment loss

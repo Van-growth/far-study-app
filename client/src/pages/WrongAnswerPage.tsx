@@ -66,21 +66,28 @@ interface Msg {
 }
 
 // ── Parse Helpers ────────────────────────────────────────────────
-function detectTopic(text: string): string {
-  const t = text.toLowerCase();
-  if (/bond|coupon|premium|discount|yield|callable/.test(t)) return 'Bond';
-  if (/lease|rou|lessee|lessor/.test(t)) return 'Lease';
-  if (/eps|earnings per share|diluted|convertible/.test(t)) return 'EPS';
-  if (/deferred tax|dta|dtl|temporary difference/.test(t)) return 'Deferred Tax';
+function matchTopic(t: string): string | null {
   if (/inventory|lifo|fifo|dollar.value/.test(t)) return 'Inventory';
-  if (/foreign currency|fx|exchange rate/.test(t)) return 'Foreign Currency';
-  if (/equity method|investment|differential/.test(t)) return 'Equity Method';
-  if (/revenue|asc 606|performance obligation/.test(t)) return 'Revenue';
-  if (/cash flow|scf/.test(t)) return 'SCF';
-  if (/nfp|nonprofit|governmental|fund/.test(t)) return 'NFP/Gov';
-  if (/aro|asset retirement|accretion/.test(t)) return 'ARO';
-  if (/note payable|installment/.test(t)) return 'Note Payable';
-  return 'Other';
+  if (/bond|debenture|coupon/.test(t)) return 'Bond';
+  if (/lease|lessee|lessor|rou asset/.test(t)) return 'Lease';
+  if (/revenue|recognition|contract/.test(t)) return 'Revenue';
+  if (/depreciation|pp&e|property,\s*plant/.test(t)) return 'PPE';
+  if (/deferred tax|dta|dtl|temporary difference/.test(t)) return 'Deferred Tax';
+  if (/\beps\b|earnings per share|diluted|basic earnings/.test(t)) return 'EPS';
+  if (/cash flow|operating activities|\bscf\b/.test(t)) return 'SCF';
+  if (/equity method|investee/.test(t)) return 'Equity Method';
+  if (/\bnfp\b|not-for-profit|governmental/.test(t)) return 'NFP/Gov';
+  if (/foreign currency|exchange rate|\bfx\b/.test(t)) return 'Foreign Currency';
+  if (/\baro\b|asset retirement/.test(t)) return 'ARO';
+  if (/note payable|promissory note/.test(t)) return 'Note Payable';
+  return null;
+}
+
+// Step 1: question_text 우선, Step 2: explanation 보조, Step 3: Other
+function detectTopic(questionText: string, explanation: string): string {
+  return matchTopic(questionText.toLowerCase())
+    ?? matchTopic(explanation.toLowerCase())
+    ?? 'Other';
 }
 
 function detectPattern(text: string): string {
@@ -104,7 +111,7 @@ function parseWrongAnswers(text: string): ParsedCard[] {
     const myAnswer = block.match(/내\s*답[:\s]+(.+?)(?=정답|틀린\s*이유\s*:|풀이\s*:|이유\s*:|explanation\s*:|why\s*:|reason\s*:|$)/si)?.[1]?.trim() ?? '';
     const correctAnswer = block.match(/정답[:\s]+(.+?)(?=틀린\s*이유\s*:|풀이\s*:|이유\s*:|explanation\s*:|why\s*:|reason\s*:|$)/si)?.[1]?.trim() ?? '';
     const explanation = block.match(/(?:틀린\s*이유|풀이|이유|explanation|why|reason)\s*:\s*(.+?)$/si)?.[1]?.trim() ?? '';
-    const topicTag = detectTopic(questionText + ' ' + explanation);
+    const topicTag = detectTopic(questionText, explanation);
     const errorPattern = detectPattern(block);
     return {
       id: Math.random().toString(36).slice(2),
@@ -427,6 +434,8 @@ function HistoryTab({ userId }: { userId: string | null }) {
   const [filterUnresolved, setFilterUnresolved] = useState(false);
   const [modal, setModal] = useState<WrongAnswer | null>(null);
   const [toast, setToast] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<Partial<WrongAnswer>>({});
 
   const fetchData = async () => {
     if (!userId) return;
@@ -460,6 +469,34 @@ function HistoryTab({ userId }: { userId: string | null }) {
     } else {
       setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_resolved: next } : i));
     }
+  };
+
+  const handleDelete = async (item: WrongAnswer) => {
+    if (!window.confirm('이 오답을 삭제하시겠습니까?')) return;
+    const { error } = await supabase.from('wrong_answers').delete().eq('id', item.id);
+    if (error) { setToast('삭제 실패'); return; }
+    setItems(prev => prev.filter(i => i.id !== item.id));
+    setToast('삭제되었습니다');
+  };
+
+  const startEdit = (item: WrongAnswer) => {
+    setEditingId(item.id);
+    setEditDraft({
+      my_answer: item.my_answer ?? '',
+      correct_answer: item.correct_answer ?? '',
+      explanation: item.explanation ?? '',
+      topic_tag: item.topic_tag ?? '',
+      error_pattern: item.error_pattern ?? '',
+    });
+  };
+
+  const handleSave = async (id: string) => {
+    const { error } = await supabase.from('wrong_answers').update(editDraft).eq('id', id);
+    if (error) { setToast('저장 실패'); return; }
+    setItems(prev => prev.map(i => i.id === id ? { ...i, ...editDraft } : i));
+    setEditingId(null);
+    setEditDraft({});
+    setToast('저장되었습니다');
   };
 
   const filtered = items.filter(item => {
@@ -595,34 +632,106 @@ function HistoryTab({ userId }: { userId: string | null }) {
           {dayItems.map(item => (
             <div
               key={item.id}
-              onClick={() => setModal(item)}
-              style={{ border: BORDER, borderRadius: 8, padding: '10px 12px', marginBottom: 8, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+              style={{ border: BORDER, borderRadius: 8, marginBottom: 8, background: '#fff', overflow: 'hidden' }}
             >
-              <button
-                onClick={e => { e.stopPropagation(); toggleResolved(item); }}
-                style={{
-                  flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
-                  border: `2px solid ${item.is_resolved ? '#16a34a' : '#ccc'}`,
-                  background: item.is_resolved ? '#16a34a' : '#fff',
-                  color: '#fff', cursor: 'pointer', fontSize: 11,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                {item.is_resolved ? '✓' : '○'}
-              </button>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: 700, fontSize: 13 }}>{item.question_number ?? '—'}</span>
-                  <Badge color={NAVY} bg="#e8edf5">{item.topic_tag ?? '—'}</Badge>
-                  <span style={{ fontSize: 12, color: MUTED }}>{item.error_pattern}</span>
-                  {item.times_wrong >= 2 && (
-                    <Badge color="#dc2626" bg="#fee2e2">×{item.times_wrong}</Badge>
-                  )}
+              {editingId === item.id ? (
+                /* ── 인라인 편집 모드 ── */
+                <div style={{ padding: '12px' }}>
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+                    <select
+                      value={editDraft.topic_tag ?? ''}
+                      onChange={e => setEditDraft(d => ({ ...d, topic_tag: e.target.value }))}
+                      style={{ fontSize: 12, border: BORDER, borderRadius: 4, padding: '3px 6px', color: NAVY, fontWeight: 600 }}
+                    >
+                      {TOPICS.map(t => <option key={t}>{t}</option>)}
+                    </select>
+                    <select
+                      value={editDraft.error_pattern ?? ''}
+                      onChange={e => setEditDraft(d => ({ ...d, error_pattern: e.target.value }))}
+                      style={{ fontSize: 12, border: BORDER, borderRadius: 4, padding: '3px 6px' }}
+                    >
+                      {PATTERNS.map(p => <option key={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  {[
+                    { label: '내 답', field: 'my_answer' as const },
+                    { label: '정답', field: 'correct_answer' as const },
+                    { label: '풀이', field: 'explanation' as const },
+                  ].map(({ label, field }) => (
+                    <div key={field} style={{ marginBottom: 6 }}>
+                      <div style={{ fontSize: 11, color: MUTED, marginBottom: 2 }}>{label}</div>
+                      <textarea
+                        value={(editDraft[field] as string) ?? ''}
+                        onChange={e => setEditDraft(d => ({ ...d, [field]: e.target.value }))}
+                        rows={field === 'explanation' ? 3 : 1}
+                        style={{ width: '100%', fontSize: 12, border: BORDER, borderRadius: 4, padding: '4px 6px', resize: 'vertical', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 8 }}>
+                    <button
+                      onClick={() => { setEditingId(null); setEditDraft({}); }}
+                      style={{ fontSize: 12, padding: '4px 12px', borderRadius: 5, border: BORDER, background: '#fff', cursor: 'pointer' }}
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={() => handleSave(item.id)}
+                      style={{ fontSize: 12, padding: '4px 12px', borderRadius: 5, border: 'none', background: NAVY, color: '#fff', cursor: 'pointer' }}
+                    >
+                      저장
+                    </button>
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, color: MUTED, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {item.question_text}
+              ) : (
+                /* ── 일반 표시 모드 ── */
+                <div
+                  onClick={() => setModal(item)}
+                  style={{ padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                >
+                  <button
+                    onClick={e => { e.stopPropagation(); toggleResolved(item); }}
+                    style={{
+                      flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
+                      border: `2px solid ${item.is_resolved ? '#16a34a' : '#ccc'}`,
+                      background: item.is_resolved ? '#16a34a' : '#fff',
+                      color: '#fff', cursor: 'pointer', fontSize: 11,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    {item.is_resolved ? '✓' : '○'}
+                  </button>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 700, fontSize: 13 }}>{item.question_number ?? '—'}</span>
+                      <Badge color={NAVY} bg="#e8edf5">{item.topic_tag ?? '—'}</Badge>
+                      <span style={{ fontSize: 12, color: MUTED }}>{item.error_pattern}</span>
+                      {item.times_wrong >= 2 && (
+                        <Badge color="#dc2626" bg="#fee2e2">×{item.times_wrong}</Badge>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12, color: MUTED, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.question_text}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                    <button
+                      onClick={e => { e.stopPropagation(); startEdit(item); }}
+                      title="수정"
+                      style={{ background: 'none', border: BORDER, borderRadius: 4, width: 26, height: 26, cursor: 'pointer', fontSize: 13, color: MUTED, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      ✏
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleDelete(item); }}
+                      title="삭제"
+                      style={{ background: 'none', border: '1px solid #fca5a5', borderRadius: 4, width: 26, height: 26, cursor: 'pointer', fontSize: 13, color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ))}
         </div>
