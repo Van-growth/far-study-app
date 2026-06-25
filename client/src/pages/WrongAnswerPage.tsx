@@ -13,9 +13,12 @@ const BORDER = '1px solid #e0e0e0';
 const MUTED = '#666666';
 
 const TOPICS = [
-  'Bond', 'Lease', 'EPS', 'Note Payable', 'Foreign Currency',
-  'ARO', 'Deferred Tax', 'Inventory', 'PPE', 'Revenue', 'SCF',
-  'Equity Method', 'NFP/Gov', 'Other',
+  'Accounting Changes', 'ARO', 'Bond', 'Cash & Receivables',
+  'Consolidation', 'Contingencies', 'Deferred Tax', 'EPS',
+  'Equity Method', 'Error Correction', 'Fair Value', 'Foreign Currency',
+  'Government', 'Intangibles', 'Inventory', 'Lease', 'NFP', 'Note Payable',
+  'Partnerships', 'PPE', 'Ratio Analysis', 'Revenue', 'SCF',
+  'Stockholders Equity', 'Subsequent Events', 'Other',
 ];
 const PATTERNS = ['공식 불완전', '개념 혼동', '표현 변환 실수', '용어 혼동', '계산 실수'];
 
