@@ -212,36 +212,551 @@ export const TX_GROUPS: TxGroup[] = [
         id: 'aje_accrued_revenue',
         label: 'Accrued Revenue',
         topicId: 'ADJ_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Year-end review: interest or service revenue earned but not yet received in cash.\n(e.g., December interest on a note receivable, collected in January)',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Accrual basis: recognize revenue when earned, regardless of cash receipt.',
+            entries: [
+              { account: 'Interest Receivable', type: 'dr', amount: 10000 },
+              { account: 'Interest Revenue', type: 'cr', amount: 10000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Interest Receivable', type: 'dr', sign: '+$10,000', signClass: 'sign-positive', reason: '자산 증가 → Debit → 양수' },
+                { acct: 'Interest Revenue',    type: 'cr', sign: '($10,000)', signClass: 'sign-negative', reason: '수익 증가 → Credit → 음수' },
+              ],
+              note: '$10,000 = December interest earned but not yet received in cash',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: 'Post to individual accounts:\n• Interest Receivable (Dr balance — new asset created)\n• Interest Revenue (Cr balance — revenue recognized)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Interest Receivable', dr: ['10,000 ★'], cr: [] },
+                { name: 'Interest Revenue',    dr: [],           cr: ['10,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: 'After AJE posting:\n• Interest Receivable   Dr  $10,000\n• Interest Revenue      Cr  $10,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Interest Receivable', dr: '$10,000', cr: '—',       highlight: true },
+                { acct: 'Interest Revenue',    dr: '—',       cr: '$10,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Interest Revenue +$10,000 → Other Income (below Operating Income)\nNet Income increases by $10,000',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px"><div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid #f3f4f6"><span style="color:#4a5568">Interest Revenue</span><span style="color:#0f6e56;font-weight:600">+$10,000</span></div><div style="margin-top:6px;font-size:11px;color:#0f6e56">Debit(Credit) 입력 시: Revenue 증가 → 음수 ($10,000)</div></div>`,
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Net Income ↑ → Retained Earnings ↑ $10,000\nAll other columns: no change',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: +$10,000 (Net Income 경유)<br>AOCI, Common Stock, APIC 열: 변동 없음</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets: Interest Receivable (Current) +$10,000\nStockholders\' Equity: Retained Earnings +$10,000\nLiabilities: no change → Balance maintained ✓',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Interest Receivable', dr: '+$10,000', cr: '($10,000)', highlight: true },
+                { acct: 'Retained Earnings',   dr: '+$10,000', cr: '($10,000)', highlight: true },
+              ],
+              trap: 'Interest Receivable = 자산 증가 = Debit = 양수. SCF indirect method에서 receivable 증가 → 차감(-)',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Indirect Method — Operating Activities:\n• Interest Receivable increase −$10,000 (deduct — cash not yet received)\n⚠ When actually collected in January → Operating Activities inflow',
+            drill: {
+              title: 'Statement of Cash Flows — Operating Activities',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>당기:</strong> 현금 미수취 → Receivable 증가 → CFO에서 차감(-)<br><strong>내년 수취 시:</strong> Cash received → Operating inflow<br><strong>Supplemental:</strong> Cash received for interest 공시</div>`,
+              trap: 'Receivable 증가는 CFO indirect method에서 차감(-). Expense 항목과 반대 방향.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Accrued interest receivable balance, receipt schedule.\nFAR TBS: Notes exhibit에서 receivable 잔액 확인 → AJE 금액 검증용',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Interest receivable balance: $10,000<br>② Receipt schedule (January next year)<br>③ Accounting policy: accrual basis<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: Notes exhibit에서 receivable 잔액 확인 → AJE 금액 검증용</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Interest Revenue +$10,000 → Net Income ↑',
+          bs: 'Interest Receivable (Current Assets) +$10,000',
+          se: 'Retained Earnings ↑ $10,000 (via Net Income)',
+          cfo: 'Indirect method: Receivable increase → deduct (−). Cash receipt → Operating inflow',
+        },
       },
       {
         id: 'aje_prepaid',
         label: 'Prepaid Expense Expiration',
         topicId: 'ADJ_002',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Prepaid insurance paid at beginning of year; portion has expired by year-end.\n(e.g., $12,000 annual premium paid Jan 1 → $3,000 expired by March 31)',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Matching principle: allocate prepaid cost to expense as benefit is consumed.',
+            entries: [
+              { account: 'Insurance Expense', type: 'dr', amount: 3000 },
+              { account: 'Prepaid Insurance', type: 'cr', amount: 3000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Insurance Expense', type: 'dr', sign: '+$3,000', signClass: 'sign-positive', reason: '비용 증가 → Debit → 양수' },
+                { acct: 'Prepaid Insurance', type: 'cr', sign: '($3,000)', signClass: 'sign-negative', reason: '자산 감소 → Credit → 음수' },
+              ],
+              note: '$3,000 = portion of prepaid insurance expired this period',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: 'Post to individual accounts:\n• Insurance Expense (Dr balance increases)\n• Prepaid Insurance (Cr balance — asset reduced)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Insurance Expense', dr: ['3,000 ★'], cr: [] },
+                { name: 'Prepaid Insurance', dr: [],           cr: ['3,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: 'After AJE posting:\n• Insurance Expense   Dr  $3,000\n• Prepaid Insurance   Cr  $3,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Insurance Expense', dr: '$3,000', cr: '—',      highlight: true },
+                { acct: 'Prepaid Insurance', dr: '—',      cr: '$3,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Insurance Expense +$3,000 → Operating Expenses\nNet Income decreases by $3,000',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px"><div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid #f3f4f6"><span style="color:#4a5568">Insurance Expense</span><span style="color:#c2410c;font-weight:600">($3,000)</span></div><div style="margin-top:6px;font-size:11px;color:#0f6e56">Expense 증가 → 양수 입력 +$3,000</div></div>`,
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Net Income ↓ → Retained Earnings ↓ $3,000\nAll other columns: no change',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: −$3,000 (Net Income 경유)<br>AOCI, Common Stock, APIC 열: 변동 없음</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets: Prepaid Insurance (Current) −$3,000\nStockholders\' Equity: Retained Earnings −$3,000\nBalance maintained ✓',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Prepaid Insurance',  dr: '−$3,000', cr: '($3,000)', highlight: true },
+                { acct: 'Retained Earnings',  dr: '−$3,000', cr: '($3,000)', highlight: true },
+              ],
+              trap: 'Prepaid 감소 = 자산 감소 = SCF indirect method에서 가산(+). Receivable 증가와 반대.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Indirect Method — Operating Activities:\n• Prepaid decrease +$3,000 (add back — non-cash allocation)\n⚠ Original cash payment was Operating outflow at time of payment (Jan 1)',
+            drill: {
+              title: 'Statement of Cash Flows — Operating Activities',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>당기:</strong> 현금 이동 없음 (현금은 이미 연초에 나갔음)<br><strong>Indirect Method:</strong> Prepaid 감소 → add back (+$3,000)<br><strong>원래 현금 지급:</strong> Jan 1 → Operating Activities outflow</div>`,
+              trap: 'Prepaid 감소 → add back(+). 현금은 이미 연초에 나갔음. AJE는 현금 흐름 없음.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Prepaid balance remaining, expiration schedule.',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Prepaid insurance balance remaining<br>② Expiration schedule<br>③ Accounting policy: matching principle<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: Prepaid 잔액으로 남은 보험 기간 역산 가능</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Insurance Expense +$3,000 → Net Income ↓',
+          bs: 'Prepaid Insurance (Current Assets) −$3,000',
+          se: 'Retained Earnings ↓ $3,000 (via Net Income)',
+          cfo: 'Indirect method: Prepaid decrease → add back (+)',
+        },
       },
       {
         id: 'aje_unearned',
         label: 'Unearned Revenue Recognition',
         topicId: 'ADJ_003',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Customer paid $12,000 in advance for a 12-month service contract.\nBy year-end, 5 months of service have been performed → $5,000 earned.',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Revenue recognized as performance obligation is satisfied (ASC 606).',
+            entries: [
+              { account: 'Unearned Revenue', type: 'dr', amount: 5000 },
+              { account: 'Service Revenue',  type: 'cr', amount: 5000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Unearned Revenue', type: 'dr', sign: '+$5,000', signClass: 'sign-positive', reason: '부채 감소 → Debit → 양수' },
+                { acct: 'Service Revenue',  type: 'cr', sign: '($5,000)', signClass: 'sign-negative', reason: '수익 증가 → Credit → 음수' },
+              ],
+              note: '$5,000 = service revenue earned this period (5/12 × $12,000)',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: 'Post to individual accounts:\n• Unearned Revenue (Dr — liability reduced)\n• Service Revenue (Cr — revenue recognized)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Unearned Revenue', dr: ['5,000 ★'], cr: [] },
+                { name: 'Service Revenue',  dr: [],           cr: ['5,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: 'After AJE posting:\n• Unearned Revenue   Dr  $5,000 (reduction)\n• Service Revenue    Cr  $5,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Unearned Revenue', dr: '$5,000', cr: '—',      highlight: true },
+                { acct: 'Service Revenue',  dr: '—',      cr: '$5,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Service Revenue +$5,000 → Net Income increases',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px"><div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid #f3f4f6"><span style="color:#4a5568">Service Revenue</span><span style="color:#0f6e56;font-weight:600">+$5,000</span></div><div style="margin-top:6px;font-size:11px;color:#0f6e56">Debit(Credit) 입력 시: Revenue 증가 → 음수 ($5,000)</div></div>`,
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Net Income ↑ → Retained Earnings ↑ $5,000\nAll other columns: no change',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: +$5,000 (Net Income 경유)<br>AOCI, Common Stock, APIC 열: 변동 없음</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Liabilities: Unearned Revenue (Current) −$5,000\nStockholders\' Equity: Retained Earnings +$5,000\nAssets: no change → Balance maintained ✓',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Unearned Revenue',  dr: '−$5,000', cr: '($5,000)', highlight: true },
+                { acct: 'Retained Earnings', dr: '+$5,000', cr: '($5,000)', highlight: true },
+              ],
+              trap: 'Unearned Revenue 감소 = 부채 감소 = SCF indirect method에서 차감(-). 현금은 이미 수취했음.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Indirect Method — Operating Activities:\n• Unearned Revenue decrease −$5,000 (deduct)\n⚠ Original cash receipt ($12,000) was already recorded as Operating inflow when customer paid',
+            drill: {
+              title: 'Statement of Cash Flows — Operating Activities',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>당기:</strong> AJE는 현금 흐름 없음<br><strong>원래 현금 수취:</strong> 고객 선불 시 Operating inflow 이미 기록<br><strong>Indirect Method:</strong> Unearned Revenue 감소 → 차감(-)</div>`,
+              trap: '현금은 고객이 선불 낼 때 이미 수취. AJE는 현금 흐름 없음. Unearned Revenue 감소 → CFO 차감(-).',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Remaining unearned balance $7,000 / Performance obligation: 7 months remaining',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Remaining unearned balance: $7,000<br>② Performance obligation: 7 months remaining<br>③ ASC 606: Revenue recognition policy<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: Unearned Revenue 잔액 → 남은 이행 의무 기간 역산</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Service Revenue +$5,000 → Net Income ↑',
+          bs: 'Unearned Revenue (Current Liabilities) −$5,000',
+          se: 'Retained Earnings ↑ $5,000 (via Net Income)',
+          cfo: 'Indirect method: Unearned Revenue decrease → deduct (−). Original cash already in CFO.',
+        },
       },
       {
         id: 'aje_depreciation',
         label: 'Depreciation',
         topicId: 'PPE_DEP_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Year-end allocation of PP&E cost over useful life.\nStraight-line: (Cost $50,000 − Salvage $2,000) ÷ 6 years = $8,000/year',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Systematic and rational allocation of asset cost (matching principle).',
+            entries: [
+              { account: 'Depreciation Expense',     type: 'dr', amount: 8000 },
+              { account: 'Accumulated Depreciation', type: 'cr', amount: 8000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Depreciation Expense',     type: 'dr', sign: '+$8,000', signClass: 'sign-positive', reason: '비용 증가 → Debit → 양수' },
+                { acct: 'Accumulated Depreciation', type: 'cr', sign: '($8,000)', signClass: 'sign-negative', reason: 'Contra asset 증가 → Credit → 음수' },
+              ],
+              note: '$8,000 = ($50,000 − $2,000) ÷ 6 years',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: 'Post to individual accounts:\n• Depreciation Expense (Dr balance increases)\n• Accumulated Depreciation (Cr balance — contra asset increases)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Depreciation Expense',     dr: ['8,000 ★'], cr: [] },
+                { name: 'Accumulated Depreciation', dr: [],           cr: ['8,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: 'After AJE posting:\n• Depreciation Expense       Dr  $8,000\n• Accumulated Depreciation   Cr  $8,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Depreciation Expense',     dr: '$8,000', cr: '—',      highlight: true },
+                { acct: 'Accumulated Depreciation', dr: '—',      cr: '$8,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Depreciation Expense +$8,000 → Operating Expenses\nNet Income decreases by $8,000',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px"><div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid #f3f4f6"><span style="color:#4a5568">Depreciation Expense</span><span style="color:#c2410c;font-weight:600">($8,000)</span></div><div style="margin-top:6px;font-size:11px;color:#0f6e56">Expense 증가 → 양수 입력 +$8,000</div></div>`,
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Net Income ↓ → Retained Earnings ↓ $8,000\nAll other columns: no change',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: −$8,000 (Net Income 경유)<br>AOCI, Common Stock, APIC 열: 변동 없음</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets: Accumulated Depreciation +$8,000 → PP&E net book value −$8,000\nStockholders\' Equity: Retained Earnings −$8,000\nBalance maintained ✓',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Accumulated Depreciation', dr: '+$8,000', cr: '($8,000)', highlight: true },
+                { acct: 'Retained Earnings',        dr: '−$8,000', cr: '($8,000)', highlight: true },
+              ],
+              trap: 'Accumulated Depreciation = contra asset. PP&E gross 금액은 변동 없음. Net book value만 감소.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Indirect Method — Operating Activities:\n• Depreciation Expense +$8,000 (add back — non-cash expense)\n⚠ No cash outflow — cash was paid when asset was originally purchased',
+            drill: {
+              title: 'Statement of Cash Flows — Operating Activities',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>당기:</strong> 현금 이동 없음 (비현금 비용)<br><strong>Indirect Method:</strong> Depreciation → add back (+$8,000)<br><strong>원래 현금 지급:</strong> 자산 구매 시점 → Investing Activities outflow</div>`,
+              trap: 'Depreciation = 비현금 비용 → 항상 add back(+). 현금 유출은 자산 구매 시점. 절대 현금 유출 아님.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Depreciation method (straight-line) / Useful life 6 years / Salvage value $2,000\nFAR: 감가상각 방법 변경 시 → Change in accounting estimate → 소급 없음',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Depreciation method: straight-line<br>② Useful life: 6 years / Salvage value: $2,000<br>③ Annual depreciation: $8,000<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR: 감가상각 방법 변경 → Change in accounting estimate → 소급 없음 (prospective)</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Depreciation Expense +$8,000 → Net Income ↓',
+          bs: 'Accumulated Depreciation +$8,000 → PP&E net −$8,000',
+          se: 'Retained Earnings ↓ $8,000 (via Net Income)',
+          cfo: 'Non-cash expense → add back (+) to Net Income in indirect method',
+        },
       },
       {
         id: 'aje_allowance',
         label: 'Allowance for Doubtful Accounts',
         topicId: 'REC_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Year-end estimate of uncollectible AR based on aging analysis.\n(e.g., AR aging shows $2,000 estimated uncollectible)',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'CECL model (ASC 326): recognize expected credit losses upfront.',
+            entries: [
+              { account: 'Credit Loss Expense',         type: 'dr', amount: 2000 },
+              { account: 'Allowance for Credit Losses', type: 'cr', amount: 2000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Credit Loss Expense',         type: 'dr', sign: '+$2,000', signClass: 'sign-positive', reason: '비용 증가 → Debit → 양수' },
+                { acct: 'Allowance for Credit Losses', type: 'cr', sign: '($2,000)', signClass: 'sign-negative', reason: 'Contra asset 증가 → Credit → 음수' },
+              ],
+              note: '$2,000 = estimated uncollectible based on AR aging analysis',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: 'Post to individual accounts:\n• Credit Loss Expense (Dr balance increases)\n• Allowance for Credit Losses (Cr balance — contra asset increases)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Credit Loss Expense',         dr: ['2,000 ★'], cr: [] },
+                { name: 'Allowance for Credit Losses', dr: [],           cr: ['2,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: 'After AJE posting:\n• Credit Loss Expense            Dr  $2,000\n• Allowance for Credit Losses    Cr  $2,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Credit Loss Expense',         dr: '$2,000', cr: '—',      highlight: true },
+                { acct: 'Allowance for Credit Losses', dr: '—',      cr: '$2,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Credit Loss Expense +$2,000 → Operating Expenses\nNet Income decreases by $2,000',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px"><div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid #f3f4f6"><span style="color:#4a5568">Credit Loss Expense</span><span style="color:#c2410c;font-weight:600">($2,000)</span></div><div style="margin-top:6px;font-size:11px;color:#0f6e56">Expense 증가 → 양수 입력 +$2,000</div></div>`,
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Net Income ↓ → Retained Earnings ↓ $2,000\nAll other columns: no change',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: −$2,000 (Net Income 경유)<br>AOCI, Common Stock, APIC 열: 변동 없음</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets: Allowance for Credit Losses +$2,000 → AR net −$2,000\nStockholders\' Equity: Retained Earnings −$2,000\nBalance maintained ✓',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Allowance for Credit Losses', dr: '+$2,000', cr: '($2,000)', highlight: true },
+                { acct: 'Retained Earnings',           dr: '−$2,000', cr: '($2,000)', highlight: true },
+              ],
+              trap: 'Actual write-off (Dr Allowance / Cr AR) → NO income statement impact. AR net unchanged at write-off.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Indirect Method — Operating Activities:\n• Allowance increase +$2,000 (add back — non-cash)\n⚠ Actual write-off has no cash impact either',
+            drill: {
+              title: 'Statement of Cash Flows — Operating Activities',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>당기:</strong> 현금 이동 없음 (비현금 추정 비용)<br><strong>Indirect Method:</strong> Allowance 증가 → add back (+$2,000)<br><strong>실제 Write-off:</strong> Dr Allowance / Cr AR → 현금 흐름 없음</div>`,
+              trap: 'Allowance 증가 = 비현금 → add back(+). Write-off 자체도 현금 흐름 없음. 실제 현금 유출은 나중에 AR을 포기할 때도 아님.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: CECL methodology / Aging schedule / Allowance balance $2,000\nFAR TBS: Allowance 잔액으로 AJE 금액 역산 가능',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① CECL methodology (ASC 326)<br>② AR aging schedule<br>③ Allowance balance: $2,000<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: Allowance 잔액으로 AJE 금액 역산 가능</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Credit Loss Expense +$2,000 → Net Income ↓',
+          bs: 'Allowance for Credit Losses +$2,000 → AR net −$2,000',
+          se: 'Retained Earnings ↓ $2,000 (via Net Income)',
+          cfo: 'Non-cash (allowance increase) → add back (+) in indirect method',
+        },
       },
     ],
   },
