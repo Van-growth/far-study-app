@@ -14,7 +14,7 @@ const MUTED = '#666666';
 
 const TOPICS = [
   'Bond', 'Lease', 'EPS', 'Note Payable', 'Foreign Currency',
-  'ARO', 'Deferred Tax', 'Inventory', 'Revenue', 'SCF',
+  'ARO', 'Deferred Tax', 'Inventory', 'PPE', 'Revenue', 'SCF',
   'Equity Method', 'NFP/Gov', 'Other',
 ];
 const PATTERNS = ['공식 불완전', '개념 혼동', '표현 변환 실수', '용어 혼동', '계산 실수'];
@@ -249,11 +249,63 @@ function Toast({ msg, onClose }: { msg: string; onClose: () => void }) {
 }
 
 // ── Tab 1: 입력 ───────────────────────────────────────────────────
-function InputTab({ userId }: { userId: string | null }) {
+type EditCard = {
+  question_text: string; my_answer: string; correct_answer: string;
+  explanation: string; topic_tag: string; error_pattern: string;
+};
+
+function InputTab({ userId, editItem, onEditDone }: {
+  userId: string | null;
+  editItem?: WrongAnswer | null;
+  onEditDone?: () => void;
+}) {
   const [rawText, setRawText] = useState('');
   const [cards, setCards] = useState<ParsedCard[]>([]);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
+  const [editCard, setEditCard] = useState<EditCard | null>(null);
+
+  useEffect(() => {
+    if (editItem) {
+      setEditCard({
+        question_text: editItem.question_text ?? '',
+        my_answer: editItem.my_answer ?? '',
+        correct_answer: editItem.correct_answer ?? '',
+        explanation: editItem.explanation ?? '',
+        topic_tag: editItem.topic_tag ?? '',
+        error_pattern: editItem.error_pattern ?? '',
+      });
+    } else {
+      setEditCard(null);
+    }
+  }, [editItem]);
+
+  const handleUpdate = async () => {
+    if (!editItem || !editCard) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('wrong_answers')
+        .update({
+          question_text: editCard.question_text,
+          my_answer: editCard.my_answer,
+          correct_answer: editCard.correct_answer,
+          explanation: editCard.explanation,
+          topic_tag: editCard.topic_tag,
+          error_pattern: editCard.error_pattern,
+        })
+        .eq('id', editItem.id);
+      if (error) throw error;
+      setToast('수정 완료!');
+      setEditCard(null);
+      onEditDone?.();
+    } catch (err) {
+      console.error('[InputTab] update error:', err);
+      setToast('저장 실패');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleParse = () => {
     if (!rawText.trim()) return;
@@ -327,97 +379,157 @@ function InputTab({ userId }: { userId: string | null }) {
 
   return (
     <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <textarea
-        placeholder={'복습 내용 붙여넣기...\n\nQ7. 문제: quarterly payment...\n내 답: $90,000\n정답: $22,500\n풀이: payment = 이자 + 원금...'}
-        value={rawText}
-        onChange={e => setRawText(e.target.value)}
-        style={{
-          width: '100%', minHeight: 180, padding: 12, border: BORDER,
-          borderRadius: 8, fontSize: 13, resize: 'vertical', fontFamily: 'inherit',
-          boxSizing: 'border-box', color: TEXT,
-        }}
-      />
-      <button
-        onClick={handleParse}
-        style={{
-          alignSelf: 'flex-end', padding: '8px 20px', background: NAVY, color: '#fff',
-          border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-        }}
-      >
-        파싱하기 →
-      </button>
-
-      {cards.length > 0 && (
-        <div>
-          <div style={{ fontSize: 12, color: MUTED, marginBottom: 8 }}>── 파싱 결과 ({cards.length}개) ──</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {cards.map(card => (
-              <div key={card.id} style={{ border: BORDER, borderRadius: 8, overflow: 'hidden' }}>
-                {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: BORDER, background: '#fafafa', flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: 700, fontSize: 14 }}>Q{card.questionNum}</span>
-                  <select
-                    value={card.topicTag}
-                    onChange={e => updateCard(card.id, 'topicTag', e.target.value)}
-                    style={{ fontSize: 12, border: BORDER, borderRadius: 4, padding: '2px 6px', color: NAVY, fontWeight: 600 }}
-                  >
-                    {TOPICS.map(t => <option key={t}>{t}</option>)}
-                  </select>
-                  <select
-                    value={card.errorPattern}
-                    onChange={e => updateCard(card.id, 'errorPattern', e.target.value)}
-                    style={{ fontSize: 12, border: BORDER, borderRadius: 4, padding: '2px 6px', color: '#555' }}
-                  >
-                    {PATTERNS.map(p => <option key={p}>{p}</option>)}
-                  </select>
-                  <button
-                    onClick={() => removeCard(card.id)}
-                    style={{ marginLeft: 'auto', color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}
-                  >
-                    ×
-                  </button>
-                </div>
-
-                {/* Question text */}
-                <div style={{ padding: '10px 12px', borderBottom: BORDER }}>
-                  <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, marginBottom: 4 }}>문제</div>
-                  <div style={{ fontSize: 13 }}>{card.questionText || '(파싱 실패 — 직접 입력)'}</div>
-                </div>
-
-                {/* My answer */}
-                <div style={{ padding: '10px 12px', background: '#fef2f2', borderBottom: BORDER }}>
-                  <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 600, marginBottom: 4 }}>내 답</div>
-                  <div style={{ fontSize: 13 }}>{card.myAnswer || '—'}</div>
-                </div>
-
-                {/* Correct answer */}
-                <div style={{ padding: '10px 12px', background: '#f0fdf4', borderBottom: BORDER }}>
-                  <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600, marginBottom: 4 }}>정답</div>
-                  <div style={{ fontSize: 13 }}>{card.correctAnswer || '—'}</div>
-                </div>
-
-                {/* Explanation */}
-                <div style={{ padding: '10px 12px' }}>
-                  <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, marginBottom: 4 }}>풀이</div>
-                  <div style={{ fontSize: 13, whiteSpace: 'pre-line' }}>{card.explanation || '—'}</div>
-                </div>
+      {editCard ? (
+        /* ── 수정 모드 ── */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: 12, color: MUTED }}>── 수정 모드 ({editItem?.question_number ?? '—'}) ──</div>
+          <div style={{ border: BORDER, borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: BORDER, background: '#fafafa', flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 700, fontSize: 14 }}>{editItem?.question_number ?? '—'}</span>
+              <select
+                value={editCard.topic_tag}
+                onChange={e => setEditCard(c => c ? { ...c, topic_tag: e.target.value } : c)}
+                style={{ fontSize: 12, border: BORDER, borderRadius: 4, padding: '2px 6px', color: NAVY, fontWeight: 600 }}
+              >
+                {TOPICS.map(t => <option key={t}>{t}</option>)}
+              </select>
+              <select
+                value={editCard.error_pattern}
+                onChange={e => setEditCard(c => c ? { ...c, error_pattern: e.target.value } : c)}
+                style={{ fontSize: 12, border: BORDER, borderRadius: 4, padding: '2px 6px', color: '#555' }}
+              >
+                {PATTERNS.map(p => <option key={p}>{p}</option>)}
+              </select>
+            </div>
+            {([
+              { label: '문제', field: 'question_text' as const, rows: 3 },
+              { label: '내 답', field: 'my_answer' as const, rows: 1 },
+              { label: '정답', field: 'correct_answer' as const, rows: 1 },
+              { label: '풀이', field: 'explanation' as const, rows: 3 },
+            ] as const).map(({ label, field, rows }) => (
+              <div key={field} style={{ padding: '10px 12px', borderBottom: BORDER }}>
+                <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, marginBottom: 4 }}>{label}</div>
+                <textarea
+                  value={editCard[field]}
+                  onChange={e => setEditCard(c => c ? { ...c, [field]: e.target.value } : c)}
+                  rows={rows}
+                  style={{ width: '100%', fontSize: 13, border: BORDER, borderRadius: 4, padding: '4px 6px', resize: 'vertical', boxSizing: 'border-box' }}
+                />
               </div>
             ))}
           </div>
-
-          <button
-            onClick={handleSave}
-            disabled={saving || !userId}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => { setEditCard(null); onEditDone?.(); }}
+              style={{ flex: 1, padding: 12, background: '#fff', color: TEXT, border: BORDER, borderRadius: 8, fontSize: 14, cursor: 'pointer' }}
+            >
+              취소
+            </button>
+            <button
+              onClick={handleUpdate}
+              disabled={saving}
+              style={{ flex: 2, padding: 12, background: saving ? '#94a3b8' : NAVY, color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}
+            >
+              {saving ? '저장 중...' : '수정 저장'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* ── 일반 입력 모드 ── */
+        <>
+          <textarea
+            placeholder={'복습 내용 붙여넣기...\n\nQ7. 문제: quarterly payment...\n내 답: $90,000\n정답: $22,500\n풀이: payment = 이자 + 원금...'}
+            value={rawText}
+            onChange={e => setRawText(e.target.value)}
             style={{
-              width: '100%', marginTop: 16, padding: 12,
-              background: saving ? '#94a3b8' : NAVY, color: '#fff',
-              border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700,
-              cursor: saving ? 'not-allowed' : 'pointer',
+              width: '100%', minHeight: 180, padding: 12, border: BORDER,
+              borderRadius: 8, fontSize: 13, resize: 'vertical', fontFamily: 'inherit',
+              boxSizing: 'border-box', color: TEXT,
+            }}
+          />
+          <button
+            onClick={handleParse}
+            style={{
+              alignSelf: 'flex-end', padding: '8px 20px', background: NAVY, color: '#fff',
+              border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: 'pointer',
             }}
           >
-            {saving ? '저장 중...' : `전체 저장 (${cards.length}개)`}
+            파싱하기 →
           </button>
-        </div>
+
+          {cards.length > 0 && (
+            <div>
+              <div style={{ fontSize: 12, color: MUTED, marginBottom: 8 }}>── 파싱 결과 ({cards.length}개) ──</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {cards.map(card => (
+                  <div key={card.id} style={{ border: BORDER, borderRadius: 8, overflow: 'hidden' }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: BORDER, background: '#fafafa', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 700, fontSize: 14 }}>Q{card.questionNum}</span>
+                      <select
+                        value={card.topicTag}
+                        onChange={e => updateCard(card.id, 'topicTag', e.target.value)}
+                        style={{ fontSize: 12, border: BORDER, borderRadius: 4, padding: '2px 6px', color: NAVY, fontWeight: 600 }}
+                      >
+                        {TOPICS.map(t => <option key={t}>{t}</option>)}
+                      </select>
+                      <select
+                        value={card.errorPattern}
+                        onChange={e => updateCard(card.id, 'errorPattern', e.target.value)}
+                        style={{ fontSize: 12, border: BORDER, borderRadius: 4, padding: '2px 6px', color: '#555' }}
+                      >
+                        {PATTERNS.map(p => <option key={p}>{p}</option>)}
+                      </select>
+                      <button
+                        onClick={() => removeCard(card.id)}
+                        style={{ marginLeft: 'auto', color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    {/* Question text */}
+                    <div style={{ padding: '10px 12px', borderBottom: BORDER }}>
+                      <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, marginBottom: 4 }}>문제</div>
+                      <div style={{ fontSize: 13 }}>{card.questionText || '(파싱 실패 — 직접 입력)'}</div>
+                    </div>
+
+                    {/* My answer */}
+                    <div style={{ padding: '10px 12px', background: '#fef2f2', borderBottom: BORDER }}>
+                      <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 600, marginBottom: 4 }}>내 답</div>
+                      <div style={{ fontSize: 13 }}>{card.myAnswer || '—'}</div>
+                    </div>
+
+                    {/* Correct answer */}
+                    <div style={{ padding: '10px 12px', background: '#f0fdf4', borderBottom: BORDER }}>
+                      <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600, marginBottom: 4 }}>정답</div>
+                      <div style={{ fontSize: 13 }}>{card.correctAnswer || '—'}</div>
+                    </div>
+
+                    {/* Explanation */}
+                    <div style={{ padding: '10px 12px' }}>
+                      <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, marginBottom: 4 }}>풀이</div>
+                      <div style={{ fontSize: 13, whiteSpace: 'pre-line' }}>{card.explanation || '—'}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={handleSave}
+                disabled={saving || !userId}
+                style={{
+                  width: '100%', marginTop: 16, padding: 12,
+                  background: saving ? '#94a3b8' : NAVY, color: '#fff',
+                  border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700,
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {saving ? '저장 중...' : `전체 저장 (${cards.length}개)`}
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {toast && <Toast msg={toast} onClose={() => setToast('')} />}
@@ -426,7 +538,10 @@ function InputTab({ userId }: { userId: string | null }) {
 }
 
 // ── Tab 2: 히스토리 ───────────────────────────────────────────────
-function HistoryTab({ userId }: { userId: string | null }) {
+function HistoryTab({ userId, onEditRequest }: {
+  userId: string | null;
+  onEditRequest: (item: WrongAnswer) => void;
+}) {
   const [items, setItems] = useState<WrongAnswer[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterTopic, setFilterTopic] = useState('');
@@ -434,8 +549,6 @@ function HistoryTab({ userId }: { userId: string | null }) {
   const [filterUnresolved, setFilterUnresolved] = useState(false);
   const [modal, setModal] = useState<WrongAnswer | null>(null);
   const [toast, setToast] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<Partial<WrongAnswer>>({});
 
   const fetchData = async () => {
     if (!userId) return;
@@ -477,26 +590,6 @@ function HistoryTab({ userId }: { userId: string | null }) {
     if (error) { setToast('삭제 실패'); return; }
     setItems(prev => prev.filter(i => i.id !== item.id));
     setToast('삭제되었습니다');
-  };
-
-  const startEdit = (item: WrongAnswer) => {
-    setEditingId(item.id);
-    setEditDraft({
-      my_answer: item.my_answer ?? '',
-      correct_answer: item.correct_answer ?? '',
-      explanation: item.explanation ?? '',
-      topic_tag: item.topic_tag ?? '',
-      error_pattern: item.error_pattern ?? '',
-    });
-  };
-
-  const handleSave = async (id: string) => {
-    const { error } = await supabase.from('wrong_answers').update(editDraft).eq('id', id);
-    if (error) { setToast('저장 실패'); return; }
-    setItems(prev => prev.map(i => i.id === id ? { ...i, ...editDraft } : i));
-    setEditingId(null);
-    setEditDraft({});
-    setToast('저장되었습니다');
   };
 
   const filtered = items.filter(item => {
@@ -634,104 +727,52 @@ function HistoryTab({ userId }: { userId: string | null }) {
               key={item.id}
               style={{ border: BORDER, borderRadius: 8, marginBottom: 8, background: '#fff', overflow: 'hidden' }}
             >
-              {editingId === item.id ? (
-                /* ── 인라인 편집 모드 ── */
-                <div style={{ padding: '12px' }}>
-                  <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-                    <select
-                      value={editDraft.topic_tag ?? ''}
-                      onChange={e => setEditDraft(d => ({ ...d, topic_tag: e.target.value }))}
-                      style={{ fontSize: 12, border: BORDER, borderRadius: 4, padding: '3px 6px', color: NAVY, fontWeight: 600 }}
-                    >
-                      {TOPICS.map(t => <option key={t}>{t}</option>)}
-                    </select>
-                    <select
-                      value={editDraft.error_pattern ?? ''}
-                      onChange={e => setEditDraft(d => ({ ...d, error_pattern: e.target.value }))}
-                      style={{ fontSize: 12, border: BORDER, borderRadius: 4, padding: '3px 6px' }}
-                    >
-                      {PATTERNS.map(p => <option key={p}>{p}</option>)}
-                    </select>
-                  </div>
-                  {[
-                    { label: '내 답', field: 'my_answer' as const },
-                    { label: '정답', field: 'correct_answer' as const },
-                    { label: '풀이', field: 'explanation' as const },
-                  ].map(({ label, field }) => (
-                    <div key={field} style={{ marginBottom: 6 }}>
-                      <div style={{ fontSize: 11, color: MUTED, marginBottom: 2 }}>{label}</div>
-                      <textarea
-                        value={(editDraft[field] as string) ?? ''}
-                        onChange={e => setEditDraft(d => ({ ...d, [field]: e.target.value }))}
-                        rows={field === 'explanation' ? 3 : 1}
-                        style={{ width: '100%', fontSize: 12, border: BORDER, borderRadius: 4, padding: '4px 6px', resize: 'vertical', boxSizing: 'border-box' }}
-                      />
-                    </div>
-                  ))}
-                  <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 8 }}>
-                    <button
-                      onClick={() => { setEditingId(null); setEditDraft({}); }}
-                      style={{ fontSize: 12, padding: '4px 12px', borderRadius: 5, border: BORDER, background: '#fff', cursor: 'pointer' }}
-                    >
-                      취소
-                    </button>
-                    <button
-                      onClick={() => handleSave(item.id)}
-                      style={{ fontSize: 12, padding: '4px 12px', borderRadius: 5, border: 'none', background: NAVY, color: '#fff', cursor: 'pointer' }}
-                    >
-                      저장
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                /* ── 일반 표시 모드 ── */
-                <div
-                  onClick={() => setModal(item)}
-                  style={{ padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+              <div
+                onClick={() => setModal(item)}
+                style={{ padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+              >
+                <button
+                  onClick={e => { e.stopPropagation(); toggleResolved(item); }}
+                  style={{
+                    flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
+                    border: `2px solid ${item.is_resolved ? '#16a34a' : '#ccc'}`,
+                    background: item.is_resolved ? '#16a34a' : '#fff',
+                    color: '#fff', cursor: 'pointer', fontSize: 11,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
                 >
-                  <button
-                    onClick={e => { e.stopPropagation(); toggleResolved(item); }}
-                    style={{
-                      flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
-                      border: `2px solid ${item.is_resolved ? '#16a34a' : '#ccc'}`,
-                      background: item.is_resolved ? '#16a34a' : '#fff',
-                      color: '#fff', cursor: 'pointer', fontSize: 11,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}
-                  >
-                    {item.is_resolved ? '✓' : '○'}
-                  </button>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 700, fontSize: 13 }}>{item.question_number ?? '—'}</span>
-                      <Badge color={NAVY} bg="#e8edf5">{item.topic_tag ?? '—'}</Badge>
-                      <span style={{ fontSize: 12, color: MUTED }}>{item.error_pattern}</span>
-                      {item.times_wrong >= 2 && (
-                        <Badge color="#dc2626" bg="#fee2e2">×{item.times_wrong}</Badge>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 12, color: MUTED, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.question_text}
-                    </div>
+                  {item.is_resolved ? '✓' : '○'}
+                </button>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 700, fontSize: 13 }}>{item.question_number ?? '—'}</span>
+                    <Badge color={NAVY} bg="#e8edf5">{item.topic_tag ?? '—'}</Badge>
+                    <span style={{ fontSize: 12, color: MUTED }}>{item.error_pattern}</span>
+                    {item.times_wrong >= 2 && (
+                      <Badge color="#dc2626" bg="#fee2e2">×{item.times_wrong}</Badge>
+                    )}
                   </div>
-                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                    <button
-                      onClick={e => { e.stopPropagation(); startEdit(item); }}
-                      title="수정"
-                      style={{ background: 'none', border: BORDER, borderRadius: 4, width: 26, height: 26, cursor: 'pointer', fontSize: 13, color: MUTED, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      ✏
-                    </button>
-                    <button
-                      onClick={e => { e.stopPropagation(); handleDelete(item); }}
-                      title="삭제"
-                      style={{ background: 'none', border: '1px solid #fca5a5', borderRadius: 4, width: 26, height: 26, cursor: 'pointer', fontSize: 13, color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      ×
-                    </button>
+                  <div style={{ fontSize: 12, color: MUTED, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.question_text}
                   </div>
                 </div>
-              )}
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  <button
+                    onClick={e => { e.stopPropagation(); onEditRequest(item); }}
+                    title="수정"
+                    style={{ background: 'none', border: BORDER, borderRadius: 4, width: 26, height: 26, cursor: 'pointer', fontSize: 13, color: MUTED, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    ✏
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); handleDelete(item); }}
+                    title="삭제"
+                    style={{ background: 'none', border: '1px solid #fca5a5', borderRadius: 4, width: 26, height: 26, cursor: 'pointer', fontSize: 13, color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -1180,6 +1221,7 @@ export default function WrongAnswerPage() {
   const userId = useStudyStore(s => s.userId);
   const [tab, setTab] = useState<Tab>('input');
   const [harryPendingMsg, setHarryPendingMsg] = useState('');
+  const [editItem, setEditItem] = useState<WrongAnswer | null>(null);
 
   const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
@@ -1193,6 +1235,11 @@ export default function WrongAnswerPage() {
   const handleSendToHarry = (msg: string) => {
     setHarryPendingMsg(msg);
     setTab('harry');
+  };
+
+  const handleEditRequest = (item: WrongAnswer) => {
+    setEditItem(item);
+    setTab('input');
   };
 
   return (
@@ -1224,8 +1271,8 @@ export default function WrongAnswerPage() {
 
       {/* Content */}
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-        {tab === 'input' && <InputTab userId={userId} />}
-        {tab === 'history' && <HistoryTab userId={userId} />}
+        {tab === 'input' && <InputTab userId={userId} editItem={editItem} onEditDone={() => setEditItem(null)} />}
+        {tab === 'history' && <HistoryTab userId={userId} onEditRequest={handleEditRequest} />}
         {tab === 'dashboard' && <DashboardTab userId={userId} onSendToHarry={handleSendToHarry} />}
         {tab === 'harry' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
