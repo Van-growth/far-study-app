@@ -3445,29 +3445,459 @@ export const TX_GROUPS: TxGroup[] = [
         id: 'deferred_tax_create',
         label: 'Deferred Tax Asset/Liability',
         topicId: 'TAX_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Temporary difference: Warranty expense $10,000 recognized on I/S but not yet deductible for tax.\nTax rate 25% → DTA = $2,500',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'DTA: tax paid early (deductible later). DTL: tax paid late (taxable later).\nWarranty creates DTA = deductible temporary difference × tax rate.',
+            entries: [
+              { account: 'Deferred Tax Asset',   type: 'dr', amount: 2500 },
+              { account: 'Income Tax Expense',   type: 'cr', amount: 2500 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Deferred Tax Asset',  type: 'dr', sign: '+$2,500', signClass: 'sign-positive', reason: '자산 증가 → Debit → 양수 ($10,000 × 25%)' },
+                { acct: 'Income Tax Expense',  type: 'cr', sign: '($2,500)', signClass: 'sign-negative', reason: '세금비용 감소 → Credit → 음수' },
+              ],
+              note: 'DTA = paid early (refund개념). Warranty deductible when paid → future tax benefit.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• DTA (Dr — non-current asset)\n• Income Tax Expense (Cr — reduced this period)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Deferred Tax Asset',  dr: ['2,500 ★'], cr: [] },
+                { name: 'Income Tax Expense',  dr: [],          cr: ['2,500 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: '• Deferred Tax Asset   Dr  $2,500\n• Income Tax Expense   Cr  $2,500\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Deferred Tax Asset',  dr: '$2,500', cr: '—',      highlight: true },
+                { acct: 'Income Tax Expense',  dr: '—',      cr: '$2,500', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Income Tax Expense reduced by $2,500 (DTA benefit)\nEffective tax rate lower than statutory rate',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px"><div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid #f3f4f6"><span style="color:#4a5568">Income Tax Expense</span><span style="color:#0f6e56;font-weight:600">−$2,500</span></div><div style="margin-top:6px;font-size:11px;color:#6b7280">DTA benefit → effective tax rate &lt; statutory rate</div></div>`,
+              trap: 'DTA = 미래 세금 절감 혜택 (자산). DTL = 미래 세금 납부 의무 (부채). 영구적 차이 제외, 일시적 차이만.',
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Net Income ↑ $2,500 (lower tax expense) → Retained Earnings ↑ $2,500',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: +$2,500 (Net Income 경유)<br>AOCI, Common Stock, APIC 열: 변동 없음</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets: DTA +$2,500 (non-current)\nSE: Retained Earnings +$2,500\nUS GAAP: all DTA/DTL classified as non-current, netted',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Deferred Tax Asset',  dr: '+$2,500', cr: '($2,500)', highlight: true },
+                { acct: 'Retained Earnings',   dr: '+$2,500', cr: '($2,500)', highlight: true },
+              ],
+              trap: 'US GAAP: 전부 비유동 + 상계 후 표시. DTA − DTL (same jurisdiction) = net non-current amount.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Indirect Method: DTA increase → deduct from CFO (−$2,500)\nNon-cash tax benefit → operating adjustment',
+            drill: {
+              title: 'Statement of Cash Flows — Indirect Method',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>Indirect Method:</strong> DTA 증가 → 차감 (−$2,500)<br>Current asset 증가 = CFO 차감 패턴<br>현금 세금 납부와 DTA/DTL 증감 분리</div>`,
+              trap: 'DTA 증가 → CFO 차감(-). DTL 증가 → CFO 가산(+). Current asset/liability 변동과 동일 방향.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: DTA/DTL components / Valuation allowance / Effective tax rate reconciliation',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① DTA components: warranty ($2,500)<br>② Valuation allowance (if realization uncertain)<br>③ Effective tax rate reconciliation<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: 세율 변경 시 DTA/DTL 재측정 → I/S (Income Tax Expense) 즉시 반영.</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Income Tax Expense −$2,500 → Net Income ↑',
+          bs: 'DTA +$2,500 (non-current asset)',
+          se: 'Retained Earnings ↑ $2,500',
+          cfo: 'DTA increase → deduct from CFO indirect (−$2,500)',
+        },
       },
       {
         id: 'error_correction',
         label: 'Prior Period Error Correction',
         topicId: 'ERR_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Error discovered: Year 1 depreciation understated by $8,000.\nAfter-tax impact (25% rate): $6,000 net of tax.',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Prior period error → restate beginning Retained Earnings (net of tax). Not through current I/S.',
+            entries: [
+              { account: 'Retained Earnings',        type: 'dr', amount: 6000 },
+              { account: 'Deferred Tax Asset',       type: 'dr', amount: 2000 },
+              { account: 'Accumulated Depreciation', type: 'cr', amount: 8000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Prior Period Error Correction',
+              je: [
+                { acct: 'Retained Earnings',        type: 'dr', sign: '+$6,000', signClass: 'sign-positive', reason: '과거 오류 수정 → RE 직접 차감 (net of tax)' },
+                { acct: 'Deferred Tax Asset',       type: 'dr', sign: '+$2,000', signClass: 'sign-positive', reason: '세금 효과 → Debit ($8,000 × 25%)' },
+                { acct: 'Accumulated Depreciation', type: 'cr', sign: '($8,000)', signClass: 'sign-negative', reason: '감가상각 누락분 추가 → Credit → 음수' },
+              ],
+              note: 'I/S 닫혔으니 현재 비용 아님 → RE 직접 수정. Net of tax = $8,000 × (1−25%) = $6,000.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• RE reduced directly (not through I/S)\n• Acc. Dep. increased (correcting understatement)\n• DTA created (future deductibility)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Retained Earnings',        dr: ['6,000 ★'], cr: [] },
+                { name: 'Deferred Tax Asset',       dr: ['2,000 ★'], cr: [] },
+                { name: 'Accumulated Depreciation', dr: [],          cr: ['8,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: '• RE Dr $6,000 / DTA Dr $2,000 / Acc. Dep. Cr $8,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Retained Earnings',        dr: '$6,000', cr: '—',      highlight: true },
+                { acct: 'Deferred Tax Asset',       dr: '$2,000', cr: '—',      highlight: true },
+                { acct: 'Accumulated Depreciation', dr: '—',      cr: '$8,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'No current period I/S impact.\nError correction bypasses I/S → goes directly to beginning RE.',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px;padding:6px 8px;background:#f3f4f6;border-radius:4px;color:#6b7280">No current I/S impact.<br>Error correction → beginning RE directly (retrospective).</div>`,
+              trap: '당기 오류 → I/S (비용/수익). 전기 오류 → RE 직접 수정. I/S 닫힌 후 발견 = 전기 오류.',
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Beginning Retained Earnings restated (−$6,000 net of tax)\nSE Worksheet: "Correction of errors, net of tax" line',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Beginning RE 열: −$6,000 (Correction of error, net of tax)<br>현재 NI 열: 변동 없음<br>SE Worksheet에 별도 수정 항목 표시</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets: DTA +$2,000\nPP&E: Acc. Dep. +$8,000 → Net PP&E −$8,000\nSE: RE −$6,000',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Deferred Tax Asset',       dr: '+$2,000', cr: '($2,000)', highlight: true },
+                { acct: 'PP&E net (Acc. Dep.)',     dr: '−$8,000', cr: '($8,000)', highlight: true },
+                { acct: 'Retained Earnings',        dr: '−$6,000', cr: '($6,000)', highlight: true },
+              ],
+              trap: 'Net of tax = $8,000 gross − $2,000 tax = $6,000 RE impact. Balance check: −$8K PP&E + $2K DTA = −$6K RE.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'No current SCF impact.\nPrior period SCF restated if comparative statements presented.',
+            drill: {
+              title: 'Statement of Cash Flows',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>Current SCF:</strong> No impact<br><strong>Comparative SCF:</strong> Restated for prior periods if presented<br>Retrospective restatement → all prior period F/S restated</div>`,
+              trap: 'Error correction = retrospective restatement. Change in accounting estimate = prospective. 두 가지 구분 필수.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Nature of error / Period of error / Impact on prior periods / Restatement amounts',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Nature of error: depreciation understated $8,000<br>② Period: Year 1 / Correction: retrospective<br>③ Impact: RE −$6,000 net of tax / Acc. Dep. +$8,000<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: Error vs. Change in estimate 구분 → restate vs. prospective 처리.</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'No current I/S impact — prior period restatement',
+          bs: 'Acc. Dep. +$8,000 / DTA +$2,000 / RE −$6,000',
+          se: 'Beginning RE restated −$6,000 (net of tax)',
+          cfo: 'No current SCF impact',
+        },
       },
       {
         id: 'discontinued_ops',
         label: 'Discontinued Operations',
         topicId: 'DISC_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Company decides to discontinue a segment. Loss from discontinued ops $15,000 before tax.\nAfter-tax loss (25% rate) = $11,250. Presented separately on I/S.',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Discontinued ops: presented net of tax, below continuing operations on I/S.',
+            entries: [
+              { account: 'Loss from Discontinued Ops',  type: 'dr', amount: 15000 },
+              { account: 'Income Tax Benefit',          type: 'cr', amount:  3750 },
+              { account: 'Net Loss — Disc. Ops',        type: 'cr', amount: 11250 },
+            ],
+            drill: {
+              title: 'Journal Entry — Discontinued Operations',
+              je: [
+                { acct: 'Loss from Disc. Ops (gross)', type: 'dr', sign: '+$15,000', signClass: 'sign-positive', reason: '손실 → Debit (gross amount)' },
+                { acct: 'Income Tax Benefit',          type: 'cr', sign: '($3,750)',  signClass: 'sign-negative', reason: '세금 절감 → Credit ($15,000 × 25%)' },
+                { acct: 'Net Loss (after-tax)',        type: 'cr', sign: '($11,250)', signClass: 'sign-negative', reason: 'I/S 표시: net of tax $11,250' },
+              ],
+              note: 'I/S shows: Loss from discontinued operations, net of tax ($11,250). Separate from continuing ops.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• Disc. Ops loss reported net of tax\n• Assets of segment → "Assets held for sale"\n• Measured at lower of BV or FV − costs to sell',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Loss — Disc. Ops (net of tax)', dr: ['11,250 ★'], cr: [] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: '• Loss from Disc. Ops (net of tax)   Dr  $11,250\nPresented separately on TB / I/S',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Loss — Disc. Ops (net of tax)', dr: '$11,250', cr: '—', highlight: true },
+              ],
+              note: 'Net of tax presentation: $15,000 gross − $3,750 tax = $11,250',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Income from continuing operations: XXX\nDiscontinued operations (net of tax): ($11,250)\nNet Income: XXX − $11,250',
+            drill: {
+              title: 'Income Statement — Two-section format',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568"><div style="padding:4px 8px;background:#f3f4f6;border-radius:4px;margin-bottom:4px">Income from Continuing Operations: XXX</div><div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid #f3f4f6"><span>Disc. Ops, net of tax</span><span style="color:#c2410c">($11,250)</span></div><div style="display:flex;justify-content:space-between;padding:3px 0;font-weight:600"><span>Net Income</span><span>XXX − $11,250</span></div></div>`,
+              trap: '중단사업손익은 별도 표시 (net of tax). Continuing operations 아래. Extraordinary item 아님.',
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Net Income ↓ $11,250 → Retained Earnings ↓ $11,250',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: −$11,250 (Net Income 경유)<br>Disc. ops loss는 NI의 일부 → RE에 반영</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets held for sale: classified as Current Assets\nLiabilities of discontinued ops: separate line',
+            drill: {
+              title: 'Balance Sheet — Discontinued segment',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568"><strong>Current Assets:</strong> Assets held for sale (at lower of BV or FV−CTS)<br><strong>Current Liabilities:</strong> Liabilities of disc. ops (separate line)</div>`,
+              trap: 'Assets of discontinued segment → "Assets held for sale" (Current). Measured at lower of BV or FV−costs to sell.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Operating/Investing/Financing: disclose cash flows from discontinued ops separately\nor as single line per category',
+            drill: {
+              title: 'Statement of Cash Flows — Disc. ops',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>Option 1:</strong> Disc. ops CFO/CFI/CFF shown as single line each<br><strong>Option 2:</strong> Integrated into main sections with note<br>Disposal proceeds → CFI (when sold)</div>`,
+              trap: 'Disc. ops cash flows must be disclosed. Disposal proceeds = CFI.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Description of discontinued segment / Expected completion date / Gain/Loss on disposal',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Segment description / Reason for discontinuation<br>② Expected disposal date<br>③ Loss: $15,000 gross / $11,250 net of tax<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: Disc. ops = net of tax below continuing ops. Extraordinary item은 US GAAP에서 폐지.</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Loss from discontinued ops ($11,250) net of tax → Net Income ↓ (below continuing ops)',
+          bs: 'Assets held for sale (Current) / Liabilities of disc. ops (separate)',
+          se: 'Retained Earnings ↓ $11,250',
+          cfo: 'Disc. ops cash flows disclosed separately',
+        },
       },
       {
         id: 'pension_oci',
         label: 'Pension Actuarial G/L (OCI)',
         topicId: 'PEN_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Actuarial loss on pension obligation $20,000 (FV of plan assets declined).\nNet of tax (25%): $15,000 → OCI / AOCI',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Actuarial gains/losses → OCI (not immediately to NI). Amortized to NI via corridor or immediate recognition.',
+            entries: [
+              { account: 'OCI — Pension Actuarial Loss', type: 'dr', amount: 20000 },
+              { account: 'Pension Obligation',           type: 'cr', amount: 20000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Pension Actuarial Loss',
+              je: [
+                { acct: 'OCI — Pension Actuarial Loss', type: 'dr', sign: '+$20,000', signClass: 'sign-positive', reason: 'OCI 항목 → Debit → 직접 AOCI (NI 아님)' },
+                { acct: 'Pension Obligation',           type: 'cr', sign: '($20,000)', signClass: 'sign-negative', reason: '부채 증가 → Credit → 음수' },
+              ],
+              note: 'Actuarial loss → OCI immediately. Amortized to NI in future periods (corridor method or immediate).',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• OCI — Pension Loss (Dr — AOCI increases)\n• Pension Obligation (Cr — liability increases)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'OCI — Pension Actuarial Loss', dr: ['20,000 ★'], cr: [] },
+                { name: 'Pension Obligation',           dr: [],           cr: ['20,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: '• OCI — Pension Loss   Dr  $20,000\n• Pension Obligation   Cr  $20,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'OCI — Pension Loss (gross)', dr: '$20,000', cr: '—',       highlight: true },
+                { acct: 'Pension Obligation',         dr: '—',       cr: '$20,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'No current NI impact.\nService cost + interest cost → NI. Actuarial G/L → OCI.',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px;padding:6px 8px;background:#f3f4f6;border-radius:4px;color:#6b7280">No NI impact.<br>Actuarial G/L → OCI only (not NI).</div>`,
+              trap: 'Pension: Service cost + Interest cost → NI. Actuarial G/L + Prior service cost → OCI (AOCI). 두 가지 구분 필수.',
+            },
+          },
+          {
+            step: 'oci',
+            label: 'Other Comprehensive Income',
+            note: 'Actuarial Loss $20,000 → OCI\nNet of tax: ($15,000) → AOCI\nTotal Comprehensive Income decreases by $15,000',
+            drill: {
+              title: 'OCI — Pension Actuarial Loss',
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.8">OCI this period: <strong>−$20,000</strong> gross / <strong>−$15,000</strong> net of tax<br>AOCI balance decreases $15,000<div style="margin-top:8px;padding:5px 8px;background:#eeedfe;border-radius:4px;color:#3c3489;font-size:10px">Actuarial loss → AOCI 축적 → corridor 초과 시 NI 상각 (amortization)</div></div>`,
+              trap: 'Actuarial G/L → OCI 즉시. 미래 기간 NI로 상각. Service cost는 즉시 NI.',
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'AOCI −$15,000 (net of tax actuarial loss)\nRetained Earnings: no change\nTotal SE −$15,000',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">AOCI 열: −$15,000 (net of tax actuarial loss)<br>Retained Earnings 열: 변동 없음 (NI 영향 없음)<br>Total SE: −$15,000</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Liabilities: Pension Obligation +$20,000\nAssets: DTA +$5,000 (tax effect)\nSE: AOCI −$15,000',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'DTA (tax effect)',      dr: '+$5,000',  cr: '($5,000)',  highlight: true },
+                { acct: 'Pension Obligation',    dr: '+$20,000', cr: '($20,000)', highlight: true },
+                { acct: 'AOCI (SE)',             dr: '−$15,000', cr: '($15,000)', highlight: true },
+              ],
+              trap: 'Balance: DTA +5K − Obligation +20K = −15K → AOCI −15K ✓. Net of tax check.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'No direct cash impact.\nActual pension contributions → Operating Activities outflow',
+            drill: {
+              title: 'Statement of Cash Flows',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>Actuarial loss:</strong> 비현금 → SCF 영향 없음<br><strong>Pension contributions:</strong> 실제 납입 → CFO outflow<br>OCI 항목 = 비현금 → CFO 조정 없음</div>`,
+              trap: 'OCI 항목 = 비현금. 실제 현금은 pension fund 납입 시점.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: PBO / Plan assets / Funded status / AOCI components / Expected amortization',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① PBO / Plan assets FV / Funded status<br>② Actuarial loss: $20,000 / Net of tax: $15,000<br>③ AOCI components / Expected amortization to NI<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: Net pension liability = PBO − Plan assets FV. AOCI amortization schedule 확인.</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'No NI impact — actuarial loss goes to OCI',
+          is_oci: 'Pension Actuarial Loss ($15,000) net of tax → OCI',
+          bs: 'Pension Obligation +$20,000 / DTA +$5,000 / AOCI −$15,000',
+          se: 'AOCI −$15,000 (net of tax)',
+          cfo: 'No direct cash impact',
+        },
       },
     ],
   },
@@ -3480,29 +3910,424 @@ export const TX_GROUPS: TxGroup[] = [
         id: 'scf_noncash_addback',
         label: 'Non-cash Expense — Add Back',
         topicId: 'SCF_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Indirect method: Non-cash expenses reduce NI but involve no cash outflow.\nExamples: Depreciation $8,000 / Amortization $3,000 / SBC $4,000 / Impairment $5,000',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'These items are already in Net Income. Indirect method adds them back to reconcile to cash.',
+            entries: [
+              { account: 'Depreciation Expense', type: 'dr', amount:  8000 },
+              { account: 'Amortization Expense', type: 'dr', amount:  3000 },
+              { account: 'Compensation Expense', type: 'dr', amount:  4000 },
+              { account: 'Impairment Loss',      type: 'dr', amount:  5000 },
+              { account: 'Various Accounts',     type: 'cr', amount: 20000 },
+            ],
+            drill: {
+              title: 'Non-cash Expenses — Add Back Rule',
+              je: [
+                { acct: 'Depreciation Expense', type: 'dr', sign: '+$8,000', signClass: 'sign-positive', reason: 'Non-cash → reduce NI but no cash out' },
+                { acct: 'Amortization Expense', type: 'dr', sign: '+$3,000', signClass: 'sign-positive', reason: 'Non-cash → reduce NI but no cash out' },
+                { acct: 'SBC Expense',          type: 'dr', sign: '+$4,000', signClass: 'sign-positive', reason: 'Non-cash → reduce NI but no cash out' },
+                { acct: 'Impairment Loss',      type: 'dr', sign: '+$5,000', signClass: 'sign-positive', reason: 'Non-cash → reduce NI but no cash out' },
+              ],
+              note: 'Rule: Non-cash expense → Add back (+). Non-cash income → Deduct (−).',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: 'Non-cash expenses reduce NI but have offsetting non-cash credit entries.\nNo actual cash movement.',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Depreciation Expense',    dr: ['8,000'],  cr: [] },
+                { name: 'Amortization Expense',    dr: ['3,000'],  cr: [] },
+                { name: 'Compensation Expense',    dr: ['4,000'],  cr: [] },
+                { name: 'Impairment Loss',         dr: ['5,000'],  cr: [] },
+                { name: 'Non-cash offsets',        dr: [],         cr: ['20,000 (Acc.Dep / APIC / etc.)'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: 'All non-cash expenses appear as Dr balances in TB.\nEach has a non-cash Credit counterpart.',
+            drill: {
+              title: 'Adjusted Trial Balance — non-cash items',
+              tb: [
+                { acct: 'Depreciation Expense', dr: '$8,000', cr: '—', highlight: true },
+                { acct: 'Amortization Expense', dr: '$3,000', cr: '—', highlight: true },
+                { acct: 'Compensation Expense', dr: '$4,000', cr: '—', highlight: true },
+                { acct: 'Impairment Loss',      dr: '$5,000', cr: '—', highlight: true },
+              ],
+              note: 'Total non-cash expenses: $20,000 → all added back in CFO indirect',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'All non-cash items already reduce Net Income on I/S.',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">Non-cash expenses reduce NI on I/S:<br>Depreciation ($8,000) / Amortization ($3,000) / SBC ($4,000) / Impairment ($5,000)<br><span style="color:#c2410c">Total NI reduction: ($20,000)</span></div>`,
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Net Income reduced by non-cash expenses → RE decreases.',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: NI 감소분 반영<br>APIC 열: SBC grant +$4,000 (비현금 APIC 증가)</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Contra assets increase (Acc. Dep.) / Intangibles decrease / APIC increases (SBC)',
+            drill: {
+              title: 'Balance Sheet impact',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">Acc. Depreciation: +$8,000 (contra asset)<br>Intangibles: −$3,000 (amortized)<br>APIC: +$4,000 (SBC equity)<br>PP&E net after impairment: −$5,000</div>`,
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'CFO Indirect Method:\nNet Income: $XXX\n+ Depreciation: +$8,000\n+ Amortization: +$3,000\n+ SBC: +$4,000\n+ Impairment: +$5,000\n= Adjusted CFO',
+            drill: {
+              title: 'SCF Indirect Method — Add Backs',
+              custom: `<div style="font-size:11px;line-height:1.9;color:#4a5568"><strong>CFO (Indirect Method):</strong><br>Net Income: $XXX<br>+ Depreciation: +$8,000<br>+ Amortization: +$3,000<br>+ SBC (non-cash): +$4,000<br>+ Impairment: +$5,000<br><span style="color:#0f6e56;font-weight:600">→ 비현금 비용 전부 가산(+) / 비현금 수익 전부 차감(−)</span></div>`,
+              trap: '비현금 비용 → add back(+). 비현금 수익 (예: Trading unrealized gain, Equity method income) → deduct(−). 패턴 암기.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'SCF supplemental: interest paid / taxes paid separately disclosed',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">Supplemental disclosures (required):<br>① Cash paid for interest<br>② Cash paid for income taxes<br>③ Non-cash investing/financing activities</div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Non-cash expenses reduce NI',
+          bs: 'Contra assets or equity accounts change',
+          se: 'RE decreases via non-cash expenses',
+          cfo: 'Indirect method: all non-cash expenses added back (+)',
+        },
       },
       {
         id: 'scf_working_capital',
         label: 'Working Capital Changes',
         topicId: 'SCF_002',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Indirect method: working capital account changes adjust NI to arrive at cash.\nAR +$5,000 / Inventory −$3,000 / AP +$4,000',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Working capital changes are already in NI (e.g., sales, COGS). Indirect method adjusts for timing differences.',
+            entries: [
+              { account: 'Accounts Receivable', type: 'dr', amount: 5000 },
+              { account: 'Revenue',             type: 'cr', amount: 5000 },
+            ],
+            drill: {
+              title: 'Working Capital Change Rules',
+              je: [
+                { acct: 'AR +$5K (asset ↑)',        type: 'dr', sign: '−$5,000 CFO', signClass: 'sign-negative', reason: 'Asset ↑ → cash not yet received → deduct CFO' },
+                { acct: 'Inventory −$3K (asset ↓)', type: 'cr', sign: '+$3,000 CFO', signClass: 'sign-positive', reason: 'Asset ↓ → cash used less → add CFO' },
+                { acct: 'AP +$4K (liability ↑)',    type: 'cr', sign: '+$4,000 CFO', signClass: 'sign-positive', reason: 'Liability ↑ → cash not yet paid → add CFO' },
+              ],
+              note: 'Rules: Asset↑ → CFO− / Asset↓ → CFO+ / Liability↑ → CFO+ / Liability↓ → CFO−',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: 'Working capital accounts show period-end balance changes.',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Accounts Receivable', dr: ['5,000 (new sales)'], cr: [] },
+                { name: 'Inventory',           dr: [],                    cr: ['3,000 (COGS used)'] },
+                { name: 'Accounts Payable',    dr: [],                    cr: ['4,000 (new payable)'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: 'AR and Inventory are asset Dr balances; AP is liability Cr balance.',
+            drill: {
+              title: 'Adjusted Trial Balance — working capital',
+              tb: [
+                { acct: 'Accounts Receivable', dr: '$5,000', cr: '—',     highlight: true },
+                { acct: 'Inventory',           dr: '—',      cr: '$3,000', highlight: true },
+                { acct: 'Accounts Payable',    dr: '—',      cr: '$4,000', highlight: true },
+              ],
+              trap: '잔액 변동분(Δ)이 SCF에 반영됨. TB 잔액 자체가 아니라 기초→기말 변동을 사용.',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Revenue and COGS on I/S. Working capital changes do not appear directly on I/S.',
+            drill: {
+              title: 'Income Statement — timing mismatch',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">I/S recognizes revenue when earned / expense when incurred.<br>SCF adjusts: not all I/S items = cash yet.<br><span style="color:#0f6e56">AR increase → revenue earned but cash not received yet → NI overstates CFO</span></div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Current assets/liabilities reflect working capital positions.',
+            drill: {
+              title: 'Balance Sheet impact',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">Current Assets:<br>  Accounts Receivable +$5,000<br>  Inventory −$3,000<br>Current Liabilities:<br>  Accounts Payable +$4,000</div>`,
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'CFO Indirect:\n  Net Income: $XXX\n  − AR increase: (5,000)\n  + Inventory decrease: 3,000\n  + AP increase: 4,000\n  Net WC adjustment: +$2,000',
+            drill: {
+              title: 'SCF Indirect — Working Capital Section',
+              custom: `<div style="font-size:11px;line-height:1.9;color:#4a5568"><strong>CFO (Indirect Method):</strong><br>Net Income: $XXX<br><span style="color:#c2410c">− AR increase: ($5,000)</span><br><span style="color:#0f6e56">+ Inventory decrease: $3,000</span><br><span style="color:#0f6e56">+ AP increase: $4,000</span><br><span style="color:#0f6e56;font-weight:600">Net WC adjustment: +$2,000</span></div>`,
+              trap: '자산↑=CFO(−) / 자산↓=CFO(+) / 부채↑=CFO(+) / 부채↓=CFO(−). Prepaid↑ → CFO(−). Accrued liabilities↑ → CFO(+).',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Working capital accounting policies and significant changes disclosed in notes.',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">Notes disclose significant changes in working capital if material.<br>Supplemental: cash paid for interest / taxes.</div><div style="background:#faeeda;border-radius:6px;padding:8px 10px;margin-top:8px;font-size:11px"><strong>FAR TBS Tip:</strong> 간접법 SCF 문제에서 WC 변동 조정은 최빈출 계산 영역. 기초·기말 B/S 주고 변동 계산하는 형태로 출제.</div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Revenue/COGS on I/S; cash timing differs',
+          bs: 'AR, Inventory, AP reflect working capital positions',
+          cfo: 'AR↑ (−$5K), Inventory↓ (+$3K), AP↑ (+$4K) = net +$2,000',
+        },
       },
       {
         id: 'scf_proceeds',
         label: 'Disposal Proceeds Classification',
         topicId: 'SCF_003',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Equipment sold for $25,000 cash.\nOriginal cost $40,000 / Acc. Dep. $22,000 / Book value $18,000\nGain on sale: $25,000 − $18,000 = $7,000',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Remove asset and accumulated depreciation; recognize cash proceeds and gain.',
+            entries: [
+              { account: 'Cash',                  type: 'dr', amount: 25000 },
+              { account: 'Accumulated Depreciation', type: 'dr', amount: 22000 },
+              { account: 'Equipment',             type: 'cr', amount: 40000 },
+              { account: 'Gain on Sale',          type: 'cr', amount:  7000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Asset Disposal',
+              je: [
+                { acct: 'Cash',                     type: 'dr', sign: '+$25,000', signClass: 'sign-positive', reason: 'Full proceeds received' },
+                { acct: 'Accumulated Depreciation', type: 'dr', sign: '+$22,000', signClass: 'sign-positive', reason: 'Clear contra-asset balance' },
+                { acct: 'Equipment',                type: 'cr', sign: '($40,000)', signClass: 'sign-negative', reason: 'Remove original cost' },
+                { acct: 'Gain on Sale',             type: 'cr', sign: '($7,000)',  signClass: 'sign-negative', reason: 'Excess of proceeds over BV' },
+              ],
+              note: 'SCF: Full $25,000 cash → CFI. Gain $7,000 in NI → deduct from CFO indirect.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: 'Equipment and Acc. Dep. cleared; Gain recorded; Cash received.',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Equipment',                dr: ['40,000 (cost)'],  cr: ['40,000 (removed)'] },
+                { name: 'Accumulated Depreciation', dr: ['22,000 (cleared)'], cr: ['22,000 (balance)'] },
+                { name: 'Cash',                     dr: ['25,000'],         cr: [] },
+                { name: 'Gain on Sale',             dr: [],                 cr: ['7,000'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: 'After disposal: Equipment gone, Gain on Sale is a Cr income item.',
+            drill: {
+              title: 'Adjusted Trial Balance — disposal items',
+              tb: [
+                { acct: 'Cash (proceeds)',   dr: '$25,000', cr: '—',     highlight: true },
+                { acct: 'Gain on Sale',      dr: '—',       cr: '$7,000', highlight: true },
+                { acct: 'Equipment (net 0)', dr: '—',       cr: '—',      highlight: false },
+              ],
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Gain on Sale $7,000 included in Net Income (other income line).',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">Gain on Sale of Equipment: <span style="color:#0f6e56;font-weight:600">+$7,000</span><br>This gain is in Net Income → must be removed from CFO indirect.<br>Full proceeds ($25,000) go to CFI.</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Equipment (net) removed. Cash increases by $25,000.',
+            drill: {
+              title: 'Balance Sheet impact',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">Assets:<br>  Cash: +$25,000<br>  Equipment cost: −$40,000<br>  Acc. Dep: −$22,000<br>  Net PP&E change: −$18,000 (BV removed)<br>SE: Retained Earnings +$7,000 (net gain via NI)</div>`,
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'CFO: Gain ($7,000) deducted from NI (non-operating)\nCFI: Proceeds from sale +$25,000 (full amount)',
+            drill: {
+              title: 'SCF — Disposal Proceeds Classification',
+              custom: `<div style="font-size:11px;line-height:1.9;color:#4a5568"><strong>CFO (Indirect):</strong><br>Net Income: $XXX<br><span style="color:#c2410c">− Gain on Sale: ($7,000)</span> ← non-operating, remove from CFO<br><br><strong>CFI:</strong><br><span style="color:#0f6e56">+ Proceeds from sale of equipment: $25,000</span> ← full cash amount<br><span style="color:#0f6e56;font-weight:600">✓ Gain 제거 후 전체 수령액을 CFI로</span></div>`,
+              trap: 'Gain/Loss → CFO 제거. 전체 현금 수령액 → CFI. 실수: gain만 CFI, 나머지 CFO로 분리하면 안 됨. 무조건 전체 proceeds = CFI.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'PP&E disposals may be disclosed in notes with gain/loss details.',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">Notes disclose:<br>① PP&E activity (beginning cost → additions → disposals → ending)<br>② Gain/loss on disposal details</div><div style="background:#faeeda;border-radius:6px;padding:8px 10px;margin-top:8px;font-size:11px"><strong>FAR TBS Tip:</strong> SCF 문제에서 "proceeds from sale"은 무조건 CFI. I/S의 gain/loss는 CFO에서 반대 방향으로 제거. 두 단계 분리 필수.</div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Gain on Sale +$7,000 included in NI',
+          bs: 'Cash +$25,000; Equipment (net) removed −$18,000',
+          se: 'RE ↑ via Gain on Sale $7,000',
+          cfo: 'Gain $7,000 deducted from CFO indirect (non-operating)',
+          cfi: 'Full proceeds $25,000 → CFI (inflow)',
+        },
       },
       {
         id: 'scf_noncash_suppl',
         label: 'Non-cash Supplemental Disclosure',
         topicId: 'SCF_004',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Two non-cash transactions:\n① Equipment $50,000: paid cash $20,000 + issued note $30,000\n② Converted bonds $15,000 → common stock (bond-to-equity swap)',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Non-cash portions excluded from SCF main body; disclosed as supplemental.',
+            entries: [
+              { account: 'Equipment',       type: 'dr', amount: 50000 },
+              { account: 'Cash',            type: 'cr', amount: 20000 },
+              { account: 'Notes Payable',   type: 'cr', amount: 30000 },
+            ],
+            drill: {
+              title: 'Journal Entries — Non-cash Transactions',
+              je: [
+                { acct: 'Equipment',     type: 'dr', sign: '+$50,000', signClass: 'sign-positive', reason: 'Total cost of asset acquired' },
+                { acct: 'Cash',          type: 'cr', sign: '($20,000)', signClass: 'sign-negative', reason: 'Cash portion → CFI outflow only' },
+                { acct: 'Notes Payable', type: 'cr', sign: '($30,000)', signClass: 'sign-negative', reason: 'Non-cash portion → supplemental only' },
+              ],
+              note: 'SCF: Only $20,000 cash appears in CFI. $30,000 note disclosed in supplemental only.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: 'Equipment, Cash, Notes Payable, and bond conversion accounts.',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Equipment',       dr: ['50,000'],  cr: [] },
+                { name: 'Cash',            dr: [],          cr: ['20,000 (CFI)'] },
+                { name: 'Notes Payable',   dr: [],          cr: ['30,000 (non-cash)'] },
+                { name: 'Bonds Payable',   dr: ['15,000'],  cr: [] },
+                { name: 'Common Stock+APIC', dr: [],        cr: ['15,000'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: 'Full asset and liability balances reflected; cash only the $20,000 portion.',
+            drill: {
+              title: 'Adjusted Trial Balance',
+              tb: [
+                { acct: 'Equipment',         dr: '$50,000', cr: '—',     highlight: true },
+                { acct: 'Cash (outflow)',     dr: '—',       cr: '$20,000', highlight: true },
+                { acct: 'Notes Payable',     dr: '—',       cr: '$30,000', highlight: true },
+                { acct: 'Bonds Payable',     dr: '$15,000', cr: '—',     highlight: true },
+                { acct: 'Common Stock/APIC', dr: '—',       cr: '$15,000', highlight: true },
+              ],
+              trap: 'SCF에 나타나는 현금 흐름: CFI −$20,000만. 나머지는 supplemental.',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Non-cash transactions do not affect I/S directly.',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">Non-cash financing/investing transactions: no I/S impact.<br>Asset acquired → future depreciation will reduce NI.<br>Bond conversion: no gain/loss in most cases (book value to equity).</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Equipment +$50K / Notes Payable +$30K / Bonds Payable −$15K / Equity +$15K / Cash −$20K',
+            drill: {
+              title: 'Balance Sheet impact',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">Assets:<br>  Equipment: +$50,000<br>  Cash: −$20,000<br>Liabilities:<br>  Notes Payable: +$30,000<br>  Bonds Payable: −$15,000<br>Equity:<br>  Common Stock/APIC: +$15,000</div>`,
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'CFI: Equipment purchase cash portion (−$20,000) only.\nCFF: Bond conversion does NOT appear in main SCF body.\nSupplemental: Disclose $30,000 note + $15,000 bond-to-equity',
+            drill: {
+              title: 'SCF — Supplemental Disclosure',
+              custom: `<div style="font-size:11px;line-height:1.9;color:#4a5568"><strong>CFI:</strong><br><span style="color:#c2410c">− Purchase of equipment (cash): ($20,000)</span><br><br><strong>Supplemental Schedule — Non-cash Inv/Fin:</strong><br><span style="color:#0f6e56">Equipment acquired via note payable: $30,000</span><br><span style="color:#0f6e56">Bonds converted to common stock: $15,000</span><br><br><span style="font-weight:600">Non-cash 부분은 SCF 본문 제외, 보충 공시에만 기재</span></div>`,
+              trap: '혼합 거래: 현금 부분만 SCF 본문에 기재. 비현금 부분은 별도 supplemental 공시. 전체 $50K를 CFI로 기재하면 오답.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Supplemental non-cash schedule is a required disclosure under ASC 230.',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">Required supplemental disclosures (ASC 230):<br>① Cash paid for interest<br>② Cash paid for income taxes<br>③ <strong>Non-cash investing and financing activities</strong></div><div style="background:#faeeda;border-radius:6px;padding:8px 10px;margin-top:8px;font-size:11px"><strong>FAR TBS Tip:</strong> 비현금 거래는 SCF 본문 제외 → 보충 공시. 흔한 예: 부채→주식 전환, 자산 교환, 자산 취득 + 부채 발행. 현금 부분만 본문, 비현금 부분만 supplemental.</div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          bs: 'Equipment +$50K; Notes Payable +$30K; Bonds −$15K; Equity +$15K; Cash −$20K',
+          cfi: 'Cash purchase of equipment: −$20,000 only',
+          notes: 'Non-cash: equipment via note $30K + bond-to-equity $15K → supplemental',
+        },
       },
     ],
   },
