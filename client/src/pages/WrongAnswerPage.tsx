@@ -70,19 +70,33 @@ interface Msg {
 
 // ── Parse Helpers ────────────────────────────────────────────────
 function matchTopic(t: string): string | null {
+  // Specific topics first to avoid partial false-matches
+  if (/accounting change|change in principle|change in estimate/.test(t)) return 'Accounting Changes';
+  if (/error correct|restatement/.test(t)) return 'Error Correction';
+  if (/subsequent event/.test(t)) return 'Subsequent Events';
+  if (/consolidat|\bnci\b/.test(t)) return 'Consolidation';
+  if (/stockholders.equity|\bse\s+worksheet/.test(t)) return 'Stockholders Equity';
+  if (/fair value|\blevel [123]\b/.test(t)) return 'Fair Value';
+  if (/dupont|\broa\b|\broe\b|\bratio\b/.test(t)) return 'Ratio Analysis';
+  if (/contingenc/.test(t)) return 'Contingencies';
+  if (/intangible|patent|\br&d\b/.test(t)) return 'Intangibles';
+  if (/receivable|cash equivalent/.test(t)) return 'Cash & Receivables';
+  if (/partnership/.test(t)) return 'Partnerships';
+  if (/governmental|gov fund|enterprise fund|general fund|modified accrual/.test(t)) return 'Government';
+  if (/\bnfp\b|not-for-profit|nonprofit|nongovernmental/.test(t)) return 'NFP';
+  // Existing topics
   if (/inventory|lifo|fifo|dollar.value/.test(t)) return 'Inventory';
   if (/bond|debenture|coupon/.test(t)) return 'Bond';
   if (/lease|lessee|lessor|rou asset/.test(t)) return 'Lease';
   if (/revenue|recognition|contract/.test(t)) return 'Revenue';
-  if (/depreciation|pp&e|property,\s*plant/.test(t)) return 'PPE';
+  if (/depreciation|pp&e|property,\s*plant|impairment/.test(t)) return 'PPE';
   if (/deferred tax|dta|dtl|temporary difference/.test(t)) return 'Deferred Tax';
   if (/\beps\b|earnings per share|diluted|basic earnings/.test(t)) return 'EPS';
-  if (/cash flow|operating activities|\bscf\b/.test(t)) return 'SCF';
+  if (/cash flow|operating activities|\bscf\b|\bcfo\b|\bcfi\b/.test(t)) return 'SCF';
   if (/equity method|investee/.test(t)) return 'Equity Method';
-  if (/\bnfp\b|not-for-profit|governmental/.test(t)) return 'NFP/Gov';
   if (/foreign currency|exchange rate|\bfx\b/.test(t)) return 'Foreign Currency';
-  if (/\baro\b|asset retirement/.test(t)) return 'ARO';
-  if (/note payable|promissory note/.test(t)) return 'Note Payable';
+  if (/\baro\b|asset retirement|decommission/.test(t)) return 'ARO';
+  if (/note payable|promissory note|balloon/.test(t)) return 'Note Payable';
   return null;
 }
 
