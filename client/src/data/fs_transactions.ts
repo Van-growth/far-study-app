@@ -2287,29 +2287,471 @@ export const TX_GROUPS: TxGroup[] = [
         id: 'afs_sold',
         label: 'AFS Sale — Realized + Reclassify',
         topicId: 'INVEST_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'AFS securities sold. Cost $100,000 / AOCI (unrealized gain) $5,000 / FV $105,000 / Proceeds $108,000\nRealized Gain = Proceeds $108,000 − Cost $100,000 = $8,000',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Remove AFS at cost; remove AOCI; record proceeds; recognize realized gain in Net Income.',
+            entries: [
+              { account: 'Cash',                          type: 'dr', amount: 108000 },
+              { account: 'OCI — Unrealized Gain (AOCI)',  type: 'dr', amount:   5000 },
+              { account: 'AFS Securities',                type: 'cr', amount: 100000 },
+              { account: 'Fair Value Adjustment',         type: 'cr', amount:   5000 },
+              { account: 'Realized Gain on AFS',          type: 'cr', amount:   8000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Cash',                         type: 'dr', sign: '+$108,000', signClass: 'sign-positive', reason: '현금 수취 → Debit → 양수' },
+                { acct: 'OCI reclassification (AOCI)',  type: 'dr', sign: '+$5,000',   signClass: 'sign-positive', reason: 'AOCI 제거 → Debit (reclassification adjustment)' },
+                { acct: 'AFS Securities',               type: 'cr', sign: '($100,000)', signClass: 'sign-negative', reason: '원가 제거 → Credit → 음수' },
+                { acct: 'Fair Value Adjustment',        type: 'cr', sign: '($5,000)',   signClass: 'sign-negative', reason: 'FV 조정 제거 → Credit → 음수' },
+                { acct: 'Realized Gain on AFS',         type: 'cr', sign: '($8,000)',   signClass: 'sign-negative', reason: '실현이익 → Credit → NI 직행' },
+              ],
+              note: 'Realized Gain = Proceeds $108,000 − Cost $100,000 = $8,000. AOCI $5,000 reclassified to NI.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: 'Remove AFS carrying value; reclassify AOCI; recognize Realized Gain in NI.',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Cash',                    dr: ['108,000 ★'], cr: [] },
+                { name: 'OCI — Unrealized Gain',   dr: ['5,000 ★'],   cr: [] },
+                { name: 'AFS Securities',          dr: [],            cr: ['100,000 ★'] },
+                { name: 'Fair Value Adjustment',   dr: [],            cr: ['5,000 ★'] },
+                { name: 'Realized Gain on AFS',    dr: [],            cr: ['8,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: 'Cash Dr $108,000 / OCI Dr $5,000 / AFS Cr $100,000 / FV Adj Cr $5,000 / Gain Cr $8,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Cash',                 dr: '$108,000', cr: '—',        highlight: true },
+                { acct: 'AFS Securities',       dr: '—',        cr: '$100,000', highlight: true },
+                { acct: 'Realized Gain on AFS', dr: '—',        cr: '$8,000',   highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Realized Gain on AFS +$8,000 → Other Income → Net Income ↑\n⚠ Previously in AOCI $5,000 now reclassified to NI',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px"><div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid #f3f4f6"><span style="color:#4a5568">Realized Gain on AFS</span><span style="color:#0f6e56;font-weight:600">+$8,000</span></div><div style="margin-top:6px;font-size:11px;color:#6b7280">AOCI $5,000 reclassified → NI 포함. 이중 계상 아님.</div></div>`,
+              trap: 'AFS 매각 시 AOCI의 미실현이익 → NI로 reclassify. 이중 계상 아님.',
+            },
+          },
+          {
+            step: 'oci',
+            label: 'Other Comprehensive Income',
+            note: 'Reclassification adjustment: ($5,000) removed from AOCI\nOCI this period = ($5,000) reclassification out',
+            drill: {
+              title: 'OCI — Reclassification Adjustment',
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.8">OCI this period: <strong>−$5,000</strong> (reclassification out to NI)<br>AOCI balance decreases $5,000<div style="margin-top:8px;padding:5px 8px;background:#eeedfe;border-radius:4px;color:#3c3489;font-size:10px">매각 시: Previously recognized in AOCI → now flows through NI as Realized Gain</div></div>`,
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'AOCI −$5,000 (reclassified to NI)\nRetained Earnings +$8,000 (via Net Income)\nNet SE change +$3,000',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">AOCI 열: −$5,000 (reclassification out)<br>Retained Earnings 열: +$8,000 (Net Income 경유)<br>Net SE change: +$3,000</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets: Cash +$108,000 / AFS Securities −$105,000 (cost + FV adj)\nSE: AOCI −$5,000 / RE +$8,000',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Cash',              dr: '+$108,000',  cr: '($108,000)', highlight: true },
+                { acct: 'AFS Securities',    dr: '−$105,000',  cr: '($105,000)', highlight: true },
+                { acct: 'AOCI (SE)',         dr: '−$5,000',    cr: '($5,000)',   highlight: true },
+                { acct: 'Retained Earnings', dr: '+$8,000',    cr: '($8,000)',   highlight: true },
+              ],
+              trap: 'Net asset change = +$3,000 = Net SE change ✓ (Cash +108K − AFS −105K = +3K)',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Investing Activities: Proceeds $108,000 → inflow\nIndirect CFO: Realized Gain ($8,000) → remove from Net Income',
+            drill: {
+              title: 'Statement of Cash Flows',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>CFO (Indirect):</strong> Realized Gain → 제거 (−$8,000)<br><strong>CFI:</strong> Proceeds from AFS sale → inflow (+$108,000)</div>`,
+              trap: 'Realized Gain → CFO에서 제거(-). 현금 전액 $108,000은 CFI.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Cost / Proceeds / Realized gain / Reclassification from AOCI',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① AFS sold: Cost $100,000 / Proceeds $108,000<br>② Realized gain: $8,000<br>③ AOCI reclassification: $5,000 out<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: AOCI reclassification → Realized gain 계산 시 이중 계상 주의</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Realized Gain +$8,000 → Net Income ↑',
+          is_oci: 'AOCI reclassification ($5,000) out',
+          bs: 'AFS Securities −$105,000 / Cash +$108,000 / AOCI −$5,000',
+          se: 'RE +$8,000 / AOCI −$5,000',
+          cfo: 'Realized Gain removed from CFO (−$8,000)',
+          cfi: 'Proceeds from AFS sale → Investing inflow (+$108,000)',
+        },
       },
       {
         id: 'trading_fv',
         label: 'Trading Securities FV Change',
         topicId: 'INVEST_002',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Trading securities FV increases from $80,000 to $85,000.\nUnrealized Gain = $5,000',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Trading securities: FV changes go directly to Net Income (not OCI).',
+            entries: [
+              { account: 'Fair Value Adjustment — Trading', type: 'dr', amount: 5000 },
+              { account: 'Unrealized Gain on Trading',      type: 'cr', amount: 5000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'FV Adjustment — Trading', type: 'dr', sign: '+$5,000', signClass: 'sign-positive', reason: '자산 증가 → Debit → 양수' },
+                { acct: 'Unrealized Gain on Trading', type: 'cr', sign: '($5,000)', signClass: 'sign-negative', reason: 'NI 직행 → Credit → 음수' },
+              ],
+              note: 'Trading: unrealized gain/loss → Net Income immediately. AFS와 반대.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• FV Adjustment (Dr — increases asset carrying value)\n• Unrealized Gain on Trading (Cr — goes straight to NI)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'FV Adjustment — Trading',  dr: ['5,000 ★'], cr: [] },
+                { name: 'Unrealized Gain on Trading', dr: [],         cr: ['5,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: '• FV Adjustment — Trading   Dr  $5,000\n• Unrealized Gain on Trading Cr  $5,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'FV Adjustment — Trading',   dr: '$5,000', cr: '—',      highlight: true },
+                { acct: 'Unrealized Gain on Trading', dr: '—',      cr: '$5,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Unrealized Gain on Trading +$5,000 → Other Income → Net Income ↑\n⚠ Even though NOT sold yet — Trading goes to NI immediately',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px"><div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid #f3f4f6"><span style="color:#4a5568">Unrealized Gain on Trading</span><span style="color:#0f6e56;font-weight:600">+$5,000</span></div><div style="margin-top:6px;font-size:11px;color:#0f6e56">미매각이라도 NI 직행 — Trading의 핵심 특징</div></div>`,
+              trap: 'Trading = NI 즉시. AFS = OCI. HTM = FV 측정 없음. 이 3가지 구분이 핵심.',
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Net Income ↑ $5,000 → Retained Earnings ↑ $5,000\nNo AOCI impact (not OCI)',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: +$5,000 (Net Income 경유)<br>AOCI 열: 변동 없음 (Trading → NI, not OCI)</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets: Trading Securities +$5,000 (FV adjustment)\nSE: Retained Earnings +$5,000',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Trading Securities',  dr: '+$5,000', cr: '($5,000)', highlight: true },
+                { acct: 'Retained Earnings',   dr: '+$5,000', cr: '($5,000)', highlight: true },
+              ],
+              trap: 'Trading: unrealized gain → NI → RE. AFS: unrealized gain → OCI → AOCI. B/S 표시 위치 다름.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Indirect Method: Unrealized Gain → remove from CFO (−$5,000)\n⚠ Non-cash item: no actual cash received',
+            drill: {
+              title: 'Statement of Cash Flows — Indirect Method',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>Indirect Method:</strong> Unrealized Gain (non-cash) → 제거 (−$5,000)<br>현금 없음 → CFI/CFF 영향 없음</div>`,
+              trap: 'Unrealized gain = 비현금 → CFO에서 제거(-). AFS 미실현이익(OCI)은 NI에 없으므로 조정 없음.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: FV / Cost / Unrealized gain included in Net Income',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Trading securities: Cost $80,000 / FV $85,000<br>② Unrealized gain included in Net Income: $5,000<br>③ Classification basis (trading intent)<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: Trading vs AFS 분류 → NI vs OCI 처리 결정</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Unrealized Gain +$5,000 → Net Income ↑ (even unsold)',
+          bs: 'Trading Securities +$5,000',
+          se: 'Retained Earnings +$5,000 (no AOCI)',
+          cfo: 'Unrealized Gain removed from CFO indirect (−$5,000)',
+        },
       },
       {
         id: 'crypto_fv_up',
         label: 'Crypto FV Change (ASU 2023-08)',
         topicId: 'FS_CRYPTO_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Company holds Bitcoin. FV increases from $50,000 to $58,000.\nUnrealized Gain = $8,000 (ASU 2023-08 effective for fiscal years after Dec 15, 2024)',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'ASU 2023-08: Crypto assets measured at FV each period. Changes → Net Income directly.',
+            entries: [
+              { account: 'Crypto Asset (Bitcoin)',   type: 'dr', amount: 8000 },
+              { account: 'Unrealized Gain — Crypto', type: 'cr', amount: 8000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Crypto Asset (Bitcoin)',   type: 'dr', sign: '+$8,000', signClass: 'sign-positive', reason: '자산 FV 증가 → Debit → 양수' },
+                { acct: 'Unrealized Gain — Crypto', type: 'cr', sign: '($8,000)', signClass: 'sign-negative', reason: 'NI 직행 → Credit → 음수' },
+              ],
+              note: 'ASU 2023-08: Crypto = FV model, gains/losses → NI. No longer indefinite-lived intangible.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• Crypto Asset (Dr — FV increases)\n• Unrealized Gain — Crypto (Cr — NI, not OCI)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Crypto Asset (Bitcoin)',   dr: ['8,000 ★'], cr: [] },
+                { name: 'Unrealized Gain — Crypto', dr: [],          cr: ['8,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: '• Crypto Asset   Dr  $8,000\n• Unrealized Gain — Crypto   Cr  $8,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Crypto Asset (Bitcoin)',   dr: '$8,000', cr: '—',      highlight: true },
+                { acct: 'Unrealized Gain — Crypto', dr: '—',      cr: '$8,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Unrealized Gain — Crypto +$8,000 → Other Income → Net Income ↑',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px"><div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid #f3f4f6"><span style="color:#4a5568">Unrealized Gain — Crypto</span><span style="color:#0f6e56;font-weight:600">+$8,000</span></div><div style="margin-top:6px;font-size:11px;color:#6b7280">ASU 2023-08: FV model → NI 직행 (both gains and losses)</div></div>`,
+              trap: 'ASU 2023-08 이전: Crypto = indefinite-lived intangible → impairment only, no write-up. 이후: FV model → 양방향.',
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Net Income ↑ $8,000 → Retained Earnings ↑ $8,000',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: +$8,000 (Net Income 경유)<br>AOCI 열: 변동 없음 (Crypto → NI, not OCI)</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets: Crypto Asset +$8,000\nSE: Retained Earnings +$8,000',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Crypto Asset (Bitcoin)', dr: '+$8,000', cr: '($8,000)', highlight: true },
+                { acct: 'Retained Earnings',      dr: '+$8,000', cr: '($8,000)', highlight: true },
+              ],
+              trap: 'ASU 2023-08 이전: 하락만 인식 (impairment). 이후: 상승·하락 모두 NI 인식.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Indirect Method: Unrealized Gain → remove from CFO (−$8,000)\nActual crypto purchase/sale → Investing Activities',
+            drill: {
+              title: 'Statement of Cash Flows — Indirect Method',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>Indirect Method:</strong> Unrealized Gain (non-cash) → 제거 (−$8,000)<br><strong>Crypto 매수/매도:</strong> Investing Activities<br>현금 없는 FV 변동 → add back/remove 처리</div>`,
+              trap: 'Crypto FV gain = 비현금 → CFO에서 제거(-). 실제 매수/매도 현금 → CFI.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Crypto type / Cost / FV / Unrealized gain / ASU 2023-08 adoption',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Bitcoin: Cost $50,000 / FV $58,000<br>② Unrealized gain: $8,000 (included in NI)<br>③ ASU 2023-08 adoption: FV model effective<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: ASU 2023-08 적용 전/후 비교 → impairment only vs FV양방향</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Unrealized Gain — Crypto +$8,000 → Net Income ↑',
+          bs: 'Crypto Asset +$8,000',
+          se: 'Retained Earnings +$8,000',
+          cfo: 'Unrealized Gain removed from CFO (−$8,000)',
+        },
       },
       {
         id: 'equity_method',
         label: 'Equity Method — Income Recognition',
         topicId: 'EQM_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Investor owns 30% of investee. Investee reports Net Income $40,000 / Dividends $10,000.\nInvestor recognizes: Income $12,000 / Dividend reduces investment $3,000',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Equity method: recognize proportionate share of investee NI; dividends reduce investment.',
+            entries: [
+              { account: 'Investment in Investee', type: 'dr', amount: 12000 },
+              { account: 'Equity in Earnings',     type: 'cr', amount: 12000 },
+            ],
+            drill: {
+              title: 'Journal Entry — NI recognition + Dividend',
+              je: [
+                { acct: 'Investment in Investee', type: 'dr', sign: '+$12,000', signClass: 'sign-positive', reason: '투자자산 증가 → Debit ($40,000 × 30%)' },
+                { acct: 'Equity in Earnings',     type: 'cr', sign: '($12,000)', signClass: 'sign-negative', reason: '수익 → Credit → NI 직행' },
+              ],
+              note: 'Equity in Earnings = $40,000 × 30% = $12,000. Dividend entry separate: Dr Cash $3,000 / Cr Investment $3,000.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• Investment: +$12,000 (NI share) −$3,000 (dividend) = net +$9,000\n• Cash +$3,000 (dividend received)\n• Equity in Earnings +$12,000 (NI)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Investment in Investee', dr: ['12,000 NI ★'], cr: ['3,000 div'] },
+                { name: 'Equity in Earnings',     dr: [],             cr: ['12,000 ★'] },
+                { name: 'Cash',                   dr: ['3,000 ★'],   cr: [] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: '• Investment in Investee   Dr  $9,000 (net after dividend)\n• Equity in Earnings       Cr  $12,000\n• Cash                     Dr  $3,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Investment in Investee', dr: '$9,000',  cr: '—',       highlight: true },
+                { acct: 'Equity in Earnings',     dr: '—',       cr: '$12,000', highlight: true },
+                { acct: 'Cash (dividend)',         dr: '$3,000',  cr: '—',       highlight: true },
+              ],
+              note: 'Investment net: +$12,000 NI − $3,000 div = $9,000',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Equity in Earnings of Investee +$12,000 → Other Income → Net Income ↑',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px"><div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid #f3f4f6"><span style="color:#4a5568">Equity in Earnings of Investee</span><span style="color:#0f6e56;font-weight:600">+$12,000</span></div><div style="margin-top:6px;font-size:11px;color:#6b7280">Dividend received → Investment 감소 (수익 아님)</div></div>`,
+              trap: 'Equity method: NI 지분 → Investment 증가 + Income 인식. Dividend → Investment 감소 (수익 아님).',
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Net Income ↑ $12,000 → Retained Earnings ↑ $12,000',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: +$12,000 (Net Income 경유)<br>AOCI, Common Stock, APIC 열: 변동 없음</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets: Investment in Investee +$9,000 (NI $12,000 − Dividend $3,000)\nAssets: Cash +$3,000 (dividend received)\nSE: Retained Earnings +$12,000',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Cash (dividend)',        dr: '+$3,000',  cr: '($3,000)',  highlight: true },
+                { acct: 'Investment in Investee', dr: '+$9,000',  cr: '($9,000)',  highlight: true },
+                { acct: 'Retained Earnings',      dr: '+$12,000', cr: '($12,000)', highlight: true },
+              ],
+              trap: 'Dividend received → reduces Investment (not revenue). Investment 잔액 = Cost + NI share − Dividends.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Indirect Method: Equity in Earnings ($12,000) → remove from CFO (non-cash)\nDividend received $3,000 → add to CFO\nNet CFO impact = ($9,000)',
+            drill: {
+              title: 'Statement of Cash Flows — Indirect Method',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>CFO (Indirect):</strong> Equity earnings → 제거 (−$12,000)<br><strong>CFO:</strong> Dividend received → +$3,000<br><strong>Net CFO impact:</strong> −$9,000</div>`,
+              trap: 'Equity method income = 비현금 → CFO에서 제거. 실제 현금은 배당 수취액만.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Ownership % / Investee NI / Investment carrying amount / Equity in earnings',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Ownership: 30% / Investee NI: $40,000<br>② Equity in earnings: $12,000<br>③ Investment carrying amount: Cost + cumulative NI − cumulative dividends<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: Investment carrying amount 역산 → NI share + div 추적</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Equity in Earnings +$12,000 → Net Income ↑',
+          bs: 'Investment +$9,000 / Cash +$3,000',
+          se: 'Retained Earnings +$12,000',
+          cfo: 'Equity earnings removed (−$12,000) / Dividend received +$3,000',
+        },
       },
     ],
   },
@@ -2322,43 +2764,675 @@ export const TX_GROUPS: TxGroup[] = [
         id: 'stock_issue',
         label: 'Stock Issuance',
         topicId: 'EQUITY_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Company issues 1,000 shares of $5 par common stock at $18 per share.\nProceeds = $18,000 / Common Stock = $5,000 / APIC = $13,000',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Common Stock at par; excess over par → APIC.',
+            entries: [
+              { account: 'Cash',         type: 'dr', amount: 18000 },
+              { account: 'Common Stock', type: 'cr', amount:  5000 },
+              { account: 'APIC',         type: 'cr', amount: 13000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Cash',         type: 'dr', sign: '+$18,000', signClass: 'sign-positive', reason: '현금 수취 → Debit → 양수' },
+                { acct: 'Common Stock', type: 'cr', sign: '($5,000)',  signClass: 'sign-negative', reason: 'Par value × shares → Credit → 음수' },
+                { acct: 'APIC',        type: 'cr', sign: '($13,000)', signClass: 'sign-negative', reason: '초과분 → Credit → 음수' },
+              ],
+              note: 'Common Stock = 1,000 × $5 par = $5,000. APIC = ($18 − $5) × 1,000 = $13,000.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• Cash (Dr — asset increases)\n• Common Stock (Cr — par value)\n• APIC (Cr — excess over par)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Cash',         dr: ['18,000 ★'], cr: [] },
+                { name: 'Common Stock', dr: [],           cr: ['5,000 ★'] },
+                { name: 'APIC',        dr: [],           cr: ['13,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: '• Cash   Dr  $18,000\n• Common Stock   Cr  $5,000\n• APIC   Cr  $13,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Cash',         dr: '$18,000', cr: '—',       highlight: true },
+                { acct: 'Common Stock', dr: '—',       cr: '$5,000',  highlight: true },
+                { acct: 'APIC',        dr: '—',       cr: '$13,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'No income statement impact.\nStock issuance is a financing transaction.',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px;padding:6px 8px;background:#f3f4f6;border-radius:4px;color:#6b7280">No I/S impact.<br>Stock issuance = financing transaction.</div>`,
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Common Stock +$5,000 / APIC +$13,000\nTotal SE +$18,000\nNo Retained Earnings impact',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Common Stock 열: +$5,000<br>APIC 열: +$13,000<br>Retained Earnings 열: 변동 없음</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets: Cash +$18,000\nSE: Common Stock +$5,000 / APIC +$13,000',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Cash',         dr: '+$18,000', cr: '($18,000)', highlight: true },
+                { acct: 'Common Stock', dr: '+$5,000',  cr: '($5,000)',  highlight: true },
+                { acct: 'APIC',        dr: '+$13,000', cr: '($13,000)', highlight: true },
+              ],
+              trap: 'Common stock account = par value only. FMV − par → APIC. No income effect.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Financing Activities inflow: Cash received $18,000',
+            drill: {
+              title: 'Statement of Cash Flows — Financing Activities',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>CFF inflow:</strong> Proceeds from stock issuance +$18,000<br>CFO / CFI: 영향 없음</div>`,
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Shares issued / Par value / Proceeds',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Shares issued: 1,000 / Par value: $5<br>② Issue price: $18 / Total proceeds: $18,000<br>③ Common Stock $5,000 / APIC $13,000</div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'No income impact',
+          bs: 'Cash +$18,000 / Common Stock +$5,000 / APIC +$13,000',
+          se: 'Common Stock +$5,000 / APIC +$13,000',
+          cff: 'Stock issuance proceeds → Financing Activities inflow (+$18,000)',
+        },
       },
       {
         id: 'ts_buy',
         label: 'Treasury Stock Purchase',
         topicId: 'EQUITY_002',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Company repurchases 500 shares of its own stock at $20/share.\nTreasury Stock cost = $10,000',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Cost method: record Treasury Stock at repurchase price.',
+            entries: [
+              { account: 'Treasury Stock', type: 'dr', amount: 10000 },
+              { account: 'Cash',           type: 'cr', amount: 10000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Treasury Stock', type: 'dr', sign: '+$10,000', signClass: 'sign-positive', reason: 'Contra equity → Debit → SE 감소' },
+                { acct: 'Cash',           type: 'cr', sign: '($10,000)', signClass: 'sign-negative', reason: '현금 유출 → Credit → 음수' },
+              ],
+              note: 'Treasury Stock = contra equity (Dr balance reduces total SE). Not an asset.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• Treasury Stock (Dr balance — contra equity)\n• Cash (Cr — decreases)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Treasury Stock', dr: ['10,000 ★'], cr: [] },
+                { name: 'Cash',           dr: [],           cr: ['10,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: '• Treasury Stock   Dr  $10,000\n• Cash              Cr  $10,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Treasury Stock', dr: '$10,000', cr: '—',       highlight: true },
+                { acct: 'Cash',           dr: '—',       cr: '$10,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'No income statement impact.\nTreasury stock transactions never affect Net Income.',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px;padding:6px 8px;background:#f3f4f6;border-radius:4px;color:#6b7280">No I/S impact.<br>Treasury stock transactions never affect Net Income.</div>`,
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Treasury Stock −$10,000 (contra equity)\nTotal SE decreases by $10,000',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Treasury Stock 열: −$10,000 (contra equity, shown as deduction)<br>Common Stock, APIC, RE, AOCI 열: 변동 없음</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets: Cash −$10,000\nSE: Treasury Stock −$10,000 (shown as deduction in SE section)',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Cash',           dr: '−$10,000', cr: '($10,000)', highlight: true },
+                { acct: 'Treasury Stock', dr: '−$10,000', cr: '($10,000)', highlight: true },
+              ],
+              trap: 'Treasury Stock = contra equity (not asset). Never affects NI. Shown as negative in SE.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Financing Activities outflow: Cash paid $10,000',
+            drill: {
+              title: 'Statement of Cash Flows — Financing Activities',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>CFF outflow:</strong> Treasury stock purchase ($10,000)<br>CFO / CFI: 영향 없음</div>`,
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Shares repurchased / Cost / Treasury stock balance',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Shares repurchased: 500 / Cost: $20/share<br>② Total treasury stock: $10,000<br>③ Cost method applied</div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'No income impact',
+          bs: 'Cash −$10,000 / Treasury Stock −$10,000 (contra equity)',
+          se: 'Treasury Stock −$10,000',
+          cff: 'Treasury stock purchase → Financing Activities outflow ($10,000)',
+        },
       },
       {
         id: 'ts_reissue',
         label: 'Treasury Stock Reissuance',
         topicId: 'EQUITY_002',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Company reissues 500 treasury shares (cost $10,000) at $22/share.\nProceeds = $11,000 / Cost = $10,000 / Excess = $1,000 → APIC',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Cost method reissuance: proceeds > cost → excess to APIC (never to NI).',
+            entries: [
+              { account: 'Cash',                   type: 'dr', amount: 11000 },
+              { account: 'Treasury Stock',          type: 'cr', amount: 10000 },
+              { account: 'APIC — Treasury Stock',   type: 'cr', amount:  1000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Cash',                 type: 'dr', sign: '+$11,000', signClass: 'sign-positive', reason: '현금 수취 → Debit → 양수' },
+                { acct: 'Treasury Stock',       type: 'cr', sign: '($10,000)', signClass: 'sign-negative', reason: 'Contra equity 제거 → Credit → 음수' },
+                { acct: 'APIC — Treasury Stock', type: 'cr', sign: '($1,000)', signClass: 'sign-negative', reason: '초과분 → Credit (NI 아님)' },
+              ],
+              note: 'Excess $1,000 → APIC, never Net Income. If proceeds < cost → reduce APIC then RE.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• Cash (Dr — proceeds received)\n• Treasury Stock (Cr — cost removed)\n• APIC — TS (Cr — excess)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Cash',                  dr: ['11,000 ★'], cr: [] },
+                { name: 'Treasury Stock',        dr: [],           cr: ['10,000 ★'] },
+                { name: 'APIC — Treasury Stock', dr: [],           cr: ['1,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: '• Cash   Dr  $11,000\n• Treasury Stock   Cr  $10,000\n• APIC — TS   Cr  $1,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Cash',                  dr: '$11,000', cr: '—',       highlight: true },
+                { acct: 'Treasury Stock',        dr: '—',       cr: '$10,000', highlight: true },
+                { acct: 'APIC — Treasury Stock', dr: '—',       cr: '$1,000',  highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'No income statement impact.\nGain/Loss on treasury stock → never to NI.',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px;padding:6px 8px;background:#f3f4f6;border-radius:4px;color:#6b7280">No I/S impact.<br>Excess → APIC, never Net Income.</div>`,
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Treasury Stock +$10,000 (removed) / APIC +$1,000\nTotal SE +$11,000',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Treasury Stock 열: +$10,000 (removed — contra equity 감소)<br>APIC 열: +$1,000<br>Total SE: +$11,000</div>`,
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Assets: Cash +$11,000\nSE: Treasury Stock +$10,000 / APIC +$1,000',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Cash',                  dr: '+$11,000', cr: '($11,000)', highlight: true },
+                { acct: 'Treasury Stock (removed)', dr: '+$10,000', cr: '($10,000)', highlight: true },
+                { acct: 'APIC',                  dr: '+$1,000',  cr: '($1,000)',  highlight: true },
+              ],
+              trap: 'Proceeds > cost → APIC. Proceeds < cost → reduce APIC first, then RE. Never NI.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Financing Activities inflow: Proceeds $11,000',
+            drill: {
+              title: 'Statement of Cash Flows — Financing Activities',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>CFF inflow:</strong> Treasury stock reissuance proceeds +$11,000<br>CFO / CFI: 영향 없음</div>`,
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Shares reissued / Proceeds / APIC impact',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Shares reissued: 500 / Proceeds: $22/share ($11,000 total)<br>② Cost: $10,000 / Excess to APIC: $1,000<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR: Proceeds &lt; cost → APIC 먼저 제거, 부족 시 RE 차감. NI 절대 불가.</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'No income impact — never NI',
+          bs: 'Cash +$11,000 / Treasury Stock −$10,000 removed / APIC +$1,000',
+          se: 'Treasury Stock removed / APIC +$1,000',
+          cff: 'Treasury stock reissuance proceeds → Financing inflow (+$11,000)',
+        },
       },
       {
         id: 'cash_div',
         label: 'Cash Dividend — Declaration & Payment',
         topicId: 'RE_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Board declares $0.50/share dividend on 20,000 shares = $10,000 total.\nDeclaration date → record liability. Payment date → pay cash.',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Declaration: Dr RE / Cr Dividends Payable. Payment: Dr Dividends Payable / Cr Cash.',
+            entries: [
+              { account: 'Retained Earnings',  type: 'dr', amount: 10000 },
+              { account: 'Dividends Payable',  type: 'cr', amount: 10000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Declaration date',
+              je: [
+                { acct: 'Retained Earnings', type: 'dr', sign: '+$10,000', signClass: 'sign-positive', reason: 'RE 감소 → Debit → 양수' },
+                { acct: 'Dividends Payable', type: 'cr', sign: '($10,000)', signClass: 'sign-negative', reason: '부채 증가 → Credit → 음수' },
+              ],
+              note: 'Declaration date: liability created. Payment date: Dr Dividends Payable / Cr Cash $10,000.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• Retained Earnings (Dr — direct reduction)\n• Dividends Payable (Cr — current liability)\nAt payment: Dividends Payable Dr / Cash Cr',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Retained Earnings', dr: ['10,000 ★'], cr: [] },
+                { name: 'Dividends Payable', dr: [],           cr: ['10,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: '• Retained Earnings   Dr  $10,000 (reduction)\n• Dividends Payable   Cr  $10,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Retained Earnings', dr: '$10,000', cr: '—',       highlight: true },
+                { acct: 'Dividends Payable', dr: '—',       cr: '$10,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'No income statement impact.\nDividends reduce Retained Earnings directly — not an expense.',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px;padding:6px 8px;background:#f3f4f6;border-radius:4px;color:#6b7280">No I/S impact.<br>Dividends = RE 직접 차감, not an expense.</div>`,
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Retained Earnings −$10,000 (direct reduction)\nNot via Net Income',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: −$10,000 (직접 차감)<br>Common Stock, APIC, AOCI 열: 변동 없음</div>`,
+              trap: 'Dividends ≠ Expense. RE 직접 차감. I/S 영향 없음.',
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'Liabilities: Dividends Payable +$10,000 (at declaration)\nSE: Retained Earnings −$10,000\nAt payment: Cash −$10,000 / Dividends Payable −$10,000',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Dividends Payable',  dr: '+$10,000', cr: '($10,000)', highlight: true },
+                { acct: 'Retained Earnings',  dr: '−$10,000', cr: '($10,000)', highlight: true },
+              ],
+              trap: 'Declaration date: liability created (no cash yet). Payment date: Dividends Payable 제거 + Cash 감소.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Financing Activities outflow: Cash paid $10,000 (at payment date)\n⚠ Declaration creates liability but no cash flow yet',
+            drill: {
+              title: 'Statement of Cash Flows — Financing Activities',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>Declaration date:</strong> 현금 없음 (liability만 생성)<br><strong>Payment date:</strong> CFF outflow ($10,000)</div>`,
+              trap: 'Cash dividend payment → CFF outflow. Declaration date에는 현금 흐름 없음.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Dividend per share / Total amount / Record date / Payment date',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Dividend: $0.50/share × 20,000 shares = $10,000<br>② Record date / Payment date<br>③ Dividends payable balance at year-end</div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'No income impact — dividends not an expense',
+          bs: 'Dividends Payable +$10,000 / RE −$10,000 at declaration',
+          se: 'Retained Earnings −$10,000 (direct)',
+          cff: 'Cash dividend payment → Financing Activities outflow ($10,000)',
+        },
       },
       {
         id: 'stock_div',
         label: 'Stock Dividend Declaration',
         topicId: 'RE_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: '10% stock dividend on 10,000 shares outstanding. FMV $15/share, Par $5.\nNew shares = 1,000 / FMV = $15,000 / Common Stock = $5,000 / APIC = $10,000',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Small stock dividend (<20-25%): at FMV. Large stock dividend: at par only.',
+            entries: [
+              { account: 'Retained Earnings', type: 'dr', amount: 15000 },
+              { account: 'Common Stock',       type: 'cr', amount:  5000 },
+              { account: 'APIC',              type: 'cr', amount: 10000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Retained Earnings', type: 'dr', sign: '+$15,000', signClass: 'sign-positive', reason: 'RE 감소 (FMV 기준) → Debit → 양수' },
+                { acct: 'Common Stock',      type: 'cr', sign: '($5,000)',  signClass: 'sign-negative', reason: 'Par × new shares → Credit → 음수' },
+                { acct: 'APIC',             type: 'cr', sign: '($10,000)', signClass: 'sign-negative', reason: 'FMV − par 초과분 → Credit → 음수' },
+              ],
+              note: 'Small stock div: FMV 기준 RE 차감. No cash. Total SE unchanged.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• RE reduced at FMV\n• Common Stock +par × new shares\n• APIC + excess\nTotal SE: no change',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Retained Earnings', dr: ['15,000 ★'], cr: [] },
+                { name: 'Common Stock',      dr: [],           cr: ['5,000 ★'] },
+                { name: 'APIC',             dr: [],           cr: ['10,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: '• RE   Dr  $15,000\n• Common Stock   Cr  $5,000\n• APIC   Cr  $10,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Retained Earnings', dr: '$15,000', cr: '—',       highlight: true },
+                { acct: 'Common Stock',      dr: '—',       cr: '$5,000',  highlight: true },
+                { acct: 'APIC',             dr: '—',       cr: '$10,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'No income statement impact.\nNo cash outflow.',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px;padding:6px 8px;background:#f3f4f6;border-radius:4px;color:#6b7280">No I/S impact.<br>No cash outflow — SE internal reclassification.</div>`,
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'RE −$15,000 / Common Stock +$5,000 / APIC +$10,000\nTotal SE unchanged (reclassification within SE)',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: −$15,000<br>Common Stock 열: +$5,000<br>APIC 열: +$10,000<br>Total SE: 변동 없음 (내부 재분류)</div>`,
+              trap: 'Stock dividend = SE 내부 재분류. 총 SE 변동 없음. Cash dividend와 달리 현금 유출 없음.',
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'SE: RE −$15,000 / Common Stock +$5,000 / APIC +$10,000\nTotal SE unchanged ✓',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'Retained Earnings', dr: '−$15,000', cr: '($15,000)', highlight: true },
+                { acct: 'Common Stock',      dr: '+$5,000',  cr: '($5,000)',  highlight: true },
+                { acct: 'APIC',             dr: '+$10,000', cr: '($10,000)', highlight: true },
+              ],
+              trap: 'Total SE unchanged: −$15,000 RE + $5,000 CS + $10,000 APIC = $0 net change.',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'No cash flow impact.\nNon-cash transaction → supplemental disclosure if material.',
+            drill: {
+              title: 'Statement of Cash Flows',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>No cash flow impact.</strong><br>Non-cash transaction → supplemental disclosure if material</div>`,
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Shares issued / FMV used / RE reclassified',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Stock dividend: 10% / 1,000 new shares issued<br>② FMV $15/share / RE reclassified: $15,000<br>③ Common Stock +$5,000 / APIC +$10,000<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR: Small (&lt;20%) → FMV. Large (≥20-25%) → par only. 구분 기준 암기.</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'No income impact',
+          bs: 'SE reclassification only — total SE unchanged',
+          se: 'RE −$15,000 / Common Stock +$5,000 / APIC +$10,000',
+          cfo: 'No cash impact',
+        },
       },
       {
         id: 'sbc',
         label: 'Stock-Based Compensation (SBC)',
         topicId: 'SBC_001',
-        stages: [],
-        fsImpact: {},
+        stages: [
+          {
+            step: 'source',
+            label: 'Source Document',
+            note: 'Company grants stock options to employees. Total fair value = $12,000 / Vesting period 3 years.\nAnnual SBC expense = $4,000',
+          },
+          {
+            step: 'journal',
+            label: 'General Journal',
+            note: 'Recognize SBC expense over vesting period; credit APIC (equity settled).',
+            entries: [
+              { account: 'Compensation Expense',   type: 'dr', amount: 4000 },
+              { account: 'APIC — Stock Options',   type: 'cr', amount: 4000 },
+            ],
+            drill: {
+              title: 'Journal Entry — Debit(Credit) format',
+              je: [
+                { acct: 'Compensation Expense',  type: 'dr', sign: '+$4,000', signClass: 'sign-positive', reason: '비용 → Debit → 양수' },
+                { acct: 'APIC — Stock Options',  type: 'cr', sign: '($4,000)', signClass: 'sign-negative', reason: 'Equity → Credit (not liability)' },
+              ],
+              note: 'SBC = non-cash expense. Debit expense / Credit APIC. No cash outflow.',
+            },
+          },
+          {
+            step: 'ledger',
+            label: 'General Ledger (T-accounts)',
+            note: '• Compensation Expense (Dr — P&L impact)\n• APIC — Stock Options (Cr — equity account)',
+            drill: {
+              title: 'General Ledger — T-accounts',
+              taccounts: [
+                { name: 'Compensation Expense',  dr: ['4,000 ★'], cr: [] },
+                { name: 'APIC — Stock Options',  dr: [],          cr: ['4,000 ★'] },
+              ],
+            },
+          },
+          {
+            step: 'tb',
+            label: 'Adjusted Trial Balance',
+            note: '• Compensation Expense   Dr  $4,000\n• APIC — Stock Options   Cr  $4,000\nDebit total = Credit total ✓',
+            drill: {
+              title: 'Adjusted Trial Balance — related accounts',
+              tb: [
+                { acct: 'Compensation Expense',  dr: '$4,000', cr: '—',      highlight: true },
+                { acct: 'APIC — Stock Options',  dr: '—',      cr: '$4,000', highlight: true },
+              ],
+              note: 'Debit total = Credit total ✓',
+            },
+          },
+          {
+            step: 'is',
+            label: 'Income Statement',
+            note: 'Compensation Expense $4,000 → Operating Expenses → Net Income ↓',
+            drill: {
+              title: 'Income Statement impact',
+              custom: `<div style="font-size:11px"><div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid #f3f4f6"><span style="color:#4a5568">Compensation Expense (SBC)</span><span style="color:#c2410c;font-weight:600">($4,000)</span></div><div style="margin-top:6px;font-size:11px;color:#6b7280">Non-cash expense → Net Income ↓, but APIC ↑ → net SE = $0</div></div>`,
+            },
+          },
+          {
+            step: 'se',
+            label: "Statement of Stockholders' Equity",
+            note: 'Net Income ↓ $4,000 → RE ↓ $4,000\nAPIС +$4,000\nNet SE change = $0 (expense offsets APIC increase)',
+            drill: {
+              title: "Statement of Stockholders' Equity impact",
+              custom: `<div style="font-size:11px;color:#4a5568;line-height:1.7">Retained Earnings 열: −$4,000 (Net Income 경유)<br>APIC 열: +$4,000 (SBC grant)<br>Net SE change: $0</div>`,
+              trap: 'SBC = 비현금 비용 → CFO indirect에서 add back. APIC 증가 = equity settled (부채 아님).',
+            },
+          },
+          {
+            step: 'bs',
+            label: 'Balance Sheet',
+            note: 'SE: APIC +$4,000 / RE −$4,000\nNet BS impact = $0 (no cash)',
+            drill: {
+              title: 'Balance Sheet — Debit(Credit) input',
+              tb: [
+                { acct: 'APIC — Stock Options',  dr: '+$4,000', cr: '($4,000)', highlight: true },
+                { acct: 'Retained Earnings',     dr: '−$4,000', cr: '($4,000)', highlight: true },
+              ],
+              trap: 'SBC = 비현금 비용 → CFO indirect에서 add back. APIC 증가 = equity settled (부채 아님).',
+            },
+          },
+          {
+            step: 'scf',
+            label: 'Statement of Cash Flows',
+            note: 'Indirect Method: SBC Expense $4,000 → add back (+) non-cash\n⚠ Cash paid at exercise → Financing Activities inflow',
+            drill: {
+              title: 'Statement of Cash Flows — Indirect Method',
+              custom: `<div style="font-size:11px;line-height:1.7;color:#4a5568"><strong>Indirect Method:</strong> SBC Expense → add back (+$4,000)<br>비현금 비용 → Depreciation과 동일 처리<br><strong>Exercise 시:</strong> Cash received → CFF inflow</div>`,
+              trap: 'SBC expense = 비현금 → add back(+). 행사 시 현금 수취는 CFF. 행사 전까지 현금 흐름 없음.',
+            },
+          },
+          {
+            step: 'notes',
+            label: 'Notes to Financial Statements',
+            note: 'Disclosure: Grant date FV / Vesting period / Shares / APIC balance',
+            drill: {
+              title: 'Notes to Financial Statements',
+              custom: `<div style="font-size:11px;line-height:1.8;color:#4a5568">① Grant: options / Grant date FV: $12,000 total<br>② Vesting period: 3 years / Annual expense: $4,000<br>③ APIC — Stock Options balance<div style="margin-top:6px;padding:5px 8px;background:#faeeda;border-radius:4px;font-size:10px;color:#633806">FAR TBS: SBC expense = non-cash → CFO add back. APIC balance = cumulative SBC recognized.</div></div>`,
+            },
+          },
+        ],
+        fsImpact: {
+          is_ni: 'Compensation Expense $4,000 → Net Income ↓',
+          bs: 'APIC +$4,000 / RE −$4,000 (net $0)',
+          se: 'APIC +$4,000 / RE −$4,000',
+          cfo: 'Non-cash expense → add back (+$4,000) in indirect method',
+        },
       },
     ],
   },
