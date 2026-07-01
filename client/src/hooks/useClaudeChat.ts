@@ -1,5 +1,5 @@
 import useClaudeStore, { AnalyzeContext, ReviewCardContext, CurrentTBSPattern } from '../store/claudeStore';
-import { PROFESSOR_SSOT_V2_TEXT } from '../constants/professor_ssot_v2';
+import { PROFESSOR_SSOT_V2 } from '../constants/professor_ssot_v2';
 
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
@@ -313,7 +313,6 @@ SVG 출력 규칙:
 - Use × instead of \\times, ÷ instead of \\div
 - Use ≥ ≤ ≠ instead of \\geq \\leq \\neq
 - No dollar signs around math expressions — plain text always`
-+ `\n\n## FAR Topic Reference (170 cards)\n\n${PROFESSOR_SSOT_V2_TEXT}`
 + `\n\n## Harry 해설 모듈\n\n문제를 받으면 아래 모듈 순서대로 해설하라. 각 섹션 헤더 반드시 출력.\n\n### [A] 라인별 원문 해석\n문제 본문을 줄 단위로:\n① [영어 원문 전체, 절대 자르지 않음] → 한국어 해석 → 수험생 의미 (조건/트랩/계산재료/정답단서)\n\n### [B] 분개\n해당 거래의 Dr./Cr. 분개 출력. 입장 반드시 명시: (Issuer 입장) / (Investor 입장) / (Lessee 입장) 등.\n개념 문제면 "해당 없음 (개념 문제)" 출력.\n\n### [C] TRIGGER / TRAP\n- TRIGGER: 문제에서 실제 보이는 키워드 → 이 키워드가 보이면 이렇게 풀어라\n- TRAP: 수험생이 자주 틀리는 함정과 이유\n\n### [D] 1줄 풀이\n시험장 30초 안에 쓸 수 있는 핵심 로직 한 줄. 입장(방향) 반드시 포함.\n예) "Investor 입장 — FV 상승 → Unrealized Gain → OCI (AFS)"\n\n### [E] F/S Impact\nB/S:\nI/S: (세후 기준, tax rate 없으면 ×(1-t) 표기)\nS/E:\nSCF:\nNotes:\n\n### [F] SVG 시각화\n반드시 아래 형식으로만 출력:\n\`\`\`svg\n<svg viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg">\n  ...\n</svg>\n\`\`\`\n❌ 인라인 <svg> 태그 직접 출력 금지 — 반드시 \`\`\`svg 코드펜스로 감쌀 것.\n맥락에 따라 선택:\n- Before/After 비교: 오조정·AJE 전후·두 방법 비교\n- 거래 구조: Bond·Lease·Factoring·Consolidation 등 다자간 흐름\n- 계산 단계: WASO·EPS·Bond amortization·DTA 숫자 흐름\n- 개념 구조도: 분류 체계·조건 분기\n원칙: 문제의 실제 숫자 사용 / fill·stroke는 hardcoded hex값만 / marker ID 고유값으로\n\n### [G] 경제적 실질\n- 이 거래가 왜 존재하는가\n- 투자자·채권자·경영진에게 어떤 영향인가\n- 실 기업 사례 (애플·테슬라·스타벅스 등 누구나 아는 회사)\n\n## 해설 출력 스타일 원칙\n- 배경 하이라이트(초록·노랑 등 색상 강조) 사용 금지\n- 강조는 **볼드**와 간단한 이모지 불렛(✅ ❌ ⚠️ 💡 등)만 사용\n- 테이블은 필요한 곳에만, 과도한 테이블화 금지`;
 
 const ALPHA = ['A', 'B', 'C', 'D'];
@@ -470,6 +469,40 @@ function buildTBSContextBlock(ctx: CurrentTBSPattern): string {
   return lines.join('\n');
 }
 
+// ── Filtered SSOT context ─────────────────────────────────────
+// Only inject cards from the same chapter as the current topic (not all 170)
+function buildFilteredSsotBlock(
+  analyzeCtx?: AnalyzeContext | null,
+  reviewCardCtx?: ReviewCardContext | null,
+  tbsCtx?: CurrentTBSPattern | null,
+): string {
+  const candidateIds = [
+    analyzeCtx?.topicId,
+    reviewCardCtx?.topicId,
+    ...(tbsCtx?.related_topic_ids ?? []),
+  ].filter((id): id is string => !!id);
+
+  // Find seed cards by exact topic_id match
+  const seedCards = PROFESSOR_SSOT_V2.filter((c) => candidateIds.includes(c.topic_id));
+
+  // Expand to all cards sharing the same chapter_id
+  const chapterIds = new Set(seedCards.map((c) => c.chapter_id).filter((id): id is string => !!id));
+  const filtered = chapterIds.size > 0
+    ? PROFESSOR_SSOT_V2.filter((c) => c.chapter_id && chapterIds.has(c.chapter_id))
+    : seedCards.slice(0, 5);
+
+  if (filtered.length === 0) {
+    return '\n\n[FAR 개념 참조]\n현재 특정 토픽이 선택되지 않았습니다. 질문의 키워드를 구체적으로 입력해주세요.';
+  }
+
+  const label = [...chapterIds].join(', ') || candidateIds[0] ?? '관련 토픽';
+  const text = filtered.map((t) =>
+    `[${t.topic_id}] ${t.card_name ?? t.topic_name ?? ''}\nRULE: ${t.rule}${t.trigger ? `\nTRIGGER: ${t.trigger}` : ''}${t.trap ? `\nTRAP: ${t.trap}` : ''}${t.one_sentence ? `\nKEY: ${t.one_sentence}` : ''}`
+  ).join('\n\n');
+
+  return `\n\n## FAR Topic Reference (${filtered.length} cards — ${label})\n\n${text}`;
+}
+
 // ── Hook ──────────────────────────────────────────────────────
 export function useClaudeChat(
   currentTopicLabel?: string,
@@ -499,12 +532,15 @@ export function useClaudeChat(
       ? `${SYSTEM_PROMPT}\n\n${buildDbContextBlock(dbCtx, dailyGoal)}`
       : SYSTEM_PROMPT;
 
+    // Inject filtered SSOT — only cards from the current chapter (not all 170)
+    const baseWithSsot = `${baseSystem}${buildFilteredSsotBlock(analyzeCtx, reviewCardCtx, tbsCtx)}`;
+
     // Inject context into system prompt — analyze takes priority over review card.
     const baseWithContext = analyzeCtx
-      ? `${baseSystem}\n\n${buildAnalyzeContextBlock(analyzeCtx)}`
+      ? `${baseWithSsot}\n\n${buildAnalyzeContextBlock(analyzeCtx)}`
       : reviewCardCtx
-      ? `${baseSystem}\n\n${buildReviewCardContextBlock(reviewCardCtx)}`
-      : baseSystem;
+      ? `${baseWithSsot}\n\n${buildReviewCardContextBlock(reviewCardCtx)}`
+      : baseWithSsot;
 
     const systemPrompt = tbsCtx
       ? `${baseWithContext}\n\n${buildTBSContextBlock(tbsCtx)}`
