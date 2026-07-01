@@ -10,10 +10,12 @@ const MODEL = 'claude-haiku-4-5-20251001';
  * body: { messages, systemPrompt, currentTopic }
  */
 router.post('/chat', async (req: Request, res: Response) => {
-  const { messages, systemPrompt, currentTopic } = req.body as {
+  const { messages, systemPrompt, currentTopic, filterMode, matchedCards } = req.body as {
     messages: { role: 'user' | 'assistant'; content: string }[];
     systemPrompt?: string;
     currentTopic?: string;
+    filterMode?: string;
+    matchedCards?: number;
   };
 
   if (!messages?.length) {
@@ -36,13 +38,16 @@ router.post('/chat', async (req: Request, res: Response) => {
   const sysChars = system.length;
   const estTokens = Math.round(sysChars / 4);
   const hasTBS = system.includes('[TBS:');
-  console.log(`[harry] chars=${sysChars} est_tokens≈${estTokens} msgs=${messages.length} tbs=${hasTBS}`);
+  console.log(`[harry] chars=${sysChars} est_tokens≈${estTokens} msgs=${messages.length} tbs=${hasTBS} filterMode=${filterMode ?? 'none'} matchedCards=${matchedCards ?? 0}`);
 
   try {
-    const stream = anthropic.messages.stream({
+    const stream = anthropic.beta.promptCaching.messages.stream({
       model: MODEL,
       max_tokens: 4000,
-      system,
+      system: [
+        { type: 'text' as const, text: systemPrompt ?? '', cache_control: { type: 'ephemeral' as const } },
+        ...(currentTopic ? [{ type: 'text' as const, text: `\n\n현재 학습 중인 토픽: ${currentTopic}` }] : []),
+      ],
       messages,
     });
 
@@ -98,10 +103,10 @@ Terminology: "Book value/Book basis" = "장부가액/장부기준" (NEVER "책"/
 Be concise and exam-focused. Respond only in Korean.`;
 
   try {
-    const message = await anthropic.messages.create({
+    const message = await anthropic.beta.promptCaching.messages.create({
       model: MODEL,
       max_tokens: 4000,
-      system,
+      system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
       messages: [
         {
           role: 'user',
@@ -151,10 +156,10 @@ Rules:
   ].filter(Boolean).join('\n\n');
 
   try {
-    const message = await anthropic.messages.create({
+    const message = await anthropic.beta.promptCaching.messages.create({
       model: MODEL,
       max_tokens: 150,
-      system,
+      system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: userMsg }],
     });
 

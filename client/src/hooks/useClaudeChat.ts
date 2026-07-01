@@ -1,5 +1,5 @@
 import useClaudeStore, { AnalyzeContext, ReviewCardContext, CurrentTBSPattern } from '../store/claudeStore';
-import { PROFESSOR_SSOT_V2 } from '../constants/professor_ssot_v2';
+import { PROFESSOR_SSOT_V2, TopicCard } from '../constants/professor_ssot_v2';
 
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
@@ -470,37 +470,75 @@ function buildTBSContextBlock(ctx: CurrentTBSPattern): string {
 }
 
 // ── Filtered SSOT context ─────────────────────────────────────
-// Only inject cards from the same chapter as the current topic (not all 170)
+type FilterMode = 'context' | 'keyword' | 'none';
+
+function formatCards(cards: TopicCard[]): string {
+  return cards.map((t) =>
+    `[${t.topic_id}] ${t.card_name ?? t.topic_name ?? ''}\nRULE: ${t.rule}${t.trigger ? `\nTRIGGER: ${t.trigger}` : ''}${t.trap ? `\nTRAP: ${t.trap}` : ''}${t.one_sentence ? `\nKEY: ${t.one_sentence}` : ''}`
+  ).join('\n\n');
+}
+
 function buildFilteredSsotBlock(
   analyzeCtx?: AnalyzeContext | null,
   reviewCardCtx?: ReviewCardContext | null,
   tbsCtx?: CurrentTBSPattern | null,
-): string {
+  userInput?: string,
+): { block: string; filterMode: FilterMode; matchedCards: number } {
+  // ── Path A: explicit context (topic_id known) ──────────────
   const candidateIds = [
     analyzeCtx?.topicId,
     reviewCardCtx?.topicId,
     ...(tbsCtx?.related_topic_ids ?? []),
   ].filter((id): id is string => !!id);
 
-  // Find seed cards by exact topic_id match
-  const seedCards = PROFESSOR_SSOT_V2.filter((c) => candidateIds.includes(c.topic_id));
+  if (candidateIds.length > 0) {
+    const seedCards = PROFESSOR_SSOT_V2.filter((c) => candidateIds.includes(c.topic_id));
+    const chapterIds = new Set(seedCards.map((c) => c.chapter_id).filter((id): id is string => !!id));
+    const filtered = chapterIds.size > 0
+      ? PROFESSOR_SSOT_V2.filter((c) => c.chapter_id && chapterIds.has(c.chapter_id))
+      : seedCards.slice(0, 5);
 
-  // Expand to all cards sharing the same chapter_id
-  const chapterIds = new Set(seedCards.map((c) => c.chapter_id).filter((id): id is string => !!id));
-  const filtered = chapterIds.size > 0
-    ? PROFESSOR_SSOT_V2.filter((c) => c.chapter_id && chapterIds.has(c.chapter_id))
-    : seedCards.slice(0, 5);
-
-  if (filtered.length === 0) {
-    return '\n\n[FAR 개념 참조]\n현재 특정 토픽이 선택되지 않았습니다. 질문의 키워드를 구체적으로 입력해주세요.';
+    if (filtered.length > 0) {
+      const label = [...chapterIds].join(', ') || (candidateIds[0] ?? '관련 토픽');
+      return {
+        block: `\n\n## FAR Topic Reference (${filtered.length} cards — ${label})\n\n${formatCards(filtered)}`,
+        filterMode: 'context',
+        matchedCards: filtered.length,
+      };
+    }
   }
 
-  const label = [...chapterIds].join(', ') || (candidateIds[0] ?? '관련 토픽');
-  const text = filtered.map((t) =>
-    `[${t.topic_id}] ${t.card_name ?? t.topic_name ?? ''}\nRULE: ${t.rule}${t.trigger ? `\nTRIGGER: ${t.trigger}` : ''}${t.trap ? `\nTRAP: ${t.trap}` : ''}${t.one_sentence ? `\nKEY: ${t.one_sentence}` : ''}`
-  ).join('\n\n');
+  // ── Path B: keyword matching on user input ─────────────────
+  if (userInput) {
+    const inputLower = userInput.toLowerCase();
+    const scored = PROFESSOR_SSOT_V2
+      .map((card) => {
+        const keywords = (card.trigger ?? '')
+          .split('|')
+          .map((k) => k.trim().toLowerCase())
+          .filter((k) => k.length > 2);
+        const score = keywords.filter((kw) => inputLower.includes(kw)).length;
+        return { card, score };
+      })
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score);
 
-  return `\n\n## FAR Topic Reference (${filtered.length} cards — ${label})\n\n${text}`;
+    if (scored.length > 0) {
+      const matched = scored.slice(0, 5).map((r) => r.card);
+      return {
+        block: `\n\n## FAR Topic Reference (${matched.length} cards — keyword match)\n\n${formatCards(matched)}`,
+        filterMode: 'keyword',
+        matchedCards: matched.length,
+      };
+    }
+  }
+
+  // ── Path C: no match ───────────────────────────────────────
+  return {
+    block: '\n\n[FAR 개념 참조]\n현재 관련 개념 카드를 찾지 못했습니다. Harry는 자체 지식으로 답변합니다.',
+    filterMode: 'none',
+    matchedCards: 0,
+  };
 }
 
 // ── Hook ──────────────────────────────────────────────────────
@@ -532,8 +570,11 @@ export function useClaudeChat(
       ? `${SYSTEM_PROMPT}\n\n${buildDbContextBlock(dbCtx, dailyGoal)}`
       : SYSTEM_PROMPT;
 
-    // Inject filtered SSOT — only cards from the current chapter (not all 170)
-    const baseWithSsot = `${baseSystem}${buildFilteredSsotBlock(analyzeCtx, reviewCardCtx, tbsCtx)}`;
+    // Inject filtered SSOT — context first, keyword fallback, none last
+    const { block: ssotBlock, filterMode, matchedCards } = buildFilteredSsotBlock(
+      analyzeCtx, reviewCardCtx, tbsCtx, userContent,
+    );
+    const baseWithSsot = `${baseSystem}${ssotBlock}`;
 
     // Inject context into system prompt — analyze takes priority over review card.
     const baseWithContext = analyzeCtx
@@ -553,6 +594,8 @@ export function useClaudeChat(
         messages: apiMsgs,
         systemPrompt,
         currentTopic: (analyzeCtx || reviewCardCtx) ? undefined : currentTopicLabel,
+        filterMode,
+        matchedCards,
       },
       (text) => {
         accumulated += text;
