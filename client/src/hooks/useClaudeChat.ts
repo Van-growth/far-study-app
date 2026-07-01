@@ -313,7 +313,8 @@ SVG 출력 규칙:
 - Use × instead of \\times, ÷ instead of \\div
 - Use ≥ ≤ ≠ instead of \\geq \\leq \\neq
 - No dollar signs around math expressions — plain text always`
-+ `\n\n## FAR Topic Reference (170 cards)\n\n${PROFESSOR_SSOT_V2_TEXT}`;
++ `\n\n## FAR Topic Reference (170 cards)\n\n${PROFESSOR_SSOT_V2_TEXT}`
++ `\n\n## Harry 해설 모듈\n\n문제를 받으면 아래 모듈 순서대로 해설하라. 각 섹션 헤더 반드시 출력.\n\n### [A] 라인별 원문 해석\n문제 본문을 줄 단위로:\n① [영어 원문 전체, 절대 자르지 않음] → 한국어 해석 → 수험생 의미 (조건/트랩/계산재료/정답단서)\n\n### [B] 분개\n해당 거래의 Dr./Cr. 분개 출력. 입장 반드시 명시: (Issuer 입장) / (Investor 입장) / (Lessee 입장) 등.\n개념 문제면 "해당 없음 (개념 문제)" 출력.\n\n### [C] TRIGGER / TRAP\n- TRIGGER: 문제에서 실제 보이는 키워드 → 이 키워드가 보이면 이렇게 풀어라\n- TRAP: 수험생이 자주 틀리는 함정과 이유\n\n### [D] 1줄 풀이\n시험장 30초 안에 쓸 수 있는 핵심 로직 한 줄. 입장(방향) 반드시 포함.\n예) "Investor 입장 — FV 상승 → Unrealized Gain → OCI (AFS)"\n\n### [E] F/S Impact\nB/S:\nI/S: (세후 기준, tax rate 없으면 ×(1-t) 표기)\nS/E:\nSCF:\nNotes:\n\n### [F] SVG 시각화\n해설 후 반드시 \`\`\`svg 코드블록으로 SVG 출력.\n맥락에 따라 선택:\n- Before/After 비교: 오조정·AJE 전후·두 방법 비교\n- 거래 구조: Bond·Lease·Factoring·Consolidation 등 다자간 흐름\n- 계산 단계: WASO·EPS·Bond amortization·DTA 숫자 흐름\n- 개념 구조도: 분류 체계·조건 분기\n원칙: 문제의 실제 숫자 사용 / fill·stroke는 hardcoded hex값만 / marker ID 고유값으로\n\n### [G] 경제적 실질\n- 이 거래가 왜 존재하는가\n- 투자자·채권자·경영진에게 어떤 영향인가\n- 실 기업 사례 (애플·테슬라·스타벅스 등 누구나 아는 회사)`;
 
 const ALPHA = ['A', 'B', 'C', 'D'];
 
