@@ -495,7 +495,7 @@ function buildFilteredSsotBlock(
     return '\n\n[FAR 개념 참조]\n현재 특정 토픽이 선택되지 않았습니다. 질문의 키워드를 구체적으로 입력해주세요.';
   }
 
-  const label = [...chapterIds].join(', ') || candidateIds[0] ?? '관련 토픽';
+  const label = [...chapterIds].join(', ') || (candidateIds[0] ?? '관련 토픽');
   const text = filtered.map((t) =>
     `[${t.topic_id}] ${t.card_name ?? t.topic_name ?? ''}\nRULE: ${t.rule}${t.trigger ? `\nTRIGGER: ${t.trigger}` : ''}${t.trap ? `\nTRAP: ${t.trap}` : ''}${t.one_sentence ? `\nKEY: ${t.one_sentence}` : ''}`
   ).join('\n\n');
