@@ -24,6 +24,16 @@ const TOPICS = [
 ];
 const PATTERNS = ['공식 불완전', '개념 혼동', '표현 변환 실수', '용어 혼동', '계산 실수'];
 
+// trap_category: 1=개념선택 혼동 2=무관개념 적용 3=트리거문구 인식실패 4=계산절차 실수
+const TRAP_CATEGORY_LABELS: Record<number, string> = {
+  1: '개념선택 혼동',
+  2: '무관개념 적용',
+  3: '트리거문구 인식실패',
+  4: '계산절차 실수',
+};
+// coral sequential ramp, light→dark (validated: dataviz skill, ordinal check vs #fff surface)
+const CORAL_RAMP = ['#f4ece8', '#e0a58e', '#d88b6b', '#c96a41', '#b04a26', '#8f3417'];
+
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 const SHOW_ME = ['show me', '비주얼로', '구조화해줘', '숫자로 보여줘', '그려줘'];
 
@@ -53,6 +63,7 @@ interface WrongAnswer {
   explanation: string | null;
   topic_tag: string | null;
   error_pattern: string | null;
+  trap_category: number | null;
   times_wrong: number;
   is_resolved: boolean;
   created_at: string;
@@ -848,13 +859,14 @@ function HistoryTab({ userId, onEditRequest }: {
 function DashboardTab({ userId, onSendToHarry }: { userId: string | null; onSendToHarry: (msg: string) => void }) {
   const [items, setItems] = useState<WrongAnswer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [matrixCell, setMatrixCell] = useState<{ topic: string; category: number } | null>(null);
 
   useEffect(() => {
     if (!userId) return;
     (async () => {
       const { data, error } = await supabase
         .from('wrong_answers')
-        .select('id, topic_tag, error_pattern, times_wrong, is_resolved, question_number, created_at')
+        .select('id, topic_tag, error_pattern, trap_category, times_wrong, is_resolved, question_number, question_text, my_answer, correct_answer, created_at')
         .eq('user_id', userId);
       if (error) { console.error('[DashboardTab] fetch error:', error); }
       else { setItems((data ?? []) as WrongAnswer[]); }
@@ -889,6 +901,41 @@ function DashboardTab({ userId, onSendToHarry }: { userId: string | null; onSend
   // Repeated alerts
   const repeatedList = items.filter(i => i.times_wrong >= 2);
 
+  // Module × trap_category matrix (only rows with both fields set — no dummy zero-fill for unclassified items)
+  const classified = items.filter(i => i.topic_tag && i.trap_category);
+  const unclassifiedCount = items.filter(i => i.topic_tag && !i.trap_category).length;
+  const matrix: Record<string, Record<number, WrongAnswer[]>> = {};
+  classified.forEach(i => {
+    const topic = i.topic_tag as string;
+    matrix[topic] = matrix[topic] ?? { 1: [], 2: [], 3: [], 4: [] };
+    matrix[topic][i.trap_category as number].push(i);
+  });
+  const matrixTopics = Object.entries(matrix)
+    .map(([topic, byCat]) => [topic, Object.values(byCat).reduce((s, arr) => s + arr.length, 0)] as [string, number])
+    .sort((a, b) => b[1] - a[1])
+    .map(([topic]) => topic);
+  const matrixMaxCell = Math.max(1, ...matrixTopics.flatMap(t => [1, 2, 3, 4].map(c => matrix[t][c].length)));
+  const cellColor = (count: number) => {
+    if (count === 0) return CORAL_RAMP[0];
+    const step = Math.min(CORAL_RAMP.length - 1, Math.ceil((count / matrixMaxCell) * (CORAL_RAMP.length - 1)));
+    return CORAL_RAMP[Math.max(1, step)];
+  };
+
+  // "가장 뚜렷한 패턴" summary — dominant category per topic, ranked by dominant count, min 2 to count as a real pattern
+  const dominant = matrixTopics
+    .map(topic => {
+      const byCat = matrix[topic];
+      const best = [1, 2, 3, 4].sort((a, b) => byCat[b].length - byCat[a].length)[0];
+      const topicTotal = classified.filter(i => i.topic_tag === topic).length;
+      return { topic, category: best, count: byCat[best].length, topicTotal };
+    })
+    .filter(d => d.count >= 2)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 2);
+  const matrixSummary = dominant.length > 0
+    ? dominant.map(d => `${d.topic}은 ${TRAP_CATEGORY_LABELS[d.category]}(${d.count}/${d.topicTotal})에 집중`).join(', ')
+    : null;
+
   return (
     <div style={{ padding: 16 }}>
       {/* Summary cards */}
@@ -918,6 +965,63 @@ function DashboardTab({ userId, onSendToHarry }: { userId: string | null; onSend
           </div>
         ))}
       </div>
+
+      {/* Module × Category matrix */}
+      {matrixTopics.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: NAVY, marginBottom: 6 }}>모듈 × 카테고리 매트릭스</div>
+          <div style={{ fontSize: 12, color: matrixSummary ? '#b04a26' : MUTED, marginBottom: 10, lineHeight: 1.4 }}>
+            {matrixSummary ?? '아직 뚜렷한 패턴을 판단하기엔 데이터가 부족합니다.'}
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ borderCollapse: 'collapse', fontSize: 11, minWidth: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left', padding: '4px 8px', color: MUTED, fontWeight: 600, whiteSpace: 'nowrap' }}>모듈</th>
+                  {[1, 2, 3, 4].map(c => (
+                    <th key={c} style={{ padding: '4px 6px', color: MUTED, fontWeight: 600, minWidth: 68, whiteSpace: 'nowrap' }}>
+                      {TRAP_CATEGORY_LABELS[c]}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {matrixTopics.map(topic => (
+                  <tr key={topic}>
+                    <td style={{ padding: '4px 8px', color: TEXT, fontWeight: 600, whiteSpace: 'nowrap' }}>{topic}</td>
+                    {[1, 2, 3, 4].map(c => {
+                      const count = matrix[topic][c].length;
+                      const bg = cellColor(count);
+                      const dark = count / matrixMaxCell > 0.6;
+                      return (
+                        <td
+                          key={c}
+                          onClick={() => count > 0 && setMatrixCell({ topic, category: c })}
+                          style={{
+                            padding: '8px 6px', textAlign: 'center', background: bg,
+                            color: count === 0 ? MUTED : (dark ? '#fff' : NAVY),
+                            fontWeight: count > 0 ? 700 : 400,
+                            cursor: count > 0 ? 'pointer' : 'default',
+                            border: '2px solid #fff',
+                            borderRadius: 4,
+                          }}
+                        >
+                          {count || '·'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {unclassifiedCount > 0 && (
+            <div style={{ fontSize: 11, color: MUTED, marginTop: 6 }}>
+              카테고리 미분류 {unclassifiedCount}건은 매트릭스에서 제외됨
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Pattern distribution */}
       <div style={{ marginBottom: 20 }}>
@@ -957,6 +1061,44 @@ function DashboardTab({ userId, onSendToHarry }: { userId: string | null; onSend
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Matrix cell drill-down */}
+      {matrixCell && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }}
+          onClick={() => setMatrixCell(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#fff', width: '100%', maxHeight: '75vh', overflowY: 'auto', borderRadius: '12px 12px 0 0', padding: 20 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>
+                {matrixCell.topic} · {TRAP_CATEGORY_LABELS[matrixCell.category]}
+              </div>
+              <button
+                onClick={() => setMatrixCell(null)}
+                style={{ marginLeft: 'auto', border: 'none', background: 'transparent', fontSize: 18, cursor: 'pointer', color: MUTED }}
+              >
+                ×
+              </button>
+            </div>
+            {matrix[matrixCell.topic][matrixCell.category].map(item => (
+              <div key={item.id} style={{ border: BORDER, borderRadius: 8, padding: '10px 12px', marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontWeight: 700, fontSize: 13 }}>{item.question_number ?? '—'}</span>
+                  {item.times_wrong >= 2 && (
+                    <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 700 }}>×{item.times_wrong}회</span>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: TEXT, marginBottom: 6, whiteSpace: 'pre-line' }}>{item.question_text}</div>
+                <div style={{ fontSize: 11, color: '#dc2626' }}>내 답: {item.my_answer ?? '—'}</div>
+                <div style={{ fontSize: 11, color: '#16a34a' }}>정답: {item.correct_answer ?? '—'}</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
