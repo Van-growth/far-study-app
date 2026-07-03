@@ -2,6 +2,7 @@ import useClaudeStore, { AnalyzeContext, ReviewCardContext, CurrentTBSPattern } 
 import { PROFESSOR_SSOT_V2, TopicCard } from '../constants/professor_ssot_v2';
 import useStudyStore from '../store/studyStore';
 import { parseWrongAnswerBlock, saveWrongAnswer } from '../lib/harryWrongAnswer';
+import { apiFetch } from '../lib/apiFetch';
 
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
@@ -34,7 +35,7 @@ async function streamChat(
 ) {
   let lastModel: string | undefined;
   try {
-    const res = await fetch(`${API_URL}/api/claude/chat`, {
+    const res = await apiFetch(`${API_URL}/api/claude/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

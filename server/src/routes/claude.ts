@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import * as fs from 'fs';
 import * as path from 'path';
+import { requireApiKey } from '../middleware/requireApiKey';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -29,7 +30,7 @@ const USER_TONE_PREFERENCE = fs.readFileSync(
  *  1) 정적 지침(HARRY_SYSTEM_PROMPT) — cache_control 적용, 매 요청 동일 → 캐시 재사용
  *  2) 동적 컨텍스트(dynamicContext) — SSOT 카드/DB통계/문제내용 등 요청마다 변경 → 캐시 미적용
  */
-router.post('/chat', async (req: Request, res: Response) => {
+router.post('/chat', requireApiKey, async (req: Request, res: Response) => {
   const { messages, dynamicContext, currentTopic, filterMode, matchedCards, mode } = req.body as {
     messages: { role: 'user' | 'assistant'; content: string }[];
     dynamicContext?: string;
@@ -110,7 +111,7 @@ router.post('/chat', async (req: Request, res: Response) => {
  * POST /api/claude/feynman — regular JSON (no streaming)
  * body: { text, topic, feynmanPrompt }
  */
-router.post('/feynman', async (req: Request, res: Response) => {
+router.post('/feynman', requireApiKey, async (req: Request, res: Response) => {
   const { text, topic, feynmanPrompt } = req.body as {
     text: string;
     topic: string;
@@ -156,7 +157,7 @@ Be concise and exam-focused. Respond only in Korean.`;
  * POST /api/claude/card-hint — formula or numeric example for flashcard
  * body: { concepts, auto_rules, trap_pattern }
  */
-router.post('/card-hint', async (req: Request, res: Response) => {
+router.post('/card-hint', requireApiKey, async (req: Request, res: Response) => {
   const { concepts, auto_rules, trap_pattern } = req.body as {
     concepts: string[];
     auto_rules: string[];

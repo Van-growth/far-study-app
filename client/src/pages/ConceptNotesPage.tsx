@@ -7,6 +7,7 @@ import useStudyStore from '../store/studyStore'
 import { listConversations, deleteConversation } from '../lib/harryHistory'
 import type { HarryConversation, HarryMessage } from '../lib/harryHistory'
 import { parseWrongAnswerBlock, saveWrongAnswer, stripWrongAnswerJson } from '../lib/harryWrongAnswer'
+import { apiFetch } from '../lib/apiFetch'
 import {
   InterestFamilyViz,
   InventoryCostViz,
@@ -4754,7 +4755,7 @@ function CardsTab({ activeId, highlightTopicId }: { activeId: ActiveId; highligh
                 )}
               </div>
               <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>
-                {card.card_name ?? card.topic_name ?? '—'}
+                {card.topic_name ?? '—'}
               </span>
               {card.one_sentence && (
                 <span style={{ fontSize: 12, color: '#555' }}>{card.one_sentence}</span>
@@ -4791,7 +4792,7 @@ function CardsTab({ activeId, highlightTopicId }: { activeId: ActiveId; highligh
                 )}
               </div>
               <h2 style={{ fontSize: 18, fontWeight: 800, color: NAVY, margin: 0 }}>
-                {openCard.card_name ?? openCard.topic_name ?? '—'}
+                {openCard.topic_name ?? '—'}
               </h2>
               {openCard.one_sentence && (
                 <p style={{ fontSize: 13, color: '#555', marginTop: 6 }}>{openCard.one_sentence}</p>
@@ -4924,7 +4925,7 @@ function HarryTab({ catLabel }: { catLabel: string }) {
     streamAbortRef.current = abortCtrl
 
     try {
-      const resp = await fetch(`${API_URL}/api/claude/chat`, {
+      const resp = await apiFetch(`${API_URL}/api/claude/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

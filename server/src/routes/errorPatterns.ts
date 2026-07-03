@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import { requireApiKey } from '../middleware/requireApiKey';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -13,7 +14,7 @@ const MODEL = 'claude-haiku-4-5-20251001';
  *
  * body: { question, userAnswer, correctAnswer, patternName, patternDescription, topic }
  */
-router.post('/diagnose', async (req: Request, res: Response) => {
+router.post('/diagnose', requireApiKey, async (req: Request, res: Response) => {
   const {
     question,
     userAnswer,
@@ -62,10 +63,10 @@ router.post('/diagnose', async (req: Request, res: Response) => {
         '다음에 같은 유형을 풀 때 먼저 확인해야 할 체크포인트 1줄을 덧붙여줘.');
 
   try {
-    const message = await anthropic.messages.create({
+    const message = await anthropic.beta.promptCaching.messages.create({
       model: MODEL,
       max_tokens: 500,
-      system,
+      system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: user }],
     });
     const diagnosis =

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import { supabase } from '../lib/supabase';
+import { requireApiKey } from '../middleware/requireApiKey';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -37,7 +38,7 @@ function buildSystem(errorType: ErrorType): string {
  * POST /api/concept/fix
  * body: { id, feedback, errorType, current: { question, correct_answer, explanation, options? } }
  */
-router.post('/fix', async (req: Request, res: Response) => {
+router.post('/fix', requireApiKey, async (req: Request, res: Response) => {
   console.log('[concept/fix] 요청 수신:', JSON.stringify(req.body).slice(0, 200));
 
   const { id, feedback, errorType, current } = req.body as {
@@ -65,10 +66,10 @@ router.post('/fix', async (req: Request, res: Response) => {
 
   try {
     console.log('[concept/fix] Claude API 호출 (model:', MODEL, ', errorType:', errorType, ')');
-    const message = await anthropic.messages.create({
+    const message = await anthropic.beta.promptCaching.messages.create({
       model: MODEL,
       max_tokens: 1200,
-      system: buildSystem(errorType),
+      system: [{ type: 'text', text: buildSystem(errorType), cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: userMsg }],
     });
 

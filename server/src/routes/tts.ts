@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import { requireApiKey } from '../middleware/requireApiKey';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -59,7 +60,7 @@ async function synthesize(
  * body: { text: string }
  * response: { audioContent: string }  — base64 MP3 (raw text, no script generation)
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', requireApiKey, async (req: Request, res: Response) => {
   const { text } = req.body as { text?: string };
   if (!text?.trim()) return res.status(400).json({ error: 'text required' });
   if (!process.env.GOOGLE_TTS_API_KEY) return res.status(500).json({ error: 'GOOGLE_TTS_API_KEY not configured' });
@@ -80,7 +81,7 @@ router.post('/', async (req: Request, res: Response) => {
  * 2. Google TTS synthesizes it with WaveNet-F
  * response: { audioContent: string, script: string }
  */
-router.post('/podcast', async (req: Request, res: Response) => {
+router.post('/podcast', requireApiKey, async (req: Request, res: Response) => {
   const { topicId, oneLiner, trapPattern } = req.body as {
     topicId?: string | null;
     oneLiner?: string | null;
@@ -99,10 +100,10 @@ router.post('/podcast', async (req: Request, res: Response) => {
   ].filter(Boolean).join('\n');
 
   try {
-    const msg = await anthropic.messages.create({
+    const msg = await anthropic.beta.promptCaching.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 200,
-      system: PODCAST_SYSTEM,
+      system: [{ type: 'text', text: PODCAST_SYSTEM, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: userMsg }],
     });
     const script = msg.content[0]?.type === 'text' ? msg.content[0].text.trim() : '';

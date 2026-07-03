@@ -19,6 +19,7 @@ import {
   ConceptStat,
   ModuleWeekAccuracy,
 } from '../../lib/db'
+import { apiFetch } from '../../lib/apiFetch'
 import { readExamInfo } from './ExamCountdown'
 
 const API_URL =
@@ -104,7 +105,7 @@ export default function TutorBriefing({ onCoverage }: Props) {
     // Fallback: call server API in real time.
     let aiResp: BriefingResponse = { summary: '', actions: [], dayEstimate: '' }
     try {
-      const res = await fetch(`${API_URL}/api/tutor/briefing`, {
+      const res = await apiFetch(`${API_URL}/api/tutor/briefing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(computed),

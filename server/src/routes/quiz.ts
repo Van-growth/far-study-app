@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import { read as readLearned, topConcepts, topTrapPatterns } from '../lib/learnedConcepts';
 import { fetchConceptExtractions, buildExtractionContext } from '../lib/supabase';
+import { requireApiKey } from '../middleware/requireApiKey';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -66,7 +67,7 @@ function localPostCheck(item: GeneratedMcq): { pass: boolean; reason: string | n
 // 단일 에이전트 구조: 생성 → 자기검증 → 최종 JSON
 // concept_extractions 기반 출제 (fallback: learnedConcepts)
 // ─────────────────────────────────────────────────────────────
-router.post('/generate-question', async (req: Request, res: Response) => {
+router.post('/generate-question', requireApiKey, async (req: Request, res: Response) => {
   const {
     moduleId,
     moduleName,
@@ -409,7 +410,7 @@ Korean terminology rule for exp:
 // POST /api/concept-card
 // (변경 없음 — 기존 코드 유지)
 // ─────────────────────────────────────────────────────────────
-router.post('/concept-card', async (req: Request, res: Response) => {
+router.post('/concept-card', requireApiKey, async (req: Request, res: Response) => {
   const {
     moduleId,
     moduleName,
@@ -619,10 +620,10 @@ ${options!.map((o, i) => `${ALPHA[i]}. ${o}`).join('\n')}
   ]);
 
   try {
-    const msg = await anthropic.messages.create({
+    const msg = await anthropic.beta.promptCaching.messages.create({
       model: CONCEPT_CARD_MODEL,
       max_tokens: CONCEPT_CARD_MAX_TOKENS,
-      system,
+      system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: userMsg }],
     });
     const block = msg.content.find((b) => b.type === 'text');

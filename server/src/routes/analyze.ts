@@ -7,6 +7,7 @@ import {
   ConceptTrigger,
 } from '../lib/learnedConcepts';
 import { inferTopicId } from '../lib/topicInference';
+import { requireApiKey } from '../middleware/requireApiKey';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -72,7 +73,7 @@ STRICT JSON ONLY:
 // Anthropic 호출 → 200 + extracted 즉시 반환.
 // 파일 저장(applyExtraction)만 fire-and-forget.
 // ─────────────────────────────────────────────
-router.post('/extract-concepts', async (req: Request, res: Response) => {
+router.post('/extract-concepts', requireApiKey, async (req: Request, res: Response) => {
   console.log('[analyze] extract-concepts 요청 받음');
 
   const finish = (status: number, body: object) => {

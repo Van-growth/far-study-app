@@ -1,3 +1,5 @@
+import { apiFetch } from '../lib/apiFetch';
+
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
 export type QuestionConfidence = 'high' | 'medium' | 'low';
@@ -212,7 +214,7 @@ export async function generateQuestion(
   focusConcept?: string | null,
   weakConcepts?: WeakConceptRef[],
 ): Promise<GeneratedQuestion> {
-  const res = await fetch(`${API_URL}/api/generate-question`, {
+  const res = await apiFetch(`${API_URL}/api/generate-question`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -297,7 +299,7 @@ export async function extractConcepts(input: {
   correctedTopicId?: string | null;
   exampleQuestion?: ExampleQuestionResult | null;
 }> {
-  const res = await fetch(`${API_URL}/api/extract-concepts`, {
+  const res = await apiFetch(`${API_URL}/api/extract-concepts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -328,7 +330,7 @@ export async function fetchConceptCardFromText(input: {
   correctAnswer?: string | null;
   topicId?: string | null;
 }): Promise<ConceptCard> {
-  const res = await fetch(`${API_URL}/api/concept-card`, {
+  const res = await apiFetch(`${API_URL}/api/concept-card`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -366,7 +368,7 @@ export async function fetchConceptCard(input: {
   correctIdx: number;
   selectedIdx: number;
 }): Promise<ConceptCard> {
-  const res = await fetch(`${API_URL}/api/concept-card`, {
+  const res = await apiFetch(`${API_URL}/api/concept-card`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),

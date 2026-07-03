@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import useStudyStore from '../store/studyStore';
 import { parseWrongAnswerBlock, saveWrongAnswer, stripWrongAnswerJson } from '../lib/harryWrongAnswer';
+import { apiFetch } from '../lib/apiFetch';
 
 // ── Constants ────────────────────────────────────────────────────
 const NAVY = '#1a2744';
@@ -1057,7 +1058,7 @@ function HarryTab({ userId, pendingMsg, onPendingConsumed }: {
     setMsgs(prev => [...prev, assistantPlaceholder]);
 
     try {
-      const res = await fetch(`${API_URL}/api/claude/chat`, {
+      const res = await apiFetch(`${API_URL}/api/claude/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

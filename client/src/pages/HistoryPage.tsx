@@ -9,6 +9,7 @@ import MoneyRainOverlay from '../components/MoneyRainOverlay'
 const API_URL = (import.meta.env.VITE_API_URL as string) ?? 'http://localhost:3001';
 
 import { addXp } from '../lib/db'
+import { apiFetch } from '../lib/apiFetch'
 import {
   fetchDueExtractions,
   updateConceptReview,
@@ -40,7 +41,7 @@ async function fetchCardHint(
   trap_pattern?: string
 ): Promise<string> {
   try {
-    const res = await fetch(`${API_URL}/api/claude/card-hint`, {
+    const res = await apiFetch(`${API_URL}/api/claude/card-hint`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ concepts, auto_rules, trap_pattern }),
@@ -193,7 +194,7 @@ function useTTS() {
     setPlaying(true)
     setLoading(true)
     try {
-      const res = await fetch(`${API_URL}/api/tts/podcast`, {
+      const res = await apiFetch(`${API_URL}/api/tts/podcast`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topicId, oneLiner, trapPattern }),
@@ -1801,7 +1802,7 @@ export default function HistoryPage() {
         card.exampleQuestion.answer,
       )
 
-      const res = await fetch(`${API_URL}/api/concept/fix`, {
+      const res = await apiFetch(`${API_URL}/api/concept/fix`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

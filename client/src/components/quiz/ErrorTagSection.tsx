@@ -8,6 +8,7 @@ import {
   ErrorPattern,
 } from '../../lib/db'
 import { ERROR_CATEGORIES, CATEGORY_PATTERN_MAP } from '../../constants/errorPatterns'
+import { apiFetch } from '../../lib/apiFetch'
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001'
 
@@ -57,7 +58,7 @@ export default function ErrorTagSection(props: Props) {
 
     let aiDiagnosis = ''
     try {
-      const res = await fetch(`${API_URL}/api/error-patterns/diagnose`, {
+      const res = await apiFetch(`${API_URL}/api/error-patterns/diagnose`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
