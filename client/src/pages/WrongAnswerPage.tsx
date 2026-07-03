@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import useStudyStore from '../store/studyStore';
+import { parseWrongAnswerBlock, saveWrongAnswer, stripWrongAnswerJson } from '../lib/harryWrongAnswer';
 
 // ── Constants ────────────────────────────────────────────────────
 const NAVY = '#1a2744';
@@ -150,11 +151,8 @@ function buildPrompt(summary: TopicSummary[]): string {
     .slice(0, 3)
     .map(w => `${w.topic_tag}(${w.total_wrong}회)`)
     .join(', ');
-  return `You are Harry, a USCPA FAR exam tutor.
-Student's weak areas: ${weakTopics || 'not enough data yet'}.
-Focus on weak topics first. Ask one question at a time.
-When student says show me / 비주얼로 / 구조화해줘: reply "Here's the visualization" (frontend will render SVG inline).
-Use English accounting terms. Respond in Korean. Be concise and exam-focused.`;
+  return `학생 취약 토픽: ${weakTopics || '아직 데이터 부족'}. 취약 토픽 먼저 다뤄줘.
+"show me" / 비주얼로 / 구조화해줘 요청 시: "Here's the visualization"으로만 답해 (프론트에서 SVG를 직접 렌더링함).`;
 }
 
 const isVisual = (text: string): boolean =>
@@ -1064,7 +1062,7 @@ function HarryTab({ userId, pendingMsg, onPendingConsumed }: {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: contextMsgs,
-          systemPrompt: buildPrompt(summary),
+          dynamicContext: buildPrompt(summary),
         }),
       });
 
@@ -1075,6 +1073,7 @@ function HarryTab({ userId, pendingMsg, onPendingConsumed }: {
 
       const decoder = new TextDecoder();
       let buf = '';
+      let fullContent = '';
 
       while (true) {
         const { value, done } = await reader.read();
@@ -1090,6 +1089,7 @@ function HarryTab({ userId, pendingMsg, onPendingConsumed }: {
           try {
             const parsed = JSON.parse(raw) as { text?: string };
             if (parsed.text) {
+              fullContent += parsed.text;
               setMsgs(prev => {
                 const next = [...prev];
                 const last = next[next.length - 1];
@@ -1104,6 +1104,20 @@ function HarryTab({ userId, pendingMsg, onPendingConsumed }: {
           }
         }
       }
+
+      const parsedWrongAnswer = parseWrongAnswerBlock(fullContent);
+      if (parsedWrongAnswer && userId) {
+        saveWrongAnswer(parsedWrongAnswer, userId, null).catch((e) =>
+          console.warn('[harry] wrong_answers 자동저장 실패:', e),
+        );
+      }
+      const cleanedContent = stripWrongAnswerJson(fullContent);
+      setMsgs(prev => {
+        const next = [...prev];
+        const last = next[next.length - 1];
+        if (last?.role === 'assistant') next[next.length - 1] = { ...last, content: cleanedContent };
+        return next;
+      });
     } catch (err) {
       console.error('[HarryTab] stream error:', err);
       setMsgs(prev => {
@@ -1177,7 +1191,7 @@ function HarryTab({ userId, pendingMsg, onPendingConsumed }: {
                 borderBottomLeftRadius: m.role === 'assistant' ? 2 : 10,
                 borderBottomRightRadius: m.role === 'user' ? 2 : 10,
               }}>
-                {m.content || (streaming && m.role === 'assistant' ? '▍' : '')}
+                {(m.role === 'assistant' ? stripWrongAnswerJson(m.content ?? '') : m.content) || (streaming && m.role === 'assistant' ? '▍' : '')}
               </div>
             </div>
           );

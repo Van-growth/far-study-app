@@ -6,7 +6,7 @@ import { PROFESSOR_SSOT_V2, TopicCard } from '../constants/professor_ssot_v2'
 import useStudyStore from '../store/studyStore'
 import { listConversations, deleteConversation } from '../lib/harryHistory'
 import type { HarryConversation, HarryMessage } from '../lib/harryHistory'
-import { SYSTEM_PROMPT } from '../hooks/useClaudeChat'
+import { parseWrongAnswerBlock, saveWrongAnswer, stripWrongAnswerJson } from '../lib/harryWrongAnswer'
 import {
   InterestFamilyViz,
   InventoryCostViz,
@@ -4929,7 +4929,7 @@ function HarryTab({ catLabel }: { catLabel: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: prevMsgs.map(m => ({ role: m.role, content: m.content })),
-          systemPrompt: SYSTEM_PROMPT + `\n\n현재 실습 중인 카테고리: ${catLabel}`,
+          dynamicContext: `현재 실습 중인 카테고리: ${catLabel}`,
         }),
         signal: abortCtrl.signal,
       })
@@ -4974,9 +4974,22 @@ function HarryTab({ catLabel }: { catLabel: string }) {
 
     setStreaming(false)
 
+    const parsedWrongAnswer = parseWrongAnswerBlock(fullContent)
+    if (parsedWrongAnswer && userId) {
+      saveWrongAnswer(parsedWrongAnswer, userId, null).catch((e) =>
+        console.warn('[harry] wrong_answers 자동저장 실패:', e),
+      )
+    }
+    const cleanedContent = stripWrongAnswerJson(fullContent)
+    setMsgs(prev => {
+      const updated = [...prev]
+      updated[updated.length - 1] = { ...updated[updated.length - 1], content: cleanedContent }
+      return updated
+    })
+
     const finalMsgs: HarryMessage[] = [
       ...prevMsgs,
-      { role: 'assistant', content: fullContent, created_at: new Date().toISOString() },
+      { role: 'assistant', content: cleanedContent, created_at: new Date().toISOString() },
     ]
 
     await supabase
@@ -5137,7 +5150,7 @@ function HarryTab({ catLabel }: { catLabel: string }) {
                             th: ({ children }: { children?: React.ReactNode }) => <th style={{ border: '1px solid #ddd', padding: '4px 8px', background: '#f5f5f2', color: '#111' }}>{children}</th>,
                             td: ({ children }: { children?: React.ReactNode }) => <td style={{ border: '1px solid #e4e4e0', padding: '4px 8px', color: '#222' }}>{children}</td>,
                           } as never}
-                        >{msg.content}</ReactMarkdown>
+                        >{stripWrongAnswerJson(msg.content)}</ReactMarkdown>
                       ) : (
                         streaming && i === msgs.length - 1
                           ? <span style={{ opacity: 0.4, fontSize: 18, letterSpacing: 2 }}>•••</span>

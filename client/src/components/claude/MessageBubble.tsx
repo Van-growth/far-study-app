@@ -6,6 +6,7 @@ import { Message } from '../../store/claudeStore';
 import useClaudeStore from '../../store/claudeStore';
 import useStudyStore from '../../store/studyStore';
 import FeedbackButtons from '../feedback/FeedbackButtons';
+import { stripWrongAnswerJson } from '../../lib/harryWrongAnswer';
 
 interface MessageBubbleProps {
   message: Message;
@@ -234,10 +235,12 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   const currentTopicId = useStudyStore((s) => s.currentTopicId);
   const reviewCardContext = useClaudeStore((s) => s.reviewCardContext);
   const [copied, setCopied] = useState(false);
-  const { isSpeaking, toggle: toggleTts } = useTts(message.content);
+  // 오답 자동기록용 JSON 블록(```harry-wronganswer-json)은 화면에 노출하지 않음 — assistant 메시지에만 존재 가능.
+  const displayContent = isUser ? message.content : stripWrongAnswerJson(message.content);
+  const { isSpeaking, toggle: toggleTts } = useTts(displayContent);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(message.content).then(() => {
+    navigator.clipboard.writeText(displayContent).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });
@@ -276,7 +279,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         style={{ background: 'white', border: '1.5px solid #e2e8f0' }}
       >
         <Markdown remarkPlugins={[remarkGfm, remarkBreaks]} components={MD_COMPONENTS as never}>
-          {cleanLatex(message.content)}
+          {cleanLatex(displayContent)}
         </Markdown>
         {isStreaming && (
           <span className="inline-block w-1.5 h-4 bg-[#4f6ef7] ml-0.5 animate-pulse align-text-bottom rounded-sm" />
@@ -285,7 +288,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           <div className="flex items-center mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
             <FeedbackButtons
               messageId={message.id}
-              messagePreview={message.content}
+              messagePreview={displayContent}
               source="claude"
               topicId={reviewCardContext?.topicId ?? currentTopicId ?? null}
               extractionId={reviewCardContext?.extractionId ?? null}
