@@ -60,6 +60,8 @@ export default function ClaudePanel({ modal }: ClaudePanelProps) {
   const setHarryContext = useClaudeStore((s) => s.setHarryContext);
   const panelWidth = useClaudeStore((s) => s.panelWidth);
   const setPanelWidth = useClaudeStore((s) => s.setPanelWidth);
+  const mode = useClaudeStore((s) => s.mode);
+  const setMode = useClaudeStore((s) => s.setMode);
   const setHarryConversationId = useClaudeStore((s) => s.setHarryConversationId);
   const setMessages = useClaudeStore((s) => s.setMessages);
 
@@ -421,6 +423,35 @@ SPEED: 30초 풀이 한 줄`;
               <button onClick={clearMessages} className="text-[11px] text-muted hover:text-[#0f172a] px-2 py-1 rounded-lg hover:bg-gray-100">초기화</button>
             )}
             <button onClick={closePanel} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted hover:text-[#0f172a] hover:bg-gray-100 text-xl">×</button>
+          </div>
+        </div>
+        {/* 모드 토글 — 문제풀이(Haiku, 빠름) vs 추론·심화(Sonnet 5, 정확) */}
+        <div className="px-4 pb-2 flex items-center gap-1.5">
+          <div className="inline-flex rounded-lg p-0.5" style={{ background: '#f1f5f9' }}>
+            <button
+              onClick={() => setMode('haiku')}
+              title="빠른 STEP 0~4 풀이 — 재질문·개념비교는 제한적"
+              className="text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors"
+              style={{
+                background: mode === 'haiku' ? '#ffffff' : 'transparent',
+                color: mode === 'haiku' ? '#1a2744' : '#94a3b8',
+                boxShadow: mode === 'haiku' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+              }}
+            >
+              ⚡ 문제풀이
+            </button>
+            <button
+              onClick={() => setMode('sonnet5')}
+              title="재질문·개념비교·트랩 심화가 가능한 정확한 추론 모드"
+              className="text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors"
+              style={{
+                background: mode === 'sonnet5' ? '#ffffff' : 'transparent',
+                color: mode === 'sonnet5' ? '#1a2744' : '#94a3b8',
+                boxShadow: mode === 'sonnet5' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+              }}
+            >
+              🧠 추론·심화
+            </button>
           </div>
         </div>
         {analyzeContext ? (

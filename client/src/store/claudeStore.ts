@@ -96,6 +96,8 @@ function loadSavedPanelWidth(): number {
   return PANEL_WIDTH_DEFAULT;
 }
 
+export type HarryMode = 'haiku' | 'sonnet5';
+
 interface ClaudeStore {
   isOpen: boolean;
   messages: Message[];
@@ -110,6 +112,8 @@ interface ClaudeStore {
   harryContext: HarryContext | null;
   harryConversationId: string | null;
   panelWidth: number;
+  mode: HarryMode;
+  lastModelUsed: string | null;
 
   togglePanel: () => void;
   openPanel: () => void;
@@ -130,6 +134,8 @@ interface ClaudeStore {
   setHarryConversationId: (id: string | null) => void;
   setMessages: (msgs: Message[]) => void;
   setPanelWidth: (w: number) => void;
+  setMode: (m: HarryMode) => void;
+  setLastModelUsed: (model: string | null) => void;
 }
 
 const useClaudeStore = create<ClaudeStore>((set) => ({
@@ -146,8 +152,12 @@ const useClaudeStore = create<ClaudeStore>((set) => ({
   harryContext: null,
   harryConversationId: null,
   panelWidth: loadSavedPanelWidth(),
+  mode: 'haiku',
+  lastModelUsed: null,
 
   togglePanel: () => set((s) => ({ isOpen: !s.isOpen })),
+  setMode: (m) => set({ mode: m }),
+  setLastModelUsed: (model) => set({ lastModelUsed: model }),
   openPanel: () => set({ isOpen: true }),
   closePanel: () => set({ isOpen: false }),
   setPanelWidth: (w) => {
