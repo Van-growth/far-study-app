@@ -1,29 +1,56 @@
 import { Router, Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const router = Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const MODEL = 'claude-haiku-4-5-20251001';
+const MODEL_HAIKU = 'claude-haiku-4-5-20251001';
+const MODEL_SONNET5 = 'claude-sonnet-5';
+
+// Static Harry system prompt (STEP 0~4 지침) — server/prompts/에서 관리되는 SSOT.
+// 파일 수정 시 재배포만으로 자동 반영. 요청마다 바뀌지 않으므로 prompt caching 대상.
+const HARRY_SYSTEM_PROMPT = fs.readFileSync(
+  path.join(__dirname, '../../prompts/harry-system-prompt.md'),
+  'utf-8',
+);
+// Sonnet5 추론 모드 전용 톤 레이어 — STEP 0~4 풀이 자체엔 영향 없음, 격려/마무리 멘트에만 참고.
+const USER_TONE_PREFERENCE = fs.readFileSync(
+  path.join(__dirname, '../../prompts/harry-user-tone-preference.md'),
+  'utf-8',
+);
 
 /**
  * POST /api/claude/chat — SSE streaming
- * body: { messages, systemPrompt, currentTopic }
+ * body: { messages, dynamicContext, currentTopic, filterMode, matchedCards, mode }
+ * mode: 'haiku'(문제풀이, 기본값) | 'sonnet5'(추론/심화)
+ *
+ * system은 두 블록으로 분리:
+ *  1) 정적 지침(HARRY_SYSTEM_PROMPT) — cache_control 적용, 매 요청 동일 → 캐시 재사용
+ *  2) 동적 컨텍스트(dynamicContext) — SSOT 카드/DB통계/문제내용 등 요청마다 변경 → 캐시 미적용
  */
 router.post('/chat', async (req: Request, res: Response) => {
-  const { messages, systemPrompt, currentTopic, filterMode, matchedCards } = req.body as {
+  const { messages, dynamicContext, currentTopic, filterMode, matchedCards, mode } = req.body as {
     messages: { role: 'user' | 'assistant'; content: string }[];
-    systemPrompt?: string;
+    dynamicContext?: string;
     currentTopic?: string;
     filterMode?: string;
     matchedCards?: number;
+    mode?: 'haiku' | 'sonnet5';
   };
 
   if (!messages?.length) {
     return res.status(400).json({ error: 'messages required' });
   }
 
-  const system = (systemPrompt ?? '') +
-    (currentTopic ? `\n\n현재 학습 중인 토픽: ${currentTopic}` : '');
+  const isSonnet = mode === 'sonnet5';
+  const model = isSonnet ? MODEL_SONNET5 : MODEL_HAIKU;
+
+  const dynamicBlock = (dynamicContext ?? '') +
+    (currentTopic ? `\n\n현재 학습 중인 토픽: ${currentTopic}` : '') +
+    (isSonnet
+      ? `\n\n---\n[사용자 톤 프리퍼런스 — 격려/학습전략 조언/복습 마무리 멘트에서만 참고할 것. STEP 0~4 풀이 자체는 이 톤과 무관하게 건조하고 구조적으로 유지]\n${USER_TONE_PREFERENCE}`
+      : '');
 
   // SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
@@ -35,18 +62,18 @@ router.post('/chat', async (req: Request, res: Response) => {
   res.write(': ping\n\n');
 
   // ── System prompt size logging ────────────────────────────────
-  const sysChars = system.length;
-  const estTokens = Math.round(sysChars / 4);
-  const hasTBS = system.includes('[TBS:');
-  console.log(`[harry] chars=${sysChars} est_tokens≈${estTokens} msgs=${messages.length} tbs=${hasTBS} filterMode=${filterMode ?? 'none'} matchedCards=${matchedCards ?? 0}`);
+  const staticChars = HARRY_SYSTEM_PROMPT.length;
+  const dynamicChars = dynamicBlock.length;
+  const hasTBS = dynamicBlock.includes('[TBS:');
+  console.log(`[harry] model=${model} static_chars=${staticChars}(cached) dynamic_chars=${dynamicChars} msgs=${messages.length} tbs=${hasTBS} filterMode=${filterMode ?? 'none'} matchedCards=${matchedCards ?? 0}`);
 
   try {
     const stream = anthropic.beta.promptCaching.messages.stream({
-      model: MODEL,
+      model,
       max_tokens: 4000,
       system: [
-        { type: 'text' as const, text: systemPrompt ?? '', cache_control: { type: 'ephemeral' as const } },
-        ...(currentTopic ? [{ type: 'text' as const, text: `\n\n현재 학습 중인 토픽: ${currentTopic}` }] : []),
+        { type: 'text' as const, text: HARRY_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' as const } },
+        ...(dynamicBlock ? [{ type: 'text' as const, text: dynamicBlock }] : []),
       ],
       messages,
     });
@@ -65,6 +92,7 @@ router.post('/chat', async (req: Request, res: Response) => {
 
     await stream.finalMessage();
     if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ done: true, model })}\n\n`);
       res.write('data: [DONE]\n\n');
       res.end();
     }
@@ -104,7 +132,7 @@ Be concise and exam-focused. Respond only in Korean.`;
 
   try {
     const message = await anthropic.beta.promptCaching.messages.create({
-      model: MODEL,
+      model: MODEL_HAIKU,
       max_tokens: 4000,
       system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
       messages: [
@@ -157,7 +185,7 @@ Rules:
 
   try {
     const message = await anthropic.beta.promptCaching.messages.create({
-      model: MODEL,
+      model: MODEL_HAIKU,
       max_tokens: 150,
       system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: userMsg }],
