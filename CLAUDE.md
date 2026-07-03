@@ -51,16 +51,20 @@
 | far-study-app (client) | `srv-d7d5g97avr4c73drrtg0` |
 | far-study-app-server (server) | `srv-d7d57k1j2pic73fcbgbg` |
 
+Render API 토큰은 코드/문서에 절대 하드코딩하지 않는다. 로컬 셸 환경변수
+`RENDER_API_TOKEN`으로 관리하고(토큰 값 자체는 Render 대시보드 → Account
+Settings → API Keys에서 재발급/확인), 아래처럼 참조만 한다:
+
 ```bash
 # client
 curl -s -X POST \
-  -H "Authorization: Bearer rnd_ulPxarw9izFc7685TpBAxfdWb7mD" \
+  -H "Authorization: Bearer $RENDER_API_TOKEN" \
   -H "Content-Type: application/json" \
   "https://api.render.com/v1/services/srv-d7d5g97avr4c73drrtg0/deploys"
 
 # server
 curl -s -X POST \
-  -H "Authorization: Bearer rnd_ulPxarw9izFc7685TpBAxfdWb7mD" \
+  -H "Authorization: Bearer $RENDER_API_TOKEN" \
   -H "Content-Type: application/json" \
   "https://api.render.com/v1/services/srv-d7d57k1j2pic73fcbgbg/deploys"
 ```
