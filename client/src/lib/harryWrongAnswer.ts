@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { computeQuestionId } from './questionId';
 
 // Harry가 STEP 0~4 설명 뒤에 붙이는 오답 자동기록용 JSON 코드펜스 — server/prompts/harry-system-prompt.md 참고.
 const FENCE_LANG = 'harry-wronganswer-json';
@@ -65,11 +66,13 @@ export async function saveWrongAnswer(
   userId: string,
   modelUsed: string | null,
 ): Promise<void> {
+  const questionId = await computeQuestionId(parsed.question_text);
+
   const { data: existing, error: selectError } = await supabase
     .from('wrong_answers')
     .select('id, times_wrong')
     .eq('user_id', userId)
-    .eq('question_text', parsed.question_text)
+    .eq('question_id', questionId)
     .maybeSingle();
 
   if (selectError) {
@@ -89,6 +92,7 @@ export async function saveWrongAnswer(
 
   const { error } = await supabase.from('wrong_answers').insert({
     user_id: userId,
+    question_id: questionId,
     question_text: parsed.question_text,
     my_answer: parsed.my_answer,
     correct_answer: parsed.correct_answer,

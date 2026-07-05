@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import useStudyStore from '../store/studyStore';
 import { parseWrongAnswerBlock, saveWrongAnswer, stripWrongAnswerJson } from '../lib/harryWrongAnswer';
+import { computeQuestionId } from '../lib/questionId';
 import { apiFetch } from '../lib/apiFetch';
 
 // ── Constants ────────────────────────────────────────────────────
@@ -311,9 +312,11 @@ function InputTab({ userId, editItem, onEditDone }: {
     if (!editItem || !editCard) return;
     setSaving(true);
     try {
+      const questionId = await computeQuestionId(editCard.question_text);
       const { error } = await supabase
         .from('wrong_answers')
         .update({
+          question_id: questionId,
           question_text: editCard.question_text,
           my_answer: editCard.my_answer,
           correct_answer: editCard.correct_answer,
@@ -362,13 +365,14 @@ function InputTab({ userId, editItem, onEditDone }: {
 
       // 2. Insert wrong_answers + upsert times_wrong
       for (const card of cards) {
-        // Check if same user+topic+question_number already exists
+        // question_number("Q1" 등)는 세션마다 재사용되는 화면표시 라벨이라 식별자로 못 씀 —
+        // 실제 동일 문제 판단은 question_text 정규화 해시(question_id) 기준.
+        const questionId = await computeQuestionId(card.questionText);
         const { data: existing } = await supabase
           .from('wrong_answers')
           .select('id, times_wrong')
           .eq('user_id', userId)
-          .eq('topic_tag', card.topicTag)
-          .eq('question_number', `Q${card.questionNum}`)
+          .eq('question_id', questionId)
           .maybeSingle();
 
         if (existing) {
@@ -380,6 +384,7 @@ function InputTab({ userId, editItem, onEditDone }: {
           await supabase.from('wrong_answers').insert({
             session_id: session?.id ?? null,
             user_id: userId,
+            question_id: questionId,
             question_number: `Q${card.questionNum}`,
             question_text: card.questionText,
             my_answer: card.myAnswer,
